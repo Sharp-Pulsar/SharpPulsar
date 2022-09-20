@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using SharpPulsar.Admin.Admin.Models;
+using System.Text.Json.Serialization;
+using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,163 +24,257 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	using ToString = lombok.ToString;
-	using DispatchRateImpl = SharpPulsar.Admin.Model.Impl.DispatchRateImpl;
-
 	/// <summary>
 	/// Definition of Pulsar policies.
 	/// </summary>
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @ToString public class Policies
 	public class Policies
 	{
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public final AuthPolicies auth_policies = AuthPolicies.builder().build();
-		public readonly AuthPolicies AuthPolicies = AuthPolicies.builder().build();
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public java.util.Set<String> replication_clusters = new java.util.HashSet<>();
-		public ISet<string> ReplicationClusters = new HashSet<string>();
-		public BundlesData Bundles;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public java.util.Map<BacklogQuota_BacklogQuotaType, BacklogQuota> backlog_quota_map = new java.util.HashMap<>();
-		public IDictionary<BacklogQuotaBacklogQuotaType, BacklogQuota> BacklogQuotaMap = new Dictionary<BacklogQuotaBacklogQuotaType, BacklogQuota>();
-		[Obsolete]
-		public IDictionary<string, DispatchRateImpl> ClusterDispatchRate = new Dictionary<string, DispatchRateImpl>();
-		public IDictionary<string, DispatchRateImpl> TopicDispatchRate = new Dictionary<string, DispatchRateImpl>();
-		public IDictionary<string, DispatchRateImpl> SubscriptionDispatchRate = new Dictionary<string, DispatchRateImpl>();
-		public IDictionary<string, DispatchRateImpl> ReplicatorDispatchRate = new Dictionary<string, DispatchRateImpl>();
-		public IDictionary<string, SubscribeRate> ClusterSubscribeRate = new Dictionary<string, SubscribeRate>();
-		public PersistencePolicies Persistence = null;
-
-		// If set, it will override the broker settings for enabling deduplication
-		public bool? DeduplicationEnabled = null;
-		// If set, it will override the broker settings for allowing auto topic creation
-		public AutoTopicCreationOverride AutoTopicCreationOverride = null;
-		// If set, it will override the broker settings for allowing auto subscription creation
-		public AutoSubscriptionCreationOverride AutoSubscriptionCreationOverride = null;
-		public IDictionary<string, PublishRate> PublishMaxMessageRate = new Dictionary<string, PublishRate>();
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public java.util.Map<String, int> latency_stats_sample_rate = new java.util.HashMap<>();
-		public IDictionary<string, int> LatencyStatsSampleRate = new Dictionary<string, int>();
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> message_ttl_in_seconds = null;
-		public int? MessageTtlInSeconds = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> subscription_expiration_time_minutes = null;
-		public int? SubscriptionExpirationTimeMinutes = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public RetentionPolicies retention_policies = null;
-		public RetentionPolicies RetentionPolicies = null;
-		public bool Deleted = false;
-		public const string FirstBoundary = "0x00000000";
-		public const string LastBoundary = "0xffffffff";
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public boolean encryption_required = false;
-		public bool EncryptionRequired = false;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public DelayedDeliveryPolicies delayed_delivery_policies = null;
-		public DelayedDeliveryPolicies DelayedDeliveryPolicies = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public InactiveTopicPolicies inactive_topic_policies = null;
-		public InactiveTopicPolicies InactiveTopicPolicies = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public SubscriptionAuthMode subscription_auth_mode = SubscriptionAuthMode.None;
-		public SubscriptionAuthMode SubscriptionAuthMode = SubscriptionAuthMode.None;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> max_producers_per_topic = null;
-		public int? MaxProducersPerTopic = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> max_consumers_per_topic = null;
-		public int? MaxConsumersPerTopic = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> max_consumers_per_subscription = null;
-		public int? MaxConsumersPerSubscription = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> max_unacked_messages_per_consumer = null;
-		public int? MaxUnackedMessagesPerConsumer = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> max_unacked_messages_per_subscription = null;
-		public int? MaxUnackedMessagesPerSubscription = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> max_subscriptions_per_topic = null;
-		public int? MaxSubscriptionsPerTopic = null;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<long> compaction_threshold = null;
-		public long? CompactionThreshold = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public long offload_threshold = -1;
-		public long OffloadThreshold = -1;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<long> offload_deletion_lag_ms = null;
-		public long? OffloadDeletionLagMs = null;
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<int> max_topics_per_namespace = null;
-		public int? MaxTopicsPerNamespace = null;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") @Deprecated public SchemaAutoUpdateCompatibilityStrategy schema_auto_update_compatibility_strategy = null;
-		[Obsolete]
-		public SchemaAutoUpdateCompatibilityStrategy SchemaAutoUpdateCompatibilityStrategy = null;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public SchemaCompatibilityStrategy schema_compatibility_strategy = SchemaCompatibilityStrategy.UNDEFINED;
-		public SchemaCompatibilityStrategy SchemaCompatibilityStrategy = SchemaCompatibilityStrategy.UNDEFINED;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public System.Nullable<bool> is_allow_auto_update_schema = null;
-		public bool? IsAllowAutoUpdateSchema = null;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public boolean schema_validation_enforced = false;
-		public bool SchemaValidationEnforced = false;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public OffloadPolicies offload_policies = null;
-		public OffloadPolicies OffloadPolicies = null;
-
-		public int? DeduplicationSnapshotIntervalSeconds = null;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public java.util.Set<String> subscription_types_enabled = new java.util.HashSet<>();
-		public ISet<string> SubscriptionTypesEnabled = new HashSet<string>();
-
-		public IDictionary<string, string> Properties = new Dictionary<string, string>();
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public String resource_group_name = null;
-		public string ResourceGroupName = null;
-
-		public enum BundleType
-		{
-			LARGEST,
-			HOT
-		}
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @SuppressWarnings("checkstyle:MemberName") public EntryFilters entryFilters = null;
-		public EntryFilters EntryFilters = null;
-
-		public override int GetHashCode()
-		{
-			return Objects.hash(AuthPolicies, ReplicationClusters, BacklogQuotaMap, PublishMaxMessageRate, ClusterDispatchRate, TopicDispatchRate, SubscriptionDispatchRate, ReplicatorDispatchRate, ClusterSubscribeRate, DeduplicationEnabled, AutoTopicCreationOverride, AutoSubscriptionCreationOverride, Persistence, Bundles, LatencyStatsSampleRate, MessageTtlInSeconds, SubscriptionExpirationTimeMinutes, RetentionPolicies, EncryptionRequired, DelayedDeliveryPolicies, InactiveTopicPolicies, SubscriptionAuthMode, MaxProducersPerTopic, MaxConsumersPerTopic, MaxConsumersPerSubscription, MaxUnackedMessagesPerConsumer, MaxUnackedMessagesPerSubscription, CompactionThreshold, OffloadThreshold, OffloadDeletionLagMs, SchemaAutoUpdateCompatibilityStrategy, SchemaValidationEnforced, SchemaCompatibilityStrategy, IsAllowAutoUpdateSchema, OffloadPolicies, SubscriptionTypesEnabled, Properties, ResourceGroupName, EntryFilters);
-		}
-
-		public override bool Equals(object Obj)
-		{
-			if (Obj is Policies)
-			{
-				Policies Other = (Policies) Obj;
-				return Objects.equals(AuthPolicies, Other.AuthPolicies) && Objects.equals(ReplicationClusters, Other.ReplicationClusters) && Objects.equals(BacklogQuotaMap, Other.BacklogQuotaMap) && Objects.equals(ClusterDispatchRate, Other.ClusterDispatchRate) && Objects.equals(TopicDispatchRate, Other.TopicDispatchRate) && Objects.equals(SubscriptionDispatchRate, Other.SubscriptionDispatchRate) && Objects.equals(ReplicatorDispatchRate, Other.ReplicatorDispatchRate) && Objects.equals(ClusterSubscribeRate, Other.ClusterSubscribeRate) && Objects.equals(PublishMaxMessageRate, Other.PublishMaxMessageRate) && Objects.equals(DeduplicationEnabled, Other.DeduplicationEnabled) && Objects.equals(AutoTopicCreationOverride, Other.AutoTopicCreationOverride) && Objects.equals(AutoSubscriptionCreationOverride, Other.AutoSubscriptionCreationOverride) && Objects.equals(Persistence, Other.Persistence) && Objects.equals(Bundles, Other.Bundles) && Objects.equals(LatencyStatsSampleRate, Other.LatencyStatsSampleRate) && Objects.equals(MessageTtlInSeconds, Other.MessageTtlInSeconds) && Objects.equals(SubscriptionExpirationTimeMinutes, Other.SubscriptionExpirationTimeMinutes) && Objects.equals(RetentionPolicies, Other.RetentionPolicies) && Objects.equals(EncryptionRequired, Other.EncryptionRequired) && Objects.equals(DelayedDeliveryPolicies, Other.DelayedDeliveryPolicies) && Objects.equals(InactiveTopicPolicies, Other.InactiveTopicPolicies) && Objects.equals(SubscriptionAuthMode, Other.SubscriptionAuthMode) && Objects.equals(MaxProducersPerTopic, Other.MaxProducersPerTopic) && Objects.equals(MaxConsumersPerTopic, Other.MaxConsumersPerTopic) && Objects.equals(MaxUnackedMessagesPerConsumer, Other.MaxUnackedMessagesPerConsumer) && Objects.equals(MaxUnackedMessagesPerSubscription, Other.MaxUnackedMessagesPerSubscription) && Objects.equals(MaxConsumersPerSubscription, Other.MaxConsumersPerSubscription) && Objects.equals(CompactionThreshold, Other.CompactionThreshold) && OffloadThreshold == Other.OffloadThreshold && Objects.equals(OffloadDeletionLagMs, Other.OffloadDeletionLagMs) && SchemaAutoUpdateCompatibilityStrategy == Other.SchemaAutoUpdateCompatibilityStrategy && SchemaValidationEnforced == Other.SchemaValidationEnforced && SchemaCompatibilityStrategy == Other.SchemaCompatibilityStrategy && IsAllowAutoUpdateSchema == Other.IsAllowAutoUpdateSchema.Value && Objects.equals(OffloadPolicies, Other.OffloadPolicies) && Objects.equals(SubscriptionTypesEnabled, Other.SubscriptionTypesEnabled) && Objects.equals(Properties, Other.Properties) && Objects.equals(ResourceGroupName, Other.ResourceGroupName) && Objects.equals(EntryFilters, Other.EntryFilters);
-			}
-
-			return false;
-		}
+		
+        [JsonPropertyName("entry_filters")]
+        public EntryFilters EntryFilters { get; set; }
 
 
-	}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("auth_policies")]
+        public AuthPolicies AuthPolicies { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("replication_clusters")]
+        public IList<string> ReplicationClusters { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("bundles")]
+        public BundlesData Bundles { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("backlog_quota_map")]
+        public IDictionary<string, BacklogQuota> BacklogQuotaMap { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("clusterDispatchRate")]
+        public IDictionary<string, DispatchRateImpl> ClusterDispatchRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("topicDispatchRate")]
+        public IDictionary<string, DispatchRateImpl> TopicDispatchRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("subscriptionDispatchRate")]
+        public IDictionary<string, DispatchRateImpl> SubscriptionDispatchRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("replicatorDispatchRate")]
+        public IDictionary<string, DispatchRateImpl> ReplicatorDispatchRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("clusterSubscribeRate")]
+        public IDictionary<string, SubscribeRate> ClusterSubscribeRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("persistence")]
+        public PersistencePolicies Persistence { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("deduplicationEnabled")]
+        public bool? DeduplicationEnabled { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("autoTopicCreationOverride")]
+        public AutoTopicCreationOverride AutoTopicCreationOverride { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("autoSubscriptionCreationOverride")]
+        public AutoSubscriptionCreationOverride AutoSubscriptionCreationOverride { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("publishMaxMessageRate")]
+        public IDictionary<string, PublishRate> PublishMaxMessageRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("latency_stats_sample_rate")]
+        public IDictionary<string, int?> LatencyStatsSampleRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("message_ttl_in_seconds")]
+        public int? MessageTtlInSeconds { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("subscription_expiration_time_minutes")]
+        public int? SubscriptionExpirationTimeMinutes { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("retention_policies")]
+        public RetentionPolicies RetentionPolicies { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("deleted")]
+        public bool? Deleted { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("encryption_required")]
+        public bool? EncryptionRequired { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("delayed_delivery_policies")]
+        public DelayedDeliveryPolicies DelayedDeliveryPolicies { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("inactive_topic_policies")]
+        public InactiveTopicPolicies InactiveTopicPolicies { get; set; }
+
+        /// <summary>
+        /// Gets or sets possible values include: 'None', 'Prefix'
+        /// </summary>
+        [JsonPropertyName("subscription_auth_mode")]
+        public string SubscriptionAuthMode { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("max_producers_per_topic")]
+        public int? MaxProducersPerTopic { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("max_consumers_per_topic")]
+        public int? MaxConsumersPerTopic { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("max_consumers_per_subscription")]
+        public int? MaxConsumersPerSubscription { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("max_unacked_messages_per_consumer")]
+        public int? MaxUnackedMessagesPerConsumer { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("max_unacked_messages_per_subscription")]
+        public int? MaxUnackedMessagesPerSubscription { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("max_subscriptions_per_topic")]
+        public int? MaxSubscriptionsPerTopic { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("compaction_threshold")]
+        public long? CompactionThreshold { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("offload_threshold")]
+        public long? OffloadThreshold { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("offload_deletion_lag_ms")]
+        public long? OffloadDeletionLagMs { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("max_topics_per_namespace")]
+        public int? MaxTopicsPerNamespace { get; set; }
+
+        /// <summary>
+        /// Gets or sets possible values include: 'AutoUpdateDisabled',
+        /// 'Backward', 'Forward', 'Full', 'AlwaysCompatible',
+        /// 'BackwardTransitive', 'ForwardTransitive', 'FullTransitive'
+        /// </summary>
+        [JsonPropertyName("schema_auto_update_compatibility_strategy")]
+        public SchemaAutoUpdateCompatibilityStrategy SchemaAutoUpdateCompatibilityStrategy { get; set; }
+
+        /// <summary>
+        /// Gets or sets possible values include: 'UNDEFINED',
+        /// 'ALWAYS_INCOMPATIBLE', 'ALWAYS_COMPATIBLE', 'BACKWARD', 'FORWARD',
+        /// 'FULL', 'BACKWARD_TRANSITIVE', 'FORWARD_TRANSITIVE',
+        /// 'FULL_TRANSITIVE'
+        /// </summary>
+        [JsonPropertyName("schema_compatibility_strategy")]
+        public SchemaCompatibilityStrategy SchemaCompatibilityStrategy { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("is_allow_auto_update_schema")]
+        public bool? IsAllowAutoUpdateSchema { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("schema_validation_enforced")]
+        public bool? SchemaValidationEnforced { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("offload_policies")]
+        public OffloadPolicies OffloadPolicies { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("deduplicationSnapshotIntervalSeconds")]
+        public int? DeduplicationSnapshotIntervalSeconds { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("subscription_types_enabled")]
+        public IList<string> SubscriptionTypesEnabled { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("properties")]
+        public IDictionary<string, string> Properties { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("resource_group_name")]
+        public string ResourceGroupName { get; set; }
+
+        /// <summary>
+        /// Validate the object.
+        /// </summary>
+        /// <exception cref="Microsoft.Rest.ValidationException">
+        /// Thrown if validation fails
+        /// </exception>
+        public virtual void Validate()
+        {
+            if (ReplicationClusters != null)
+            {
+                if (ReplicationClusters.Count != Enumerable.Count(Enumerable.Distinct(ReplicationClusters)))
+                {
+                    throw new InvalidOperationException("ReplicationClusters");
+                }
+            }
+            if (SubscriptionTypesEnabled != null)
+            {
+                if (SubscriptionTypesEnabled.Count != Enumerable.Count(Enumerable.Distinct(SubscriptionTypesEnabled)))
+                {
+                    throw new InvalidOperationException("SubscriptionTypesEnabled");
+                }
+            }
+        }
+    }
 
 }

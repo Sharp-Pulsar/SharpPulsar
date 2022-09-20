@@ -1,38 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 using SharpPulsar.Admin.Model;
-using SharpPulsar.Admin.Admin.Models;
-
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Threading;
+using System.Net.Http;
+using System.Text.Json;
+using System.Net;
+using System.Text;
 namespace SharpPulsar.Admin
 {
-    using SubscriptionType = org.apache.pulsar.client.api.SubscriptionType;
-    using AuthAction = SharpPulsar.Admin.Model.AuthAction;
-    using AutoSubscriptionCreationOverride = SharpPulsar.Admin.Model.AutoSubscriptionCreationOverride;
-    using AutoTopicCreationOverride = SharpPulsar.Admin.Model.AutoTopicCreationOverride;
-    using BacklogQuota = SharpPulsar.Admin.Model.BacklogQuota;
-    using BookieAffinityGroupData = SharpPulsar.Admin.Model.BookieAffinityGroupData;
-    using BundlesData = SharpPulsar.Admin.Model.BundlesData;
-    using DelayedDeliveryPolicies = SharpPulsar.Admin.Model.DelayedDeliveryPolicies;
-    using DispatchRate = SharpPulsar.Admin.Model.DispatchRate;
-    using EntryFilters = SharpPulsar.Admin.Model.EntryFilters;
-    using InactiveTopicPolicies = SharpPulsar.Admin.Model.InactiveTopicPolicies;
-    using OffloadPolicies = SharpPulsar.Admin.Model.OffloadPolicies;
-    using PersistencePolicies = SharpPulsar.Admin.Model.PersistencePolicies;
-    using Policies = SharpPulsar.Admin.Model.Policies;
-    using PublishRate = SharpPulsar.Admin.Model.PublishRate;
-    using RetentionPolicies = SharpPulsar.Admin.Model.RetentionPolicies;
-    using SchemaAutoUpdateCompatibilityStrategy = SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy;
-    using SchemaCompatibilityStrategy = SharpPulsar.Admin.Model.SchemaCompatibilityStrategy;
-    using SubscribeRate = SharpPulsar.Admin.Model.SubscribeRate;
-    using SubscriptionAuthMode = SharpPulsar.Admin.Model.SubscriptionAuthMode;
-    using TopicHashPositions = SharpPulsar.Admin.Model.TopicHashPositions;
-
-
     public class Namespaces
     {
         private Uri _uri;
@@ -51,6 +27,10 @@ namespace SharpPulsar.Admin
                 throw new ArgumentNullException("baseUri");
             }
         }
+        public IList<string> GetTenantNamespaces(string tenant, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetTenantNamespacesAsync(tenant, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get the list of all the namespaces for a certain tenant.
         /// </summary>
@@ -62,42 +42,20 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<IList<string>>> GetTenantNamespacesAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<IList<string>> GetTenantNamespacesAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetTenantNamespaces", tracingParameters);
-            }
+            
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -118,25 +76,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -145,12 +92,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -159,34 +103,33 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<IList<string>>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            IList<string> _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IList<string>>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<IList<string>>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
+            
             return _result;
         }
 
+        public IList<string> GetTopics(string tenant, string namespaceParameter, string mode = default, bool? includeSystemTopic = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetTopicsAsync(tenant, namespaceParameter, mode, includeSystemTopic, customHeaders).GetAwaiter().GetResult();
+        }
 
         /// <summary>
         /// Get the list of all the topics under a certain namespace.
@@ -204,57 +147,32 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<IList<string>>> GetTopicsAsync(string tenant, string namespaceParameter, string mode = default(string), bool? includeSystemTopic = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<IList<string>> GetTopicsAsync(string tenant, string namespaceParameter, string mode = default, bool? includeSystemTopic = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("mode", mode);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetTopics", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/topics").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             List<string> _queryParameters = new List<string>();
             if (mode != null)
             {
-                _queryParameters.Add(string.Format("mode={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(mode, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("mode={0}", Uri.EscapeDataString(JsonSerializer.Serialize(mode, _jsonSerializerOptions).Trim('"'))));
             }
             if (includeSystemTopic != null)
             {
-                _queryParameters.Add(string.Format("includeSystemTopic={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(mode, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("includeSystemTopic={0}", Uri.EscapeDataString(JsonSerializer.Serialize(mode, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -280,25 +198,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+           
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -307,50 +214,44 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
                     _httpResponse.Dispose();
                 }
                 throw ex;
+
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<IList<string>>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            IList<string> _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IList<string>>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<IList<string>>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
-
-
+        public Policies GetPolicies(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPoliciesAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();  
+        }
         /// <summary>
         /// Get the dump all the policies specified for a namespace.
         /// </summary>
@@ -364,48 +265,25 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<Policies>> GetPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<Policies> GetPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetPolicies", tracingParameters);
-            }
+            
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -426,25 +304,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -453,49 +320,44 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
                     _httpResponse.Dispose();
                 }
                 throw ex;
+
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<Policies>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            Policies _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<Policies>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<Policies>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
-
+        public string CreateNamespace(string tenant, string namespaceParameter, Policies body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return CreateNamespaceAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();    
+        }
         /// <summary>
         /// Creates a new namespace with the specified policies
         /// </summary>
@@ -512,50 +374,28 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> CreateNamespaceAsync(string tenant, string namespaceParameter, Policies body = default(Policies), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> CreateNamespaceAsync(string tenant, string namespaceParameter, Policies body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body != null)
             {
                 body.Validate();
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "CreateNamespace", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -580,27 +420,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
-                _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
+                _httpRequest.Content.Headers.ContentType = System.System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -609,12 +441,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -622,18 +451,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string DeleteNamespace(string tenant, string namespaceParameter, bool? force = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return DeleteNamespaceAsync(tenant, namespaceParameter, force, authoritative, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Delete a namespace and all the topics under it.
         /// </summary>
@@ -651,55 +475,32 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> DeleteNamespaceAsync(string tenant, string namespaceParameter, bool? force = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> DeleteNamespaceAsync(string tenant, string namespaceParameter, bool? force = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("force", force);
-                tracingParameters.Add("authoritative", authoritative);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "DeleteNamespace", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             List<string> _queryParameters = new List<string>();
             if (force != null)
             {
-                _queryParameters.Add(string.Format("force={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(force, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("force={0}", Uri.EscapeDataString(JsonSerializer.Serialize(force, _jsonSerializerOptions).Trim('"'))));
             }
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -725,25 +526,15 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 405 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 405 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -752,12 +543,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -765,18 +553,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string DeleteNamespaceBundle(string tenant, string namespaceParameter, string bundle, bool? force = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return DeleteNamespaceBundleAsync(tenant, namespaceParameter, bundle, force, authoritative, customHeaders).GetAwaiter().GetResult();    
+        }
         /// <summary>
         /// Delete a namespace bundle and all the topics under it.
         /// </summary>
@@ -796,61 +579,37 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> DeleteNamespaceBundleWithHttpMessagesAsync(string tenant, string namespaceParameter, string bundle, bool? force = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> DeleteNamespaceBundleAsync(string tenant, string namespaceParameter, string bundle, bool? force = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (bundle == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "bundle");
+                throw new InvalidOperationException("bundle");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("bundle", bundle);
-                tracingParameters.Add("force", force);
-                tracingParameters.Add("authoritative", authoritative);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "DeleteNamespaceBundle", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/{bundle}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{bundle}", System.Uri.EscapeDataString(bundle));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{bundle}", Uri.EscapeDataString(bundle));
             List<string> _queryParameters = new List<string>();
             if (force != null)
             {
-                _queryParameters.Add(string.Format("force={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(force, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("force={0}", Uri.EscapeDataString(JsonSerializer.Serialize(force, _jsonSerializerOptions).Trim('"'))));
             }
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -876,25 +635,15 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+           
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -903,12 +652,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -916,18 +662,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+           
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public IDictionary<string, IList<string>> GetPermissions(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null) 
+        {
+            return GetPermissionsAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Retrieve the permissions for a namespace.
         /// </summary>
@@ -941,48 +683,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<IDictionary<string, IList<string>>>> GetPermissionsAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<IDictionary<string, IList<string>>> GetPermissionsAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetPermissions", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/permissions").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -1003,25 +721,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1030,12 +737,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -1044,89 +748,63 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<IDictionary<string, IList<string>>>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            IDictionary<string, IList<string>> _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IDictionary<string, IList<string>>>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<IDictionary<string, IList<string>>>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
+        public IDictionary<string, IList<string>> GetPermissionOnSubscription(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPermissionOnSubscriptionAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
-        /// Retrieve the permissions for a namespace.
-        /// </summary>
-        /// <param name='tenant'>
-        /// </param>
-        /// <param name='namespaceParameter'>
-        /// </param>
-        /// <param name='customHeaders'>
-        /// Headers that will be added to request.
-        /// </param>
-        /// <param name='cancellationToken'>
-        /// The cancellation token.
-        /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <return>
-        /// A response object containing the response body and response headers.
-        /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<IDictionary<string, IList<string>>>> GetPermissionOnSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+            /// Retrieve the permissions for a namespace.
+            /// </summary>
+            /// <param name='tenant'>
+            /// </param>
+            /// <param name='namespaceParameter'>
+            /// </param>
+            /// <param name='customHeaders'>
+            /// Headers that will be added to request.
+            /// </param>
+            /// <param name='cancellationToken'>
+            /// The cancellation token.
+            /// </param>
+            /// <return>
+            /// A response object containing the response body and response headers.
+            /// </return>
+        public async ValueTask<IDictionary<string, IList<string>>> GetPermissionOnSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetPermissions", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/permissions/subscription").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -1147,25 +825,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+           
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1174,12 +841,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -1188,35 +852,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<IDictionary<string, IList<string>>>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            IDictionary<string, IList<string>> _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IDictionary<string, IList<string>>>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<IDictionary<string, IList<string>>>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
-
+        public string GrantPermissionOnNamespace(string tenant, string namespaceParameter, string role, IList<string> body = default, Dictionary<string, List<string>> customHeaders = null) 
+        {
+            return GrantPermissionOnNamespaceAsync(tenant, namespaceParameter, role, body, customHeaders).GetAwaiter().GetResult();   
+        }
         /// <summary>
         /// Grant a new permission to a role on a namespace.
         /// </summary>
@@ -1235,52 +896,29 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> GrantPermissionOnNamespaceAsync(string tenant, string namespaceParameter, string role, IList<string> body = default(IList<string>), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> GrantPermissionOnNamespaceAsync(string tenant, string namespaceParameter, string role, IList<string> body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (role == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "role");
+                throw new InvalidOperationException("role");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("role", role);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GrantPermissionOnNamespace", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/permissions/{role}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{role}", System.Uri.EscapeDataString(role));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{role}", Uri.EscapeDataString(role));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -1305,27 +943,20 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 501)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1334,12 +965,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -1347,18 +975,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string GrantPermissionOnSubscription(string property, string namespaceParameter, string subscription, IList<string> body = default, Dictionary<string, List<string>> customHeaders = null) 
+        { 
+          return GrantPermissionOnSubscriptionAsync(property, namespaceParameter, subscription, body, customHeaders).GetAwaiter().GetResult();    
+        }
         /// <summary>
         /// Grant a new permission to a role on a namespace.
         /// </summary>
@@ -1377,52 +1001,29 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> GrantPermissionOnSubscriptionAsync(string property, string namespaceParameter, string subscription, IList<string> body = default(IList<string>), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> GrantPermissionOnSubscriptionAsync(string property, string namespaceParameter, string subscription, IList<string> body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (property == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "property");
+                throw new InvalidOperationException("property");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (subscription == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "subscription");
+                throw new InvalidOperationException("subscription");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("property", property);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("subscription", subscription);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GrantPermissionOnNamespace", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/permissions/subscription/{subscription}").ToString();
-            _url = _url.Replace("{property}", System.Uri.EscapeDataString(property));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{subscription}", System.Uri.EscapeDataString(subscription));
+            _url = _url.Replace("{property}", Uri.EscapeDataString(property));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{subscription}", Uri.EscapeDataString(subscription));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -1447,27 +1048,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+           
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 501)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1476,12 +1069,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -1489,150 +1079,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
-        /// <summary>
-        /// Revoke all permissions to a role on a namespace.
-        /// </summary>
-        /// <param name='tenant'>
-        /// </param>
-        /// <param name='namespaceParameter'>
-        /// </param>
-        /// <param name='role'>
-        /// </param>
-        /// <param name='customHeaders'>
-        /// Headers that will be added to request.
-        /// </param>
-        /// <param name='cancellationToken'>
-        /// The cancellation token.
-        /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <return>
-        /// A response object containing the response body and response headers.
-        /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RevokePermissionsOnNamespaceAsync(string property, string namespaceParameter, string subscription, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public string RevokePermissionsOnNamespace(string property, string namespaceParameter, string subscription, Dictionary<string, List<string>> customHeaders = null)
         {
-            if (tenant == null)
-            {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
-            }
-            if (namespaceParameter == null)
-            {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
-            }
-            if (role == null)
-            {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "role");
-            }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("role", role);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RevokePermissionsOnNamespace", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
-            var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/permissions/{role}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{role}", System.Uri.EscapeDataString(role));
-            // Create HTTP transport objects
-            var _httpRequest = new HttpRequestMessage();
-            HttpResponseMessage _httpResponse = null;
-            _httpRequest.Method = new HttpMethod("DELETE");
-            _httpRequest.RequestUri = new Uri(_url);
-            // Set Headers
-
-
-            if (customHeaders != null)
-            {
-                foreach (var _header in customHeaders)
-                {
-                    if (_httpRequest.Headers.Contains(_header.Key))
-                    {
-                        _httpRequest.Headers.Remove(_header.Key);
-                    }
-                    _httpRequest.Headers.TryAddWithoutValidation(_header.Key, _header.Value);
-                }
-            }
-
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
-            cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
-            cancellationToken.ThrowIfCancellationRequested();
-            string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
-            {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
-                if (_httpResponse.Content != null)
-                {
-                    _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
-                }
-                else
-                {
-                    _responseContent = string.Empty;
-                }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
-                _httpRequest.Dispose();
-                if (_httpResponse != null)
-                {
-                    _httpResponse.Dispose();
-                }
-                throw ex;
-            }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return RevokePermissionsOnNamespaceAsync(property, namespaceParameter, subscription, customHeaders).GetAwaiter().GetResult();
         }
-
-
         /// <summary>
         /// Revoke all permissions to a role on a namespace.
         /// </summary>
@@ -1648,56 +1102,29 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RevokePermissionOnSubscriptionAsync(string property, string namespaceParameter, string subscription, string role, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RevokePermissionsOnNamespaceAsync(string property, string namespaceParameter, string subscription, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (property == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "property");
+                throw new InvalidOperationException("property");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (subscription == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "subscription");
+                throw new InvalidOperationException("subscription");
             }
-            if (role == null)
-            {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "role");
-            }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("role", role);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RevokePermissionsOnNamespace", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
-            var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/permissions/{subscription}/{role}").ToString();
-            _url = _url.Replace("{property}", System.Uri.EscapeDataString(property));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{subscription}", System.Uri.EscapeDataString(subscription));
-            _url = _url.Replace("{role}", System.Uri.EscapeDataString(role));
+            
+            var _baseUrl = _uri.AbsoluteUri;
+            var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/permissions/{subscription}").ToString();
+            _url = _url.Replace("{property}", Uri.EscapeDataString(property));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{subscription}", Uri.EscapeDataString(subscription));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -1718,25 +1145,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1745,12 +1161,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -1758,15 +1171,108 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
+            return _httpResponse.ReasonPhrase;
+        }
+
+        public string RevokePermissionOnSubscription(string property, string namespaceParameter, string subscription, string role, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RevokePermissionOnSubscriptionAsync(property, namespaceParameter, subscription, role, customHeaders).GetAwaiter().GetResult(); 
+        }
+        /// <summary>
+        /// Revoke all permissions to a role on a namespace.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='role'>
+        /// </param>
+        /// <param name='customHeaders'>
+        /// Headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        /// <return>
+        /// A response object containing the response body and response headers.
+        /// </return>
+        public async ValueTask<string> RevokePermissionOnSubscriptionAsync(string property, string namespaceParameter, string subscription, string role, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if (property == null)
             {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
+                throw new InvalidOperationException("property");
             }
-            return _result;
+            if (namespaceParameter == null)
+            {
+                throw new InvalidOperationException("namespaceParameter");
+            }
+            if (subscription == null)
+            {
+                throw new InvalidOperationException("subscription");
+            }
+            if (role == null)
+            {
+                throw new InvalidOperationException("role");
+            }
+            
+            var _baseUrl = _uri.AbsoluteUri;
+            var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/permissions/{subscription}/{role}").ToString();
+            _url = _url.Replace("{property}", Uri.EscapeDataString(property));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{subscription}", Uri.EscapeDataString(subscription));
+            _url = _url.Replace("{role}", Uri.EscapeDataString(role));
+            // Create HTTP transport objects
+            var _httpRequest = new HttpRequestMessage();
+            HttpResponseMessage _httpResponse = null;
+            _httpRequest.Method = new HttpMethod("DELETE");
+            _httpRequest.RequestUri = new Uri(_url);
+            // Set Headers
+
+
+            if (customHeaders != null)
+            {
+                foreach (var _header in customHeaders)
+                {
+                    if (_httpRequest.Headers.Contains(_header.Key))
+                    {
+                        _httpRequest.Headers.Remove(_header.Key);
+                    }
+                    _httpRequest.Headers.TryAddWithoutValidation(_header.Key, _header.Value);
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            cancellationToken.ThrowIfCancellationRequested();
+            string _responseContent = null;
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
+            {
+                if (_httpResponse.Content != null)
+                {
+                    _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _responseContent = string.Empty;
+                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
+                _httpRequest.Dispose();
+                if (_httpResponse != null)
+                {
+                    _httpResponse.Dispose();
+                }
+                throw ex;
+            }
+            return _httpResponse.ReasonPhrase;
+        }
+
+        public IList<string> GetNamespaceReplicationClusters(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetNamespaceReplicationClustersAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
         /// <summary>
         /// Get the replication clusters for a namespace.
@@ -1781,48 +1287,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<IList<string>>> GetNamespaceReplicationClustersAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<IList<string>> GetNamespaceReplicationClustersAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetNamespaceReplicationClusters", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/replication").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -1843,25 +1325,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1870,12 +1341,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -1884,34 +1352,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<IList<string>>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            IList<string> _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IList<string>>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<IList<string>>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
+        public string SetNamespaceReplicationClusters(string tenant, string namespaceParameter, IList<string> body, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return SetNamespaceReplicationClustersAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();    
+        }
         /// <summary>
         /// Set the replication clusters for a namespace.
         /// </summary>
@@ -1928,50 +1394,28 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetNamespaceReplicationClustersAsync(string tenant, string namespaceParameter, IList<string> body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetNamespaceReplicationClustersAsync(string tenant, string namespaceParameter, IList<string> body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetNamespaceReplicationClusters", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/replication").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -1996,27 +1440,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -2025,12 +1461,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -2038,17 +1471,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public int? GetNamespaceMessageTTL(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetNamespaceMessageTTLAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();   
+        }
         /// <summary>
         /// Get the message TTL for the namespace
         /// </summary>
@@ -2062,48 +1492,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetNamespaceMessageTTLAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetNamespaceMessageTTLAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetNamespaceMessageTTL", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/messageTTL").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -2124,25 +1530,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -2151,12 +1546,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -2165,35 +1557,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            int? _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
-
+        public string SetNamespaceMessageTTL(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return SetNamespaceMessageTTLAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set message TTL in seconds for namespace
         /// </summary>
@@ -2210,46 +1599,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetNamespaceMessageTTLAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetNamespaceMessageTTLAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetNamespaceMessageTTL", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/messageTTL").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -2272,26 +1639,18 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -2300,12 +1659,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -2313,18 +1669,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string RemoveNamespaceMessageTTL(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveNamespaceMessageTTLAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set message TTL in seconds for namespace
         /// </summary>
@@ -2338,45 +1689,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveNamespaceMessageTTLAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveNamespaceMessageTTLAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveNamespaceMessageTTL", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/messageTTL").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -2397,25 +1727,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -2424,12 +1743,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -2437,18 +1753,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public int? GetSubscriptionExpirationTime(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSubscriptionExpirationTimeAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get the subscription expiration time for the namespace
         /// </summary>
@@ -2462,48 +1774,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetSubscriptionExpirationTimeAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetSubscriptionExpirationTimeAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSubscriptionExpirationTime", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionExpirationTime").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -2524,25 +1812,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -2551,12 +1828,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -2565,34 +1839,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            int? _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
+        public string SetSubscriptionExpirationTime(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return SetSubscriptionExpirationTimeAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set subscription expiration time in minutes for namespace
         /// </summary>
@@ -2609,46 +1881,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetSubscriptionExpirationTimeAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetSubscriptionExpirationTimeAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSubscriptionExpirationTime", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionExpirationTime").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -2671,26 +1921,18 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -2699,12 +1941,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -2712,18 +1951,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string RemoveSubscriptionExpirationTime(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveSubscriptionExpirationTimeAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set subscription expiration time in minutes for namespace
         /// </summary>
@@ -2740,46 +1974,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveSubscriptionExpirationTimeAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveSubscriptionExpirationTimeAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSubscriptionExpirationTime", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionExpirationTime").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -2800,22 +2012,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -2824,12 +2028,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -2837,18 +2038,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public bool? GetDeduplication(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetDeduplicationAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult(); 
+        }
         /// <summary>
         /// Get broker side deduplication for all topics in a namespace
         /// </summary>
@@ -2862,48 +2059,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<bool?>> GetDeduplicationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<bool?> GetDeduplicationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetDeduplication", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/deduplication").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -2924,25 +2097,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -2951,12 +2113,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -2965,34 +2124,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<bool?>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            bool? _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<bool?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<bool?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
+        public string ModifyDeduplication(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return  ModifyDeduplicationAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Enable or disable broker side deduplication for all topics in a namespace
         /// </summary>
@@ -3010,46 +2167,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> ModifyDeduplicationAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> ModifyDeduplicationAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "ModifyDeduplication", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/deduplication").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -3072,26 +2207,18 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -3100,12 +2227,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -3113,17 +2237,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string RemoveDeduplication(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return RemoveDeduplicationAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Remove broker side deduplication for all topics in a namespace
         /// </summary>
@@ -3137,45 +2258,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveDeduplicationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveDeduplicationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveDeduplication", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/deduplication").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -3196,25 +2296,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -3223,12 +2312,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -3236,18 +2322,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string SetAutoTopicCreation(string tenant, string namespaceParameter, AutoTopicCreationOverride body, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetAutoTopicCreationAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Override broker's allowAutoTopicCreation setting for a namespace
         /// </summary>
@@ -3264,50 +2346,28 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetAutoTopicCreationAsync(string tenant, string namespaceParameter, AutoTopicCreationOverride body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetAutoTopicCreationAsync(string tenant, string namespaceParameter, AutoTopicCreationOverride body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetAutoTopicCreation", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/autoTopicCreation").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -3332,27 +2392,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 400 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 406)
+            if ((int)_statusCode != 200 && (int)_statusCode != 400 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 406)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -3361,12 +2413,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -3374,17 +2423,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string RemoveAutoTopicCreation(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveAutoTopicCreationAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Remove override of broker's allowAutoTopicCreation in a namespace
         /// </summary>
@@ -3398,45 +2444,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveAutoTopicCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveAutoTopicCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveAutoTopicCreation", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/autoTopicCreation").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -3457,25 +2482,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -3484,12 +2498,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -3497,17 +2508,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public bool? GetAutoTopicCreation(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetAutoTopicCreationAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Remove override of broker's allowAutoTopicCreation in a namespace
         /// </summary>
@@ -3521,45 +2529,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<bool?>> GetAutoTopicCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<bool?> GetAutoTopicCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveAutoTopicCreation", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/autoTopicCreation").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -3580,25 +2567,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -3607,12 +2583,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -3621,35 +2594,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<bool?>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            bool? _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<bool?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<bool?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
-
+        public string SetAutoSubscriptionCreation(string tenant, string namespaceParameter, AutoSubscriptionCreationOverride body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+          return  SetAutoSubscriptionCreationAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Override broker's allowAutoSubscriptionCreation setting for a namespace
         /// </summary>
@@ -3666,46 +2636,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetAutoSubscriptionCreationWAsync(string tenant, string namespaceParameter, AutoSubscriptionCreationOverride body = default(AutoSubscriptionCreationOverride), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetAutoSubscriptionCreationAsync(string tenant, string namespaceParameter, AutoSubscriptionCreationOverride body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetAutoSubscriptionCreation", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/autoSubscriptionCreation").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -3730,27 +2678,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 400 && (int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 400 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -3759,12 +2699,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -3772,17 +2709,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string RemoveAutoSubscriptionCreation(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return RemoveAutoSubscriptionCreationAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Remove override of broker's allowAutoSubscriptionCreation in a namespace
         /// </summary>
@@ -3796,45 +2729,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveAutoSubscriptionCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveAutoSubscriptionCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveAutoSubscriptionCreation", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/autoSubscriptionCreation").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -3855,25 +2767,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -3882,12 +2783,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -3895,18 +2793,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public bool? GetAutoSubscriptionCreation(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetAutoSubscriptionCreationAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Remove override of broker's allowAutoSubscriptionCreation in a namespace
         /// </summary>
@@ -3920,45 +2814,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<bool?>> GetAutoSubscriptionCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<bool?> GetAutoSubscriptionCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveAutoSubscriptionCreation", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+           
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/autoSubscriptionCreation").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -3979,25 +2852,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -4006,12 +2868,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -4020,35 +2879,33 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<bool?>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            bool? _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<bool?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<bool?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
+            
             return _result;
         }
 
-
+        public BundlesData GetBundlesData(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return  GetBundlesDataAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get the bundles split data.
         /// </summary>
@@ -4062,48 +2919,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<BundlesData>> GetBundlesDataAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<BundlesData> GetBundlesDataAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetBundlesData", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/bundles").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -4124,25 +2957,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -4151,12 +2973,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -4165,35 +2984,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<BundlesData>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            BundlesData _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<BundlesData>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<BundlesData>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
-
+        public string UnloadNamespace(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return UnloadNamespaceAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Unload namespace
         /// </summary>
@@ -4217,45 +3033,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> UnloadNamespaceAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> UnloadNamespaceAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "UnloadNamespace", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/unload").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -4276,25 +3071,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -4303,12 +3087,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -4316,18 +3097,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string UnloadNamespaceBundle(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return UnloadNamespaceBundleAsync(tenant, namespaceParameter, bundle, authoritative, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Unload a namespace bundle
         /// </summary>
@@ -4345,56 +3121,33 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> UnloadNamespaceBundleAsync(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> UnloadNamespaceBundleAsync(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (bundle == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "bundle");
+                throw new InvalidOperationException("bundle");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("bundle", bundle);
-                tracingParameters.Add("authoritative", authoritative);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "UnloadNamespaceBundle", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+           
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/{bundle}/unload").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{bundle}", System.Uri.EscapeDataString(bundle));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{bundle}", Uri.EscapeDataString(bundle));
             List<string> _queryParameters = new List<string>();
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -4420,25 +3173,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 307 && (int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -4447,12 +3189,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -4460,18 +3199,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string SplitNamespaceBundle(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, bool? unload = false, string splitAlgorithmName = default, IList<long> body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SplitNamespaceBundleAsync(tenant, namespaceParameter, bundle, authoritative, unload, splitAlgorithmName, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Split a namespace bundle
         /// </summary>
@@ -4493,66 +3228,41 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SplitNamespaceBundleAsync(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, bool? unload = false, string splitAlgorithmName = default(string), IList<long> body = default(IList<long>), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SplitNamespaceBundleAsync(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, bool? unload = false, string splitAlgorithmName = default, IList<long> body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (bundle == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "bundle");
+                throw new InvalidOperationException("bundle");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("bundle", bundle);
-                tracingParameters.Add("authoritative", authoritative);
-                tracingParameters.Add("unload", unload);
-                tracingParameters.Add("splitAlgorithmName", splitAlgorithmName);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SplitNamespaceBundle", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/{bundle}/split").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{bundle}", System.Uri.EscapeDataString(bundle));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{bundle}", Uri.EscapeDataString(bundle));
             List<string> _queryParameters = new List<string>();
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (unload != null)
             {
-                _queryParameters.Add(string.Format("unload={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(unload, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("unload={0}", Uri.EscapeDataString(JsonSerializer.Serialize(unload, _jsonSerializerOptions).Trim('"'))));
             }
             if (splitAlgorithmName != null)
             {
-                _queryParameters.Add(string.Format("splitAlgorithmName={0}", System.Uri.EscapeDataString(splitAlgorithmName)));
+                _queryParameters.Add(string.Format("splitAlgorithmName={0}", Uri.EscapeDataString(splitAlgorithmName)));
             }
             if (_queryParameters.Count > 0)
             {
@@ -4582,27 +3292,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 307 && (int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -4611,12 +3313,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -4624,54 +3323,37 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return _httpResponse.ReasonPhrase;
         }
 
-        public async Task<Microsoft.Rest.HttpOperationResponse<TopicHashPositions>> GetTopicHashPositionsAsync(string tenant, string namespaceParameter, string bundle, List<string> topics = default(List<string>), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public TopicHashPositions GetTopicHashPositions(string tenant, string namespaceParameter, string bundle, List<string> topics = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetTopicHashPositionsAsync(tenant, namespaceParameter, bundle, topics, customHeaders).GetAwaiter().GetResult();
+        }
+        public async ValueTask<TopicHashPositions> GetTopicHashPositionsAsync(string tenant, string namespaceParameter, string bundle, List<string> topics = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (bundle == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "bundle");
+                throw new InvalidOperationException("bundle");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("bundle", bundle);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SplitNamespaceBundle", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/{bundle}/topicHashPositions").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{bundle}", System.Uri.EscapeDataString(bundle));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{bundle}", Uri.EscapeDataString(bundle));
             List<string> _queryParameters = new List<string>();
             if (topics != null)
             {
-                _queryParameters.Add(string.Format("topics={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(topics, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("topics={0}", Uri.EscapeDataString(JsonSerializer.Serialize(topics, _jsonSerializerOptions).Trim('"'))));
             }
             
             if (_queryParameters.Count > 0)
@@ -4698,25 +3380,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -4725,12 +3396,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -4739,35 +3407,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<TopicHashPositions>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            TopicHashPositions _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<BundlesData>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<TopicHashPositions>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
-
+        public PublishRate GetPublishRate(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetPublishRateAsync(property, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get publish rate configuration for specified topic.
         /// </summary>
@@ -4783,46 +3448,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<PublishRate>> GetPublishRateAsync(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<PublishRate> GetPublishRateAsync(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (property == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "property");
+                throw new InvalidOperationException("property");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("topic", topic);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetPublishRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/publishRate").ToString();
-            _url = _url.Replace("{property}", System.Uri.EscapeDataString(property));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{property}", Uri.EscapeDataString(property));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -4843,25 +3486,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 405 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 405 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -4870,12 +3502,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -4884,34 +3513,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<TopicHashPositions>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            PublishRate _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<BundlesData>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<PublishRate>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
+        public string SetPublishRate(string property, string namespaceParameter, PublishRate body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return SetPublishRateAsync(property, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set message publish rate configuration for specified topic.
         /// </summary>
@@ -4930,47 +3557,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetPublishRateAsync(string property, string namespaceParameter, PublishRate body = default(PublishRate), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetPublishRateAsync(string property, string namespaceParameter, PublishRate body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (property == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "property");
+                throw new InvalidOperationException("property");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("topic", topic);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetPublishRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/publishRate").ToString();
-            _url = _url.Replace("{property}", System.Uri.EscapeDataString(property));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{property}", Uri.EscapeDataString(property));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -4995,27 +3599,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 405 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 405 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -5024,12 +3620,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -5037,17 +3630,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string RemovePublishRate(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return RemovePublishRateAsync(property, namespaceParameter, customHeaders).GetAwaiter().GetResult();`
+        }
         /// <summary>
         /// Remove message publish rate configuration for specified topic.
         /// </summary>
@@ -5063,46 +3653,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemovePublishRateAsync(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemovePublishRateAsync(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (property == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "property");
+                throw new InvalidOperationException("property");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("topic", topic);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemovePublishRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/publishRate").ToString();
-            _url = _url.Replace("{property}", System.Uri.EscapeDataString(property));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{property}", Uri.EscapeDataString(property));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -5123,25 +3691,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 405 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 405 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -5150,12 +3707,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -5163,18 +3717,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public DispatchRate GetDispatchRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetDispatchRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get dispatch-rate configured for the namespace, -1 represents not
         /// configured yet
@@ -5189,48 +3739,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<DispatchRate>> GetDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<DispatchRate> GetDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/dispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -5251,25 +3777,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -5278,12 +3793,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -5292,34 +3804,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<DispatchRate>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            DispatchRate _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<DispatchRate>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<DispatchRate>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
+        public string SetDispatchRate(string tenant, string namespaceParameter, DispatchRate body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetDispatchRateAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set dispatch-rate throttling for all topics of the namespace
         /// </summary>
@@ -5336,46 +3846,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetDispatchRateAsync(string tenant, string namespaceParameter, DispatchRateImpl body = default(DispatchRateImpl), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetDispatchRateAsync(string tenant, string namespaceParameter, DispatchRate body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/dispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -5400,27 +3888,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -5429,12 +3909,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -5442,15 +3919,12 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
+        }
+        public string DeleteDispatchRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return DeleteDispatchRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -5466,45 +3940,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> DeleteDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> DeleteDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "DeleteDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/dispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -5525,25 +3978,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -5552,31 +3994,25 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
                     _httpResponse.Dispose();
                 }
                 throw ex;
+
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public DispatchRate GetSubscriptionDispatchRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetSubscriptionDispatchRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get Subscription dispatch-rate configured for the namespace, -1 represents
         /// not configured yet
@@ -5591,48 +4027,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<DispatchRate>> GetSubscriptionDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<DispatchRate> GetSubscriptionDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSubscriptionDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionDispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -5653,25 +4065,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -5680,12 +4081,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -5694,34 +4092,33 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<DispatchRate>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            DispatchRate _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<DispatchRate>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<DispatchRate>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
+            
             return _result;
         }
 
+        public string SetSubscriptionDispatchRate(string tenant, string namespaceParameter, DispatchRate body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetSubscriptionDispatchRateAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set Subscription dispatch-rate throttling for all topics of the namespace
         /// </summary>
@@ -5738,46 +4135,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetSubscriptionDispatchRateAsync(string tenant, string namespaceParameter, DispatchRateImpl body = default(DispatchRateImpl), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetSubscriptionDispatchRateAsync(string tenant, string namespaceParameter, DispatchRate body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSubscriptionDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionDispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -5802,27 +4177,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -5831,12 +4198,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -5844,17 +4208,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string DeleteSubscriptionDispatchRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return DeleteSubscriptionDispatchRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Delete Subscription dispatch-rate throttling for all topics of the
         /// namespace
@@ -5869,45 +4230,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> DeleteSubscriptionDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> DeleteSubscriptionDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "DeleteSubscriptionDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionDispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -5928,25 +4268,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -5955,12 +4284,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -5968,18 +4294,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public SubscribeRate GetSubscribeRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetSubscribeRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get subscribe-rate configured for the namespace
         /// </summary>
@@ -5993,48 +4315,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<SubscribeRate>> GetSubscribeRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<SubscribeRate> GetSubscribeRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSubscribeRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscribeRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -6055,25 +4353,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -6082,12 +4369,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -6096,34 +4380,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<SubscribeRate>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            SubscribeRate _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<SubscribeRate>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<SubscribeRate>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
+        public string SetSubscribeRate(string tenant, string namespaceParameter, SubscribeRate body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return SetSubscribeRateAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set subscribe-rate throttling for all topics of the namespace
         /// </summary>
@@ -6140,46 +4422,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetSubscribeRateAsync(string tenant, string namespaceParameter, SubscribeRate body = default(SubscribeRate), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetSubscribeRateAsync(string tenant, string namespaceParameter, SubscribeRate body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSubscribeRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscribeRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -6204,27 +4464,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -6233,12 +4485,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -6246,17 +4495,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+           
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string DeleteSubscribeRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return DeleteSubscribeRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Delete subscribe-rate throttling for all topics of the namespace
         /// </summary>
@@ -6270,45 +4516,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> DeleteSubscribeRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> DeleteSubscribeRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "DeleteSubscribeRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscribeRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -6329,25 +4554,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+           
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -6356,12 +4570,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -6369,17 +4580,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public DispatchRate GetReplicatorDispatchRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetReplicatorDispatchRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get replicator dispatch-rate configured for the namespace, -1 represents
         /// not configured yet
@@ -6394,48 +4602,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<DispatchRate>> GetReplicatorDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<DispatchRate> GetReplicatorDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetReplicatorDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/replicatorDispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -6456,25 +4640,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -6483,12 +4656,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -6497,34 +4667,33 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<DispatchRate>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            DispatchRate _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<DispatchRate>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<DispatchRate>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
+            
             return _result;
         }
 
+        public string SetReplicatorDispatchRate(string tenant, string namespaceParameter, DispatchRate body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetReplicatorDispatchRateAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set replicator dispatch-rate throttling for all topics of the namespace
         /// </summary>
@@ -6541,46 +4710,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetReplicatorDispatchRateAsync(string tenant, string namespaceParameter, DispatchRateImpl body = default(DispatchRateImpl), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetReplicatorDispatchRateAsync(string tenant, string namespaceParameter, DispatchRate body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetReplicatorDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/replicatorDispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -6605,27 +4752,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -6634,12 +4773,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -6647,17 +4783,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+           
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string RemoveReplicatorDispatchRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return RemoveReplicatorDispatchRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Remove replicator dispatch-rate throttling for all topics of the namespace
         /// </summary>
@@ -6671,45 +4804,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveReplicatorDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveReplicatorDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveReplicatorDispatchRate", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+           
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/replicatorDispatchRate").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -6730,25 +4842,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -6757,12 +4858,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -6770,18 +4868,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string SetBacklogQuota(string tenant, string namespaceParameter, string backlogQuotaType = default, BacklogQuota body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetBacklogQuotaAsync(tenant, namespaceParameter, backlogQuotaType, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set a backlog quota for all the topics on a namespace.
         /// </summary>
@@ -6801,51 +4895,28 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetBacklogQuotaAsync(string tenant, string namespaceParameter, string backlogQuotaType = default(string), BacklogQuota body = default(BacklogQuota), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetBacklogQuotaAsync(string tenant, string namespaceParameter, string backlogQuotaType = default, BacklogQuota body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("backlogQuotaType", backlogQuotaType);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetBacklogQuota", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/backlogQuota").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             List<string> _queryParameters = new List<string>();
             if (backlogQuotaType != null)
             {
-                _queryParameters.Add(string.Format("backlogQuotaType={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(backlogQuotaType, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("backlogQuotaType={0}", Uri.EscapeDataString(JsonSerializer.Serialize(backlogQuotaType, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -6875,27 +4946,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -6904,12 +4967,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -6917,17 +4977,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string RemoveBacklogQuota(string tenant, string namespaceParameter, string backlogQuotaType = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return  RemoveBacklogQuotaAsync(tenant, namespaceParameter, backlogQuotaType, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Remove a backlog quota policy from a namespace.
         /// </summary>
@@ -6944,50 +5001,28 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveBacklogQuotaAsync(string tenant, string namespaceParameter, string backlogQuotaType = default(string), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveBacklogQuotaAsync(string tenant, string namespaceParameter, string backlogQuotaType = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("backlogQuotaType", backlogQuotaType);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveBacklogQuota", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/backlogQuota").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             List<string> _queryParameters = new List<string>();
             if (backlogQuotaType != null)
             {
-                _queryParameters.Add(string.Format("backlogQuotaType={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(backlogQuotaType, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("backlogQuotaType={0}", Uri.EscapeDataString(JsonSerializer.Serialize(backlogQuotaType, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -7013,25 +5048,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+           
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -7040,12 +5064,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -7053,17 +5074,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
-
+        public IDictionary<string, BacklogQuota> GetBacklogQuotaMap(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetBacklogQuotaMapAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get backlog quota map on a namespace.
         /// </summary>
@@ -7077,48 +5094,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<IDictionary<string, BacklogQuota>>> GetBacklogQuotaMapAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<IDictionary<string, BacklogQuota>> GetBacklogQuotaMapAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetBacklogQuotaMap", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+           
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/backlogQuotaMap").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -7139,25 +5132,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -7166,12 +5148,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -7180,34 +5159,33 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<IDictionary<string, BacklogQuota>>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            IDictionary<string, BacklogQuota> _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IDictionary<string, BacklogQuota>>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<IDictionary<string, BacklogQuota>>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
+            
             return _result;
         }
 
+        public RetentionPolicies GetRetention(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetRetentionAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get retention config on a namespace.
         /// </summary>
@@ -7221,48 +5199,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<RetentionPolicies>> GetRetentionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<RetentionPolicies> GetRetentionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetRetention", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/retention").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -7283,25 +5237,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -7310,12 +5253,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -7324,34 +5264,32 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<RetentionPolicies>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            RetentionPolicies _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<RetentionPolicies>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<RetentionPolicies>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
+        public string SetRetention(string tenant, string namespaceParameter, RetentionPolicies body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetRetentionAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set retention configuration on a namespace.
         /// </summary>
@@ -7368,46 +5306,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetRetentionAsync(string tenant, string namespaceParameter, RetentionPolicies body = default(RetentionPolicies), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetRetentionAsync(string tenant, string namespaceParameter, RetentionPolicies body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetRetention", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/retention").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -7432,27 +5348,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -7461,12 +5369,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -7474,17 +5379,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string RemoveRetention(string tenant, string namespaceParameter, RetentionPolicies body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return RemoveRetentionAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Remove retention configuration on a namespace.
         /// </summary>
@@ -7501,46 +5403,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveRetentionAsync(string tenant, string namespaceParameter, RetentionPolicies body = default(RetentionPolicies), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveRetentionAsync(string tenant, string namespaceParameter, RetentionPolicies body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveRetention", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/retention").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -7565,27 +5445,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+           
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -7594,12 +5466,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -7607,18 +5476,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public string SetPersistence(string tenant, string namespaceParameter, PersistencePolicies body, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetPersistenceAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set the persistence configuration for all the topics on a namespace.
         /// </summary>
@@ -7635,50 +5500,28 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetPersistenceAsync(string tenant, string namespaceParameter, PersistencePolicies body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetPersistenceAsync(string tenant, string namespaceParameter, PersistencePolicies body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetPersistence", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/persistence").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -7703,27 +5546,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 400 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 400 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -7732,12 +5567,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -7745,17 +5577,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+           
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string DeletePersistence(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return DeletePersistenceAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Delete the persistence configuration for all topics on a namespace
         /// </summary>
@@ -7769,45 +5598,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> DeletePersistenceAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> DeletePersistenceAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "DeletePersistence", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/persistence").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -7828,25 +5636,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -7855,12 +5652,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -7868,18 +5662,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-
+        public BookieAffinityGroupData GetBookieAffinityGroup(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetBookieAffinityGroupAsync(property, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get the bookie-affinity-group from namespace-local policy.
         /// </summary>
@@ -7893,48 +5683,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<BookieAffinityGroupData>> GetBookieAffinityGroupAsync(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<BookieAffinityGroupData> GetBookieAffinityGroupAsync(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (property == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "property");
+                throw new InvalidOperationException("property");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("property", property);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetBookieAffinityGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/persistence/bookieAffinity").ToString();
-            _url = _url.Replace("{property}", System.Uri.EscapeDataString(property));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{property}", Uri.EscapeDataString(property));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -7955,25 +5721,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -7982,12 +5737,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -7996,34 +5748,33 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<BookieAffinityGroupData>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            BookieAffinityGroupData _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<BookieAffinityGroupData>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<BookieAffinityGroupData>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
+            
             return _result;
         }
 
+        public string DeleteBookieAffinityGroup(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return DeleteBookieAffinityGroupAsync(property, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Delete the bookie-affinity-group from namespace-local policy.
         /// </summary>
@@ -8037,45 +5788,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> DeleteBookieAffinityGroupAsync(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> DeleteBookieAffinityGroupAsync(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (property == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "property");
+                throw new InvalidOperationException("property");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("property", property);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "DeleteBookieAffinityGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{property}/{namespace}/persistence/bookieAffinity").ToString();
-            _url = _url.Replace("{property}", System.Uri.EscapeDataString(property));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{property}", Uri.EscapeDataString(property));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -8096,25 +5826,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -8123,12 +5842,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -8136,17 +5852,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string SetBookieAffinityGroup(string tenant, string namespaceParameter, BookieAffinityGroupData body = default, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetBookieAffinityGroupAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set the bookie-affinity-group to namespace-persistent policy.
         /// </summary>
@@ -8163,46 +5876,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetBookieAffinityGroupAsync(string tenant, string namespaceParameter, BookieAffinityGroupData body = default(BookieAffinityGroupData), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetBookieAffinityGroupAsync(string tenant, string namespaceParameter, BookieAffinityGroupData body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetBookieAffinityGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/persistence/bookieAffinity").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -8227,27 +5918,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -8256,12 +5939,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -8269,17 +5949,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+           
+            return _httpResponse.ReasonPhrase;
         }
 
+        public PersistencePolicies GetPersistence(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetPersistenceAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get the persistence configuration for a namespace.
         /// </summary>
@@ -8293,48 +5970,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<PersistencePolicies>> GetPersistenceAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<PersistencePolicies> GetPersistenceAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetPersistence", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/persistence").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -8355,25 +6008,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -8382,12 +6024,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -8396,31 +6035,26 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<PersistencePolicies>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            PersistencePolicies _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<PersistencePolicies>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<PersistencePolicies>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
+            
             return _result;
         }
 
@@ -8451,15 +6085,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> ClearNamespaceBacklogAsync(string tenant, string namespaceParameter, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> ClearNamespaceBacklogAsync(string tenant, string namespaceParameter, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -8475,14 +6109,14 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "ClearNamespaceBacklog", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/clearBacklog").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             List<string> _queryParameters = new List<string>();
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -8516,12 +6150,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -8549,7 +6183,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -8588,19 +6222,19 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> ClearNamespaceBacklogForSubscriptionAsync(string tenant, string namespaceParameter, string subscription, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> ClearNamespaceBacklogForSubscriptionAsync(string tenant, string namespaceParameter, string subscription, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (subscription == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "subscription");
+                throw new InvalidOperationException("subscription");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -8617,15 +6251,15 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "ClearNamespaceBacklogForSubscription", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/clearBacklog/{subscription}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{subscription}", System.Uri.EscapeDataString(subscription));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{subscription}", Uri.EscapeDataString(subscription));
             List<string> _queryParameters = new List<string>();
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -8659,12 +6293,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -8692,7 +6326,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -8732,19 +6366,19 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> ClearNamespaceBundleBacklogAsync(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> ClearNamespaceBundleBacklogAsync(string tenant, string namespaceParameter, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (bundle == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "bundle");
+                throw new InvalidOperationException("bundle");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -8761,15 +6395,15 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "ClearNamespaceBundleBacklog", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/{bundle}/clearBacklog").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{bundle}", System.Uri.EscapeDataString(bundle));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{bundle}", Uri.EscapeDataString(bundle));
             List<string> _queryParameters = new List<string>();
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -8803,12 +6437,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -8836,7 +6470,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -8878,23 +6512,23 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> ClearNamespaceBundleBacklogForSubscriptionAsync(string tenant, string namespaceParameter, string subscription, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> ClearNamespaceBundleBacklogForSubscriptionAsync(string tenant, string namespaceParameter, string subscription, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (subscription == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "subscription");
+                throw new InvalidOperationException("subscription");
             }
             if (bundle == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "bundle");
+                throw new InvalidOperationException("bundle");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -8912,16 +6546,16 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "ClearNamespaceBundleBacklogForSubscription", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/{bundle}/clearBacklog/{subscription}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{subscription}", System.Uri.EscapeDataString(subscription));
-            _url = _url.Replace("{bundle}", System.Uri.EscapeDataString(bundle));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{subscription}", Uri.EscapeDataString(subscription));
+            _url = _url.Replace("{bundle}", Uri.EscapeDataString(bundle));
             List<string> _queryParameters = new List<string>();
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -8955,12 +6589,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -8988,7 +6622,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -9028,19 +6662,19 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> UnsubscribeNamespaceAsync(string tenant, string namespaceParameter, string subscription, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> UnsubscribeNamespaceAsync(string tenant, string namespaceParameter, string subscription, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (subscription == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "subscription");
+                throw new InvalidOperationException("subscription");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -9057,15 +6691,15 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "UnsubscribeNamespace", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/unsubscribe/{subscription}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{subscription}", System.Uri.EscapeDataString(subscription));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{subscription}", Uri.EscapeDataString(subscription));
             List<string> _queryParameters = new List<string>();
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -9099,12 +6733,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -9132,7 +6766,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -9173,23 +6807,23 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> UnsubscribeNamespaceBundleAsync(string tenant, string namespaceParameter, string subscription, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> UnsubscribeNamespaceBundleAsync(string tenant, string namespaceParameter, string subscription, string bundle, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (subscription == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "subscription");
+                throw new InvalidOperationException("subscription");
             }
             if (bundle == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "bundle");
+                throw new InvalidOperationException("bundle");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -9207,16 +6841,16 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "UnsubscribeNamespaceBundle", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/{bundle}/unsubscribe/{subscription}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{subscription}", System.Uri.EscapeDataString(subscription));
-            _url = _url.Replace("{bundle}", System.Uri.EscapeDataString(bundle));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{subscription}", Uri.EscapeDataString(subscription));
+            _url = _url.Replace("{bundle}", Uri.EscapeDataString(bundle));
             List<string> _queryParameters = new List<string>();
             if (authoritative != null)
             {
-                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+                _queryParameters.Add(string.Format("authoritative={0}", Uri.EscapeDataString(JsonSerializer.Serialize(authoritative, _jsonSerializerOptions).Trim('"'))));
             }
             if (_queryParameters.Count > 0)
             {
@@ -9250,12 +6884,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -9283,7 +6917,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -9322,15 +6956,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetSubscriptionAuthModeAsync(string tenant, string namespaceParameter, string body = default(string), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetSubscriptionAuthModeAsync(string tenant, string namespaceParameter, string body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -9346,10 +6980,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSubscriptionAuthMode", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionAuthMode").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -9374,8 +7008,8 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
             // Send Request
@@ -9384,12 +7018,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -9417,7 +7051,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -9452,15 +7086,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<SubscriptionAuthMode>> GetSubscriptionAuthModeAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<SubscriptionAuthMode>> GetSubscriptionAuthModeAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -9476,10 +7110,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSubscriptionAuthMode", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionAuthMode").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -9508,12 +7142,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -9541,7 +7175,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<PersistencePolicies>();
+            var _result = new <PersistencePolicies>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -9550,16 +7184,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<PersistencePolicies>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<PersistencePolicies>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -9597,15 +7231,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> ModifyEncryptionRequiredAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> ModifyEncryptionRequiredAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -9621,10 +7255,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "ModifyEncryptionRequired", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/encryptionRequired").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -9647,8 +7281,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -9656,12 +7290,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -9689,7 +7323,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -9699,15 +7333,15 @@ namespace SharpPulsar.Admin
             return _result;
         }
 
-        public async Task<Microsoft.Rest.HttpOperationResponse<EncryptionRequired>> GetEncryptionRequiredAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<EncryptionRequired>> GetEncryptionRequiredAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -9723,10 +7357,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSubscriptionAuthMode", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/encryptionRequired").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -9755,12 +7389,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -9788,7 +7422,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<PersistencePolicies>();
+            var _result = new <PersistencePolicies>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -9797,16 +7431,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<PersistencePolicies>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<PersistencePolicies>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -9845,15 +7479,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<DelayedDeliveryPolicies>> GetDelayedDeliveryPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<DelayedDeliveryPolicies>> GetDelayedDeliveryPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -9868,10 +7502,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetDelayedDeliveryPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/delayedDelivery").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -9900,12 +7534,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -9933,7 +7567,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<DelayedDeliveryPolicies>();
+            var _result = new <DelayedDeliveryPolicies>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -9942,16 +7576,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<DelayedDeliveryPolicies>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<DelayedDeliveryPolicies>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -9989,15 +7623,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetDelayedDeliveryPoliciesAsync(string tenant, string namespaceParameter, DelayedDeliveryPolicies body = default(DelayedDeliveryPolicies), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetDelayedDeliveryPoliciesAsync(string tenant, string namespaceParameter, DelayedDeliveryPolicies body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -10013,10 +7647,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetDelayedDeliveryPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/delayedDelivery").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -10041,8 +7675,8 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
             // Send Request
@@ -10051,12 +7685,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -10084,7 +7718,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -10119,15 +7753,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveDelayedDeliveryPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveDelayedDeliveryPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -10142,10 +7776,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveDelayedDeliveryPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/delayedDelivery").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -10174,12 +7808,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -10207,7 +7841,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -10246,15 +7880,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<InactiveTopicPolicies>> GetInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<InactiveTopicPolicies>> GetInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -10269,10 +7903,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetInactiveTopicPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/inactiveTopicPolicies").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -10301,12 +7935,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -10334,7 +7968,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<InactiveTopicPolicies>();
+            var _result = new <InactiveTopicPolicies>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -10343,16 +7977,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<InactiveTopicPolicies>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<InactiveTopicPolicies>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -10390,15 +8024,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, InactiveTopicPolicies body = default(InactiveTopicPolicies), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, InactiveTopicPolicies body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -10414,10 +8048,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetInactiveTopicPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/inactiveTopicPolicies").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -10442,8 +8076,8 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
             // Send Request
@@ -10452,12 +8086,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -10485,7 +8119,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -10520,15 +8154,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -10543,10 +8177,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveInactiveTopicPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/inactiveTopicPolicies").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -10575,12 +8209,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -10608,7 +8242,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -10646,15 +8280,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetMaxProducersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetMaxProducersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -10669,10 +8303,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetMaxProducersPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxProducersPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -10701,12 +8335,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -10734,7 +8368,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
+            var _result = new <int?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -10743,16 +8377,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -10790,15 +8424,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetMaxProducersPerTopicAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetMaxProducersPerTopicAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -10814,10 +8448,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetMaxProducersPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxProducersPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -10840,8 +8474,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -10849,12 +8483,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -10882,7 +8516,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -10917,15 +8551,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveMaxProducersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveMaxProducersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -10940,10 +8574,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveMaxProducersPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxProducersPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -10972,12 +8606,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -11005,7 +8639,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -11043,15 +8677,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetDeduplicationSnapshotIntervalAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetDeduplicationSnapshotIntervalAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -11066,10 +8700,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetDeduplicationSnapshotInterval", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/deduplicationSnapshotInterval").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -11098,12 +8732,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -11131,7 +8765,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
+            var _result = new <int?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -11140,16 +8774,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -11187,15 +8821,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetDeduplicationSnapshotIntervalAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetDeduplicationSnapshotIntervalAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -11211,10 +8845,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetDeduplicationSnapshotInterval", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/deduplicationSnapshotInterval").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -11237,8 +8871,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -11246,12 +8880,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -11279,7 +8913,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -11317,15 +8951,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetMaxConsumersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetMaxConsumersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -11340,10 +8974,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetMaxConsumersPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxConsumersPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -11372,12 +9006,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -11405,7 +9039,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
+            var _result = new <int?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -11414,16 +9048,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -11461,15 +9095,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetMaxConsumersPerTopicAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetMaxConsumersPerTopicAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -11485,10 +9119,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetMaxConsumersPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxConsumersPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -11511,8 +9145,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -11520,12 +9154,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -11553,7 +9187,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -11588,15 +9222,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveMaxConsumersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveMaxConsumersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -11611,10 +9245,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveMaxConsumersPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxConsumersPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -11643,12 +9277,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -11676,7 +9310,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -11714,15 +9348,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -11737,10 +9371,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetMaxConsumersPerSubscription", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxConsumersPerSubscription").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -11769,12 +9403,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -11802,7 +9436,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
+            var _result = new <int?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -11811,16 +9445,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -11858,15 +9492,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -11882,10 +9516,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetMaxConsumersPerSubscription", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxConsumersPerSubscription").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -11908,8 +9542,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -11917,12 +9551,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -11950,7 +9584,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -11985,15 +9619,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -12008,10 +9642,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveMaxConsumersPerSubscription", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxConsumersPerSubscription").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -12040,12 +9674,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -12073,7 +9707,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -12112,15 +9746,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetMaxUnackedMessagesPerConsumerAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetMaxUnackedMessagesPerConsumerAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -12135,10 +9769,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetMaxUnackedMessagesPerConsumer", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxUnackedMessagesPerConsumer").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -12167,12 +9801,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -12200,7 +9834,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
+            var _result = new <int?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -12209,16 +9843,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -12256,15 +9890,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetMaxUnackedMessagesPerConsumerAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetMaxUnackedMessagesPerConsumerAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -12280,10 +9914,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetMaxUnackedMessagesPerConsumer", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxUnackedMessagesPerConsumer").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -12306,8 +9940,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -12315,12 +9949,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -12348,7 +9982,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -12383,15 +10017,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveMaxUnackedmessagesPerConsumerAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveMaxUnackedmessagesPerConsumerAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -12406,10 +10040,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveMaxUnackedmessagesPerConsumer", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxUnackedMessagesPerConsumer").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -12438,12 +10072,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -12471,7 +10105,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -12509,15 +10143,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetMaxUnackedmessagesPerSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetMaxUnackedmessagesPerSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -12532,10 +10166,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetMaxUnackedmessagesPerSubscription", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxUnackedMessagesPerSubscription").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -12564,12 +10198,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -12597,7 +10231,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
+            var _result = new <int?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -12606,16 +10240,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -12653,15 +10287,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetMaxUnackedMessagesPerSubscriptionAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetMaxUnackedMessagesPerSubscriptionAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -12677,10 +10311,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetMaxUnackedMessagesPerSubscription", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxUnackedMessagesPerSubscription").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -12703,8 +10337,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -12712,12 +10346,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -12745,7 +10379,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -12780,15 +10414,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveMaxUnackedmessagesPerSubscriptionMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveMaxUnackedmessagesPerSubscriptionMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -12803,10 +10437,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveMaxUnackedmessagesPerSubscription", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxUnackedMessagesPerSubscription").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -12835,12 +10469,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -12868,7 +10502,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -12906,15 +10540,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetMaxSubscriptionsPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetMaxSubscriptionsPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -12929,10 +10563,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetMaxSubscriptionsPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxSubscriptionsPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -12961,12 +10595,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -12994,7 +10628,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
+            var _result = new <int?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -13003,16 +10637,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -13050,15 +10684,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetMaxSubscriptionsPerTopicAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetMaxSubscriptionsPerTopicAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -13074,10 +10708,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetMaxSubscriptionsPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxSubscriptionsPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -13100,8 +10734,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -13109,12 +10743,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -13142,7 +10776,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -13177,15 +10811,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveMaxSubscriptionsPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveMaxSubscriptionsPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -13200,10 +10834,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveMaxSubscriptionsPerTopic", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxSubscriptionsPerTopic").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -13232,12 +10866,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -13265,7 +10899,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -13303,15 +10937,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<string>> GetNamespaceAntiAffinityGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string>> GetNamespaceAntiAffinityGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -13326,10 +10960,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetNamespaceAntiAffinityGroup", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/antiAffinity").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -13358,12 +10992,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -13391,7 +11025,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<string>();
+            var _result = new <string>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -13400,16 +11034,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<string>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<string>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -13447,19 +11081,19 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetNamespaceAntiAffinityGroupAsync(string tenant, string namespaceParameter, string body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetNamespaceAntiAffinityGroupAsync(string tenant, string namespaceParameter, string body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -13475,10 +11109,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetNamespaceAntiAffinityGroup", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/antiAffinity").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -13503,8 +11137,8 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
             // Send Request
@@ -13513,12 +11147,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
@@ -13546,7 +11180,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -13581,15 +11215,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveNamespaceAntiAffinityGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveNamespaceAntiAffinityGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -13604,10 +11238,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveNamespaceAntiAffinityGroup", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/antiAffinity").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -13636,12 +11270,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -13669,7 +11303,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -13711,15 +11345,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<IList<string>>> GetAntiAffinityNamespacesAsync(string cluster, string group, string tenant = default(string), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<IList<string>>> GetAntiAffinityNamespacesAsync(string cluster, string group, string tenant = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (cluster == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "cluster");
+                throw new InvalidOperationException("cluster");
             }
             if (group == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "group");
+                throw new InvalidOperationException("group");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -13735,14 +11369,14 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetAntiAffinityNamespaces", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{cluster}/antiAffinity/{group}").ToString();
-            _url = _url.Replace("{cluster}", System.Uri.EscapeDataString(cluster));
-            _url = _url.Replace("{group}", System.Uri.EscapeDataString(group));
+            _url = _url.Replace("{cluster}", Uri.EscapeDataString(cluster));
+            _url = _url.Replace("{group}", Uri.EscapeDataString(group));
             List<string> _queryParameters = new List<string>();
             if (tenant != null)
             {
-                _queryParameters.Add(string.Format("tenant={0}", System.Uri.EscapeDataString(tenant)));
+                _queryParameters.Add(string.Format("tenant={0}", Uri.EscapeDataString(tenant)));
             }
             if (_queryParameters.Count > 0)
             {
@@ -13776,12 +11410,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 412)
@@ -13809,7 +11443,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<IList<string>>();
+            var _result = new <IList<string>>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -13818,16 +11452,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IList<string>>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<IList<string>>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -13870,15 +11504,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<long?>> GetCompactionThresholdAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<long?>> GetCompactionThresholdAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -13893,10 +11527,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetCompactionThreshold", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/compactionThreshold").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -13925,12 +11559,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -13958,7 +11592,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<long?>();
+            var _result = new <long?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -13967,16 +11601,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<long?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<long?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -14019,15 +11653,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetCompactionThresholdAsync(string tenant, string namespaceParameter, long body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetCompactionThresholdAsync(string tenant, string namespaceParameter, long body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -14043,10 +11677,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetCompactionThreshold", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/compactionThreshold").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -14069,8 +11703,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -14078,12 +11712,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -14111,7 +11745,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -14151,15 +11785,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> DeleteCompactionThresholdAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> DeleteCompactionThresholdAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -14174,10 +11808,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "DeleteCompactionThreshold", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/compactionThreshold").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -14206,12 +11840,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -14239,7 +11873,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -14281,15 +11915,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<long?>> GetOffloadThresholdAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<long?>> GetOffloadThresholdAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -14304,10 +11938,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetOffloadThreshold", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/offloadThreshold").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -14336,12 +11970,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -14369,7 +12003,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<long?>();
+            var _result = new <long?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -14378,16 +12012,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<long?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<long?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -14431,15 +12065,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetOffloadThresholdAsync(string tenant, string namespaceParameter, long body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetOffloadThresholdAsync(string tenant, string namespaceParameter, long body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -14455,10 +12089,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetOffloadThreshold", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/offloadThreshold").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -14481,8 +12115,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -14490,12 +12124,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -14523,7 +12157,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -14567,15 +12201,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<long?>> GetOffloadDeletionLagAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<long?>> GetOffloadDeletionLagAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -14590,10 +12224,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetOffloadDeletionLag", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/offloadDeletionLagMs").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -14622,12 +12256,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -14655,7 +12289,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<long?>();
+            var _result = new <long?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -14664,16 +12298,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<long?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<long?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -14717,15 +12351,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetOffloadDeletionLagAsync(string tenant, string namespaceParameter, long body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetOffloadDeletionLagAsync(string tenant, string namespaceParameter, long body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -14741,10 +12375,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetOffloadDeletionLag", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/offloadDeletionLagMs").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -14767,8 +12401,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -14776,12 +12410,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -14809,7 +12443,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -14846,15 +12480,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> ClearOffloadDeletionLagAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> ClearOffloadDeletionLagAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -14869,10 +12503,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "ClearOffloadDeletionLag", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/offloadDeletionLagMs").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -14901,12 +12535,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -14934,7 +12568,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -14977,15 +12611,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<SchemaAutoUpdateCompatibilityStrategy>> GetSchemaAutoUpdateCompatibilityStrategyAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<SchemaAutoUpdateCompatibilityStrategy>> GetSchemaAutoUpdateCompatibilityStrategyAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -15000,10 +12634,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSchemaAutoUpdateCompatibilityStrategy", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/schemaAutoUpdateCompatibilityStrategy").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -15032,12 +12666,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -15065,7 +12699,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<string>();
+            var _result = new <string>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -15074,16 +12708,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<string>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<string>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -15126,15 +12760,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetSchemaAutoUpdateCompatibilityStrategyAsync(string tenant, string namespaceParameter, SchemaAutoUpdateCompatibilityStrategy body = default(SchemaAutoUpdateCompatibilityStrategy), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetSchemaAutoUpdateCompatibilityStrategyAsync(string tenant, string namespaceParameter, SchemaAutoUpdateCompatibilityStrategy body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -15150,10 +12784,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSchemaAutoUpdateCompatibilityStrategy", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/schemaAutoUpdateCompatibilityStrategy").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -15178,8 +12812,8 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
             // Send Request
@@ -15188,12 +12822,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -15221,7 +12855,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -15259,15 +12893,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<string>> GetSchemaCompatibilityStrategyAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string>> GetSchemaCompatibilityStrategyAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -15282,10 +12916,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSchemaCompatibilityStrategy", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/schemaCompatibilityStrategy").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -15314,12 +12948,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -15347,7 +12981,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<string>();
+            var _result = new <string>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -15356,16 +12990,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<string>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<string>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -15403,15 +13037,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetSchemaCompatibilityStrategyAsync(string tenant, string namespaceParameter, string body = default(string), Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetSchemaCompatibilityStrategyAsync(string tenant, string namespaceParameter, string body = default, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -15427,10 +13061,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSchemaCompatibilityStrategy", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/schemaCompatibilityStrategy").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -15455,8 +13089,8 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
             // Send Request
@@ -15465,12 +13099,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -15498,7 +13132,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -15536,15 +13170,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<bool?>> GetIsAllowAutoUpdateSchemaAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<bool?> GetIsAllowAutoUpdateSchemaAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -15559,10 +13193,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetIsAllowAutoUpdateSchema", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/isAllowAutoUpdateSchema").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -15591,12 +13225,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -15624,7 +13258,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<bool?>();
+            var _result = new <bool?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -15633,16 +13267,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<bool?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<bool?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -15680,15 +13314,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetIsAllowAutoUpdateSchemaAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetIsAllowAutoUpdateSchemaAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -15704,10 +13338,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetIsAllowAutoUpdateSchema", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/isAllowAutoUpdateSchema").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -15730,8 +13364,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -15739,12 +13373,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -15771,15 +13405,8 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
         /// <summary>
@@ -15810,15 +13437,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<IList<string>>> GetSubscriptionTypesEnabledAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<IList<string>>> GetSubscriptionTypesEnabledAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -15833,10 +13460,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSubscriptionTypesEnabled", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionTypesEnabled").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -15865,12 +13492,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -15898,7 +13525,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<IList<string>>();
+            var _result = new <IList<string>>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -15907,16 +13534,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IList<string>>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<IList<string>>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -15954,19 +13581,19 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetSubscriptionTypesEnabledAsync(string tenant, string namespaceParameter, IList<string> body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetSubscriptionTypesEnabledAsync(string tenant, string namespaceParameter, IList<string> body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -15982,10 +13609,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSubscriptionTypesEnabled", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionTypesEnabled").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -16010,8 +13637,8 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
             // Send Request
@@ -16020,12 +13647,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409)
@@ -16053,7 +13680,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -16062,15 +13689,15 @@ namespace SharpPulsar.Admin
             }
             return _result;
         }
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveSubscriptionTypesEnabledAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveSubscriptionTypesEnabledAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -16085,10 +13712,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveNamespaceMessageTTL", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/subscriptionTypesEnabled").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -16117,12 +13744,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
@@ -16150,7 +13777,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -16195,15 +13822,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<bool?>> GetSchemaValidtionEnforcedAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<bool?> GetSchemaValidtionEnforcedAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -16218,10 +13845,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSchemaValidtionEnforced", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/schemaValidationEnforced").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -16250,12 +13877,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -16283,7 +13910,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<bool?>();
+            var _result = new <bool?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -16292,16 +13919,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<bool?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<bool?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -16346,15 +13973,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetSchemaValidtionEnforcedAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetSchemaValidtionEnforcedAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -16370,10 +13997,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetSchemaValidtionEnforced", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/schemaValidationEnforced").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -16396,8 +14023,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -16405,12 +14032,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
@@ -16438,7 +14065,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -16476,15 +14103,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<OffloadPolicies>> GetOffloadPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<OffloadPolicies>> GetOffloadPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -16499,10 +14126,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetOffloadPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/offloadPolicies").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -16531,12 +14158,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -16564,7 +14191,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<OffloadPoliciesImpl>();
+            var _result = new <OffloadPoliciesImpl>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -16573,16 +14200,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<OffloadPoliciesImpl>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<OffloadPoliciesImpl>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -16620,19 +14247,19 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetOffloadPoliciesAsync(string tenant, string namespaceParameter, OffloadPoliciesImpl body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetOffloadPoliciesAsync(string tenant, string namespaceParameter, OffloadPoliciesImpl body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -16648,10 +14275,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetOffloadPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/offloadPolicies").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -16676,8 +14303,8 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
             // Send Request
@@ -16686,12 +14313,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -16719,7 +14346,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -16754,15 +14381,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveOffloadPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveOffloadPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -16777,10 +14404,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveOffloadPolicies", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/removeOffloadPolicies").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -16809,12 +14436,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 409 && (int)_statusCode != 412)
@@ -16842,7 +14469,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -16880,15 +14507,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<int?>> GetMaxTopicsPerNamespaceAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<int?> GetMaxTopicsPerNamespaceAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -16903,10 +14530,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetMaxTopicsPerNamespace", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxTopicsPerNamespace").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -16935,12 +14562,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
@@ -16968,7 +14595,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<int?>();
+            var _result = new <int?>();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             // Deserialize Response
@@ -16977,16 +14604,16 @@ namespace SharpPulsar.Admin
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<int?>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<int?>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
             if (_shouldTrace)
@@ -17024,15 +14651,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, int body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -17048,10 +14675,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetInactiveTopicPolicies1", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxTopicsPerNamespace").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -17074,8 +14701,8 @@ namespace SharpPulsar.Admin
 
             // Serialize Request
             string _requestContent = null;
-            _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-            _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+            _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+            _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
             _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             // Send Request
             if (_shouldTrace)
@@ -17083,12 +14710,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -17116,7 +14743,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -17151,15 +14778,15 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             // Tracing
             bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
@@ -17174,10 +14801,10 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetInactiveTopicPolicies2", tracingParameters);
             }
             // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/maxTopicsPerNamespace").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -17206,12 +14833,12 @@ namespace SharpPulsar.Admin
                 Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
             if (_shouldTrace)
             {
                 Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
             }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 403 && (int)_statusCode != 404)
@@ -17239,7 +14866,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
+            var _result = new ();
             _result.Request = _httpRequest;
             _result.Response = _httpResponse;
             if (_shouldTrace)
@@ -17248,7 +14875,10 @@ namespace SharpPulsar.Admin
             }
             return _result;
         }
-
+        public string GetProperties(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPropertiesAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get key value pair properties for a given namespace.
         /// </summary>
@@ -17262,45 +14892,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> GetPropertiesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> GetPropertiesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetProperties", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/properties").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -17321,25 +14930,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -17348,12 +14946,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -17361,17 +14956,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
-
+        public string SetProperties(string tenant, string namespaceParameter, IDictionary<string, string> body, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetPropertiesAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Put key value pairs property on a namespace.
         /// </summary>
@@ -17388,50 +14979,28 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetPropertiesAsync(string tenant, string namespaceParameter, IDictionary<string, string> body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetPropertiesAsync(string tenant, string namespaceParameter, IDictionary<string, string> body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetProperties", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/properties").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -17456,27 +15025,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -17485,12 +15046,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -17498,17 +15056,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string ClearProperties(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return  ClearPropertiesAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get property value for a given key on a namespace.
         /// </summary>
@@ -17522,45 +15077,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> ClearPropertiesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> ClearPropertiesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "ClearProperties", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/properties").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -17581,25 +15115,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -17608,12 +15131,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -17621,17 +15141,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
-
+        public string GetProperty(string tenant, string namespaceParameter, string key, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetPropertyAsync(tenant, namespaceParameter, key, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get property value for a given key on a namespace.
         /// </summary>
@@ -17647,51 +15163,29 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> GetPropertyAsync(string tenant, string namespaceParameter, string key, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> GetPropertyAsync(string tenant, string namespaceParameter, string key, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (key == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "key");
+                throw new InvalidOperationException("key");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("key", key);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetProperty", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/property/{key}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{key}", System.Uri.EscapeDataString(key));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{key}", Uri.EscapeDataString(key));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -17712,25 +15206,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -17739,12 +15222,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -17752,17 +15232,13 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
-
+        public string RemoveProperty(string tenant, string namespaceParameter, string key, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return RemovePropertyAsync(tenant, namespaceParameter, key, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get property value for a given key on a namespace.
         /// </summary>
@@ -17778,51 +15254,29 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemovePropertyAsync(string tenant, string namespaceParameter, string key, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemovePropertyAsync(string tenant, string namespaceParameter, string key, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (key == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "key");
+                throw new InvalidOperationException("key");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("key", key);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveProperty", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/property/{key}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{key}", System.Uri.EscapeDataString(key));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{key}", Uri.EscapeDataString(key));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -17843,25 +15297,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -17870,12 +15313,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -17883,17 +15323,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string SetProperty(string tenant, string namespaceParameter, string key, string value, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetPropertyAsync(tenant, namespaceParameter, key, value, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Put a key value pair property on a namespace.
         /// </summary>
@@ -17911,57 +15348,34 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetPropertyAsync(string tenant, string namespaceParameter, string key, string value, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetPropertyAsync(string tenant, string namespaceParameter, string key, string value, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (key == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "key");
+                throw new InvalidOperationException("key");
             }
             if (value == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "value");
+                throw new InvalidOperationException("value");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("key", key);
-                tracingParameters.Add("value", value);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetProperty", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/property/{key}/{value}").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
-            _url = _url.Replace("{key}", System.Uri.EscapeDataString(key));
-            _url = _url.Replace("{value}", System.Uri.EscapeDataString(value));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{key}", Uri.EscapeDataString(key));
+            _url = _url.Replace("{value}", Uri.EscapeDataString(value));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -17982,25 +15396,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -18009,12 +15412,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -18022,17 +15422,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string GetNamespaceResourceGroup(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetNamespaceResourceGroupAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Get the resourcegroup attached to the namespace
         /// </summary>
@@ -18046,48 +15443,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.SerializationException">
-        /// Thrown when unable to deserialize the response
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse<string>> GetNamespaceResourceGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> GetNamespaceResourceGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetNamespaceResourceGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+           
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/resourcegroup").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -18108,25 +15481,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -18135,12 +15497,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -18149,34 +15508,33 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<string>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            string _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<string>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<string>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
             }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
+            
             return _result;
         }
 
+        public string SetNamespaceResourceGroup(string tenant, string namespaceParameter, string body, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetNamespaceResourceGroupAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Set resourcegroup for a namespace
         /// </summary>
@@ -18193,50 +15551,28 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetNamespaceResourceGroupAsync(string tenant, string namespaceParameter, string body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> SetNamespaceResourceGroupAsync(string tenant, string namespaceParameter, string body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetNamespaceResourceGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/resourcegroup").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -18261,27 +15597,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -18290,12 +15618,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -18303,17 +15628,14 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
+        public string RemoveNamespaceResourceGroup(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return RemoveNamespaceResourceGroupAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
         /// <summary>
         /// Delete resourcegroup for a namespace
         /// </summary>
@@ -18327,45 +15649,24 @@ namespace SharpPulsar.Admin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
-        /// <exception cref="Microsoft.Rest.HttpOperationException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when a required parameter is null
-        /// </exception>
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveNamespaceResourceGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async ValueTask<string> RemoveNamespaceResourceGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveNamespaceResourceGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/resourcegroup").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -18386,25 +15687,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -18413,12 +15703,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -18426,44 +15713,29 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
-        public async Task<Microsoft.Rest.HttpOperationResponse<object>> GetScanOffloadedLedgersAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public object GetScanOffloadedLedgers(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetScanOffloadedLedgersAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async ValueTask<object> GetScanOffloadedLedgersAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetNamespaceResourceGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/scanOffloadedLedgers").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -18484,25 +15756,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -18511,12 +15772,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -18525,62 +15783,47 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<object>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            object _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<string>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<string>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
 
-
-        public async Task<Microsoft.Rest.HttpOperationResponse<EntryFilters>> GetEntryFiltersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public EntryFilters GetEntryFiltersPerTopic(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return GetEntryFiltersPerTopicAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async ValueTask<EntryFilters> GetEntryFiltersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetNamespaceResourceGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/entryFilters").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -18601,25 +15844,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
             if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -18628,12 +15860,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -18642,66 +15871,50 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse<EntryFilters>();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
+            EntryFilters _result = null;
             // Deserialize Response
             if ((int)_statusCode == 200)
             {
                 _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 try
                 {
-                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<string>(_responseContent, this.DeserializationSettings);
+                    _result = JsonSerializer.Deserialize<EntryFilters>(_responseContent);
                 }
-                catch (Newtonsoft.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
                     {
                         _httpResponse.Dispose();
                     }
-                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                    throw new Exception($"Unable to deserialize the response. {_responseContent} {ex}");
                 }
-            }
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
             }
             return _result;
         }
-
-        public async Task<Microsoft.Rest.HttpOperationResponse> SetEntryFiltersPerTopicAsync(string tenant, string namespaceParameter, EntryFilters body, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public string SetEntryFiltersPerTopic(string tenant, string namespaceParameter, EntryFilters body, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return SetEntryFiltersPerTopicAsync(tenant, namespaceParameter, body, customHeaders).GetAwaiter().GetResult();
+        }
+        public async ValueTask<string> SetEntryFiltersPerTopicAsync(string tenant, string namespaceParameter, EntryFilters body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
             if (body == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "body");
+                throw new InvalidOperationException("body");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("body", body);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "SetNamespaceResourceGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/entryFilters").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -18726,27 +15939,19 @@ namespace SharpPulsar.Admin
             string _requestContent = null;
             if (body != null)
             {
-                _requestContent = Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(body, this.SerializationSettings);
-                _httpRequest.Content = new StringContent(_requestContent, System.Text.Encoding.UTF8);
+                _requestContent = JsonSerializer.Serialize(body, _jsonSerializerOptions);
+                _httpRequest.Content = new StringContent(_requestContent, Encoding.UTF8);
                 _httpRequest.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
             }
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
+            
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -18755,12 +15960,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -18768,44 +15970,27 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            return _httpResponse.ReasonPhrase;
         }
-
-        public async Task<Microsoft.Rest.HttpOperationResponse> RemoveNamespaceEntryFiltersAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public string RemoveNamespaceEntryFilters(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+           return RemoveNamespaceEntryFiltersAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async ValueTask<string> RemoveNamespaceEntryFiltersAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (tenant == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+                throw new InvalidOperationException("tenant");
             }
             if (namespaceParameter == null)
             {
-                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+                throw new InvalidOperationException("namespaceParameter");
             }
-            // Tracing
-            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
-            string _invocationId = null;
-            if (_shouldTrace)
-            {
-                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
-                Dictionary<string, object> tracingParameters = new Dictionary<string, object>();
-                tracingParameters.Add("tenant", tenant);
-                tracingParameters.Add("namespaceParameter", namespaceParameter);
-                tracingParameters.Add("cancellationToken", cancellationToken);
-                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "RemoveNamespaceResourceGroup", tracingParameters);
-            }
-            // Construct URL
-            var _baseUrl = this.BaseUri.AbsoluteUri;
+            
+            var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/entryFilters").ToString();
-            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
-            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{tenant}", Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", Uri.EscapeDataString(namespaceParameter));
             // Create HTTP transport objects
             var _httpRequest = new HttpRequestMessage();
             HttpResponseMessage _httpResponse = null;
@@ -18826,25 +16011,14 @@ namespace SharpPulsar.Admin
                 }
             }
 
-            // Serialize Request
-            string _requestContent = null;
-            // Send Request
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
-            }
-            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            _httpResponse = await _httpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            
+            HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
+            if ((int)_statusCode != 200 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412)
             {
-                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
                 if (_httpResponse.Content != null)
                 {
                     _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -18853,12 +16027,9 @@ namespace SharpPulsar.Admin
                 {
                     _responseContent = string.Empty;
                 }
-                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
-                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
-                if (_shouldTrace)
-                {
-                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
-                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", _statusCode, _responseContent));
+
                 _httpRequest.Dispose();
                 if (_httpResponse != null)
                 {
@@ -18866,15 +16037,8 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            // Create Result
-            var _result = new Microsoft.Rest.HttpOperationResponse();
-            _result.Request = _httpRequest;
-            _result.Response = _httpResponse;
-            if (_shouldTrace)
-            {
-                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
-            }
-            return _result;
+            
+            return _httpResponse.ReasonPhrase;
         }
 
     }

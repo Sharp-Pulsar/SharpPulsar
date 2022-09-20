@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,78 +19,20 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	using ToString = lombok.ToString;
-
-	/// <summary>
-	/// Configuration of bookkeeper persistence policies.
-	/// </summary>
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @ToString public class PersistencePolicies
 	public class PersistencePolicies
 	{
-		private int bookkeeperEnsemble;
-		private int bookkeeperWriteQuorum;
-		private int bookkeeperAckQuorum;
-		private double managedLedgerMaxMarkDeleteRate;
+        [JsonPropertyName("bookkeeperEnsemble")]
+        public int? BookkeeperEnsemble { get; set; }
 
-		public PersistencePolicies() : this(2, 2, 2, 0.0)
-		{
-		}
+        [JsonPropertyName("bookkeeperWriteQuorum")]
+        public int? BookkeeperWriteQuorum { get; set; }
 
-		public PersistencePolicies(int BookkeeperEnsemble, int BookkeeperWriteQuorum, int BookkeeperAckQuorum, double ManagedLedgerMaxMarkDeleteRate)
-		{
-			this.bookkeeperEnsemble = BookkeeperEnsemble;
-			this.bookkeeperWriteQuorum = BookkeeperWriteQuorum;
-			this.bookkeeperAckQuorum = BookkeeperAckQuorum;
-			this.managedLedgerMaxMarkDeleteRate = ManagedLedgerMaxMarkDeleteRate;
-		}
+        [JsonPropertyName("bookkeeperAckQuorum")]
+        public int? BookkeeperAckQuorum { get; set; }
 
-		public virtual int BookkeeperEnsemble
-		{
-			get
-			{
-				return bookkeeperEnsemble;
-			}
-		}
+        [JsonPropertyName("managedLedgerMaxMarkDeleteRate")]
+        public double? ManagedLedgerMaxMarkDeleteRate { get; set; }
 
-		public virtual int BookkeeperWriteQuorum
-		{
-			get
-			{
-				return bookkeeperWriteQuorum;
-			}
-		}
-
-		public virtual int BookkeeperAckQuorum
-		{
-			get
-			{
-				return bookkeeperAckQuorum;
-			}
-		}
-
-		public virtual double ManagedLedgerMaxMarkDeleteRate
-		{
-			get
-			{
-				return managedLedgerMaxMarkDeleteRate;
-			}
-		}
-
-		public override int GetHashCode()
-		{
-			return Objects.hash(bookkeeperEnsemble, bookkeeperWriteQuorum, bookkeeperAckQuorum, managedLedgerMaxMarkDeleteRate);
-		}
-		public override bool Equals(object Obj)
-		{
-			if (Obj is PersistencePolicies)
-			{
-				PersistencePolicies Other = (PersistencePolicies) Obj;
-				return bookkeeperEnsemble == Other.bookkeeperEnsemble && bookkeeperWriteQuorum == Other.bookkeeperWriteQuorum && bookkeeperAckQuorum == Other.bookkeeperAckQuorum && managedLedgerMaxMarkDeleteRate == Other.managedLedgerMaxMarkDeleteRate;
-			}
-
-			return false;
-		}
-	}
+    }
 
 }

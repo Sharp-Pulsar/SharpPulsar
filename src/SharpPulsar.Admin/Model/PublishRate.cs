@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,58 +19,13 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	using ToString = lombok.ToString;
-
-	/// <summary>
-	/// Publish-rate to manage publish throttling.
-	/// </summary>
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @ToString public class PublishRate
 	public class PublishRate
 	{
+        [JsonPropertyName("publishThrottlingRateInMsg")]
+        public int PublishThrottlingRateInMsg { get; set; }
 
-		public int PublishThrottlingRateInMsg = -1;
-		public long PublishThrottlingRateInByte = -1;
-
-		public PublishRate() : base()
-		{
-			this.PublishThrottlingRateInMsg = -1;
-			this.PublishThrottlingRateInByte = -1;
-		}
-
-		public PublishRate(int DispatchThrottlingRateInMsg, long DispatchThrottlingRateInByte) : base()
-		{
-			this.PublishThrottlingRateInMsg = DispatchThrottlingRateInMsg;
-			this.PublishThrottlingRateInByte = DispatchThrottlingRateInByte;
-		}
-
-		public static PublishRate Normalize(PublishRate PublishRate)
-		{
-			if (PublishRate != null && (PublishRate.PublishThrottlingRateInMsg > 0 || PublishRate.PublishThrottlingRateInByte > 0))
-			{
-				return PublishRate;
-			}
-			else
-			{
-				return null;
-			}
-		}
-
-		public override int GetHashCode()
-		{
-			return Objects.hash(PublishThrottlingRateInMsg, PublishThrottlingRateInByte);
-		}
-
-		public override bool Equals(object Obj)
-		{
-			if (Obj is PublishRate)
-			{
-				PublishRate Rate = (PublishRate) Obj;
-				return Objects.equals(PublishThrottlingRateInMsg, Rate.PublishThrottlingRateInMsg) && Objects.equals(PublishThrottlingRateInByte, Rate.PublishThrottlingRateInByte);
-			}
-			return false;
-		}
-
-	}
+        [JsonPropertyName("publishThrottlingRateInByte")]
+        public long PublishThrottlingRateInByte { get; set; }
+    }
 
 }

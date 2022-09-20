@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -30,65 +31,15 @@ namespace SharpPulsar.Admin.Model
 	/// </summary>
 	public class RetentionPolicies
 	{
-		private int retentionTimeInMinutes;
-		private long retentionSizeInMB;
+        [JsonPropertyName("retentionTimeInMinutes")]
+        public int? RetentionTimeInMinutes { get; set; }
 
-		public RetentionPolicies() : this(0, 0)
-		{
-		}
-
-		public RetentionPolicies(int RetentionTimeInMinutes, int RetentionSizeInMB)
-		{
-			this.retentionSizeInMB = RetentionSizeInMB;
-			this.retentionTimeInMinutes = RetentionTimeInMinutes;
-		}
-
-		public virtual int RetentionTimeInMinutes
-		{
-			get
-			{
-				return retentionTimeInMinutes;
-			}
-		}
-
-		public virtual long RetentionSizeInMB
-		{
-			get
-			{
-				return retentionSizeInMB;
-			}
-		}
-
-		public override bool Equals(object O)
-		{
-			if (this == O)
-			{
-				return true;
-			}
-			if (O == null || this.GetType() != O.GetType())
-			{
-				return false;
-			}
-			RetentionPolicies That = (RetentionPolicies) O;
-
-			if (retentionTimeInMinutes != That.retentionTimeInMinutes)
-			{
-				return false;
-			}
-
-			return retentionSizeInMB == That.retentionSizeInMB;
-		}
-
-		public override int GetHashCode()
-		{
-			long Result = retentionTimeInMinutes;
-			Result = 31 * Result + retentionSizeInMB;
-			return Long.hashCode(Result);
-		}
+        [JsonPropertyName("retentionSizeInMB")]
+        public long? RetentionSizeInMB { get; set; }
 
 		public override string ToString()
 		{
-			return "RetentionPolicies{" + "retentionTimeInMinutes=" + retentionTimeInMinutes + ", retentionSizeInMB=" + retentionSizeInMB + '}';
+			return "RetentionPolicies{" + "retentionTimeInMinutes=" + RetentionTimeInMinutes + ", retentionSizeInMB=" + RetentionSizeInMB + '}';
 		}
 	}
 

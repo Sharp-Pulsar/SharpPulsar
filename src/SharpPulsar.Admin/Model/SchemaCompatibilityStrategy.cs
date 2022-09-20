@@ -116,7 +116,7 @@ namespace SharpPulsar.Admin.Model
 
 		public static bool isUndefined(SchemaCompatibilityStrategy Strategy)
 		{
-			return Strategy == null || Strategy == SchemaCompatibilityStrategy.UNDEFINED;
+			return Strategy == null || Strategy == UNDEFINED;
 		}
 
 		public static SchemaCompatibilityStrategy fromAutoUpdatePolicy(SchemaAutoUpdateCompatibilityStrategy Strategy)
@@ -127,21 +127,21 @@ namespace SharpPulsar.Admin.Model
 			}
 			switch (Strategy)
 			{
-				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.Backward:
+				case SchemaAutoUpdateCompatibilityStrategy.Backward:
 					return BACKWARD;
-				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.Forward:
+				case SchemaAutoUpdateCompatibilityStrategy.Forward:
 					return FORWARD;
-				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.Full:
+				case SchemaAutoUpdateCompatibilityStrategy.Full:
 					return FULL;
-				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.AlwaysCompatible:
+				case SchemaAutoUpdateCompatibilityStrategy.AlwaysCompatible:
 					return AlwaysCompatible;
-				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.ForwardTransitive:
+				case SchemaAutoUpdateCompatibilityStrategy.ForwardTransitive:
 					return ForwardTransitive;
-				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.BackwardTransitive:
+				case SchemaAutoUpdateCompatibilityStrategy.BackwardTransitive:
 					return BackwardTransitive;
-				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.FullTransitive:
+				case SchemaAutoUpdateCompatibilityStrategy.FullTransitive:
 					return FullTransitive;
-				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.AutoUpdateDisabled:
+				case SchemaAutoUpdateCompatibilityStrategy.AutoUpdateDisabled:
 				default:
 					return AlwaysIncompatible;
 			}
@@ -164,7 +164,7 @@ namespace SharpPulsar.Admin.Model
 
 		public static SchemaCompatibilityStrategy valueOf(string name)
 		{
-			foreach (SchemaCompatibilityStrategy enumInstance in SchemaCompatibilityStrategy.valueList)
+			foreach (SchemaCompatibilityStrategy enumInstance in valueList)
 			{
 				if (enumInstance.nameValue == name)
 				{

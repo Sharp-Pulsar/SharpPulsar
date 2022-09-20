@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,17 +21,16 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Getter = lombok.Getter;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @Getter @NoArgsConstructor @AllArgsConstructor public class TopicHashPositions
+	
 	public class TopicHashPositions
 	{
-		private string @namespace;
-		private string bundle;
-		private IDictionary<string, long> topicHashPositions;
-	}
+        [JsonPropertyName("namespace")]
+        public string Namespace { get; set; }
+        [JsonPropertyName("bundle")]
+        public string Bundle { get; set; }
+
+        [JsonPropertyName("topicHashPositions")]
+        public IDictionary<string, long> Topics { get; set; }
+    }
 
 }

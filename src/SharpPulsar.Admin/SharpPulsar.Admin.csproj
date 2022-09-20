@@ -4,17 +4,16 @@
     <TargetFrameworks>net6.0</TargetFrameworks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Admin\PulsarAdmin.cs" />
+  </ItemGroup>
+
   <ItemGroup> 
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Admin\PulsarAdmin.cs">
-      <DependentUpon>PulsarAdmin.json</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
     <Compile Update="Function\PulsarFunction.cs">
       <DependentUpon>PulsarFunction.json</DependentUpon>
       <DesignTime>True</DesignTime>
