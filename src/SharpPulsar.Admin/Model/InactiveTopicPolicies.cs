@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -23,9 +24,23 @@ namespace SharpPulsar.Admin.Model
 	/// </summary>
 	public class InactiveTopicPolicies
 	{
-		private InactiveTopicDeleteMode inactiveTopicDeleteMode;
-		private int maxInactiveDurationSeconds;
-		private bool deleteWhileInactive;
-	}
+        /// <summary>
+        /// Gets or sets possible values include:
+        /// 'delete_when_no_subscriptions',
+        /// 'delete_when_subscriptions_caught_up'
+        /// </summary>
+        [JsonPropertyName("inactiveTopicDeleteMode")]
+        public InactiveTopicDeleteMode InactiveTopicDeleteMode { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("maxInactiveDurationSeconds")]
+        public int? MaxInactiveDurationSeconds { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("deleteWhileInactive")]
+        public bool? DeleteWhileInactive { get; set; }
+    }
 
 }
