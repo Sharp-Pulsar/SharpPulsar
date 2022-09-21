@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,132 +19,94 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	using ReflectionUtils = org.apache.pulsar.client.admin.utils.ReflectionUtils;
+	
 
-	public interface OffloadPolicies
+	public class OffloadPolicies
 	{
-		string OffloadersDirectory {get;}
+        [JsonPropertyName("offloadersDirectory")]
+        public string OffloadersDirectory { get; set; }
 
-		string ManagedLedgerOffloadDriver {get;}
+        [JsonPropertyName("managedLedgerOffloadDriver")]
+        public string ManagedLedgerOffloadDriver { get; set; }
 
-		int? ManagedLedgerOffloadMaxThreads {get;}
+        [JsonPropertyName("managedLedgerOffloadMaxThreads")]
+        public int? ManagedLedgerOffloadMaxThreads { get; set; }
 
-		int? ManagedLedgerOffloadPrefetchRounds {get;}
+        [JsonPropertyName("managedLedgerOffloadPrefetchRounds")]
+        public int? ManagedLedgerOffloadPrefetchRounds { get; set; }
 
-		long? ManagedLedgerOffloadThresholdInBytes {get;}
+        [JsonPropertyName("managedLedgerOffloadThresholdInBytes")]
+        public long? ManagedLedgerOffloadThresholdInBytes { get; set; }
 
-		long? ManagedLedgerOffloadDeletionLagInMillis {get;}
+        [JsonPropertyName("managedLedgerOffloadDeletionLagInMillis")]
+        public long? ManagedLedgerOffloadDeletionLagInMillis { get; set; }
 
-		OffloadedReadPriority ManagedLedgerOffloadedReadPriority {get;}
+        [JsonPropertyName("managedLedgerOffloadedReadPriority")]
+        public OffloadedReadPriority ManagedLedgerOffloadedReadPriority { get; set; }
 
-		string S3ManagedLedgerOffloadRegion {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadRegion")]
+        public string S3ManagedLedgerOffloadRegion { get; set; }
 
-		string S3ManagedLedgerOffloadBucket {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadBucket")]
+        public string S3ManagedLedgerOffloadBucket { get; set; }
 
-		string S3ManagedLedgerOffloadServiceEndpoint {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadServiceEndpoint")]
+        public string S3ManagedLedgerOffloadServiceEndpoint { get; set; }
 
-		int? S3ManagedLedgerOffloadMaxBlockSizeInBytes {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadMaxBlockSizeInBytes")]
+        public int? S3ManagedLedgerOffloadMaxBlockSizeInBytes { get; set; }
 
-		int? S3ManagedLedgerOffloadReadBufferSizeInBytes {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadReadBufferSizeInBytes")]
+        public int? S3ManagedLedgerOffloadReadBufferSizeInBytes { get; set; }
 
-		string S3ManagedLedgerOffloadCredentialId {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadCredentialId")]
+        public string S3ManagedLedgerOffloadCredentialId { get; set; }
 
-		string S3ManagedLedgerOffloadCredentialSecret {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadCredentialSecret")]
+        public string S3ManagedLedgerOffloadCredentialSecret { get; set; }
 
-		string S3ManagedLedgerOffloadRole {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadRole")]
+        public string S3ManagedLedgerOffloadRole { get; set; }
 
-		string S3ManagedLedgerOffloadRoleSessionName {get;}
+        [JsonPropertyName("s3ManagedLedgerOffloadRoleSessionName")]
+        public string S3ManagedLedgerOffloadRoleSessionName { get; set; }
 
-		string GcsManagedLedgerOffloadRegion {get;}
+        [JsonPropertyName("gcsManagedLedgerOffloadRegion")]
+        public string GcsManagedLedgerOffloadRegion { get; set; }
 
-		string GcsManagedLedgerOffloadBucket {get;}
+        [JsonPropertyName("gcsManagedLedgerOffloadBucket")]
+        public string GcsManagedLedgerOffloadBucket { get; set; }
 
-		int? GcsManagedLedgerOffloadMaxBlockSizeInBytes {get;}
+        [JsonPropertyName("gcsManagedLedgerOffloadMaxBlockSizeInBytes")]
+        public int? GcsManagedLedgerOffloadMaxBlockSizeInBytes { get; set; }
 
-		int? GcsManagedLedgerOffloadReadBufferSizeInBytes {get;}
+        [JsonPropertyName("gcsManagedLedgerOffloadReadBufferSizeInBytes")]
+        public int? GcsManagedLedgerOffloadReadBufferSizeInBytes { get; set; }
 
-		string GcsManagedLedgerOffloadServiceAccountKeyFile {get;}
+        [JsonPropertyName("gcsManagedLedgerOffloadServiceAccountKeyFile")]
+        public string GcsManagedLedgerOffloadServiceAccountKeyFile { get; set; }
 
-		string FileSystemProfilePath {get;}
+        [JsonPropertyName("fileSystemProfilePath")]
+        public string FileSystemProfilePath { get; set; }
 
-		string FileSystemURI {get;}
+        [JsonPropertyName("fileSystemURI")]
+        public string FileSystemURI { get; set; }
 
-		string ManagedLedgerOffloadBucket {get;}
+        [JsonPropertyName("managedLedgerOffloadBucket")]
+        public string ManagedLedgerOffloadBucket { get; set; }
 
-		string ManagedLedgerOffloadRegion {get;}
+        [JsonPropertyName("managedLedgerOffloadRegion")]
+        public string ManagedLedgerOffloadRegion { get; set; }
 
-		string ManagedLedgerOffloadServiceEndpoint {get;}
+        [JsonPropertyName("managedLedgerOffloadServiceEndpoint")]
+        public string ManagedLedgerOffloadServiceEndpoint { get; set; }
 
-		int? ManagedLedgerOffloadMaxBlockSizeInBytes {get;}
+        [JsonPropertyName("managedLedgerOffloadMaxBlockSizeInBytes")]
+        public int? ManagedLedgerOffloadMaxBlockSizeInBytes { get; set; }
 
-		int? ManagedLedgerOffloadReadBufferSizeInBytes {get;}
+        [JsonPropertyName("managedLedgerOffloadReadBufferSizeInBytes")]
+        public int? ManagedLedgerOffloadReadBufferSizeInBytes { get; set; }
 
-		static OffloadPoliciesBuilder Builder()
-		{
-			return ReflectionUtils.newBuilder("SharpPulsar.Admin.Model.OffloadPoliciesImpl");
-		}
-	}
-
-	public interface OffloadPoliciesBuilder
-	{
-
-		OffloadPoliciesBuilder OffloadersDirectory(string offloadersDirectory);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadDriver(string managedLedgerOffloadDriver);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadMaxThreads(int? managedLedgerOffloadMaxThreads);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadPrefetchRounds(int? managedLedgerOffloadPrefetchRounds);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadThresholdInBytes(long? managedLedgerOffloadThresholdInBytes);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadDeletionLagInMillis(long? managedLedgerOffloadDeletionLagInMillis);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadedReadPriority(OffloadedReadPriority managedLedgerOffloadedReadPriority);
-
-		OffloadPoliciesBuilder S3ManagedLedgerOffloadRegion(string s3ManagedLedgerOffloadRegion);
-
-		OffloadPoliciesBuilder S3ManagedLedgerOffloadBucket(string s3ManagedLedgerOffloadBucket);
-
-		OffloadPoliciesBuilder S3ManagedLedgerOffloadServiceEndpoint(string s3ManagedLedgerOffloadServiceEndpoint);
-
-		OffloadPoliciesBuilder S3ManagedLedgerOffloadMaxBlockSizeInBytes(int? s3ManagedLedgerOffloadMaxBlockSizeInBytes);
-
-		OffloadPoliciesBuilder S3ManagedLedgerOffloadReadBufferSizeInBytes(int? s3ManagedLedgerOffloadReadBufferSizeInBytes);
-
-		OffloadPoliciesBuilder S3ManagedLedgerOffloadCredentialId(string s3ManagedLedgerOffloadCredentialId);
-
-		OffloadPoliciesBuilder S3ManagedLedgerOffloadCredentialSecret(string s3ManagedLedgerOffloadCredentialSecret);
-
-		OffloadPoliciesBuilder S3ManagedLedgerOffloadRole(string s3ManagedLedgerOffloadRole);
-
-		OffloadPoliciesBuilder setS3ManagedLedgerOffloadRoleSessionName(string s3ManagedLedgerOffloadRoleSessionName);
-
-		OffloadPoliciesBuilder GcsManagedLedgerOffloadRegion(string gcsManagedLedgerOffloadRegion);
-
-		OffloadPoliciesBuilder GcsManagedLedgerOffloadBucket(string gcsManagedLedgerOffloadBucket);
-
-		OffloadPoliciesBuilder GcsManagedLedgerOffloadMaxBlockSizeInBytes(int? gcsManagedLedgerOffloadMaxBlockSizeInBytes);
-
-		OffloadPoliciesBuilder GcsManagedLedgerOffloadReadBufferSizeInBytes(int? gcsManagedLedgerOffloadReadBufferSizeInBytes);
-
-		OffloadPoliciesBuilder GcsManagedLedgerOffloadServiceAccountKeyFile(string gcsManagedLedgerOffloadServiceAccountKeyFile);
-
-		OffloadPoliciesBuilder FileSystemProfilePath(string fileSystemProfilePath);
-
-		OffloadPoliciesBuilder FileSystemURI(string fileSystemURI);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadBucket(string managedLedgerOffloadBucket);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadRegion(string managedLedgerOffloadRegion);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadServiceEndpoint(string managedLedgerOffloadServiceEndpoint);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadMaxBlockSizeInBytes(int? managedLedgerOffloadMaxBlockSizeInBytes);
-
-		OffloadPoliciesBuilder ManagedLedgerOffloadReadBufferSizeInBytes(int? managedLedgerOffloadReadBufferSizeInBytes);
-
-		OffloadPolicies Build();
-	}
+    }
 
 }
