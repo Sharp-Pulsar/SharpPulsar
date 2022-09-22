@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,27 +19,31 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	using Data = lombok.Data;
-
+	
 	/// <summary>
 	/// Transaction coordinator status.
 	/// </summary>
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @Data public class TransactionCoordinatorStatus
 	public class TransactionCoordinatorStatus
 	{
 
-		/// <summary>
-		/// The state of this transaction metadataStore. </summary>
-		public string State;
 
-		/// <summary>
-		/// The sequenceId of transaction metadataStore. </summary>
-		public long LeastSigBits;
+        /// <summary>
+        /// The state of this transaction metadataStore. </summary>
+        /// 
+        [JsonPropertyName("state")]
+        public string State { get; set; }
 
-		/// <summary>
-		/// The low water mark of transaction metadataStore. </summary>
-		public long LowWaterMark;
+        /// <summary>
+        /// The sequenceId of transaction metadataStore. </summary>
+        /// 
+        [JsonPropertyName("leastSigBits")]
+        public long LeastSigBits { get; set; }
+
+        /// <summary>
+        /// The low water mark of transaction metadataStore. </summary>
+        /// 
+        [JsonPropertyName("lowWaterMark")]
+        public long LowWaterMark { get; set; }
 	}
 
 }

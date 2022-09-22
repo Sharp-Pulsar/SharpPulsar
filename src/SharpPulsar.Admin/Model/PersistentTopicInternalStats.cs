@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,11 +27,14 @@ namespace SharpPulsar.Admin.Model
 	/// </summary>
 	public class PersistentTopicInternalStats : ManagedLedgerInternalStats
 	{
+        [JsonPropertyName("schemaLedgers")]
 
-		public IList<LedgerInfo> SchemaLedgers;
+        public IList<LedgerInfo> SchemaLedgers { get; set; }    
 
-		// LedgerInfo for compacted topic if exist.
-		public LedgerInfo CompactedLedger;
-	}
+        // LedgerInfo for compacted topic if exist.
+        [JsonPropertyName("compactedLedger")]
+
+        public LedgerInfo CompactedLedger { get; set; }
+    }
 
 }

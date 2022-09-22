@@ -13458,10 +13458,6 @@ namespace SharpPulsar.Admin
             {
                 throw new InvalidOperationException("namespaceParameter");
             }
-            if (body == null)
-            {
-                throw new InvalidOperationException("body");
-            }
             
             var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "namespaces/{tenant}/{namespace}/entryFilters").ToString();
