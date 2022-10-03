@@ -1045,7 +1045,7 @@
         }
       }
     },
-    "CompletableFuture" : {
+    "ValueTask" : {
       "type" : "object",
       "properties" : {
         "cancelled" : {
@@ -1063,7 +1063,7 @@
         }
       }
     },
-    "CompletableFutureClusterData" : {
+    "ValueTaskClusterData" : {
       "type" : "object",
       "properties" : {
         "cancelled" : {

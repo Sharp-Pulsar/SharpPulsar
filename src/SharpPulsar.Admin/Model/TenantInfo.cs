@@ -20,7 +20,7 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	using ReflectionUtils = org.apache.pulsar.client.admin.utils.ReflectionUtils;
+	using ReflectionUtils = SharpPulsar.Admin.Interfaces.utils.ReflectionUtils;
 
 	public interface TenantInfo
 	{

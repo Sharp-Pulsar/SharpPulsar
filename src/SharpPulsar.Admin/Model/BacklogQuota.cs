@@ -45,8 +45,30 @@ namespace SharpPulsar.Admin.Model
         /// 'producer_exception', 'consumer_backlog_eviction'
         /// </summary>
         [JsonPropertyName("policy")]
-        public string Policy { get; set; }
+        public RetentionPolicy Policy { get; set; }
+
+
+        public enum BacklogQuotaType
+        {
+            DestinationStorage,
+            MessageAge,
+        }
+
+        public enum RetentionPolicy
+        {
+            /// <summary>
+            /// Policy which holds producer's send request until the resource becomes available (or holding times out). </summary>
+            ProducerRequestHold,
+
+            /// <summary>
+            /// Policy which throws javax.jms.ResourceAllocationException to the producer. </summary>
+            ProducerException,
+
+            /// <summary>
+            /// Policy which evicts the oldest message from the slowest consumer's backlog. </summary>
+            ConsumerBacklogEviction,
+        }
     }
 
-
+    
 }

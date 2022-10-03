@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
@@ -10,6 +10,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Admin\PulsarAdmin.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>PulsarAdmin.json</DependentUpon>
+    </Compile>
     <Compile Update="Function\PulsarFunction.cs">
       <DependentUpon>PulsarFunction.json</DependentUpon>
       <DesignTime>True</DesignTime>
