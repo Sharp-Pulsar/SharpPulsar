@@ -4,6 +4,11 @@
     <TargetFrameworks>net6.0</TargetFrameworks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="NonPersistentTopics.cs" />
+    <Compile Remove="PersistentTopics.cs" />
+  </ItemGroup>
+
   <ItemGroup> 
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

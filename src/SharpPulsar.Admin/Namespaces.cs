@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using SharpPulsar.Admin.Interfaces;
 using SharpPulsar.Admin.Model;
 namespace SharpPulsar.Admin
 {

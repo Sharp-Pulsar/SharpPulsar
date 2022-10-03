@@ -3462,7 +3462,7 @@ namespace SharpPulsar.Admin.Interfaces
 		/// <param name="namespace">
 		///            Namespace name </param>
 		/// <param name="lag"> the duration to wait before deleting the local copy </param>
-		/// <param name="unit"> the timeunit of the duration
+		/// <param name="unit"> the TimeSpan of the duration
 		/// </param>
 		/// <exception cref="NotAuthorizedException">
 		///             Don't have admin permission </exception>
@@ -3486,7 +3486,7 @@ namespace SharpPulsar.Admin.Interfaces
 		/// <param name="namespace">
 		///            Namespace name </param>
 		/// <param name="lag"> the duration to wait before deleting the local copy </param>
-		/// <param name="unit"> the timeunit of the duration </param>
+		/// <param name="unit"> the TimeSpan of the duration </param>
 		ValueTask SetOffloadDeleteLagAsync(string @namespace, long lag, TimeSpan unit);
 
 		/// <summary>

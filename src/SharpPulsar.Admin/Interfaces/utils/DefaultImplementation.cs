@@ -27,7 +27,7 @@ namespace SharpPulsar.Admin.Interfaces.Utils
 	/// </summary>
 	public class DefaultImplementation
 	{
-		private static readonly Type adminClientBuilderImpl = ReflectionUtils.NewClassInstance("SharpPulsar.Admin.Interfaces.internal.PulsarAdminBuilderImpl");
+		private static readonly Type adminClientBuilderImpl = ReflectionUtils.NewClassInstance("SharpPulsar.Admin.Interfaces.internal.PulsarAdminBuilder");
 
 		private static readonly System.Reflection.ConstructorInfo<IOffloadProcessStatus> oFFLOADPROCESSSTATUSIMPLStatusStringMessageid = ReflectionUtils.GetConstructor("SharpPulsar.Admin.Interfaces.internal.OffloadProcessStatusImpl", typeof(LongRunningProcessStatus.Status), typeof(string), typeof(MessageId));
 

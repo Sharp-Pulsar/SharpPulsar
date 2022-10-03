@@ -89,8 +89,17 @@ namespace SharpPulsar.Common.Naming
                 Cache[topic] = new TopicName(topic);
             return Cache[topic];
         }
+        public static TopicName GetPartitionedTopicName(string topic)
+        {
+            TopicName topicName = TopicName.Get(topic);
+            if (topicName.Partitioned)
+            {
+                return TopicName.Get(topicName.PartitionedTopicName);
+            }
+            return topicName;
+        }
 
-		public static bool IsValid(string topic)
+        public static bool IsValid(string topic)
 		{
 			try
 			{

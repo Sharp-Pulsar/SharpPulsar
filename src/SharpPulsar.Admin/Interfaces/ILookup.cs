@@ -25,7 +25,7 @@ namespace SharpPulsar.Admin.Interfaces
     /// <summary>
     /// This is an interface class to allow using command line tool to quickly lookup the broker serving the topic.
     /// </summary>
-    public interface ILookup
+    public interface Lookup
 	{
 
 		/// <summary>

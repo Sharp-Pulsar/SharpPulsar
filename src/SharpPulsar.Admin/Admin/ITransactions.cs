@@ -151,16 +151,16 @@ namespace SharpPulsar.Admin
         /// </summary>
         /// <param name="coordinatorId"> the coordinator id of getting slow transaction status. </param>
         /// <param name="timeout"> the timeout </param>
-        /// <param name="timeUnit"> the timeout timeUnit </param>
+        /// <param name="TimeSpan"> the timeout TimeSpan </param>
         /// <returns> the future metadata of slow transactions. </returns>
-        Task<Microsoft.Rest.HttpOperationResponse<IDictionary<string, TransactionMetadata>>> GetSlowTransactionsByCoordinatorIdAsync(int? coordinatorId, long timeout, long timeUnit, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        Task<Microsoft.Rest.HttpOperationResponse<IDictionary<string, TransactionMetadata>>> GetSlowTransactionsByCoordinatorIdAsync(int? coordinatorId, long timeout, long TimeSpan, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <summary>
         /// Get slow transactions by coordinator id.
         /// </summary>
         /// <param name="coordinatorId"> the coordinator id of getting slow transaction status. </param>
         /// <param name="timeout"> the timeout </param>
-        /// <param name="timeUnit"> the timeout timeUnit </param>
+        /// <param name="TimeSpan"> the timeout TimeSpan </param>
         /// <returns> the metadata of slow transactions. </returns>
 
         Microsoft.Rest.HttpOperationResponse<IDictionary<string, TransactionMetadata>> GetSlowTransactionsByCoordinatorId(int? coordinatorId, long timeout, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -169,7 +169,7 @@ namespace SharpPulsar.Admin
         /// Get slow transactions.
         /// </summary>
         /// <param name="timeout"> the timeout </param>
-        /// <param name="timeUnit"> the timeout timeUnit
+        /// <param name="TimeSpan"> the timeout TimeSpan
         /// </param>
         /// <returns> the future metadata of slow transactions. </returns>
         Task<Microsoft.Rest.HttpOperationResponse<IDictionary<string, TransactionMetadata>>> GetSlowTransactionsAsync(long timeout, Dictionary<string, List<string>> customHeaders = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -179,7 +179,7 @@ namespace SharpPulsar.Admin
         /// Get slow transactions.
         /// </summary>
         /// <param name="timeout"> the timeout </param>
-        /// <param name="timeUnit"> the timeout timeUnit
+        /// <param name="TimeSpan"> the timeout TimeSpan
         /// </param>
         /// <returns> the metadata of slow transactions. </returns>
 
