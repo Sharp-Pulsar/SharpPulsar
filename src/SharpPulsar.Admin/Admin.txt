@@ -1,2 +1,0 @@
-﻿https://github.com/apache/pulsar/blob/d14b3e395387a0bf872b1004bf5c569a6cd52499/pulsar-client-admin/src/main/java/org/apache/pulsar/client/admin/internal/BookiesImpl.java
-https://github.com/apache/pulsar/blob/82b820097503c8270181452b02202297febd4bf6/pulsar-broker/src/main/java/org/apache/pulsar/broker/admin/v2/Bookies.java

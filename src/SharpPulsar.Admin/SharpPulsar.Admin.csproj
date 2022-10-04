@@ -1,33 +1,45 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>  
+    <PackageIcon>SharpPulsar.Admin.jpg</PackageIcon>
+	<PackageIconUrl />
   </PropertyGroup>
-
+  
   <ItemGroup>
-    <Compile Remove="NonPersistentTopics.cs" />
-    <Compile Remove="PersistentTopics.cs" />
-  </ItemGroup>
-
-  <ItemGroup> 
-    <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Admin\PulsarAdmin.cs">
+    <Compile Update="v2\Admin.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>PulsarAdmin.json</DependentUpon>
+      <DependentUpon>Admin.json</DependentUpon>
     </Compile>
-    <Compile Update="Function\PulsarFunction.cs">
-      <DependentUpon>PulsarFunction.json</DependentUpon>
+    <Compile Update="v2\Lookup.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
+      <DependentUpon>Lookup.json</DependentUpon>
+    </Compile>
+    <Compile Update="v3\Functions.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Functions.json</DependentUpon>
+    </Compile>
+    <Compile Update="v3\Sinks.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Sinks.json</DependentUpon>
+    </Compile>
+    <Compile Update="v3\Sources.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Sources.json</DependentUpon>
+    </Compile>
+    <Compile Update="v3\Transactions.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Transactions.json</DependentUpon>
     </Compile>
   </ItemGroup>
 
@@ -35,13 +47,12 @@
     <None Update=".ruleset">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Admin\PulsarAdmin.json">
-      <LastGenOutput>PulsarAdmin.cs</LastGenOutput>
-      <Generator>AutoRestCodeGenerator</Generator>
+	<None Include="SharpPulsar.Admin.jpg">
+          <Pack>True</Pack>
+          <PackagePath></PackagePath>
     </None>
-    <None Update="Function\PulsarFunction.json">
-      <LastGenOutput>PulsarFunction.cs</LastGenOutput>
-      <Generator>NSwagCodeGenerator</Generator>
+    <None Update="SharpPulsar.Admin.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
