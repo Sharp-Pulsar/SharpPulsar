@@ -1,7 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Trino.Message;
 
-namespace SharpPulsar.Trino.Public
+namespace SharpPulsar.Trino
 {
     public class SqlInstance
     {

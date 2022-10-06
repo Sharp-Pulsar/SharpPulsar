@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using SharpPulsar.Batch;
+﻿using SharpPulsar.Batch;
 using SharpPulsar.Interfaces;
 
 /// <summary>
@@ -23,7 +22,7 @@ using SharpPulsar.Interfaces;
 namespace SharpPulsar.Test.API
 {
 
-    
+
     /// <summary>
     /// Test compareTo method in MessageId and BatchMessageId
     /// </summary>

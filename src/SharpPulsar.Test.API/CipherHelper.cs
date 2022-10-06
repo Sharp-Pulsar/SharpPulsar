@@ -1,6 +1,5 @@
 ﻿using Org.BouncyCastle.Security;
 using SharpPulsar.Utility;
-using System;
 using System.Security.Cryptography;
 using System.Text;
 using Xunit.Abstractions;

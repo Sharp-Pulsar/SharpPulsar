@@ -4,7 +4,7 @@ using SharpPulsar.Trino.Live;
 using SharpPulsar.Trino.Message;
 using SharpPulsar.Trino.Naming;
 
-namespace SharpPulsar.Trino.Public
+namespace SharpPulsar.Trino
 {
     public class LiveSqlInstance
     {

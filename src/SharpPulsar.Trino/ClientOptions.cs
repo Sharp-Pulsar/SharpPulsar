@@ -1,5 +1,7 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.Net;
+using System.Security.Policy;
 using NodaTime;
 using SharpPulsar.Trino.Precondition;
 using SharpPulsar.Trino.Trino;
@@ -27,6 +29,7 @@ namespace SharpPulsar.Trino
         public string AccessToken;
 
         public string User = Environment.UserName;
+
         public string Principal = Environment.UserName;
 
         public string Password;
@@ -37,13 +40,19 @@ namespace SharpPulsar.Trino
 
         public string ClientTags = "";
 
+        public string TraceToken;
+
         public string Catalog;
 
         public string Schema;
 
         public string File;
 
+        public bool Debug;
+
         public string Execute;
+
+        public bool? Progress;
 
         public string SessionUser;
 
@@ -60,13 +69,24 @@ namespace SharpPulsar.Trino
         public TimeSpan ClientRequestTimeout = TimeSpan.FromMinutes(2);
 
         public bool ExternalAuthentication;
+
         public bool DisableCompression;
 
-
+        public bool IgnoreErrors;
+        
+        public TimeZoneKey TimeZone;
         public virtual ClientSession ToClientSession()
         {
             var timeZoneId = DateTimeZoneProviders.Tzdb.GetSystemDefault().ToString();
-            return new ClientSession(ParseServer(Server), SessionUser, User, Source, null, ParseClientTags(ClientTags), ClientInfo, Catalog, Schema, null, timeZoneId, CultureInfo.CurrentCulture, ToResourceEstimates(ResourceEstimates), ToProperties(SessionProperties), new Dictionary<string, string>(), new Dictionary<string, ClientSelectedRole>(), ToExtraCredentials(ExtraCredentials), null, ClientRequestTimeout, DisableCompression);
+            return ClientSession.NewBuilder().Server(ParseServer(Server)).Principal(Principal).User(User)
+                .Source(Source).TraceToken(TraceToken).ClientTags(ParseClientTags(ClientTags)).
+                ClientInfo(ClientInfo).Catalog(Catalog).Schema(Schema).TimeZone(timeZoneId).Locale(CultureInfo.CurrentCulture)
+                .ResourceEstimates(ToResourceEstimates(ResourceEstimates)).Properties(ToProperties(SessionProperties)).
+                Credentials(ToExtraCredentials(ExtraCredentials)).TransactionId(null)
+                .ClientRequestTimeout(ClientRequestTimeout).CompressionDisabled(DisableCompression)
+                .Properties(new Dictionary<string, string>()).PreparedStatements(new Dictionary<string, string>())
+                .Roles(new Dictionary<string, ClientSelectedRole>()).Build();
+            ;
         }
 
         public static Uri ParseServer(string server)
@@ -298,6 +318,7 @@ namespace SharpPulsar.Trino
                 return HashCode.Combine(Name, Value);
             }
         }
+    
     }
 
 }

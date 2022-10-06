@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using NodaTime;
 using SharpPulsar.Auth.OAuth2.Protocol;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
@@ -26,10 +25,10 @@ using SharpPulsar.Interfaces;
 /// </summary>
 namespace SharpPulsar.Auth.OAuth2
 {
-	/// <summary>
-	/// Pulsar client authentication provider based on OAuth 2.0.
-	/// </summary>
-	[Serializable]
+    /// <summary>
+    /// Pulsar client authentication provider based on OAuth 2.0.
+    /// </summary>
+    [Serializable]
 	public class AuthenticationOAuth2 : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 

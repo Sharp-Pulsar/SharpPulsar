@@ -6,9 +6,7 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Reader;
 using SharpPulsar.Schemas.Writer;
-using System;
 using System.Text;
-using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

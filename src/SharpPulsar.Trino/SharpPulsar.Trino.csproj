@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <PackageIcon>SharpPulsar.Trino.jpg</PackageIcon>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>  
     <PackageIconUrl />
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>   
   </PropertyGroup>
 
   <ItemGroup>

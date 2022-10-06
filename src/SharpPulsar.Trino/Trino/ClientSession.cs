@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text;
+using Akka.Util;
 using SharpPulsar.Trino.Precondition;
 
 /*
@@ -36,7 +37,10 @@ namespace SharpPulsar.Trino.Trino
         private readonly IDictionary<string, string> _properties;
         public string TransactionId { get; }
         public TimeSpan ClientRequestTimeout { get; }
-
+        public static Builder NewBuilder()
+        {
+            return new Builder();
+        }
         public static Builder NewBuilder(ClientSession clientSession)
         {
             return new Builder(clientSession);
@@ -45,14 +49,16 @@ namespace SharpPulsar.Trino.Trino
         {
             return NewBuilder(session).TransactionId().Build();
         }
-        public ClientSession(Uri server, string principal, string user, string source, string traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string path, string timeZoneId, CultureInfo locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, ClientSelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, TimeSpan clientRequestTimeout, bool compressionDisabled)
+        public ClientSession(Uri server, Option<string> principal, Option<string> user, string source, Option<string> traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string path, string timeZoneId, CultureInfo locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, ClientSelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, TimeSpan clientRequestTimeout, bool compressionDisabled)
         {
             Server = Condition.RequireNonNull(server, "Server", "server is null");
-            Principal = Condition.RequireNonNull(principal, "principal", "principal is null");
-            User = Condition.RequireNonNull(user, "user", "user is null");
+            Principal = Condition.RequireNonNull(principal.Value, "principal", "principal is null");
+            if(user.HasValue)    
+             User = Condition.RequireNonNull(user.Value, "user", "user is null");
             Path = path;
             Source = source;
-            _traceToken = Condition.RequireNonNull(traceToken, "traceToken", "traceToken is null");
+            if (traceToken.HasValue)
+                _traceToken = Condition.RequireNonNull(traceToken.Value, "traceToken", "traceToken is null");
             _clientTags = Condition.RequireNonNull(clientTags, "clientTags", "clientTags is null") ;
             ClientInfo = clientInfo;
             Catalog = catalog; 
@@ -177,7 +183,9 @@ namespace SharpPulsar.Trino.Trino
             internal string transactionId;
             internal TimeSpan clientRequestTimeout;
             internal bool compressionDisabled;
-
+            internal Builder()
+            {
+            }
             public Builder(ClientSession clientSession)
             {
                 Condition.RequireNonNull(clientSession, "clientSession", "clientSession is null");

@@ -1,5 +1,4 @@
-﻿using System;
-using SharpPulsar.Schemas;
+﻿using SharpPulsar.Schemas;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -20,7 +19,7 @@ using SharpPulsar.Schemas;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-    
+
     public class TimeSchemaTest
     {
         [Fact]

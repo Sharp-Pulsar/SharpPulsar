@@ -63,27 +63,6 @@ namespace SharpPulsar.Trino
         {
             _httpClient.Dispose();
         }
-        /*
-		private static void SetupExternalAuth(OkHttpClient.Builder builder, ClientSession session, bool enabled, System.Action<OkHttpClient.Builder> sslSetup)
-		{
-			if(!enabled)
-			{
-				return;
-			}
-			checkArgument(session.Server.Scheme.equalsIgnoreCase("https"), "Authentication using externalAuthentication requires HTTPS to be enabled");
-
-			RedirectHandler redirectHandler = uri =>
-			{
-			@out.println("External authentication required. Please go to:");
-			@out.println(uri.ToString());
-			};
-			TokenPoller poller = new HttpTokenPoller(builder.build(), sslSetup);
-
-			ExternalAuthenticator authenticator = new ExternalAuthenticator(redirectHandler, poller, Duration.ofMinutes(10));
-
-			builder.authenticator(authenticator);
-			builder.addInterceptor(authenticator);
-		}*/
         private static void SetupBasicAuth(HttpClient client, ClientSession session, string user, string password)
         {
             if (!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(password))

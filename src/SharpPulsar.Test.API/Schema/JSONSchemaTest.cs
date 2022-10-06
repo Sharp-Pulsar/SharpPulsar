@@ -1,5 +1,4 @@
-﻿using System;
-using SharpPulsar.Exceptions;
+﻿using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
@@ -24,7 +23,7 @@ using SharpPulsar.Shared;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-    
+
     public class JSONSchemaTest
     {
         [Fact]

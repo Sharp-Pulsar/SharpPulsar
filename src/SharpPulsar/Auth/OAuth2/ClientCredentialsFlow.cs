@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using SharpPulsar.Auth.OAuth2.Protocol;
 using SharpPulsar.Exceptions;
@@ -28,13 +26,13 @@ using SharpPulsar.Exceptions;
 /// </summary>
 namespace SharpPulsar.Auth.OAuth2
 {
-	
-	/// <summary>
-	/// Implementation of OAuth 2.0 Client Credentials flow.
-	/// </summary>
-	/// <seealso cref="<a href="https://tools.ietf.org/html/rfc6749.section-4.4">OAuth 2.0 RFC 6749, section 4.4</a>"/>
+
+    /// <summary>
+    /// Implementation of OAuth 2.0 Client Credentials flow.
+    /// </summary>
+    /// <seealso cref="<a href="https://tools.ietf.org/html/rfc6749.section-4.4">OAuth 2.0 RFC 6749, section 4.4</a>"/>
     /// 
-	[Serializable]
+    [Serializable]
 	internal class ClientCredentialsFlow : FlowBase
 	{
 		public const string ConfigParamIssuerUrl = "issuerUrl";

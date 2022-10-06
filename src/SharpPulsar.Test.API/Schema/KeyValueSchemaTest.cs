@@ -3,7 +3,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
-using System.Collections.Generic;
 using System.Text;
 
 /// <summary>
@@ -26,7 +25,7 @@ using System.Text;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-    
+
     public class KeyValueSchemaTest
     {
         [Fact]
