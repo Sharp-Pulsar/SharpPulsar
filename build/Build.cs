@@ -263,7 +263,7 @@ partial class Build : NukeBuild
           var projects = new List<string>
             {
                 "SharpPulsar",
-                "SharpPulsar.Sql",
+                "SharpPulsar.Trino",
                 "SharpPulsar.Admin"
             };
           foreach (var projectName in projects)
