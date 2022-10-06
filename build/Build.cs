@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Text.Json;
 using Nuke.Common;
 using Nuke.Common.ChangeLog;
 using Nuke.Common.CI;
@@ -77,7 +76,7 @@ partial class Build : NukeBuild
     public AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
 
     GitHubClient GitHubClient;
-    public ChangeLog Changelog => ReadChangelog(ChangelogFile);
+    public ChangeLog Changelog => MdHelper.ReadChangelog(ChangelogFile);
 
     public ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
     public string ReleaseVersion => LatestVersion.Version?.ToString() ?? throw new ArgumentException("Bad Changelog File. Define at least one version");
@@ -144,8 +143,7 @@ partial class Build : NukeBuild
             var projects = new List<string> 
             {
                 "SharpPulsar.Test",
-                "SharpPulsar.Sql.Tests",
-                "SharpPulsar.Test.Admin"
+                "SharpPulsar.Trino.Test"
             };
 
             foreach (var projectName in projects)

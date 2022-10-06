@@ -17,13 +17,12 @@
 /// under the License.
 /// </summary>
 
-using System;
 using Xunit.Abstractions;
 using Range = SharpPulsar.Common.Range;
 
 namespace SharpPulsar.Test.Api
 {
-    
+
     public class RangeTest
 	{
         private readonly ITestOutputHelper _output;

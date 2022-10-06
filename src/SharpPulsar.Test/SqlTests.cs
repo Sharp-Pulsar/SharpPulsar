@@ -16,7 +16,6 @@ using SharpPulsar.TestContainer;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Builder;
 using Akka.Actor;
-using SharpPulsar.Sql.Public;
 
 namespace SharpPulsar.Test
 {

@@ -5,7 +5,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.User

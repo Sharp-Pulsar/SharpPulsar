@@ -12,7 +12,6 @@ using SharpPulsar.Shared;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas.Generic;
 using Akka.Event;
-using SharpPulsar.Auth.OAuth2;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

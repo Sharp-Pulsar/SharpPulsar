@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Schemas;
 using System.Text;
 using SharpPulsar.Shared;
-using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

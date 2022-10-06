@@ -17,7 +17,6 @@
 /// under the License.
 /// </summary>
 
-using System;
 using System.Text.Json;
 using SharpPulsar.Batch;
 

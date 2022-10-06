@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using SharpPulsar.Interfaces;
+﻿using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
@@ -24,7 +23,7 @@ using SharpPulsar.Shared;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-    
+
     /// <summary>
     /// Unit test <seealso cref="KeyValueSchemaInfoTest"/>.
     /// </summary>

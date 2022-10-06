@@ -21,7 +21,6 @@
     <PackageReference Include="AvroSchemaGenerator" Version="2.7.0" />
     <PackageReference Include="DotNetty.Common" Version="0.7.5" />
     <PackageReference Include="Google.Protobuf" Version="3.21.7" />
-    <PackageReference Include="Google.Protobuf" Version="3.21.6" />
     <PackageReference Include="IdentityModel" Version="6.0.0" />
     <PackageReference Include="JsonSubTypes" Version="1.9.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.2.16" />
@@ -39,11 +38,6 @@
     <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
     <PackageReference Include="NodaTime" Version="3.1.3" />
     <PackageReference Include="NSwag.ApiDescription.Client" Version="13.17.0"/>
-    <PackageReference Include="NodaTime" Version="3.1.2" />
-    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.16.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="OpenTelemetry" Version="1.3.1" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="Pro.NBench.xUnit" Version="2.0.0" />
