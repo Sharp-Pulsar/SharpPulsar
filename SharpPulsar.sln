@@ -108,6 +108,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Trino", "src\Sh
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Trino.Test", "src\SharpPulsar.Trino.Test\SharpPulsar.Trino.Test.csproj", "{90ABB477-D1F6-4440-9BA3-7079A2A96FC3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Admin.Test", "src\SharpPulsar.Admin.Test\SharpPulsar.Admin.Test.csproj", "{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -156,6 +158,10 @@ Global
 		{90ABB477-D1F6-4440-9BA3-7079A2A96FC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90ABB477-D1F6-4440-9BA3-7079A2A96FC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90ABB477-D1F6-4440-9BA3-7079A2A96FC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
