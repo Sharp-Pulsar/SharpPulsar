@@ -24,9 +24,9 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public class PostSchemaResponse
 	{
-		private readonly SchemaVersion _version;
+		private readonly ISchemaVersion _version;
 
-        public PostSchemaResponse(SchemaVersion version)
+        public PostSchemaResponse(ISchemaVersion version)
         {
             this._version = version;
         }

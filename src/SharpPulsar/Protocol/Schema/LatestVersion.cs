@@ -21,7 +21,7 @@ namespace SharpPulsar.Protocol.Schema
 	/// <summary>
 	/// Latest schema version.
 	/// </summary>
-	public sealed class LatestVersion : SchemaVersion
+	public sealed class LatestVersion : ISchemaVersion
 	{
 		private static readonly byte[] Empty = new byte[]{};
 

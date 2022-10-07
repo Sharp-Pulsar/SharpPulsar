@@ -267,5 +267,37 @@ namespace SharpPulsar.Protocol.Proto
                 tcClientConnectRequest = value
             };
         }
+        public static BaseCommand ToBaseCommand(this CommandWatchTopicListClose value)
+        {
+            return new BaseCommand
+            {
+                type = BaseCommand.Type.WatchTopicListClose,
+                watchTopicListClose = value
+            };
+        }
+        public static BaseCommand ToBaseCommand(this CommandWatchTopicList value)
+        {
+            return new BaseCommand
+            {
+                type = BaseCommand.Type.WatchTopicList,
+                watchTopicList = value
+            };
+        }
+        public static BaseCommand ToBaseCommand(this CommandWatchTopicListSuccess value)
+        {
+            return new BaseCommand
+            {
+                type = BaseCommand.Type.WatchTopicListSuccess,
+                watchTopicListSuccess = value
+            };
+        }
+        public static BaseCommand ToBaseCommand(this CommandWatchTopicUpdate value)
+        {
+            return new BaseCommand
+            {
+                type = BaseCommand.Type.WatchTopicUpdate,
+                watchTopicUpdate = value
+            };
+        }
     }
 }

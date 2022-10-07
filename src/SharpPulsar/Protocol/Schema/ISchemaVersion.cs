@@ -19,16 +19,17 @@
 namespace SharpPulsar.Protocol.Schema
 {
 	/// <summary>
-	/// Empty schema version.
+	/// Schema version.
 	/// </summary>
-	public sealed class EmptyVersion : ISchemaVersion
+	public interface ISchemaVersion
 	{
-		private static readonly byte[] Empty = {};
+        byte[] Bytes();
+	}
 
-		public byte[] Bytes()
-		{
-			return Empty;
-		}
+	public static class SchemaVersionFields
+	{
+		public static readonly ISchemaVersion Latest = new LatestVersion();
+		public static readonly ISchemaVersion Empty = new EmptyVersion();
 	}
 
 }

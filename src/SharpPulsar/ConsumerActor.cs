@@ -2,6 +2,7 @@
 using Akka.Util;
 using Akka.Util.Internal;
 using ProtoBuf;
+using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Builder;
@@ -188,8 +189,18 @@ namespace SharpPulsar
 			_client = client;
 			_consumerId = consumerId;
 			_subscriptionMode = conf.SubscriptionMode;
-			_startMessageId = startMessageId != null ? new BatchMessageId((MessageId) startMessageId) : null;
-			_initialStartMessageId = _startMessageId;
+            if (startMessageId != null)
+            {
+                if (startMessageId is ChunkMessageId)
+                {
+                    _startMessageId = new BatchMessageId(((ChunkMessageId)startMessageId).FirstChunkMessageId);
+                }
+                else
+                {
+                    _startMessageId = new BatchMessageId((MessageId)startMessageId);
+                }
+            }
+            _initialStartMessageId = _startMessageId;
 			_startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 			_availablePermits = 0;
 			_subscribeTimeout = DateTimeHelper.CurrentUnixTimeMillis() + (long)clientConfiguration.OperationTimeout.TotalMilliseconds;

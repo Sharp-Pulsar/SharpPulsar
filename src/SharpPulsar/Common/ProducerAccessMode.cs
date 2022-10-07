@@ -35,8 +35,15 @@ namespace SharpPulsar.Common
         Exclusive,
 
         /// <summary>
+        /// Acquire exclusive access for the producer. Any existing producer will be removed and
+        /// invalidated immediately.
+        /// </summary>
+        ExclusiveWithFencing,
+
+        /// <summary>
         /// Producer creation is pending until it can acquire exclusive access.
         /// </summary>
         WaitForExclusive,
+
     }
 }

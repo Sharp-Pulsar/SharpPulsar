@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,18 +21,26 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	/// <summary>
-	/// Schema version.
-	/// </summary>
-	public interface SchemaVersion
-	{
-        byte[] Bytes();
-	}
 
-	public static class SchemaVersionFields
-	{
-		public static readonly SchemaVersion Latest = new LatestVersion();
-		public static readonly SchemaVersion Empty = new EmptyVersion();
-	}
+    /// <summary>
+    /// Schema storage.
+    /// </summary>
+    public interface ISchemaStorage
+    {
 
+        ValueTask<ISchemaVersion> Put(string key, sbyte[] value, sbyte[] hash);
+
+        ValueTask<StoredSchema> Get(string key, ISchemaVersion version);
+
+        ValueTask<IList<ValueTask<StoredSchema>>> GetAll(string key);
+
+        ValueTask<ISchemaVersion> Delete(string key, bool forcefully);
+
+        ValueTask<ISchemaVersion> Delete(string key);
+
+        ISchemaVersion VersionFromBytes(sbyte[] version);
+        void Start();
+        void Close();
+
+    }
 }
