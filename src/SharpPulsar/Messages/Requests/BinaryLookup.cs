@@ -1,6 +1,8 @@
 ﻿using Akka.Actor;
+using NLog.Filters;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Protocol.Proto;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Net;
@@ -30,10 +32,14 @@ namespace SharpPulsar.Messages.Requests
     {
         public NamespaceName Namespace { get; }
         public Mode Mode { get; }
-        public GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode)
+        public string TopicsPattern { get; }
+        public string TopicsHash { get; }
+        public GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode, string topicsPattern, string topicsHash)
         {
             Namespace = @namespace;
             Mode = mode;
+            TopicsPattern = topicsPattern;  
+            TopicsHash = topicsHash;    
         }
     }
     public sealed class GetTopicsOfNamespaceRetry
@@ -55,9 +61,15 @@ namespace SharpPulsar.Messages.Requests
     public sealed class GetTopicsUnderNamespaceResponse
     {
         public ImmutableList<string> Topics { get; }
-        public GetTopicsUnderNamespaceResponse(IList<string> topics)
+        public string TopicsHash { get; }
+        public bool Changed { get; }
+        public bool Filtered { get; }
+        public GetTopicsUnderNamespaceResponse(IList<string> topics, string topicsHash, bool changed, bool filtered)
         {
             Topics = topics.ToImmutableList();
+            TopicsHash = topicsHash;    
+            Changed = changed;  
+            Filtered = filtered;    
         }
     }
     public sealed class GetSchemaInfoResponse

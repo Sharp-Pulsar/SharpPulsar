@@ -74,7 +74,7 @@ namespace SharpPulsar
 			UpdateServiceUrl(serviceUrl);
 			Awaiting();
 		}
-		private void UpdateServiceUrl(string serviceUrl)
+        private void UpdateServiceUrl(string serviceUrl)
 		{
 			_serviceNameResolver.UpdateServiceUrl(serviceUrl);
 		}
@@ -141,7 +141,7 @@ namespace SharpPulsar
                     _getTopicsUnderNamespaceBackOff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(opTimeout.Multiply(2)).SetMax(TimeSpan.FromMinutes(1)).Create();
                     _replyTo = Sender;
                     await GetCnxAndRequestId();
-                    await GetTopicsUnderNamespace(t.Namespace, t.Mode, opTimeout);
+                    await GetTopicsUnderNamespace(t.Namespace, t.Mode, t.TopicsPattern, t.TopicsHash, opTimeout);
                 }
                 catch (Exception e)
                 {
@@ -405,21 +405,21 @@ namespace SharpPulsar
 		}
 
         public IStash Stash { get; set; }
-        private async ValueTask GetTopicsUnderNamespace(NamespaceName ns, Mode mode, TimeSpan opTimeout)
+        private async ValueTask GetTopicsUnderNamespace(NamespaceName ns, Mode mode, string topicsPattern, string topicsHash, TimeSpan opTimeout)
         {
-            var (response, timeout) = await TopicsUnderNamespace(ns, mode, opTimeout);
+            var (response, timeout) = await TopicsUnderNamespace(ns, mode, topicsPattern, topicsHash, opTimeout);
             while (response == null)
             {
-                (response, timeout) = await TopicsUnderNamespace(ns, mode, timeout);
+                (response, timeout) = await TopicsUnderNamespace(ns, mode, topicsPattern, topicsHash, timeout);
                 await Task.Delay(TimeSpan.FromMilliseconds(100));
             }
             _replyTo.Tell(response);
         }
-        private async ValueTask<(AskResponse response, TimeSpan timeout)> TopicsUnderNamespace(NamespaceName ns, Mode mode, TimeSpan opTimeout)
+        private async ValueTask<(AskResponse response, TimeSpan timeout)> TopicsUnderNamespace(NamespaceName ns, Mode mode, string topicsPattern, string topicsHash, TimeSpan opTimeout)
 		{
             try
             {
-                var request = Commands.NewGetTopicsOfNamespaceRequest(ns.ToString(), _requestId, mode);
+                var request = Commands.NewGetTopicsOfNamespaceRequest(ns.ToString(), _requestId, mode, topicsPattern, topicsHash);
                 var payload = new Payload(request, _requestId, "NewGetTopicsOfNamespaceRequest");
                 var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
                 var response = askResponse.ConvertTo<GetTopicsOfNamespaceResponse>();
@@ -427,8 +427,9 @@ namespace SharpPulsar
                 {
                     _log.Debug($"[namespace: {ns}] Successfully got {response.Response.Topics.Count} topics list in request: {_requestId}");
                 }
+                var res = response.Response;
                 var result = new List<string>();
-                var tpics = response.Response.Topics.Where(x => !x.Contains("__transaction")).ToArray();
+                var tpics = res.Topics.Where(x => !x.Contains("__transaction")).ToArray();
                 foreach (var topic in tpics)
                 {
                     var filtered = TopicName.Get(topic).PartitionedTopicName;
@@ -438,7 +439,7 @@ namespace SharpPulsar
                     }
                 }
                 //_replyTo.Tell(new AskResponse(new GetTopicsUnderNamespaceResponse(result)));
-                return (new AskResponse(new GetTopicsUnderNamespaceResponse(result)), opTimeout);
+                return (new AskResponse(new GetTopicsUnderNamespaceResponse(result, res.TopicsHash, res.Changed, res.Filtered)), opTimeout);
             }
             catch
             {
