@@ -1,12 +1,18 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util;
+using App.Metrics.Concurrency;
+using DotNetty.Common.Utilities;
+using SharpPulsar.Batch;
 using SharpPulsar.Builder;
 using SharpPulsar.Cache;
 using SharpPulsar.Common;
@@ -16,11 +22,13 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
+using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas;
@@ -30,7 +38,6 @@ using SharpPulsar.Transaction;
 using SharpPulsar.Utils;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
-
 namespace SharpPulsar.User
 {
     public class PulsarClient : IPulsarClient
@@ -44,7 +51,7 @@ namespace SharpPulsar.User
         private readonly IActorRef _cnxPool;
         private IActorRef _lookup;
         private readonly IActorRef _generator;
-
+        private Backoff _backoff;
         public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
         {
             _generator = idGenerator;
@@ -309,33 +316,32 @@ namespace SharpPulsar.User
             var namespaceName = destination.NamespaceObject;
             IActorRef consumer = null;
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
+            var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value, regex, null)).ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
 
             var result = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
-            var topics = result.Topics;
+            var topicsList = result.Topics;
             if (_log.IsDebugEnabled)
             {
-                _log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topics.Count}");
-                topics.ForEach(topicName => _log.Debug($"Get topics under namespace {namespaceName}, topic: {topicName}"));
+                _log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topicsList.Count}, topicsHash: {result.TopicsHash}, changed: {result.Changed}, filtered: {result.Topics}");
+                topicsList.ForEach(topicName => _log.Debug($"Get topics under namespace {namespaceName}, topic: {topicName}"));
             }
-            var topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
+            if (!result.Filtered)
+            {
+                topicsList = TopicList.FilterTopics(result.Topics, conf.TopicsPattern).ToImmutableList();
+            }
+            
             topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
             var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
 
-            consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+            consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, result.TopicsHash, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
             var cnsr = await tcs.Task.ConfigureAwait(false);
            
             _client.Tell(new AddConsumer(cnsr));
             return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
         }
-        private IList<string> TopicsPatternFilter(IList<string> original, Regex topicsPattern)
-        {
-            var pattern = topicsPattern.ToString().Contains("://") ? new Regex(Regex.Split(topicsPattern.ToString(), @"\:\/\/")[1]) : topicsPattern;
-
-            return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic, @"\:\/\/")[1]).Success).ToList();
-        }
+        
         private Mode? ConvertRegexSubscriptionMode(RegexSubscriptionMode regexSubscriptionMode)
         {
             switch (regexSubscriptionMode)
@@ -352,19 +358,56 @@ namespace SharpPulsar.User
         }
         private async ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string topic)
         {
+            var future = new TaskCompletionSource<PartitionedTopicMetadata>(TaskCreationOptions.RunContinuationsAsynchronously);
+
             try
             {
                 var topicName = TopicName.Get(topic);
-                var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
-                if (result.Failed)
-                    throw result.Exception;
-
-                return result.ConvertTo<PartitionedTopicMetadata>();
+                var opTimeoutMs = Conf.LookupTimeoutMs;
+                var backoff = (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(Conf.InitialBackoffIntervalMs))
+                    .SetMandatoryStop(TimeSpan.FromMilliseconds(opTimeoutMs * 2))
+                    .SetMax(TimeSpan.FromMilliseconds(Conf.InitialBackoffIntervalMs)).Create();
+                await GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, future, new List<Exception>());
+                
             }
             catch (ArgumentException e)
             {
-                throw new PulsarClientException.InvalidConfigurationException(e.Message);
-            } 
+                future.SetException(new PulsarClientException.InvalidConfigurationException(e.Message));
+            }
+            return future.Task.GetAwaiter().GetResult();
+        }
+        private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future, IList<Exception> previousExceptions)
+        {
+
+            var startTime = NanoTime();
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+            if (result.Failed)
+            {             
+                var remaining = -1 * TimeSpan.FromMilliseconds(NanoTime() + startTime);
+                var nextDelay = Math.Min(backoff.Next(), remainingTime);
+                var isLookupThrottling = !PulsarClientException.IsRetriableError(result.Exception) || result.Exception is PulsarClientException.AuthenticationException;
+                if (nextDelay <= 0 || isLookupThrottling)
+                {
+                    //PulsarClientException.PreviousExceptions(previousExceptions.Add(result.Exception));
+                    future.SetException(result.Exception);
+                    return;
+                }
+                _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {result.Exception?.Message}");
+
+                previousExceptions.Add(result.Exception);
+                var time = (long)(remaining - TimeSpan.FromMilliseconds(nextDelay)).TotalMilliseconds;
+                await GetPartitionedTopicMetadata(topicName, backoff, time, future, previousExceptions);
+                return;
+            }
+
+            future.SetResult(result.ConvertTo<PartitionedTopicMetadata>());
+        }
+        private static long NanoTime()
+        {
+            long nano = 10000L * Stopwatch.GetTimestamp();
+            nano /= TimeSpan.TicksPerMillisecond;
+            nano *= 100L;
+            return nano;
         }
         /// <summary>
         /// Create a producer builder that can be used to configure

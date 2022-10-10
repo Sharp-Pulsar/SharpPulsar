@@ -20,6 +20,8 @@ using Serializer = SharpPulsar.Helpers.Serializer;
 using SharpPulsar.Extension;
 using Akka.Util.Internal;
 using static SharpPulsar.Protocol.Proto.CommandAck;
+using SharpPulsar.Messages.Consumer;
+using static Akka.Actor.Status;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -408,6 +410,65 @@ namespace SharpPulsar.Protocol
 
             
 		}
+        public static ReadOnlySequence<byte> NewWatchTopicList(long requestId, long watcherId, string @namespace, string topicsPattern, string topicsHash)
+        {
+            var watchTopic = new CommandWatchTopicList 
+            { 
+                RequestId =(ulong) requestId,
+                Namespace = @namespace, 
+                TopicsPattern = topicsPattern, 
+                WatcherId = (ulong) watcherId,
+
+            };
+            if (topicsHash != null)
+            {
+                watchTopic.TopicsHash = topicsHash;
+            }
+
+            return Serializer.Serialize(watchTopic.ToBaseCommand());
+        }
+
+        public static ReadOnlySequence<byte> NewWatchTopicListSuccess(long requestId, long watcherId, string topicsHash, IList<string> topics)
+        {
+            var success = new CommandWatchTopicListSuccess 
+            { 
+                RequestId = (ulong) requestId,
+                WatcherId= (ulong) watcherId,
+            };
+            if (topicsHash != null)
+            {
+                success.TopicsHash = topicsHash;
+            }
+
+            if (topics != null && topics.Count > 0)
+            {
+                success.Topics.AddRange(topics);
+            }
+
+            return Serializer.Serialize(success.ToBaseCommand());
+        }
+
+        public static ReadOnlySequence<byte> NewWatchTopicUpdate(long watcherId, IList<string> newTopics, IList<string> deletedTopics, string topicsHash)
+        {
+            var update = new CommandWatchTopicUpdate
+            {
+                WatcherId = (ulong) watcherId,  
+                TopicsHash = topicsHash
+            };
+            update.NewTopics.AddRange(newTopics);
+            update.DeletedTopics.AddRange(deletedTopics);
+            return Serializer.Serialize(update.ToBaseCommand());
+        }
+
+        public static ReadOnlySequence<byte> NewWatchTopicListClose(long watcherId, long requestId)
+        {
+            var close = new CommandWatchTopicListClose
+            {
+                RequestId= (ulong) requestId,   
+                WatcherId = (ulong) watcherId,
+            };
+            return Serializer.Serialize(close.ToBaseCommand());
+        }
         public static long GetEntryTimestamp(ReadOnlySequence<byte> headersAndPayloadWithBrokerEntryMetadata)
         {
             // get broker timestamp first if BrokerEntryMetadata is enabled with AppendBrokerTimestampMetadataInterceptor
