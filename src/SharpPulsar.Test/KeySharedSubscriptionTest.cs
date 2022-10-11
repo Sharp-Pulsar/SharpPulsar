@@ -7,7 +7,6 @@ using SharpPulsar.Common;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Schemas;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.TestContainer;

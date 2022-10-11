@@ -36,7 +36,7 @@ namespace SharpPulsar.Transaction
     /// <summary>
     /// Transaction coordinator client based topic assigned.
     /// </summary>
-    public class TransactionCoordinatorClient : ReceiveActor, IWithUnboundedStash
+    internal class TransactionCoordinatorClient : ReceiveActor, IWithUnboundedStash
 	{
 		private List<IActorRef> _handlers;
 		private readonly Dictionary<long, IActorRef> _handlerMap = new Dictionary<long, IActorRef>();

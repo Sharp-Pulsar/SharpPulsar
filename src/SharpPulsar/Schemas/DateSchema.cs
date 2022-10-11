@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Extension;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 
@@ -23,11 +23,11 @@ using System;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	
-	/// <summary>
-	/// A schema for `java.util.Date` or `java.sql.Date`.
-	/// </summary>
-	public class DateSchema : AbstractSchema<DateTime>
+
+    /// <summary>
+    /// A schema for `java.util.Date` or `java.sql.Date`.
+    /// </summary>
+    public class DateSchema : AbstractSchema<DateTime>
 	{
 
 	   private static readonly DateSchema _instance;

@@ -36,7 +36,7 @@ namespace SharpPulsar
     using System.Threading.Tasks;
 
     [Serializable]
-	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
+	internal class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
 	{
         [NonSerialized]
         private readonly IActorRef _producer;//topic
@@ -47,7 +47,7 @@ namespace SharpPulsar
         [NonSerialized]
         private ReadOnlySequence<byte> _content;
         [NonSerialized]
-        private readonly User.Transaction _txn;
+        private readonly SharpPulsar.Transaction _txn;
         [NonSerialized]
         private readonly ProducerConfigurationData _conf;
 
@@ -55,7 +55,7 @@ namespace SharpPulsar
 		{
 		}
 
-		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, User.Transaction txn, ProducerConfigurationData conf)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, SharpPulsar.Transaction txn, ProducerConfigurationData conf)
 		{
             _metadata = new MessageMetadata();
             _conf = conf;

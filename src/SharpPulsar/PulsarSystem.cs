@@ -4,13 +4,12 @@ using NLog;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Transaction;
-using SharpPulsar.User;
-using SharpPulsar.User.Events;
 using System;
 using System.Threading.Tasks;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Public;
 using SharpPulsar.Builder;
+using SharpPulsar.Events;
 
 namespace SharpPulsar
 {

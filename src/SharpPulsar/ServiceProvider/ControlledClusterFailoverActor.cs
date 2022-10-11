@@ -11,7 +11,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol;
 using SharpPulsar.ServiceProvider.Messages;
-using SharpPulsar.User;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

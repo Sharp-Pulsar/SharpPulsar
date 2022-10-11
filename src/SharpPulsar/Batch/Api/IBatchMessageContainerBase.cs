@@ -2,7 +2,6 @@
 using System.IO;
 using Akka.Actor;
 using SharpPulsar.Batch;
-using SharpPulsar.Batch.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,7 +21,7 @@ using SharpPulsar.Batch.Api;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar
+namespace SharpPulsar.Batch.Api
 {
 
     interface IBatchMessageContainerBase<T> : IBatchMessageContainer

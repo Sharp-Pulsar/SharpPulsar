@@ -18,40 +18,40 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
-	using SharpPulsar.Interfaces.Schema;
+    using SharpPulsar.Interfaces;
     using System;
 
     /// <summary>
     /// A schema that serializes and deserializes between <seealso cref="IGenericRecord"/> and bytes.
     /// </summary>
-    public interface IGenericSchema<T> : ISchema<T> where T: IGenericRecord
-	{
+    public interface IGenericSchema<T> : ISchema<T> where T : IGenericRecord
+    {
 
-		/// <summary>
-		/// Returns the list of fields.
-		/// </summary>
-		/// <returns> the list of fields of generic record. </returns>
-		IList<Field> Fields {get;}
+        /// <summary>
+        /// Returns the list of fields.
+        /// </summary>
+        /// <returns> the list of fields of generic record. </returns>
+        IList<Field> Fields { get; }
 
-		/// <summary>
-		/// Create a builder to build <seealso cref="IGenericRecord"/>.
-		/// </summary>
-		/// <returns> generic record builder </returns>
-		IGenericRecordBuilder NewRecordBuilder();
+        /// <summary>
+        /// Create a builder to build <seealso cref="IGenericRecord"/>.
+        /// </summary>
+        /// <returns> generic record builder </returns>
+        IGenericRecordBuilder NewRecordBuilder();
 
-		static IGenericSchema<T> Of(ISchemaInfo schemaInfo)
-		{
-			throw new Exception("GenericSchema interface implementation class must rewrite this method !");
-		}
+        static IGenericSchema<T> Of(ISchemaInfo schemaInfo)
+        {
+            throw new Exception("GenericSchema interface implementation class must rewrite this method !");
+        }
 
-		static IGenericSchema<T> Of(ISchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema)
-		{
-			throw new Exception("GenericSchema interface implementation class must rewrite this method !");
-		}
+        static IGenericSchema<T> Of(ISchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema)
+        {
+            throw new Exception("GenericSchema interface implementation class must rewrite this method !");
+        }
 
 
-	}
+    }
 
 }

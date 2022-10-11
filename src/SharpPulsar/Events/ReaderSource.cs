@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace SharpPulsar.User.Events
+namespace SharpPulsar.Events
 {
     public class ReaderSource<T>
     {
@@ -34,7 +34,7 @@ namespace SharpPulsar.User.Events
         /// </summary>
         /// <param name="timeoutMs"></param>
         /// <returns>IEnumerable<EventMessage></returns>
-        public async IAsyncEnumerable<T> Events(TimeSpan timeout, [EnumeratorCancellation]CancellationToken token = default)
+        public async IAsyncEnumerable<T> Events(TimeSpan timeout, [EnumeratorCancellation] CancellationToken token = default)
         {
             while (!token.IsCancellationRequested)
             {

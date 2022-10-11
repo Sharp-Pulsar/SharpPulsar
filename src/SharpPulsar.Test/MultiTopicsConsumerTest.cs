@@ -1,5 +1,4 @@
-﻿using SharpPulsar.User;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using Xunit.Abstractions;
 using System;

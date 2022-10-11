@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Extension;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 /// <summary>
@@ -22,10 +22,10 @@ using System;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	/// <summary>
-	/// A schema for `java.sql.Time`.
-	/// </summary>
-	public class TimeSchema : AbstractSchema<TimeSpan>
+    /// <summary>
+    /// A schema for `java.sql.Time`.
+    /// </summary>
+    public class TimeSchema : AbstractSchema<TimeSpan>
 	{
 
 	   private static readonly TimeSchema _instance;

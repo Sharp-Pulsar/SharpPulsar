@@ -1,16 +1,16 @@
 ﻿using SharpPulsar.Extension;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 
 
 namespace SharpPulsar.Schemas
 {
-	/// <summary>
-	/// Encodes DateTimeOffset.ToUnixTimeMilliseconds
-	/// Decodes DateTimeOffset.FromUnixTimeMilliseconds
-	/// </summary>
-	public class TimestampSchema : AbstractSchema<DateTimeOffset>
+    /// <summary>
+    /// Encodes DateTimeOffset.ToUnixTimeMilliseconds
+    /// Decodes DateTimeOffset.FromUnixTimeMilliseconds
+    /// </summary>
+    public class TimestampSchema : AbstractSchema<DateTimeOffset>
     {
 		private static readonly TimestampSchema _instance;
 		private static readonly ISchemaInfo _schemaInfo;

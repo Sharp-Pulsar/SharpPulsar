@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 /// <summary>
@@ -23,10 +23,10 @@ using System;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	/// <summary>
-	/// A schema for `Long`.
-	/// </summary>
-	public class LongSchema : AbstractSchema<long>
+    /// <summary>
+    /// A schema for `Long`.
+    /// </summary>
+    public class LongSchema : AbstractSchema<long>
 	{
 
 		private static readonly LongSchema _instance;

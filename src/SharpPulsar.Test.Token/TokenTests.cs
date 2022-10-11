@@ -2,10 +2,8 @@
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Test.Fixture;
-
+using SharpPulsar.Test.Token.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.Token

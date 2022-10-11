@@ -6,7 +6,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using System.Net.Http;

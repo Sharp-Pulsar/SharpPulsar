@@ -8,6 +8,7 @@ using SharpPulsar.Common;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Precondition;
 using System;
+using SharpPulsar.Common.Compression;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

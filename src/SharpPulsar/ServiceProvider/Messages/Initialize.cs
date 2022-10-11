@@ -1,7 +1,4 @@
-﻿
-using SharpPulsar.User;
-
-namespace SharpPulsar.ServiceProvider.Messages
+﻿namespace SharpPulsar.ServiceProvider.Messages
 {
     public sealed class Initialize
     {

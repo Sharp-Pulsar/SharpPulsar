@@ -3,7 +3,6 @@ using System.IO;
 using System.Text;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces.Schema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
@@ -27,8 +26,8 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 /// </summary>
 namespace SharpPulsar.Schemas.Generic
 {
-	//using Field = Api.Schema.Field;
-	public class GenericJsonReader : ISchemaReader<GenericJsonRecord>
+    //using Field = Api.Schema.Field;
+    public class GenericJsonReader : ISchemaReader<GenericJsonRecord>
 	{
 
 		private readonly ObjectMapper _objectMapper;

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace SharpPulsar.User.Events
+namespace SharpPulsar.Events
 {
     public class EventSourceBuilder
     {
@@ -62,7 +62,7 @@ namespace SharpPulsar.User.Events
 
         public ReaderSourceBuilder<T> Reader<T>(ClientConfigurationData clientConfiguration, ReaderConfigBuilder<T> readerConfigBuilder, ISchema<T> schema)
         {
-            if(schema == null)
+            if (schema == null)
                 throw new NullReferenceException(nameof(schema));
 
             if (readerConfigBuilder == null)
@@ -86,7 +86,7 @@ namespace SharpPulsar.User.Events
 
             if (!string.IsNullOrWhiteSpace(options.Execute))
                 throw new ArgumentException("Please leave the Execute empty");
-  
+
             return new SqlSourceBuilder(_actorSystem, _tenant, _namespace, _topic, _fromMessageId, _toMessageId, _brokerWebServiceUrl, options, selectedColumns);
         }
     }

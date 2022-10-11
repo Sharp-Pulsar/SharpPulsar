@@ -1,7 +1,6 @@
 ﻿
 using System.Text;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.User;
 using Xunit.Abstractions;
 using SharpPulsar.TestContainer;
 using SharpPulsar.Builder;

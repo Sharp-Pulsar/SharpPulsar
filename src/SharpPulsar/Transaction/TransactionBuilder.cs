@@ -29,7 +29,7 @@ namespace SharpPulsar.Transaction
     /// <summary>
     /// The default implementation of transaction builder to build transactions.
     /// </summary>
-    public class TransactionBuilder : ITransactionBuilder
+    internal class TransactionBuilder : ITransactionBuilder
 	{
 
 		private readonly ActorSystem _actorSystem;

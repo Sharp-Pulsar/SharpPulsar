@@ -8,6 +8,7 @@ using SharpPulsar.Common;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Builder;
+using SharpPulsar.Common.Compression;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

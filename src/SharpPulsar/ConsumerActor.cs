@@ -28,7 +28,6 @@ using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Transaction;
-using SharpPulsar.User;
 using SharpPulsar.Utils;
 using System;
 using System.Buffers;

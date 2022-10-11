@@ -18,74 +18,74 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
 
-	/// <summary>
-	/// Deserialize messages from bytes.
-	/// </summary>
+    /// <summary>
+    /// Deserialize messages from bytes.
+    /// </summary>
 
-	public interface ISchemaReader<T>
-	{
+    public interface ISchemaReader<T>
+    {
 
-		/// <summary>
-		/// Serialize bytes convert pojo.
-		/// </summary>
-		/// <param name="bytes"> the data </param>
-		/// <returns> the serialized object </returns>
-		virtual T Read(byte[] bytes)
-		{
-			return Read(bytes, 0, bytes.Length);
-		}
+        /// <summary>
+        /// Serialize bytes convert pojo.
+        /// </summary>
+        /// <param name="bytes"> the data </param>
+        /// <returns> the serialized object </returns>
+        virtual T Read(byte[] bytes)
+        {
+            return Read(bytes, 0, bytes.Length);
+        }
 
-		/// <summary>
-		/// serialize bytes convert pojo.
-		/// </summary>
-		/// <param name="bytes"> the data </param>
-		/// <param name="offset"> the byte[] initial position </param>
-		/// <param name="length"> the byte[] read length </param>
-		/// <returns> the serialized object </returns>
-		T Read(byte[] bytes, int offset, int length);
+        /// <summary>
+        /// serialize bytes convert pojo.
+        /// </summary>
+        /// <param name="bytes"> the data </param>
+        /// <param name="offset"> the byte[] initial position </param>
+        /// <param name="length"> the byte[] read length </param>
+        /// <returns> the serialized object </returns>
+        T Read(byte[] bytes, int offset, int length);
 
-		/// <summary>
-		/// serialize bytes convert pojo.
-		/// </summary>
-		/// <param name="inputStream"> the stream of message </param>
-		/// <returns> the serialized object </returns>
-		T Read(Stream inputStream);
+        /// <summary>
+        /// serialize bytes convert pojo.
+        /// </summary>
+        /// <param name="inputStream"> the stream of message </param>
+        /// <returns> the serialized object </returns>
+        T Read(Stream inputStream);
 
-		/// <summary>
-		/// Serialize bytes convert pojo.
-		/// </summary>
-		/// <param name="bytes"> the data </param>
-		/// <param name="schemaVersion"> the schema version of message </param>
-		/// <returns> the serialized object </returns>
-		virtual T Read(byte[] bytes, byte[] schemaVersion)
-		{
-			return Read(bytes, 0, bytes.Length);
-		}
+        /// <summary>
+        /// Serialize bytes convert pojo.
+        /// </summary>
+        /// <param name="bytes"> the data </param>
+        /// <param name="schemaVersion"> the schema version of message </param>
+        /// <returns> the serialized object </returns>
+        virtual T Read(byte[] bytes, byte[] schemaVersion)
+        {
+            return Read(bytes, 0, bytes.Length);
+        }
 
-		/// <summary>
-		/// serialize bytes convert pojo.
-		/// </summary>
-		/// <param name="inputStream"> the stream of message </param>
-		/// <param name="schemaVersion"> the schema version of message </param>
-		/// <returns> the serialized object </returns>
-		virtual T Read(Stream inputStream, byte[] schemaVersion)
-		{
-			return Read(inputStream);
-		}
+        /// <summary>
+        /// serialize bytes convert pojo.
+        /// </summary>
+        /// <param name="inputStream"> the stream of message </param>
+        /// <param name="schemaVersion"> the schema version of message </param>
+        /// <returns> the serialized object </returns>
+        virtual T Read(Stream inputStream, byte[] schemaVersion)
+        {
+            return Read(inputStream);
+        }
 
-		/// <summary>
-		/// Set schema info provider, this method support multi version reader.
-		/// </summary>
-		/// <param name="schemaInfoProvider"> the stream of message </param>
-		virtual ISchemaInfoProvider SchemaInfoProvider
-		{
-			set
-			{
-			}
-		}
+        /// <summary>
+        /// Set schema info provider, this method support multi version reader.
+        /// </summary>
+        /// <param name="schemaInfoProvider"> the stream of message </param>
+        virtual ISchemaInfoProvider SchemaInfoProvider
+        {
+            set
+            {
+            }
+        }
         /// <summary>
 		/// Returns the underling Schema if possible </summary>
 		/// <returns> the schema, or an empty Optional if it is not possible to access it </returns>

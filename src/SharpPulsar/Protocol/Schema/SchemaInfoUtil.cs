@@ -1,4 +1,4 @@
-﻿using SharpPulsar.Interfaces.ISchema;
+﻿using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas;
 using System;
 using System.Collections.Generic;

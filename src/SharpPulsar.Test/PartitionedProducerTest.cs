@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;

@@ -4,7 +4,7 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar
 {
-    public class ResetCursorData
+    internal class ResetCursorData
     {
         protected internal long LedgerId;
         protected internal long EntryId;

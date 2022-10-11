@@ -4,8 +4,8 @@ using SharpPulsar.Protocol.Schema;
 using System;
 using System.IO;
 using System.Runtime.Serialization;
-using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Cache;
+using SharpPulsar.Interfaces.Schema;
 
 namespace SharpPulsar.Schemas.Reader
 {

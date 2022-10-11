@@ -10,7 +10,7 @@ using SharpPulsar.Sql.Message;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Utils;
 
-namespace SharpPulsar.EventSource.Presto
+namespace SharpPulsar.EventSource.Trino
 {
     public class PrestoSourceActor : ReceiveActor
     {
@@ -50,7 +50,7 @@ namespace SharpPulsar.EventSource.Presto
                 var query = $"select {string.Join(", ", _message.Columns)},__message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where __partition__ = {start.PartitionIndex} AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint '{start.LedgerId}' AND bigint '{end.LedgerId}' AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint '{start.EntryId}' AND bigint '{end.EntryId}' ORDER BY __publish_time__ ASC LIMIT {max}";
                 var options = _message.Options;
                 options.Catalog = "pulsar";
-                options.Schema = ""+_message.Tenant+"/"+_message.Namespace+"";
+                options.Schema = "" + _message.Tenant + "/" + _message.Namespace + "";
                 options.Execute = query;
                 var session = options.ToClientSession();
                 var executor = new Executor(session, options, _self, _log);
@@ -102,7 +102,7 @@ namespace SharpPulsar.EventSource.Presto
         {
             Receive<DataResponse>(c =>
             {
-                for(var i = 0; i < c.Data.Count; i++)
+                for (var i = 0; i < c.Data.Count; i++)
                 {
                     var msgData = c.Data.ElementAt(i);
                     var msg = msgData["__message_id__"].ToString().Trim('(', ')').Split(',').Select(int.Parse).ToArray();
@@ -172,7 +172,7 @@ namespace SharpPulsar.EventSource.Presto
 
         public static Props Prop(BufferBlock<IEventEnvelope> buffer, bool isLive, IPrestoEventSourceMessage message)
         {
-            return Props.Create(()=> new PrestoSourceActor(buffer, isLive, message));
+            return Props.Create(() => new PrestoSourceActor(buffer, isLive, message));
         }
 
         public IStash Stash { get; set; }

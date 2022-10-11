@@ -7,7 +7,6 @@ using SharpPulsar.Common;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
@@ -676,7 +675,7 @@ namespace SharpPulsar.Test
             _output.WriteLine($"receive transaction messages count: {receiveCnt}");
         }
 
-        private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
+        private async Task<SharpPulsar.Transaction> Txn() => (SharpPulsar.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
 
     }

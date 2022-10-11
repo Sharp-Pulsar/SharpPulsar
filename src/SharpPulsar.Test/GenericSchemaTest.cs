@@ -5,12 +5,11 @@ using System.Threading.Tasks;
 using Avro.Generic;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 

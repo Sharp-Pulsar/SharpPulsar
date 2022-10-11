@@ -18,7 +18,6 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.Test.NBench.Fixtures

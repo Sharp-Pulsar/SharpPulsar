@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 /// <summary>

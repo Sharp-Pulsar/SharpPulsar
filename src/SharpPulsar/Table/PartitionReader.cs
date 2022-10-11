@@ -4,7 +4,6 @@ using Akka.Actor;
 using Akka.Event;
 using App.Metrics.Concurrency;
 using SharpPulsar.Table.Messages;
-using SharpPulsar.User;
 
 namespace SharpPulsar.Table
 {

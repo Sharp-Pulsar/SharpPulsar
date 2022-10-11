@@ -19,7 +19,7 @@
 
 using System.IO;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 namespace SharpPulsar.Schemas.Generic

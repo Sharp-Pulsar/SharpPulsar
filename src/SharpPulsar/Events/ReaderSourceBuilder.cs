@@ -3,7 +3,7 @@ using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 
-namespace SharpPulsar.User.Events
+namespace SharpPulsar.Events
 {
     public class ReaderSourceBuilder<T>
     {

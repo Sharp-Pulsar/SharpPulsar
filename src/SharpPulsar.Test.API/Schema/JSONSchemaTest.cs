@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
 

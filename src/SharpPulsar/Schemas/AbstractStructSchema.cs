@@ -1,6 +1,6 @@
 ﻿using System;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Schemas.Reader;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;

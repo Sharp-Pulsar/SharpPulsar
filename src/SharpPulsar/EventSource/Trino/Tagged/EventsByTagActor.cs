@@ -5,7 +5,7 @@ using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;
 
-namespace SharpPulsar.EventSource.Presto.Tagged
+namespace SharpPulsar.EventSource.Trino.Tagged
 {
     public class EventsByTagActor : ReceiveActor
     {
@@ -36,7 +36,7 @@ namespace SharpPulsar.EventSource.Presto.Tagged
             {
                 Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, true, _message, _message.Tag));
             }
-        } 
+        }
         public static Props Prop(EventsByTag message, BufferBlock<IEventEnvelope> buffer)
         {
             return Props.Create(() => new EventsByTagActor(message, buffer));

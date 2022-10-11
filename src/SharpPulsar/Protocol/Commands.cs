@@ -3,7 +3,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using Google.Protobuf; 
+using Google.Protobuf;
 using SharpPulsar.Shared;
 using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
@@ -11,7 +11,6 @@ using System.Linq;
 using System.Text;
 using ProtoBuf;
 using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
-using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Common;
 using SharpPulsar.Transaction;
 using SharpPulsar.Helpers;
@@ -22,6 +21,7 @@ using Akka.Util.Internal;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using SharpPulsar.Messages.Consumer;
 using static Akka.Actor.Status;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -20,7 +20,7 @@
 namespace SharpPulsar.Schemas.Generic
 {
     using SharpPulsar.Schemas.Reader;
-    using SharpPulsar.Interfaces.ISchema;
+    using SharpPulsar.Interfaces.Schema;
 
     /// <summary>
     /// The abstract class of multi version generic reader.

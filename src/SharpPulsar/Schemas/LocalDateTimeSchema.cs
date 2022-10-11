@@ -1,5 +1,5 @@
 ﻿using NodaTime;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 
@@ -24,10 +24,10 @@ using System;
 namespace SharpPulsar.Schemas
 {
 
-	/// <summary>
-	/// A schema for `java.time.LocalDateTime`.
-	/// </summary>
-	public class LocalDateTimeSchema : AbstractSchema<LocalDateTime>
+    /// <summary>
+    /// A schema for `java.time.LocalDateTime`.
+    /// </summary>
+    public class LocalDateTimeSchema : AbstractSchema<LocalDateTime>
 	{
 
 	   private static readonly LocalDateTimeSchema _instance;

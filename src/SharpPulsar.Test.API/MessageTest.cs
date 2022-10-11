@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Schemas;
 using System.Buffers;

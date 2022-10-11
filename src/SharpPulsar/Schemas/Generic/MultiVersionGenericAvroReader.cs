@@ -18,7 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Schemas.Generic
 {
-    using SharpPulsar.Interfaces.ISchema;
+    using SharpPulsar.Interfaces.Schema;
     using SharpPulsar.Protocol.Schema;
 
     /// <summary>

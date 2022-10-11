@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Interfaces.ISchema;
 using Akka.Event;
 using Akka.Actor;
 using SharpPulsar.Messages.Requests;
@@ -9,6 +8,7 @@ using SharpPulsar.Cache;
 using System;
 using System.Threading.Tasks;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

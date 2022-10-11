@@ -17,33 +17,33 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
     /// <summary>
 	/// Schema Provider.
 	/// </summary>
 	public interface ISchemaInfoProvider
-	{
+    {
 
-		/// <summary>
-		/// Retrieve the schema info of a given <tt>schemaVersion</tt>.
-		/// </summary>
-		/// <param name="schemaVersion"> schema version </param>
-		/// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
-		ISchemaInfo GetSchemaByVersion(byte[] schemaVersion);
+        /// <summary>
+        /// Retrieve the schema info of a given <tt>schemaVersion</tt>.
+        /// </summary>
+        /// <param name="schemaVersion"> schema version </param>
+        /// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
+        ISchemaInfo GetSchemaByVersion(byte[] schemaVersion);
 
-		/// <summary>
-		/// Retrieve the latest schema info.
-		/// </summary>
-		/// <returns> the latest schema </returns>
-		ValueTask<ISchemaInfo> LatestSchema();
+        /// <summary>
+        /// Retrieve the latest schema info.
+        /// </summary>
+        /// <returns> the latest schema </returns>
+        ValueTask<ISchemaInfo> LatestSchema();
 
-		/// <summary>
-		/// Retrieve the topic name.
-		/// </summary>
-		/// <returns> the topic name </returns>
-		string TopicName {get;}
+        /// <summary>
+        /// Retrieve the topic name.
+        /// </summary>
+        /// <returns> the topic name </returns>
+        string TopicName { get; }
 
-	}
+    }
 
 }

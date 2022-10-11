@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
     public interface ISchemaWriter<T>
     {

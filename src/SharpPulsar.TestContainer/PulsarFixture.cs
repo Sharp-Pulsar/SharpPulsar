@@ -3,7 +3,6 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
-using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.TestContainer

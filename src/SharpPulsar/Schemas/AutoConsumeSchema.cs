@@ -1,10 +1,9 @@
 ﻿using System;
 using SharpPulsar.Shared;
-using SharpPulsar.Schemas;
-using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,75 +23,75 @@ using SharpPulsar.Exceptions;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Schema
+namespace SharpPulsar.Schemas
 {
     /// <summary>
     /// Auto detect schema.
     /// </summary>
     public class AutoConsumeSchema : ISchema<IGenericRecord>
-	{
+    {
 
-		private ISchema<IGenericRecord> _schema;
+        private ISchema<IGenericRecord> _schema;
 
-		private string _topicName;
+        private string _topicName;
 
-		private string _componentName;
+        private string _componentName;
 
-		private ISchemaInfoProvider _schemaInfoProvider;
+        private ISchemaInfoProvider _schemaInfoProvider;
 
-		public virtual ISchema<IGenericRecord> Schema
-		{
-			set => _schema = value;
+        public virtual ISchema<IGenericRecord> Schema
+        {
+            set => _schema = value;
         }
 
-		private void EnsureSchemaInitialized()
-		{
-			if(null == _schema)
+        private void EnsureSchemaInitialized()
+        {
+            if (null == _schema)
                 throw new NullReferenceException("Schema is not initialized before used");
-		}
+        }
 
-		public void Validate(byte[] message)
-		{
-			EnsureSchemaInitialized();
+        public void Validate(byte[] message)
+        {
+            EnsureSchemaInitialized();
 
-			_schema.Validate(message);
-		}
+            _schema.Validate(message);
+        }
 
-		public bool SupportSchemaVersioning()
-		{
-			return true;
-		}
+        public bool SupportSchemaVersioning()
+        {
+            return true;
+        }
 
-		public byte[] Encode(IGenericRecord message)
-		{
-			if(!(message is IGenericRecord))
-				throw  new ArgumentException($"{message.GetType()} is not IGenericRecord");
-			EnsureSchemaInitialized();
+        public byte[] Encode(IGenericRecord message)
+        {
+            if (!(message is IGenericRecord))
+                throw new ArgumentException($"{message.GetType()} is not IGenericRecord");
+            EnsureSchemaInitialized();
 
-			return _schema.Encode(message);
-		}
-		
-		public virtual ISchemaInfoProvider SchemaInfoProvider
-		{
-			set
-			{
-				if (_schema == null)
-				{
-					_schemaInfoProvider = value;
-				}
-				else
-				{
-					_schema.SchemaInfoProvider = value;
-				}
-			}
-		}
+            return _schema.Encode(message);
+        }
 
-		public virtual ISchemaInfo SchemaInfo => _schema?.SchemaInfo;
+        public virtual ISchemaInfoProvider SchemaInfoProvider
+        {
+            set
+            {
+                if (_schema == null)
+                {
+                    _schemaInfoProvider = value;
+                }
+                else
+                {
+                    _schema.SchemaInfoProvider = value;
+                }
+            }
+        }
+
+        public virtual ISchemaInfo SchemaInfo => _schema?.SchemaInfo;
 
         public bool RequireFetchingSchemaInfo()
-		{
-			return true;
-		}
+        {
+            return true;
+        }
         public virtual ISchema<IGenericRecord> AtSchemaVersion(byte[] schemaVersion)
         {
             FetchSchemaIfNeeded();
@@ -127,92 +126,92 @@ namespace SharpPulsar.Schema
                 }
             }
         }
-        public  void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
-		{
-			_topicName = topicName;
-			_componentName = componentName;
+        public void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
+        {
+            _topicName = topicName;
+            _componentName = componentName;
             if (schemaInfo == null) return;
             var genericSchema = GenerateSchema(schemaInfo);
             Schema = genericSchema;
             //Log.LogInformation("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
         }
 
-		private IGenericSchema<IGenericRecord> GenerateSchema(ISchemaInfo schemaInfo)
-		{
-			if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
-			{
-				throw new Exception("Currently auto consume only works for topics with avro or json schemas");
-			}
-			// when using `AutoConsumeSchema`, we use the schema associated with the messages as schema reader
-			// to decode the messages.
-			return GenericSchema.Of(schemaInfo, false);
-		}
-		public ISchema<IGenericRecord> Clone()
-		{
-			ISchema<IGenericRecord> schema = ISchema<IGenericRecord>.AutoConsume();
-			if (_schema != null)
-			{
-				schema.ConfigureSchemaInfo(_topicName, _componentName, _schema.SchemaInfo);
-			}
-			else
-			{
-				schema.ConfigureSchemaInfo(_topicName, _componentName, null);
-			}
-			if (_schemaInfoProvider != null)
-			{
-				schema.SchemaInfoProvider = _schemaInfoProvider;
-			}
-			return schema;
-		}
-		public static object GetSchema(ISchemaInfo schemaInfo)
-		{
-			switch (schemaInfo.Type.InnerEnumValue)
-			{
-				case SchemaType.InnerEnum.INT8:
-					return ByteSchema.Of();
-				case SchemaType.InnerEnum.INT16:
-					return ShortSchema.Of();
-				case SchemaType.InnerEnum.INT32:
-					return IntSchema.Of();
-				case SchemaType.InnerEnum.INT64:
-					return LongSchema.Of();
-				case SchemaType.InnerEnum.STRING:
-					return StringSchema.Utf8();
-				case SchemaType.InnerEnum.FLOAT:
-					return FloatSchema.Of();
-				case SchemaType.InnerEnum.DOUBLE:
-					return DoubleSchema.Of();
-				case SchemaType.InnerEnum.BOOLEAN:
-					return BooleanSchema.Of();
-				case SchemaType.InnerEnum.BYTES:
-				case SchemaType.InnerEnum.NONE:
-					return BytesSchema.Of();
-				case SchemaType.InnerEnum.DATE:
-					return DateSchema.Of();
-				case SchemaType.InnerEnum.TIME:
-					return TimeSchema.Of();
-				case SchemaType.InnerEnum.TIMESTAMP:
-					return TimestampSchema.Of();
-				case SchemaType.InnerEnum.INSTANT:
-					return InstantSchema.Of();
-				case SchemaType.InnerEnum.LocalDate:
-					return LocalDateSchema.Of();
-				case SchemaType.InnerEnum.LocalTime:
-					return LocalTimeSchema.Of();
-				case SchemaType.InnerEnum.LocalDateTime:
-					return LocalDateTimeSchema.Of();
-				case SchemaType.InnerEnum.JSON:
-				case SchemaType.InnerEnum.AVRO:
-					return GenericSchema.Of(schemaInfo, false);
-				case SchemaType.InnerEnum.KeyValue:
-					KeyValue<ISchemaInfo, ISchemaInfo> kvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
-					var keySchema = (ISchema<object>)GetSchema(kvSchemaInfo.Key);
-					var valueSchema = (ISchema<object>)GetSchema(kvSchemaInfo.Value);
-					return KeyValueSchema<object, object>.Of(keySchema, valueSchema);
-				default:
-					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
-			}
-		}
+        private IGenericSchema<IGenericRecord> GenerateSchema(ISchemaInfo schemaInfo)
+        {
+            if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
+            {
+                throw new Exception("Currently auto consume only works for topics with avro or json schemas");
+            }
+            // when using `AutoConsumeSchema`, we use the schema associated with the messages as schema reader
+            // to decode the messages.
+            return GenericSchema.Of(schemaInfo, false);
+        }
+        public ISchema<IGenericRecord> Clone()
+        {
+            var schema = ISchema<IGenericRecord>.AutoConsume();
+            if (_schema != null)
+            {
+                schema.ConfigureSchemaInfo(_topicName, _componentName, _schema.SchemaInfo);
+            }
+            else
+            {
+                schema.ConfigureSchemaInfo(_topicName, _componentName, null);
+            }
+            if (_schemaInfoProvider != null)
+            {
+                schema.SchemaInfoProvider = _schemaInfoProvider;
+            }
+            return schema;
+        }
+        public static object GetSchema(ISchemaInfo schemaInfo)
+        {
+            switch (schemaInfo.Type.InnerEnumValue)
+            {
+                case SchemaType.InnerEnum.INT8:
+                    return ByteSchema.Of();
+                case SchemaType.InnerEnum.INT16:
+                    return ShortSchema.Of();
+                case SchemaType.InnerEnum.INT32:
+                    return IntSchema.Of();
+                case SchemaType.InnerEnum.INT64:
+                    return LongSchema.Of();
+                case SchemaType.InnerEnum.STRING:
+                    return StringSchema.Utf8();
+                case SchemaType.InnerEnum.FLOAT:
+                    return FloatSchema.Of();
+                case SchemaType.InnerEnum.DOUBLE:
+                    return DoubleSchema.Of();
+                case SchemaType.InnerEnum.BOOLEAN:
+                    return BooleanSchema.Of();
+                case SchemaType.InnerEnum.BYTES:
+                case SchemaType.InnerEnum.NONE:
+                    return BytesSchema.Of();
+                case SchemaType.InnerEnum.DATE:
+                    return DateSchema.Of();
+                case SchemaType.InnerEnum.TIME:
+                    return TimeSchema.Of();
+                case SchemaType.InnerEnum.TIMESTAMP:
+                    return TimestampSchema.Of();
+                case SchemaType.InnerEnum.INSTANT:
+                    return InstantSchema.Of();
+                case SchemaType.InnerEnum.LocalDate:
+                    return LocalDateSchema.Of();
+                case SchemaType.InnerEnum.LocalTime:
+                    return LocalTimeSchema.Of();
+                case SchemaType.InnerEnum.LocalDateTime:
+                    return LocalDateTimeSchema.Of();
+                case SchemaType.InnerEnum.JSON:
+                case SchemaType.InnerEnum.AVRO:
+                    return GenericSchema.Of(schemaInfo, false);
+                case SchemaType.InnerEnum.KeyValue:
+                    var kvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
+                    var keySchema = (ISchema<object>)GetSchema(kvSchemaInfo.Key);
+                    var valueSchema = (ISchema<object>)GetSchema(kvSchemaInfo.Value);
+                    return KeyValueSchema<object, object>.Of(keySchema, valueSchema);
+                default:
+                    throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
+            }
+        }
         protected internal virtual IGenericRecord Adapt(object value, byte[] schemaVersion)
         {
             if (value is IGenericRecord)
@@ -221,7 +220,7 @@ namespace SharpPulsar.Schema
             }
             if (_schema == null)
             {
-                throw new System.InvalidOperationException("Cannot decode a message without schema");
+                throw new InvalidOperationException("Cannot decode a message without schema");
             }
             return WrapPrimitiveObject(value, _schema.SchemaInfo.Type, schemaVersion);
         }
@@ -259,7 +258,7 @@ namespace SharpPulsar.Schema
                             schemaInfo = BytesSchema.Of().SchemaInfo;
                         }
                     }
-                    catch (Exception e) 
+                    catch (Exception e)
                     {
                         throw new SchemaSerializationException(e.Message);
                     }

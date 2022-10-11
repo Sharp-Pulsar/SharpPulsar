@@ -49,14 +49,17 @@ namespace SharpPulsar.Common
         }
 
 
-
-        // get topics, which are contained in list1, and not in list2
-        public static ISet<string> Minus(ICollection<string> List1, ICollection<string> List2)
-        {
-            HashSet<string> S1 = new HashSet<string>(List1);
-            S1.RemoveAll(List2);
-            return S1;
-        }
 */
+        // get topics, which are contained in list1, and not in list2
+        public static ISet<string> Minus(ICollection<string> list1, ICollection<string> list2)
+        {
+            var s1 = new HashSet<string>(list1);
+            foreach (var l in list2)
+            {
+                s1.Remove(l);
+            }
+            return s1;
+        }
+
     }
 }

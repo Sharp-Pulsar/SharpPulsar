@@ -4,9 +4,9 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
-namespace SharpPulsar.User
+namespace SharpPulsar
 {
-    public sealed class Transaction:ITransaction
+    public sealed class Transaction : ITransaction
     {
         private readonly IActorRef _txn;
         private readonly long _mostSigBits;
@@ -23,7 +23,7 @@ namespace SharpPulsar.User
             AbortAsync().GetAwaiter().GetResult();
         }
         public async ValueTask AbortAsync()
-        {            
+        {
             var error = await _txn.Ask<TransactionCoordinatorClientException>(Messages.Transaction.Abort.Instance).ConfigureAwait(false);
             if (!(error is NoException))
             {

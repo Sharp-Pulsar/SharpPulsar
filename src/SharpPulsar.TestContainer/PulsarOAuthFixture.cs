@@ -7,7 +7,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.TestContainer.Configuration;
 using SharpPulsar.TestContainer.Container;
-using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.TestContainer

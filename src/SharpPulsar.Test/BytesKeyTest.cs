@@ -3,7 +3,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;

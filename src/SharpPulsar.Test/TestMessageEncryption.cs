@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using System;
 using System.Text;
 using System.Threading.Tasks;

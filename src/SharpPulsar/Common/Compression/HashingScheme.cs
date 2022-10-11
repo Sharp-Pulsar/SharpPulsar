@@ -16,25 +16,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces
+namespace SharpPulsar.Common.Compression
 {
-	/// <summary>
-	/// Standard hashing functions available when choosing the partition to use for a particular message.
-	/// </summary>
-	public enum HashingScheme
-	{
+    /// <summary>
+    /// Standard hashing functions available when choosing the partition to use for a particular message.
+    /// </summary>
+    public enum HashingScheme
+    {
 
-		/// <summary>
-		/// Use regular <code>String.hashCode()</code>.
-		/// </summary>
-		JavaStringHash,
+        /// <summary>
+        /// Use regular <code>String.hashCode()</code>.
+        /// </summary>
+        JavaStringHash,
 
-		/// <summary>
-		/// Use Murmur3 hashing function.
-		/// <a href="https://en.wikipedia.org/wiki/MurmurHash">https://en.wikipedia.org/wiki/MurmurHash</a>
-		/// </summary>
-		Murmur332Hash
+        /// <summary>
+        /// Use Murmur3 hashing function.
+        /// <a href="https://en.wikipedia.org/wiki/MurmurHash">https://en.wikipedia.org/wiki/MurmurHash</a>
+        /// </summary>
+        Murmur332Hash
 
-	}
+    }
 
 }

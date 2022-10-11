@@ -41,7 +41,7 @@ namespace SharpPulsar
     /// <summary>
     /// Handler for transaction meta store.
     /// </summary>
-    public class TransactionMetaStoreHandler : ReceiveActor, IWithUnboundedStash
+    internal class TransactionMetaStoreHandler : ReceiveActor, IWithUnboundedStash
 	{
 		private readonly long _transactionCoordinatorId;
 		private readonly IActorRef _connectionHandler;

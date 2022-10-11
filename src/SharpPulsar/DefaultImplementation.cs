@@ -4,14 +4,13 @@ using System.Collections.Generic;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Schemas;
-using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
 using System.Text;
 using NodaTime;
 using SharpPulsar.Shared;
-using SharpPulsar.Schema;
 using SharpPulsar.Schemas.Generic;
 using Akka.Event;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

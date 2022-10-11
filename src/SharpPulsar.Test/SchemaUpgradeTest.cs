@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using AvroSchemaGenerator.Attributes;
 using SharpPulsar.Schemas;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Test.Fixture;

@@ -10,7 +10,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 

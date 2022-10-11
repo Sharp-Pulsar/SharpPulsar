@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
-using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

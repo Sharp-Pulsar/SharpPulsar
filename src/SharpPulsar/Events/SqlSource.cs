@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks.Dataflow;
 
-namespace SharpPulsar.User.Events
+namespace SharpPulsar.Events
 {
     public class SqlSource<T>
     {

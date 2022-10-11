@@ -11,7 +11,7 @@ using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.Utils;
 
-namespace SharpPulsar.EventSource.Presto.Tagged
+namespace SharpPulsar.EventSource.Trino.Tagged
 {
     public class PrestoTaggedSourceActor : ReceiveActor
     {
@@ -80,7 +80,7 @@ namespace SharpPulsar.EventSource.Presto.Tagged
                     var end = (MessageId)MessageIdUtils.GetMessageId(_currentOffset);
                     var query =
                         $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where __partition__ = {_partitionIndex} AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint '{start.LedgerId}' AND bigint '{end.LedgerId}' AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint '{start.EntryId + 1}' AND bigint '{end.EntryId}' AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {_queryRange}";
-                    var options = _message.Options; 
+                    var options = _message.Options;
                     options.Catalog = "pulsar";
                     options.Schema = "" + _message.Tenant + "/" + _message.Namespace + "";
                     options.Execute = query;
@@ -100,7 +100,7 @@ namespace SharpPulsar.EventSource.Presto.Tagged
                 _queryCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(10), Query);
             }
         }
-        
+
         private void Consume()
         {
             Receive<DataResponse>(c =>
@@ -110,8 +110,8 @@ namespace SharpPulsar.EventSource.Presto.Tagged
                     var msgData = c.Data.ElementAt(i);
                     var msg = msgData["__message_id__"].ToString().Trim('(', ')').Split(',').Select(int.Parse).ToArray();
                     var messageId = MessageIdUtils.GetOffset(new MessageId(msg[0], msg[1], msg[2]));
-                    if (messageId <= _toMessageId) 
-                    { 
+                    if (messageId <= _toMessageId)
+                    {
                         var eventMessage = new EventEnvelope(msgData, messageId, _topicName.ToString());
                         _buffer.Post(eventMessage);
                         _currentOffset = messageId;

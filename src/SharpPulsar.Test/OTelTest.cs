@@ -11,7 +11,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Telemetry.Trace;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 

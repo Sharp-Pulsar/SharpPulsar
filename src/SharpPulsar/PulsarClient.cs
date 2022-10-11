@@ -21,7 +21,7 @@ using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
@@ -30,7 +30,6 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
@@ -38,7 +37,7 @@ using SharpPulsar.Transaction;
 using SharpPulsar.Utils;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
-namespace SharpPulsar.User
+namespace SharpPulsar
 {
     public class PulsarClient : IPulsarClient
     {
@@ -67,7 +66,7 @@ namespace SharpPulsar.User
         public void ReloadLookUp()
         {
             _actorSystem.Stop(_lookup);
-            _lookup =_actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeout, _clientConfigurationData.ClientCnx), "BinaryProtoLookupService");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeout, _clientConfigurationData.ClientCnx), "BinaryProtoLookupService");
             _lookup.Tell(new SetClient(_client));
         }
 
@@ -154,7 +153,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("Subscription name must be set on the consumer builder");
             }
 
-            if (conf.KeySharedPolicy != null && conf.SubscriptionType != CommandSubscribe.SubType.KeyShared)
+            if (conf.KeySharedPolicy != null && conf.SubscriptionType != SubType.KeyShared)
             {
                 throw new PulsarClientException.InvalidConfigurationException("KeySharedPolicy must set with KeyShared subscription");
             }
@@ -187,7 +186,7 @@ namespace SharpPulsar.User
             }
             return await Subscribe(conf, schema).ConfigureAwait(false);
         }
-        
+
         private async ValueTask<Consumer<T>> Subscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
             var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
@@ -214,7 +213,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("Empty subscription name");
             }
 
-            if (conf.ReadCompacted && (conf.TopicNames.Any(topic => TopicName.Get(topic).Domain != TopicDomain.Persistent) || (conf.SubscriptionType != SubType.Exclusive && conf.SubscriptionType != SubType.Failover)))
+            if (conf.ReadCompacted && (conf.TopicNames.Any(topic => TopicName.Get(topic).Domain != TopicDomain.Persistent) || conf.SubscriptionType != SubType.Exclusive && conf.SubscriptionType != SubType.Failover))
             {
                 throw new PulsarClientException.InvalidConfigurationException("Read compacted can only be used with exclusive or failover persistent subscriptions");
             }
@@ -261,7 +260,7 @@ namespace SharpPulsar.User
                 {
                     _log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
                 }
-                var state = _actorSystem.ActorOf(Props.Create(()=> new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+                var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 if (metadata.Partitions > 0)
                 {
                     Condition.CheckArgument(conf.TopicNames.Count == 1, "Should have only 1 topic for partitioned consumer");
@@ -284,10 +283,10 @@ namespace SharpPulsar.User
                     cnsr = await tcs.Task.ConfigureAwait(false);
 
                     _client.Tell(new AddConsumer(cnsr));
-                    return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);                    
+                    return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _log.Error($"[{topic}] Failed to get partitioned topic metadata: {e}");
                 await cnsr.GracefulStop(TimeSpan.FromSeconds(1));
@@ -303,7 +302,7 @@ namespace SharpPulsar.User
             var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.Prop(state, _client, _lookup, _cnxPool, _generator, conf, schema, conf.ForceTopicCreation, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
             var cnsr = await tcs.Task.ConfigureAwait(false);
-           
+
             _client.Tell(new AddConsumer(cnsr));
             return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
         }
@@ -331,17 +330,17 @@ namespace SharpPulsar.User
             {
                 topicsList = TopicList.FilterTopics(result.Topics, conf.TopicsPattern).ToImmutableList();
             }
-            
+
             topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
             var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
 
             consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, result.TopicsHash, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
             var cnsr = await tcs.Task.ConfigureAwait(false);
-           
+
             _client.Tell(new AddConsumer(cnsr));
             return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
         }
-        
+
         private Mode? ConvertRegexSubscriptionMode(RegexSubscriptionMode regexSubscriptionMode)
         {
             switch (regexSubscriptionMode)
@@ -364,11 +363,11 @@ namespace SharpPulsar.User
             {
                 var topicName = TopicName.Get(topic);
                 var opTimeoutMs = Conf.LookupTimeoutMs;
-                var backoff = (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(Conf.InitialBackoffIntervalMs))
+                var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(Conf.InitialBackoffIntervalMs))
                     .SetMandatoryStop(TimeSpan.FromMilliseconds(opTimeoutMs * 2))
                     .SetMax(TimeSpan.FromMilliseconds(Conf.InitialBackoffIntervalMs)).Create();
                 await GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, future, new List<Exception>());
-                
+
             }
             catch (ArgumentException e)
             {
@@ -382,7 +381,7 @@ namespace SharpPulsar.User
             var startTime = NanoTime();
             var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
             if (result.Failed)
-            {             
+            {
                 var remaining = -1 * TimeSpan.FromMilliseconds(NanoTime() + startTime);
                 var nextDelay = Math.Min(backoff.Next(), remainingTime);
                 var isLookupThrottling = !PulsarClientException.IsRetriableError(result.Exception) || result.Exception is PulsarClientException.AuthenticationException;
@@ -404,7 +403,7 @@ namespace SharpPulsar.User
         }
         private static long NanoTime()
         {
-            long nano = 10000L * Stopwatch.GetTimestamp();
+            var nano = 10000L * Stopwatch.GetTimestamp();
             nano /= TimeSpan.TicksPerMillisecond;
             nano *= 100L;
             return nano;
@@ -535,7 +534,7 @@ namespace SharpPulsar.User
 
             if (conf.TopicNames.Count == 1)
             {
-                var schemaClone = await PreProcessSchemaBeforeSubscribe(schema, conf.TopicName).ConfigureAwait(false); 
+                var schemaClone = await PreProcessSchemaBeforeSubscribe(schema, conf.TopicName).ConfigureAwait(false);
                 return await CreateSingleTopicReader(conf, schemaClone).ConfigureAwait(false);
             }
             return await CreateMultiTopicReader(conf, schema).ConfigureAwait(false);
@@ -562,22 +561,22 @@ namespace SharpPulsar.User
                 {
                     _actorSystem.ActorOf(MultiTopicsReader<T>.Prop(stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs));
                     actorRef = await tcs.Task.ConfigureAwait(false);
-                   
+
                     _client.Tell(new AddConsumer(actorRef));
                     return new Reader<T>(stateA, actorRef, schema, conf);
                 }
                 else
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
-                    _actorSystem.ActorOf(Props.Create(()=> new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
+                    _actorSystem.ActorOf(Props.Create(() => new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
 
                     actorRef = await tcs.Task.ConfigureAwait(false);
-                   
+
                     _client.Tell(new AddConsumer(actorRef));
                     return new Reader<T>(stateA, actorRef, schema, conf);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await actorRef.GracefulStop(TimeSpan.FromSeconds(1));
                 _log.Warning($"[{topic}] Failed to get create topic reader: {ex}");
@@ -590,13 +589,13 @@ namespace SharpPulsar.User
             var stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             _actorSystem.ActorOf(Props.Create(() => new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
             var cnsr = await tcs.Task.ConfigureAwait(false);
-           
+
             _client.Tell(new AddConsumer(cnsr));
             return new Reader<T>(stateA, cnsr, schema, conf);
         }
         public TransactionBuilder NewTransaction()
         {
-            if(!_clientConfigurationData.EnableTransaction)
+            if (!_clientConfigurationData.EnableTransaction)
                 throw new PulsarClientException.InvalidConfigurationException("Transactions are not enabled");
 
             return new TransactionBuilder(_actorSystem, _client, _transactionCoordinatorClient, _log);
@@ -640,7 +639,7 @@ namespace SharpPulsar.User
             _clientConfigurationData.TlsTrustStorePath = tlsTrustStorePath;
             _clientConfigurationData.TlsTrustStorePassword = tlsTrustStorePassword;
         }
-        public ClientConfigurationData Conf => _clientConfigurationData;    
+        public ClientConfigurationData Conf => _clientConfigurationData;
         #region private matters
         private async ValueTask<object> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema)
         {
@@ -658,7 +657,7 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically");
             }
-            
+
             var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
             if (state != 0)
             {
@@ -681,7 +680,7 @@ namespace SharpPulsar.User
                 else
                 {
                     var schem = await _lookup.Ask<AskResponse>(new GetSchema(TopicName.Get(conf.TopicName))).ConfigureAwait(false);
-                    if (schem.Failed) 
+                    if (schem.Failed)
                         throw schem.Exception;
 
                     var sc = schem.ConvertTo<GetSchemaInfoResponse>();
@@ -700,7 +699,7 @@ namespace SharpPulsar.User
         }
 
         private async ValueTask<object> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
-        {            
+        {
             var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
             if (_log.IsDebugEnabled)
             {
@@ -711,13 +710,13 @@ namespace SharpPulsar.User
                 var tcs = new TaskCompletionSource<ConcurrentDictionary<int, IActorRef>>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 var partitionActor = _actorSystem.ActorOf(PartitionedProducerActor<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, null, tcs));
-                
+
                 try
                 {
-                  
-                   var con = await tcs.Task.ConfigureAwait(false);
+
+                    var con = await tcs.Task.ConfigureAwait(false);
                     //var producer = partitionActor;// await tcs.Task;
-                   
+
                     _client.Tell(new AddProducer(partitionActor));
                     return new PartitionedProducer<T>(partitionActor, schema, conf, _clientConfigurationData.OperationTimeout, con);
                 }
@@ -735,7 +734,7 @@ namespace SharpPulsar.User
                 try
                 {
                     _ = await tcs.Task.ConfigureAwait(false);
-                   
+
                     _client.Tell(new AddProducer(producer));
 
                     return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
@@ -746,7 +745,7 @@ namespace SharpPulsar.User
                     throw;
                 }
             }
-            
+
         }
         // Check topics are valid.
         // - each topic is valid,

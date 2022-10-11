@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using SharpPulsar.Auth;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;

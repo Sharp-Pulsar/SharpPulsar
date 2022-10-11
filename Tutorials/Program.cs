@@ -16,7 +16,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
-using SharpPulsar.User;
 using Spectre.Console;
 
 using Tutorials.PulsarTestContainer;

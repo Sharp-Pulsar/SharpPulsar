@@ -7,7 +7,7 @@ using SharpPulsar.Messages.Requests;
 using System;
 using System.Threading.Tasks;
 
-namespace SharpPulsar.User
+namespace SharpPulsar
 {
     public class Reader<T> : IReader<T>
     {
@@ -65,7 +65,7 @@ namespace SharpPulsar.User
             }
             return await GetMessage(timeSpan).ConfigureAwait(false);
         }
-        public void Seek(IMessageId messageId) 
+        public void Seek(IMessageId messageId)
             => SeekAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(IMessageId messageId)
         {
@@ -84,9 +84,9 @@ namespace SharpPulsar.User
             }
             var response = await _readerActor.Ask<AskResponse>(new SeekMessageId(messageId)).ConfigureAwait(false);
             if (response.Failed)
-                  throw response.Exception;
+                throw response.Exception;
         }
-        public void Seek(long timestamp) 
+        public void Seek(long timestamp)
             => SeekAsync(timestamp).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(long timestamp)
         {

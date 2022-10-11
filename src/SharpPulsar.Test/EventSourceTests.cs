@@ -5,7 +5,6 @@ using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using SharpPulsar.Utils;
 using System;
 using System.Collections.Generic;

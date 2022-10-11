@@ -1,8 +1,8 @@
 ﻿using Akka.Actor;
 using SharpPulsar.EventSource.Messages;
 using SharpPulsar.EventSource.Messages.Presto;
-using SharpPulsar.EventSource.Presto;
-using SharpPulsar.EventSource.Presto.Tagged;
+using SharpPulsar.EventSource.Trino;
+using SharpPulsar.EventSource.Trino.Tagged;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Sql.Client;
 using System;
@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks.Dataflow;
 
-namespace SharpPulsar.User.Events
+namespace SharpPulsar.Events
 {
     public class SqlSourceMethod
     {
@@ -42,7 +42,7 @@ namespace SharpPulsar.User.Events
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
             var msg = new CurrentEventsByTopic(_tenant, _namespace, _topic, _selectedColumns, _fromMessageId, _toMessageId, _brokerWebServiceUrl, _options);
             var actor = _actorSystem.ActorOf(CurrentEventsByTopicActor.Prop(msg, buffer), actorName);
-            
+
             return new SqlSource<IEventEnvelope>(_brokerWebServiceUrl, buffer, actor);
         }
 
@@ -50,7 +50,7 @@ namespace SharpPulsar.User.Events
         {
             if (tag == null)
                 throw new ArgumentException("Tag is null");
-            
+
             var buffer = new BufferBlock<IEventEnvelope>();
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
             var msg = new CurrentEventsByTag(_tenant, _namespace, _topic, _selectedColumns, _fromMessageId, _toMessageId, tag, _options, _brokerWebServiceUrl);

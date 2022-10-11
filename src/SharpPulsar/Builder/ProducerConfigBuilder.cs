@@ -21,6 +21,7 @@ using SharpPulsar.Builder;
 */
 using SharpPulsar.Extension;
 using SharpPulsar.Configuration;
+using SharpPulsar.Common.Compression;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

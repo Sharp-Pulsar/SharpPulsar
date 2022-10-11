@@ -2,9 +2,6 @@
 using Akka.Util;
 using App.Metrics.Concurrency;
 using SharpPulsar.Messages.Consumer;
-
-
-using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Threading;

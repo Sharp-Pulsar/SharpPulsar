@@ -1,6 +1,6 @@
 ﻿
 
-namespace SharpPulsar.Test.Fixture
+namespace SharpPulsar.Test.Token.Fixture
 {
     using SharpPulsar.TestContainer;
     using Xunit;

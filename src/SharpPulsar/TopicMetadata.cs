@@ -19,7 +19,7 @@
 /// </summary>
 namespace SharpPulsar
 {
-	public class TopicMetadata : ITopicMetadata
+	internal class TopicMetadata : ITopicMetadata
 	{
 
 		private readonly int _numPartitions;

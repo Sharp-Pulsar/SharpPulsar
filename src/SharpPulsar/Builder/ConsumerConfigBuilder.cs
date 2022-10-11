@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
+using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;

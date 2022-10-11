@@ -7,21 +7,21 @@ using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;
 
-namespace SharpPulsar.EventSource.Presto.Tagged
+namespace SharpPulsar.EventSource.Trino
 {
-    public class CurrentEventsByTagActor : ReceiveActor
+    public class CurrentEventsByTopicActor : ReceiveActor
     {
-        private readonly CurrentEventsByTag _message;
+        private readonly CurrentEventsByTopic _message;
         private readonly Admin.Public.Admin _admin;
-        readonly BufferBlock<IEventEnvelope> _buffer;
-        public CurrentEventsByTagActor(CurrentEventsByTag message, BufferBlock<IEventEnvelope> buffer)
+        private readonly BufferBlock<IEventEnvelope> _buffer;
+        public CurrentEventsByTopicActor(CurrentEventsByTopic message, BufferBlock<IEventEnvelope> buffer)
         {
             _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());
             _buffer = buffer;
             _message = message;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
-            Setup(partitions.Body);
+            Setup(partitions.Body, topic);
             Receive<Terminated>(t =>
             {
                 var children = Context.GetChildren();
@@ -33,26 +33,26 @@ namespace SharpPulsar.EventSource.Presto.Tagged
             });
         }
 
-        private void Setup(PartitionedTopicMetadata p)
+        private void Setup(PartitionedTopicMetadata p, string topic)
         {
             if (p.Partitions > 0)
             {
                 for (var i = 0; i < p.Partitions; i++)
                 {
-                    var child = Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, false, _message, _message.Tag));
+                    var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer, false, _message));
                     Context.Watch(child);
                 }
             }
             else
             {
-                var child = Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, false,  _message, _message.Tag));
+                var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer, false, _message));
                 Context.Watch(child);
             }
         }
 
-        public static Props Prop(CurrentEventsByTag message, BufferBlock<IEventEnvelope> buffer)
+        public static Props Prop(CurrentEventsByTopic message, BufferBlock<IEventEnvelope> buffer)
         {
-            return Props.Create(() => new CurrentEventsByTagActor(message, buffer));
+            return Props.Create(() => new CurrentEventsByTopicActor(message, buffer));
         }
     }
 }

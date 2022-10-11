@@ -13,7 +13,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
-namespace SharpPulsar.User
+namespace SharpPulsar
 {
     public class Consumer<T> : IConsumer<T>
     {
@@ -33,31 +33,31 @@ namespace SharpPulsar.User
             _operationTimeout = operationTimeout;
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> TopicAsync() 
+        public async ValueTask<string> TopicAsync()
             => await _consumerActor.Ask<string>(GetTopic.Instance).ConfigureAwait(false);
 
         public string Subscription => SubscriptionAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> SubscriptionAsync() 
+        public async ValueTask<string> SubscriptionAsync()
             => await _consumerActor.Ask<string>(GetSubscription.Instance).ConfigureAwait(false);
 
         public IConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
-        public async ValueTask<IConsumerStats> StatsAsync() 
+        public async ValueTask<IConsumerStats> StatsAsync()
             => await _consumerActor.Ask<IConsumerStats>(GetStats.Instance).ConfigureAwait(false);
 
         public IMessageId LastMessageId => LastMessageIdAsync().GetAwaiter().GetResult();
-        public async ValueTask<IMessageId> LastMessageIdAsync() 
+        public async ValueTask<IMessageId> LastMessageIdAsync()
             => await _consumerActor.Ask<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
 
         public bool Connected => ConnectedAsync().GetAwaiter().GetResult();
-        public async ValueTask<bool> ConnectedAsync() 
+        public async ValueTask<bool> ConnectedAsync()
             => await _consumerActor.Ask<bool>(IsConnected.Instance).ConfigureAwait(false);
 
         public string ConsumerName => ConsumerNameAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> ConsumerNameAsync() 
+        public async ValueTask<string> ConsumerNameAsync()
             => await _consumerActor.Ask<string>(GetConsumerName.Instance).ConfigureAwait(false);
 
         public long LastDisconnectedTimestamp => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
-        public async ValueTask<long> LastDisconnectedTimestampAsync() 
+        public async ValueTask<long> LastDisconnectedTimestampAsync()
             => await _consumerActor.Ask<long>(GetLastDisconnectedTimestamp.Instance).ConfigureAwait(false);
 
         public void Acknowledge(IMessage<T> message) => AcknowledgeAsync(message).GetAwaiter().GetResult();
@@ -110,7 +110,7 @@ namespace SharpPulsar.User
             if (ask.Failed)
                 throw ask.Exception;
         }
-        public void AcknowledgeCumulative(IMessage<T> message) 
+        public void AcknowledgeCumulative(IMessage<T> message)
             => AcknowledgeCumulativeAsync(message).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeCumulativeAsync(IMessage<T> message)
         {
@@ -151,7 +151,7 @@ namespace SharpPulsar.User
         {
             await _consumerActor.GracefulStop(_operationTimeout).ConfigureAwait(false);
         }
-        public bool HasReachedEndOfTopic() 
+        public bool HasReachedEndOfTopic()
             => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> HasReachedEndOfTopicAsync()
         {
@@ -165,7 +165,7 @@ namespace SharpPulsar.User
         /// </summary>
         /// <param name="message"></param>
         /// <exception cref="PulsarClientException"></exception>
-        public void NegativeAcknowledge(IMessage<T> message) 
+        public void NegativeAcknowledge(IMessage<T> message)
             => NegativeAcknowledgeAsync(message).GetAwaiter().GetResult();
         public async ValueTask NegativeAcknowledgeAsync(IMessage<T> message)
         {
@@ -175,7 +175,7 @@ namespace SharpPulsar.User
                 throw ask.Exception;
         }
 
-        public void NegativeAcknowledge(IMessages<T> messages) 
+        public void NegativeAcknowledge(IMessages<T> messages)
             => NegativeAcknowledgeAsync(messages).GetAwaiter().GetResult();
 
         public async ValueTask NegativeAcknowledgeAsync(IMessages<T> messages)
@@ -215,7 +215,7 @@ namespace SharpPulsar.User
         public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan time)
         {
             var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, time).ConfigureAwait(false);
-            
+
             if (response.Failed)
                 throw response.Exception;
 
@@ -238,7 +238,7 @@ namespace SharpPulsar.User
         /// <param name="receiveTimeout"></param> 
         /// <returns></returns>
         public IMessages<T> BatchReceive()
-        {            
+        {
             return BatchReceiveAsync().GetAwaiter().GetResult();
         }
         public async ValueTask<IMessages<T>> BatchReceiveAsync()
@@ -284,7 +284,7 @@ namespace SharpPulsar.User
             return message;
         }
 
-        public void ReconsumeLater(IMessage<T> message, TimeSpan delayTimeInMs) 
+        public void ReconsumeLater(IMessage<T> message, TimeSpan delayTimeInMs)
             => ReconsumeLaterAsync(message, delayTimeInMs).GetAwaiter().GetResult();
         public async ValueTask ReconsumeLaterAsync(IMessage<T> message, TimeSpan delayTimeInMs)
         {
@@ -387,12 +387,12 @@ namespace SharpPulsar.User
         /// <param name="takeCount"></param>
         /// <param name="customProcess"></param>
         /// <returns></returns>
-        public async IAsyncEnumerable<T> ReceiveFunc(bool autoAck = true, int takeCount = -1, int receiveTimeout = 3000, Func<IMessage<T>, T> customHander = null, [EnumeratorCancellation]CancellationToken token = default)
+        public async IAsyncEnumerable<T> ReceiveFunc(bool autoAck = true, int takeCount = -1, int receiveTimeout = 3000, Func<IMessage<T>, T> customHander = null, [EnumeratorCancellation] CancellationToken token = default)
         {
             //no end
             if (takeCount == -1)
             {
-                while(true)
+                while (true)
                 {
                     AskResponse response = null;
                     try
@@ -406,7 +406,7 @@ namespace SharpPulsar.User
                     {
                         throw;
                     }
-                    if(response != null && response.Data is IMessage<T> message)
+                    if (response != null && response.Data is IMessage<T> message)
                         yield return ProcessMessage(message, autoAck, customHander);
                 }
             }
@@ -428,7 +428,7 @@ namespace SharpPulsar.User
                     }
 
                     if (response != null && response.Data is IMessage<T> message)
-                        yield return ProcessMessage(message, autoAck, customHander);                    
+                        yield return ProcessMessage(message, autoAck, customHander);
                     else
                     {
                         //we need to go back since no message was received within the timeout
@@ -440,7 +440,7 @@ namespace SharpPulsar.User
             else
             {
                 //drain the current messages                
-                while(true)
+                while (true)
                 {
                     AskResponse response = null;
                     try
@@ -448,7 +448,7 @@ namespace SharpPulsar.User
                         response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
                     }
                     catch (AskTimeoutException)
-                    { 
+                    {
                     }
                     catch
                     {
@@ -460,7 +460,7 @@ namespace SharpPulsar.User
                     else
                         break;
                 }
-                
+
             }
         }
 
@@ -489,7 +489,7 @@ namespace SharpPulsar.User
                 throw ask.Exception;
         }
 
-        public void Seek(Func<string, object> function) 
+        public void Seek(Func<string, object> function)
             => SeekAsync(function).GetAwaiter().GetHashCode();
 
         public async ValueTask SeekAsync(Func<string, object> function)

@@ -1,5 +1,5 @@
 ﻿using Akka.Util;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using System;
 using System.Collections.Generic;
 
@@ -24,11 +24,11 @@ using System.Collections.Generic;
 namespace SharpPulsar.Schemas
 {
 
-	/// <summary>
-	/// A json schema definition
-	/// <seealso cref="ISchemaDefinition<T>"/> for the json schema definition.
-	/// </summary>
-	public class SchemaDefinitionImpl<T> : ISchemaDefinition<T>
+    /// <summary>
+    /// A json schema definition
+    /// <seealso cref="ISchemaDefinition<T>"/> for the json schema definition.
+    /// </summary>
+    public class SchemaDefinitionImpl<T> : ISchemaDefinition<T>
 	{
 
 		/// <summary>

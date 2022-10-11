@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Precondition;
 using SharpPulsar.Shared;
 using System;
@@ -26,12 +26,12 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	
 
-	/// <summary>
-	/// [Key, Value] pair schema definition
-	/// </summary>
-	public class KeyValueSchema<K, V> : ISchema<KeyValue<K, V>>
+
+    /// <summary>
+    /// [Key, Value] pair schema definition
+    /// </summary>
+    public class KeyValueSchema<K, V> : ISchema<KeyValue<K, V>>
 	{
 		private readonly ISchema<K> _keySchema;
 

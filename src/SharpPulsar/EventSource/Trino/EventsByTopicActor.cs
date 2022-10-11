@@ -5,7 +5,7 @@ using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;
 
-namespace SharpPulsar.EventSource.Presto
+namespace SharpPulsar.EventSource.Trino
 {
     public class EventsByTopicActor : ReceiveActor
     {
@@ -29,12 +29,12 @@ namespace SharpPulsar.EventSource.Presto
                 for (var i = 0; i < p.Partitions; i++)
                 {
                     Context.ActorOf(PrestoSourceActor.Prop(_buffer, true, _message));
-                    
+
                 }
             }
             else
             {
-                Context.ActorOf(PrestoSourceActor.Prop(_buffer,true,  _message));
+                Context.ActorOf(PrestoSourceActor.Prop(_buffer, true, _message));
             }
         }
         public static Props Prop(EventsByTopic message, BufferBlock<IEventEnvelope> buffer)

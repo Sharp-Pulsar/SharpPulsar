@@ -4,7 +4,7 @@ using SharpPulsar.Admin.Admin.Models;
 
 namespace SharpPulsar.EventSource
 {
-    public sealed class MessageIdHelper
+    internal sealed class MessageIdHelper
     {
         public static (long Ledger, long Entry, long Index) Calculate( long start, PersistentTopicInternalStats stats)
         {

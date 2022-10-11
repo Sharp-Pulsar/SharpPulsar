@@ -2,7 +2,7 @@
 using SharpPulsar.Sql.Client;
 using System.Collections.Generic;
 
-namespace SharpPulsar.User.Events
+namespace SharpPulsar.Events
 {
     public class SqlSourceBuilder
     {
@@ -16,7 +16,7 @@ namespace SharpPulsar.User.Events
         private readonly ClientOptions _options;
         private readonly HashSet<string> _selectedColumns;
         private readonly ActorSystem _actorSystem;
-        
+
         public SqlSourceBuilder(ActorSystem actorSystem, string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl, ClientOptions options, HashSet<string> selectedColumns)
         {
             _actorSystem = actorSystem;

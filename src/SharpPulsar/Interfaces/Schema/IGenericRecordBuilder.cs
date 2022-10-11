@@ -17,50 +17,50 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
-	/// <summary>
-	/// Generic Record Builder to build a <seealso cref="IGenericRecord"/>.
-	/// </summary>
-	public interface IGenericRecordBuilder
-	{
+    /// <summary>
+    /// Generic Record Builder to build a <seealso cref="IGenericRecord"/>.
+    /// </summary>
+    public interface IGenericRecordBuilder
+    {
 
-		/// <summary>
-		/// Sets the value of a field.
-		/// </summary>
-		/// <param name="fieldName"> the name of the field to set. </param>
-		/// <param name="value"> the value to set. </param>
-		/// <returns> a reference to the RecordBuilder. </returns>
-		IGenericRecordBuilder Set(string fieldName, object value);
+        /// <summary>
+        /// Sets the value of a field.
+        /// </summary>
+        /// <param name="fieldName"> the name of the field to set. </param>
+        /// <param name="value"> the value to set. </param>
+        /// <returns> a reference to the RecordBuilder. </returns>
+        IGenericRecordBuilder Set(string fieldName, object value);
 
-		/// <summary>
-		/// Sets the value of a field.
-		/// </summary>
-		/// <param name="field"> the field to set. </param>
-		/// <param name="value"> the value to set. </param>
-		/// <returns> a reference to the RecordBuilder. </returns>
-		IGenericRecordBuilder Set(Field field, object value);
+        /// <summary>
+        /// Sets the value of a field.
+        /// </summary>
+        /// <param name="field"> the field to set. </param>
+        /// <param name="value"> the value to set. </param>
+        /// <returns> a reference to the RecordBuilder. </returns>
+        IGenericRecordBuilder Set(Field field, object value);
 
-		/// <summary>
-		/// Clears the value of the given field.
-		/// </summary>
-		/// <param name="fieldName"> the name of the field to clear. </param>
-		/// <returns> a reference to the RecordBuilder. </returns>
-		IGenericRecordBuilder Clear(string fieldName);
+        /// <summary>
+        /// Clears the value of the given field.
+        /// </summary>
+        /// <param name="fieldName"> the name of the field to clear. </param>
+        /// <returns> a reference to the RecordBuilder. </returns>
+        IGenericRecordBuilder Clear(string fieldName);
 
-		/// <summary>
-		/// Clears the value of the given field.
-		/// </summary>
-		/// <param name="field"> the field to clear. </param>
-		/// <returns> a reference to the RecordBuilder. </returns>
-		IGenericRecordBuilder Clear(Field field);
+        /// <summary>
+        /// Clears the value of the given field.
+        /// </summary>
+        /// <param name="field"> the field to clear. </param>
+        /// <returns> a reference to the RecordBuilder. </returns>
+        IGenericRecordBuilder Clear(Field field);
 
-		/// <summary>
-		/// Build a generic record.
-		/// </summary>
-		/// <returns> a generic record. </returns>
-		IGenericRecord Build();
+        /// <summary>
+        /// Build a generic record.
+        /// </summary>
+        /// <returns> a generic record. </returns>
+        IGenericRecord Build();
 
-	}
+    }
 
 }

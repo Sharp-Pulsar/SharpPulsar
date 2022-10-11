@@ -39,7 +39,7 @@ namespace SharpPulsar.Transaction
     /// much as possible.
     /// </para>
     /// </summary>
-    public class TransactionActor : ReceiveActor, IWithUnboundedStash
+    internal class TransactionActor : ReceiveActor, IWithUnboundedStash
 	{
 
 		private readonly IActorRef _client;

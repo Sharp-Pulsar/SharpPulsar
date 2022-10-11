@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using Akka.Actor;
-using SharpPulsar.User;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -21,17 +20,17 @@ using SharpPulsar.User;
 /// </summary>
 namespace SharpPulsar.Common
 {
-	/// <summary>
-	/// The provider to provide the service url.
-	/// 
-	/// <para>This allows applications to retrieve the service URL from an external configuration provider and,
-	/// more importantly, to force the Pulsar client to reconnect if the service URL has been changed.
-	/// 
-	/// </para>
-	/// <para>It can be passed with <seealso cref="IServiceUrlProvider"/>
-	/// </para>
-	/// </summary>
-	public interface IServiceUrlProvider
+    /// <summary>
+    /// The provider to provide the service url.
+    /// 
+    /// <para>This allows applications to retrieve the service URL from an external configuration provider and,
+    /// more importantly, to force the Pulsar client to reconnect if the service URL has been changed.
+    /// 
+    /// </para>
+    /// <para>It can be passed with <seealso cref="IServiceUrlProvider"/>
+    /// </para>
+    /// </summary>
+    public interface IServiceUrlProvider
 	{
         /// <summary>
         /// Initialize the service url provider with Pulsar client instance.

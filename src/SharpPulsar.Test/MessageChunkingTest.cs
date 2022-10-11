@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Interfaces;

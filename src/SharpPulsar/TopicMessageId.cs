@@ -22,7 +22,7 @@ using System;
 /// </summary>
 namespace SharpPulsar
 {
-	public class TopicMessageId : IMessageId
+	internal class TopicMessageId : IMessageId
 	{
 
 		/// <summary>
