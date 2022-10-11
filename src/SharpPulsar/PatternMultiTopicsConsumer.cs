@@ -76,7 +76,7 @@ namespace SharpPulsar
             if (_subscriptionMode == Mode.Persistent)
             {
                 long WatcherId = Client.NewTopicListWatcherId();
-                new TopicListWatcher(_topicsChangeListener, client, topicsPattern, WatcherId, NamespaceName, topicsHash, watcherFuture);
+                new TopicListWatcher(_topicsChangeListener, client, topicsPattern, WatcherId, NamespaceName, topicsHash, State);
                 watcherFuture.exceptionally(ex =>
                 {
                     log.debug("Unable to create topic list watcher. Falling back to only polling for new topics", ex);
