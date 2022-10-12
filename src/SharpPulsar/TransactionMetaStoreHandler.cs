@@ -7,7 +7,6 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Transaction;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -12,15 +12,11 @@ using System.Text;
 using ProtoBuf;
 using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
 using SharpPulsar.Common;
-using SharpPulsar.Transaction;
 using SharpPulsar.Helpers;
 using SharpPulsar.Batch;
 using Serializer = SharpPulsar.Helpers.Serializer;
 using SharpPulsar.Extension;
 using Akka.Util.Internal;
-using static SharpPulsar.Protocol.Proto.CommandAck;
-using SharpPulsar.Messages.Consumer;
-using static Akka.Actor.Status;
 using SharpPulsar.Interfaces.Schema;
 
 /// <summary>

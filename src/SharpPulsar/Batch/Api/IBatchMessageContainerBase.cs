@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using Akka.Actor;
-using SharpPulsar.Batch;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

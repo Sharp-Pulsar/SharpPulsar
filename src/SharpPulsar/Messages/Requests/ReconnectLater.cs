@@ -3,7 +3,6 @@ using SharpPulsar.Protocol.Proto;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Threading.Tasks;
 
 namespace SharpPulsar.Messages.Requests
 {

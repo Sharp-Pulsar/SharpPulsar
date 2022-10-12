@@ -1,8 +1,6 @@
 ﻿using Akka;
 using Akka.Actor;
 using Akka.Util.Internal;
-using DotNetty.Common.Utilities;
-using Google.Protobuf.Collections;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
@@ -14,12 +12,8 @@ using SharpPulsar.Precondition;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Joins;
-using System.Runtime.ConstrainedExecution;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using static SharpPulsar.PatternMultiTopicsConsumer<T>;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 /// <summary>
@@ -49,13 +43,10 @@ namespace SharpPulsar
         private  string _topicsHash;
 		private readonly Mode _subscriptionMode;
 		private readonly IActorRef _lookup;
-		protected internal NamespaceName NamespaceName;
+		private NamespaceName _namespaceName;
 		private ICancelable _recheckPatternTimeout = null;
 		private readonly IActorContext _context;
 		private readonly IActorRef _self;
-
-        private readonly ITopicsChangedListener _topicsChangeListener;
-        private readonly ValueTask<TopicListWatcher> _watcherFuture;
 
         public PatternMultiTopicsConsumer(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, schema, false, clientConfiguration, subscribeFuture)
 		{
@@ -65,56 +56,34 @@ namespace SharpPulsar
 			_topicsPattern = topicsPattern;
             _topicsHash = topicsHash;
             _subscriptionMode = subscriptionMode;
-			if(NamespaceName == null)
+			if(_namespaceName == null)
 			{
-				NamespaceName = GetNameSpaceFromPattern(topicsPattern);
+				_namespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
-            Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(NamespaceName.ToString()));
+            Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(_namespaceName.ToString()));
             _recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await Run(); });
-            _topicsChangeListener = new PatternTopicsChangedListener(this);
+            //_topicsChangeListener = new PatternTopicsChangedListener(this);
             
-            _watcherFuture = new CompletableFuture<TopicListWatcher>();
             if (_subscriptionMode == Mode.Persistent)
             {
-                long WatcherId = Client.NewTopicListWatcherId();
-                new TopicListWatcher(_topicsChangeListener, client, topicsPattern, WatcherId, NamespaceName, topicsHash, State);
-                watcherFuture.exceptionally(ex =>
-                {
-                    log.debug("Unable to create topic list watcher. Falling back to only polling for new topics", ex);
-                    return null;
-                });
+                var watcherId = idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false).GetAwaiter().GetResult();
+                var watcher = Context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.Match().ToString(), watcherId, _namespaceName, topicsHash, State));
+                var grabCnc = watcher.Ask<AskResponse>(Grab.Instance);
+                if(grabCnc.Exception != null)
+                    _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {grabCnc.Exception}");
+                
             }
             else
             {
-                log.debug("Not creating topic list watcher for subscription mode {}", SubscriptionMode);
-                watcherFuture.complete(null);
+                _log.Debug($"Not creating topic list watcher for subscription mode {_subscriptionMode}");
             }
             ReceiveAsync<TopicsAdded>(async t =>
             {
-                var addedTopics = t.AddedTopics;
-                if (addedTopics.Count == 0)
-                {
-                    return;
-                }
-                foreach (var add in addedTopics)
-                {
-                    await Subscribe(add, false);
-                }
+                await OnTopicsAdded(t.AddedTopics);
             });
             Receive<TopicsRemoved>(t =>
             {
-                var removedTopics = t.RemovedTopics;
-                if (removedTopics.Count == 0)
-                {
-                    return;
-                }
-
-                var futures = new List<ValueTask>(PartitionedTopics.Count);
-
-                removedTopics.ForEach(delegate (string topic)
-                {
-                    _self.Tell(new RemoveTopicConsumer(topic));
-                });
+                OnTopicsRemoved(t.RemovedTopics);
             });
 
         }
@@ -122,19 +91,43 @@ namespace SharpPulsar
         {
             return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, topicsHash, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration, subscribeFuture));
         }
-        
+        private void OnTopicsRemoved(ICollection<string> removedTopics)
+        {
+            if (removedTopics.Count == 0)
+            {
+                return;
+            }
+
+            var futures = new List<ValueTask>(PartitionedTopics.Count);
+
+            removedTopics.ForEach(delegate (string topic)
+            {
+                _self.Tell(new RemoveTopicConsumer(topic));
+            });
+        }
+        private async ValueTask OnTopicsAdded(ICollection<string> addedTopics)
+        {
+            if (addedTopics.Count == 0)
+            {
+                return;
+            }
+            foreach (var add in addedTopics)
+            {
+                await Subscribe(add, false);
+            }
+        }
         private async ValueTask Run()
 		{
             var topics = _context.GetChildren().ToList();
             try
             {
-				var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode, _topicsPattern.Match().ToString(), _topicsHash)).ConfigureAwait(false);
+				var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(_namespaceName, _subscriptionMode, _topicsPattern.Match().ToString(), _topicsHash)).ConfigureAwait(false);
                 var response = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
                 var topicsFound = response.Topics;
 				if (_log.IsDebugEnabled)
 				{
-					_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}, topicsHash: {response.TopicsHash}, filtered: {response.GetHashCode}");
-					PartitionedTopics.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
+					_log.Debug($"Get topics under namespace {_namespaceName}, topics.size: {topics.Count}, topicsHash: {response.TopicsHash}, filtered: {response.GetHashCode}");
+					PartitionedTopics.ForEach(t => _log.Debug($"Get topics under namespace {_namespaceName}, topic: {t.Key}"));
 				}
                 IList<string> oldTopics = new List<string>();
                 foreach (string partition in response.Topics)
@@ -146,7 +139,7 @@ namespace SharpPulsar
                         oldTopics.Add(partition);
                     }
                 }
-                await UpdateSubscriptions(_topicsPattern, response, _topicsChangeListener, oldTopics);
+                await UpdateSubscriptions(_topicsPattern, response, oldTopics);
                
             }
 			catch(Exception ex)
@@ -163,7 +156,7 @@ namespace SharpPulsar
 			}
 			
 		}
-        private async ValueTask UpdateSubscriptions(Regex topicsPattern, GetTopicsUnderNamespaceResponse result, ITopicsChangedListener topicsChangedListener, IList<string> oldTopics)
+        private async ValueTask UpdateSubscriptions(Regex topicsPattern, GetTopicsUnderNamespaceResponse result, IList<string> oldTopics)
         {
             _topicsHash = result.TopicsHash;
             if (!result.Changed)
@@ -181,8 +174,8 @@ namespace SharpPulsar
                 newTopics = TopicList.FilterTopics(result.Topics, topicsPattern);
             }
 
-            await topicsChangedListener.OnTopicsAdded(TopicList.Minus(newTopics, oldTopics));
-            topicsChangedListener.OnTopicsRemoved(TopicList.Minus(oldTopics, newTopics));
+            await OnTopicsAdded(TopicList.Minus(newTopics, oldTopics));
+            OnTopicsRemoved(TopicList.Minus(oldTopics, newTopics));
         }
         public virtual Regex Pattern
 		{

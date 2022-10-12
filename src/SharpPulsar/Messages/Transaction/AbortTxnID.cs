@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Transaction;
-
-namespace SharpPulsar.Messages.Transaction
+﻿namespace SharpPulsar.Messages.Transaction
 {
     public sealed class AbortTxnID
     {

@@ -37,7 +37,6 @@ namespace SharpPulsar
     using Schemas;
     using Extension;
     using System.Buffers;
-    using Schema;
 
     public sealed class Message<T> : IMessage<T>
 	{

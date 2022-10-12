@@ -21,8 +21,6 @@ using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.SocketImpl;
 using System.Threading.Tasks;
-using System.Linq;
-using static Akka.Actor.Status;
 
 namespace SharpPulsar
 {

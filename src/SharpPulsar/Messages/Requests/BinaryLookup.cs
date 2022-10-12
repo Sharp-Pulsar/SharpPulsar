@@ -1,8 +1,6 @@
 ﻿using Akka.Actor;
-using NLog.Filters;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces.Schema;
-using SharpPulsar.Protocol.Proto;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Net;

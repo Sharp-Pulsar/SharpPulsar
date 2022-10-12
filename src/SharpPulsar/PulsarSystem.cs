@@ -3,7 +3,6 @@ using Akka.Configuration;
 using NLog;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Client;
-using SharpPulsar.Transaction;
 using System;
 using System.Threading.Tasks;
 using SharpPulsar.Sql.Client;

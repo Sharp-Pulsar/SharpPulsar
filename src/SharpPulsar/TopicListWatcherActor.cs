@@ -42,7 +42,7 @@ namespace SharpPulsar
         private ClientConfigurationData _conf;
         private readonly IActorRef _generator;
         private IActorRef _clientCnxUsedForWatcherRegistration;
-        public TopicListWatcherActor(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
+        public TopicListWatcherActor(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state)
         {
             _lookupDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + conf.LookupTimeout.TotalMilliseconds);
             _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(conf, state, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
@@ -53,19 +53,17 @@ namespace SharpPulsar
             _namespace = @namespace;
             _topicsHash = topicsHash;
             _log = Context.GetLogger();
-            _watcherFuture = watcherFuture;
+           // _watcherFuture = watcherFuture;
             _conf = conf;
             _generator = idGenerator; 
         }
+        public static Props Prop(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state)
+        {
+            return Props.Create(() => new TopicListWatcherActor(client, idGenerator, conf, topicsPattern, watcherId, @namespace, topicsHash, state));
+        }
         private void GrabCnx()
-        {            
-            Receive<TopicsRemoved>(_ =>
-            {
-                _replyTo = Sender;
-                _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
-                Become(Connection);
-            });
-            Receive<TopicsAdded>(_ =>
+        {
+            Receive<Grab>(_ =>
             {
                 _replyTo = Sender;
                 _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
@@ -112,6 +110,10 @@ namespace SharpPulsar
             {
                 HandleCommandWatchTopicUpdate(update.Update, Sender);
             });
+            Receive<ConnectionClosed>(ctx =>
+            {
+                ConnectionClosed(ctx.ClientCnx);
+            });
             Stash?.UnstashAll();
 
         }
@@ -142,7 +144,7 @@ namespace SharpPulsar
 
         private async ValueTask<AskResponse> ConnectionOpened(ConnectionOpened c)
         {
-            _cnx = c.ClientCnx;
+            ClientCnx = c.ClientCnx;
             _previousExceptions.Clear();
 
             if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)

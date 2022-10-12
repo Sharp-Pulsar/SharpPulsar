@@ -1,9 +1,6 @@
 ﻿
 using System;
-using System.IO;
 using System.Linq;
-using System.Reactive;
-using SharpPulsar.Common;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -2,7 +2,6 @@
 using Akka.Util;
 using Akka.Util.Internal;
 using ProtoBuf;
-using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Builder;
@@ -27,7 +26,6 @@ using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
-using SharpPulsar.Transaction;
 using SharpPulsar.Utils;
 using System;
 using System.Buffers;

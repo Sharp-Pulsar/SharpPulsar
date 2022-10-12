@@ -1,7 +1,5 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
-using System.Security.Policy;
 using NodaTime;
 using SharpPulsar.Trino.Precondition;
 using SharpPulsar.Trino.Trino;
