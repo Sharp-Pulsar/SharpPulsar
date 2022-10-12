@@ -18,6 +18,7 @@ using System.Reactive.Joins;
 using System.Runtime.ConstrainedExecution;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using static SharpPulsar.PatternMultiTopicsConsumer<T>;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
@@ -88,6 +89,33 @@ namespace SharpPulsar
                 log.debug("Not creating topic list watcher for subscription mode {}", SubscriptionMode);
                 watcherFuture.complete(null);
             }
+            ReceiveAsync<TopicsAdded>(async t =>
+            {
+                var addedTopics = t.AddedTopics;
+                if (addedTopics.Count == 0)
+                {
+                    return;
+                }
+                foreach (var add in addedTopics)
+                {
+                    await Subscribe(add, false);
+                }
+            });
+            Receive<TopicsRemoved>(t =>
+            {
+                var removedTopics = t.RemovedTopics;
+                if (removedTopics.Count == 0)
+                {
+                    return;
+                }
+
+                var futures = new List<ValueTask>(PartitionedTopics.Count);
+
+                removedTopics.ForEach(delegate (string topic)
+                {
+                    _self.Tell(new RemoveTopicConsumer(topic));
+                });
+            });
 
         }
         public static Props Prop(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
@@ -168,51 +196,6 @@ namespace SharpPulsar
             set
             {
                 _topicsHash = value;
-            }
-        }
-        internal interface ITopicsChangedListener
-        {
-            // unsubscribe and delete ConsumerImpl in the `consumers` map in `MultiTopicsConsumerImpl` based on added topics
-            void OnTopicsRemoved(ICollection<string> removedTopics);
-            // subscribe and create a list of new ConsumerImpl, added them to the `consumers` map in
-            // `MultiTopicsConsumerImpl`.
-            ValueTask OnTopicsAdded(ICollection<string> addedTopics);
-        }
-        private class PatternTopicsChangedListener : ITopicsChangedListener
-        {
-            private readonly PatternMultiTopicsConsumer<T> _outerInstance;
-
-            public PatternTopicsChangedListener(PatternMultiTopicsConsumer<T> outerInstance)
-            {
-                _outerInstance = outerInstance;
-            }
-
-            public void OnTopicsRemoved(ICollection<string> removedTopics)
-            {
-                if (removedTopics.Count == 0)
-                {
-                    return;
-                }
-
-                var futures = new List<ValueTask>(_outerInstance.PartitionedTopics.Count);
-
-                removedTopics.ForEach(delegate (string topic)
-                {
-                    _outerInstance._self.Tell(new RemoveTopicConsumer(topic));
-                });
-            }
-
-            public async ValueTask OnTopicsAdded(ICollection<string> addedTopics)
-            {
-                if (addedTopics.Count == 0)
-                {
-                    return;
-                }
-                foreach (var t in addedTopics)
-                {
-                    await _outerInstance.Subscribe(t, false);
-                }
-               
             }
         }
       

@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Collections.Immutable;
 using Akka.Actor;
 using SharpPulsar.Protocol.Proto;
 
@@ -12,6 +13,34 @@ namespace SharpPulsar.Messages.Requests
             Success = success;
         }
     }
+    public sealed class CommandWatchTopicListSuccessResponse
+    {
+        public long WatcherId { get; }
+        public string TopicsHash { get; }
+        public ImmutableList<string> Topics { get; }
+        public CommandWatchTopicListSuccessResponse(CommandWatchTopicListSuccess success)
+        {
+            WatcherId = (long)success.WatcherId;
+            TopicsHash = success.TopicsHash;
+            Topics = success.Topics.ToImmutableList();
+        }
+    }
+    public sealed class CommandWatchTopicUpdateResponse
+    {
+        public long WatcherId { get; }
+        public string TopicsHash { get; }
+        public ImmutableList<string> NewTopics { get; }
+        public ImmutableList<string> DeletedTopics { get; }
+        public CommandWatchTopicUpdateResponse(CommandWatchTopicUpdate update)
+        {
+            WatcherId = (long)update.WatcherId;
+            TopicsHash = update.TopicsHash;    
+            NewTopics = update.NewTopics.ToImmutableList();
+            DeletedTopics = update.DeletedTopics.ToImmutableList();
+        }
+    }
+    
+
     public sealed class MaxMessageSize
     {
         public static MaxMessageSize Instance = new MaxMessageSize();

@@ -15,6 +15,24 @@ namespace SharpPulsar.Messages.Transaction
             Coordinator = coord;
         }
     }
+    public sealed class RemoveTopicListWatcher
+    {
+        public long WatcherId { get; }
+        public RemoveTopicListWatcher(long watcherid)
+        {
+            WatcherId = watcherid;
+        }
+    }
+    public sealed class RegisterTopicListWatcher
+    {
+        public long WatcherId { get; }
+        public IActorRef Watcher { get; }
+        public RegisterTopicListWatcher(long watcherid, IActorRef watcher)
+        {
+            WatcherId = watcherid;
+            WatcherId = WatcherId;
+        }
+    }
     public sealed class RegisterProducedTopic
     {
         public string Topic { get; }

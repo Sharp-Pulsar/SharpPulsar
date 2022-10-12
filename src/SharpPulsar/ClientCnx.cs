@@ -21,6 +21,8 @@ using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.SocketImpl;
 using System.Threading.Tasks;
+using System.Linq;
+using static Akka.Actor.Status;
 
 namespace SharpPulsar
 {
@@ -37,13 +39,13 @@ namespace SharpPulsar
 		private readonly LinkedList<KeyValuePair<long, KeyValuePair<ReadOnlySequence<byte>, LookupDataResult>>> _waitingLookupRequests;
 
 		private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
-
-		private readonly Dictionary<long, IActorRef> _consumers = new Dictionary<long, IActorRef>();
+        private readonly ConcurrentDictionary<long, IActorRef> _watcher = new ConcurrentDictionary<long, IActorRef>();
+        private readonly Dictionary<long, IActorRef> _consumers = new Dictionary<long, IActorRef>();
 		private readonly Dictionary<long, IActorRef> _transactionMetaStoreHandlers = new Dictionary<long, IActorRef>();
 
 		private readonly ConcurrentQueue<RequestTime> _requestTimeoutQueue = new ConcurrentQueue<RequestTime>();
-
-		private volatile int _numberOfRejectRequests = 0;
+        private readonly Dictionary<long, IActorRef> _topicListWatchers = new Dictionary<long, IActorRef>();
+        private volatile int _numberOfRejectRequests = 0;
 
 		private static int _maxMessageSize = Commands.DefaultMaxMessageSize;
 
@@ -57,8 +59,8 @@ namespace SharpPulsar
 		private readonly string _proxyToTargetBrokerAddress;
 		private readonly ReadOnlySequence<byte> _pong = Commands.NewPong();
 		private readonly List<byte> _pendingReceive;
-
-		private readonly string _remoteHostName;
+        private bool _supportsTopicWatchers;
+        private readonly string _remoteHostName;
 		private readonly bool _isTlsHostnameVerificationEnable;
 		private readonly ClientConfigurationData _clientConfigurationData;
         private readonly TaskCompletionSource<ConnectionOpened> _connectionFuture;
@@ -216,7 +218,9 @@ namespace SharpPulsar
             });
             Receive<RemoteEndpointProtocolVersion>(r => {
                 Sender.Tell(new RemoteEndpointProtocolVersionResponse(_protocolVersion));
-            });
+            });//RemoveTopicListWatcher
+            Receive<RegisterTopicListWatcher>(w => RegisterTopicListWatcher(w.WatcherId, w.Watcher));
+            Receive<RemoveTopicListWatcher>(w => RemoveTopicListWatcher(w.WatcherId));
         }
 		private void OnDisconnected()
 		{
@@ -234,14 +238,14 @@ namespace SharpPulsar
 			_producers.ForEach(p => p.Value.Tell(new ConnectionClosed(_self)));
 			_consumers.ForEach(c => c.Value.Tell(new ConnectionClosed(_self)));
 			_transactionMetaStoreHandlers.ForEach(t => t.Value.Tell(new ConnectionClosed(_self)));
-
-			_pendingRequests.Clear();
+            _topicListWatchers.ForEach(watcher => watcher.Value.Tell(new ConnectionClosed(_self)));
+            _pendingRequests.Clear();
 			_waitingLookupRequests.Clear();
 
 			_producers.Clear();
 			_consumers.Clear();
-
-			_timeoutTask?.Cancel(true);
+            _topicListWatchers.Clear();
+            _timeoutTask?.Cancel(true);
 		}
 
         private async Task NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
@@ -255,7 +259,44 @@ namespace SharpPulsar
             _socketClient.Dispose();
 			base.PostStop();
 		}
-		private void HandleConnected(CommandConnected connected)
+
+
+        private void HandleCommandWatchTopicListSuccess(CommandWatchTopicListSuccess commandWatchTopicListSuccess)
+        {
+            Condition.CheckArgument(_state == State.Ready);
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[ctx] Received watchTopicListSuccess response from server: {commandWatchTopicListSuccess.RequestId}");
+            }
+            var requestId = (long)commandWatchTopicListSuccess.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new CommandWatchTopicListSuccessResponse(commandWatchTopicListSuccess), _self);
+            }
+            else
+            {
+                _log.Warning($"Received unknown request id from server: {commandWatchTopicListSuccess.RequestId}");
+            }
+        }
+
+        private void HandleCommandWatchTopicUpdate(CommandWatchTopicUpdate commandWatchTopicUpdate)
+        {
+            Condition.CheckArgument(_state == State.Ready);
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[ctx] Received watchTopicUpdate command from server: {commandWatchTopicUpdate.WatcherId}");
+            }
+            var watcherId = (long)commandWatchTopicUpdate.WatcherId;
+            if (_watcher.TryGetValue(watcherId, out var watcher))
+                watcher.Tell(new CommandWatchTopicUpdateResponse(commandWatchTopicUpdate));            
+            else
+            {
+                _log.Warning($"[ctx] Received topic list update for unknown watcher from server: {watcherId}");
+            }
+        }
+
+        private void HandleConnected(CommandConnected connected)
 		{
 			Condition.CheckArgument(_state == State.SentConnectFrame || _state == State.Connecting);
 			if (connected.MaxMessageSize > 0)
@@ -270,13 +311,24 @@ namespace SharpPulsar
 			{
 				_log.Debug("Connection is ready");
 			}
-			// set remote protocol version to the correct version before we complete the connection future
-			_protocolVersion = connected.ProtocolVersion;
+            // set remote protocol version to the correct version before we complete the connection future
+
+            _supportsTopicWatchers = connected.FeatureFlags.SupportsTopicWatchers;
+
+            _protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
 			_connectionFuture.TrySetResult(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
         }
+        private void RegisterTopicListWatcher(long watcherId, IActorRef watcher)
+        {
+            _topicListWatchers.Add(watcherId, watcher);
 
-		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
+        }
+        private void RemoveTopicListWatcher(long watcherId)
+        {
+            _topicListWatchers.Remove(watcherId);
+        }
+        private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
 		{
             
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
@@ -991,6 +1043,12 @@ namespace SharpPulsar
                 case BaseCommand.Type.AckResponse:
                     HandleAckResponse(cmd.ackResponse);
                     break;
+                case BaseCommand.Type.WatchTopicListSuccess:
+                    HandleCommandWatchTopicListSuccess(cmd.watchTopicListSuccess);
+                    break;
+                case BaseCommand.Type.WatchTopicUpdate:
+                    HandleCommandWatchTopicUpdate(cmd.watchTopicUpdate);
+                    break;
                 default:
                     _log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
                     break;
@@ -1162,8 +1220,9 @@ namespace SharpPulsar
 			public static readonly RequestType GetSchema = new RequestType("GetSchema", InnerEnum.GetSchema);
 			public static readonly RequestType GetOrCreateSchema = new RequestType("GetOrCreateSchema", InnerEnum.GetOrCreateSchema);
 			public static readonly RequestType AckResponse = new RequestType("AckResponse", InnerEnum.AckResponse);
+            public static readonly RequestType Lookup = new RequestType("Lookup", InnerEnum.Lookup);
 
-			private static readonly List<RequestType> valueList = new List<RequestType>();
+            private static readonly List<RequestType> valueList = new List<RequestType>();
 
 			static RequestType()
 			{
@@ -1173,7 +1232,8 @@ namespace SharpPulsar
 				valueList.Add(GetSchema);
 				valueList.Add(GetOrCreateSchema);
 				valueList.Add(AckResponse);
-			}
+                valueList.Add(Lookup);
+            }
 
 			public enum InnerEnum
 			{
@@ -1182,8 +1242,9 @@ namespace SharpPulsar
 				GetTopics,
 				GetSchema,
 				GetOrCreateSchema,
-                AckResponse
-			}
+                AckResponse,
+                Lookup
+            }
 
 			public readonly InnerEnum innerEnumValue;
 			private readonly string nameValue;

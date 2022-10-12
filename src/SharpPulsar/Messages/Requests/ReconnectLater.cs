@@ -1,5 +1,9 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Protocol.Proto;
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.Messages.Requests
 {
@@ -10,8 +14,32 @@ namespace SharpPulsar.Messages.Requests
         {
             Exception = exception;
         }
-    } 
-    
+    }
+    //HandleCommandWatchTopicUpdate 
+    public sealed class HandleWatchTopicUpdate
+    {
+        public CommandWatchTopicUpdate Update { get; }
+        public HandleWatchTopicUpdate(CommandWatchTopicUpdate update)
+        {
+            Update = update;
+        }
+    }
+    public sealed class TopicsRemoved
+    {
+        public ImmutableList<string> RemovedTopics { get; }
+        public TopicsRemoved(ICollection<string> removedTopics) 
+        { 
+            RemovedTopics = removedTopics.ToImmutableList();
+        }
+    }
+    public sealed class TopicsAdded
+    {
+        public ImmutableList<string> AddedTopics { get; }
+        public TopicsAdded(ICollection<string> addedTopics)
+        {
+            AddedTopics = addedTopics.ToImmutableList();  
+        }
+    }
     public sealed class ResetBackoff
     {
         public static ResetBackoff Instance = new ResetBackoff();
@@ -60,5 +88,9 @@ namespace SharpPulsar.Messages.Requests
         {
             Message = message;
         }
+    }
+    public sealed class Grab
+    {
+        public static Grab Instance = new Grab();
     }
 }

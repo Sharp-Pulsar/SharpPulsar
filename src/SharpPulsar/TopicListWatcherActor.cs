@@ -1,14 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Reactive.Joins;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Akka.Actor;
-using DotNetty.Common.Utilities;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
@@ -16,13 +10,15 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol;
-using static SharpPulsar.PatternMultiTopicsConsumer<T>;
 using Akka.Event;
+using SharpPulsar.Messages.Client;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Transaction;
 
 namespace SharpPulsar
 {
 
-    internal class TopicListWatcherActor : ReceiveActor
+    internal class TopicListWatcherActor : ReceiveActor, IWithUnboundedStash
     {
         private readonly IActorRef _connectionHandler;
         private readonly IActorRef _self;
@@ -35,21 +31,22 @@ namespace SharpPulsar
         private readonly TimeSpan _lookupDeadline;
         private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();
         private readonly string _name;
-        private readonly Regex _topicsPattern;
+        private readonly string _topicsPattern;
         private readonly long _watcherId;
         private long _createWatcherDeadline = 0;
         private readonly NamespaceName _namespace;
-        private readonly ITopicsChangedListener _topicsChangeListener;
         private string _topicsHash;
         private readonly ILoggingAdapter _log;
         protected internal HandlerState _state;
         private TaskCompletionSource<IActorRef> _watcherFuture;
-        public TopicListWatcherActor(ITopicsChangedListener topicsChangeListener, IActorRef client, ClientConfigurationData conf, Regex topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
+        private ClientConfigurationData _conf;
+        private readonly IActorRef _generator;
+        private IActorRef _clientCnxUsedForWatcherRegistration;
+        public TopicListWatcherActor(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
         {
             _lookupDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + conf.LookupTimeout.TotalMilliseconds);
             _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(conf, state, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
             _state = state;
-            _topicsChangeListener = topicsChangeListener;
             _name = "Watcher(" + topicsPattern + ")";
             _topicsPattern = topicsPattern;
             _watcherId = watcherId;
@@ -57,13 +54,72 @@ namespace SharpPulsar
             _topicsHash = topicsHash;
             _log = Context.GetLogger();
             _watcherFuture = watcherFuture;
-            GrabCnx();
+            _conf = conf;
+            _generator = idGenerator; 
         }
         private void GrabCnx()
-        {
-            _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
+        {            
+            Receive<TopicsRemoved>(_ =>
+            {
+                _replyTo = Sender;
+                _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
+                Become(Connection);
+            });
+            Receive<TopicsAdded>(_ =>
+            {
+                _replyTo = Sender;
+                _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
+                Become(Connection);
+            });
+            ReceiveAny(s=> Stash.Stash());
         }
-        
+        private void Connection()
+        {
+            ReceiveAsync<AskResponse>(async ask =>
+            {
+                if (ask.Failed)
+                {
+                    ConnectionFailed(ask.Exception);
+                    _replyTo.Tell(ask);
+                }
+                else
+                {
+                    var con =  await ConnectionOpened(ask.ConvertTo<ConnectionOpened>()).ConfigureAwait(false);
+                    if(con != null)
+                    {
+                        _replyTo.Tell(con);
+                        Become(Handle);
+                    }
+                        
+                }
+                   
+            });
+            ReceiveAny(s => Stash.Stash());
+        }
+        private void Handle()
+        {
+            Receive<Grab>(_ =>
+            {
+                _replyTo = Sender;
+                _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
+                Become(Connection);
+            });
+            Receive<Close>(_ =>
+            {
+               Sender.Tell(Close());
+            });
+            Receive<HandleWatchTopicUpdate>(update =>
+            {
+                HandleCommandWatchTopicUpdate(update.Update, Sender);
+            });
+            Stash?.UnstashAll();
+
+        }
+        protected override void PreStart()
+        {
+            base.PreStart();
+            Become(GrabCnx);
+        }
         private void ConnectionFailed(PulsarClientException exception)
         {
             var nonRetriableError = !PulsarClientException.IsRetriableError(exception);
@@ -84,68 +140,59 @@ namespace SharpPulsar
             }
         }
 
-        public virtual void ConnectionOpened(IActorRef cnx)
+        private async ValueTask<AskResponse> ConnectionOpened(ConnectionOpened c)
         {
+            _cnx = c.ClientCnx;
             _previousExceptions.Clear();
 
             if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)
             {
                 _state.ConnectionState = HandlerState.State.Closed;
                 DeregisterFromClientCnx();
-                return;
+                return new AskResponse(_state.ConnectionState);
             }
 
-            _log.Info("[{}][{}] Creating topic list watcher on cnx {}, watcherId {}", Topic, HandlerName, Cnx.Ctx().channel(), watcherId);
-
-            long RequestId = ClientConflict.NewRequestId();
-
-            createWatcherDeadlineUpdater.compareAndSet(this, 0L, DateTimeHelper.CurrentUnixTimeMillis() + ClientConflict.Configuration.getOperationTimeoutMs());
+            _log.Info($"[Topic][{HandlerName}] Creating topic list watcher on cnx, watcherId {_watcherId}");
+            var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).ConfigureAwait(false);
+            var requestId = id.Id;
+            _createWatcherDeadline =  DateTimeHelper.CurrentUnixTimeMillis() + (long)_conf.OperationTimeout.TotalMilliseconds;
 
             // synchronized this, because redeliverUnAckMessage eliminate the epoch inconsistency between them
-            lock (this)
+            var watchRequest = Commands.NewWatchTopicList(requestId, _watcherId, _namespace.ToString(), _topicsPattern, _topicsHash);
+            try
             {
-                ClientCnx = Cnx;
-                BaseCommand WatchRequest = Commands.newWatchTopicList(RequestId, watcherId, @namespace.ToString(), topicsPattern.pattern(), topicsHash);
-
-                Cnx.NewWatchTopicList(WatchRequest, RequestId).thenAccept(response =>
+                var response = await _cnx.Ask<CommandWatchTopicListSuccessResponse>(new Payload(watchRequest, requestId, "NewWatchTopicList"), _conf.OperationTimeout).ConfigureAwait(false);
+                if (!_state.ChangeToReadyState())
                 {
-                    lock (TopicListWatcher.this)
-
-                {
-                    if (!ChangeToReadyState())
-                    {
-                        State = State.Closed;
-                        DeregisterFromClientCnx();
-                        Cnx.Channel().close();
-                        return;
-                    }
+                    _state.ConnectionState = HandlerState.State.Closed;
+                    DeregisterFromClientCnx();
+                    _cnx.Tell(Messages.Requests.Close.Instance);
+                    return new AskResponse(_state.ConnectionState);
                 }
-                this.connectionHandler.ResetBackoff();
-                watcherFuture.complete(this);
-            }).exceptionally((e) =>
+                ResetBackoff();
+                //watcherFuture.complete(this);
+                return new AskResponse(c);
+            }
+            catch (Exception e) 
             {
                 DeregisterFromClientCnx();
-                if (State == State.Closing || State == State.Closed)
+                if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)
                 {
-                    Cnx.Channel().close();
+                    _cnx.Tell(Messages.Requests.Close.Instance);
+                }
+                _log.Warning($"[Topic][{HandlerName}] Failed to subscribe to topic on 'remoteAddress'");
+                if (e.InnerException is PulsarClientException && PulsarClientException.IsRetriableError(e.InnerException) && DateTimeHelper.CurrentUnixTimeMillis() < _createWatcherDeadline)
+                {
+                    ReconnectLater(e.InnerException);
                     return null;
-                }
-                log.warn("[{}][{}] Failed to subscribe to topic on {}", Topic, HandlerName, Cnx.Channel().remoteAddress());
-                if (e.getCause() is PulsarClientException && PulsarClientException.isRetriableError(e.getCause()) && DateTimeHelper.CurrentUnixTimeMillis() < createWatcherDeadlineUpdater.get(TopicListWatcher.this))
-                {
-                    ReconnectLater(e.getCause());
-                }
-                else if (!watcherFuture.isDone())
-                {
-                    State = State.Failed;
-                    watcherFuture.completeExceptionally(PulsarClientException.wrap(e, string.Format("Failed to create topic list watcher {0}" + "when connecting to the broker", HandlerName)));
                 }
                 else
                 {
-                    ReconnectLater(e.getCause());
+                    _state.ConnectionState = HandlerState.State.Failed;
+                    return new AskResponse(PulsarClientException.Wrap(e, $"Failed to create topic list watcher {HandlerName} when connecting to the broker"));
                 }
-                return null;
-            });
+            }
+            
         }
         private string HandlerName
         {
@@ -155,7 +202,11 @@ namespace SharpPulsar
             }
         }
 
-        public virtual bool Connected
+        private void ResetBackoff()
+        {
+            _connectionHandler.Tell(Messages.Requests.ResetBackoff.Instance);
+        }
+        private bool Connected
         {
             get
             {
@@ -163,125 +214,122 @@ namespace SharpPulsar
             }
         }
 
-        public virtual ClientCnx ClientCnx
+        public virtual IActorRef ClientCnx
         {
             get
             {
-                return this.connectionHandler.Cnx();
+                return _cnx;
             }
             set
             {
                 if (value != null)
                 {
-                    this.connectionHandler.ClientCnx = value;
-                    value.RegisterTopicListWatcher(watcherId, this);
+                    _cnx = value;
+                    _cnx.Tell(new RegisterTopicListWatcher(_watcherId, Self));
                 }
-                value PreviousClientCnx = clientCnxUsedForWatcherRegistration.getAndSet(value);
-                if (PreviousClientCnx != null && PreviousClientCnx != value)
+                var previousClientCnx = _clientCnxUsedForWatcherRegistration = value;
+                if (previousClientCnx != null && previousClientCnx != value)
                 {
-                    PreviousClientCnx.RemoveTopicListWatcher(watcherId);
+                    previousClientCnx.Tell(new RemoveTopicListWatcher(_watcherId));
                 }
             }
         }
 
-        public virtual CompletableFuture<Void> CloseAsync()
+        public IStash Stash { get; set; }
+
+        private async ValueTask<AskResponse> Close()
         {
 
-            CompletableFuture<Void> CloseFuture = new CompletableFuture<Void>();
-
-            if (State == State.Closing || State == State.Closed)
+            if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)
             {
-                CloseFuture.complete(null);
-                return CloseFuture;
+                return new AskResponse();
             }
 
             if (!Connected)
             {
-                log.info("[{}] [{}] Closed watcher (not connected)", Topic, HandlerName);
-                State = State.Closed;
+                _log.Info($"[Topic] [{HandlerName}] Closed watcher (not connected)");
+                _state.ConnectionState = HandlerState.State.Closed;
                 DeregisterFromClientCnx();
-                CloseFuture.complete(null);
-                return CloseFuture;
+                return new AskResponse(null);
             }
 
-            State = State.Closing;
+            _state.ConnectionState = HandlerState.State.Closing;
 
-
-            long RequestId = ClientConflict.NewRequestId();
-
-            ClientCnx Cnx = Cnx();
-            if (null == Cnx)
+            var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).ConfigureAwait(false);
+            var requestId = id.Id;
+            CommandSuccess response = null;
+            if (null == _cnx)
             {
-                CleanupAtClose(CloseFuture, null);
+                CleanupAtClose(null);
             }
             else
             {
-                BaseCommand Cmd = Commands.newWatchTopicListClose(watcherId, RequestId);
-                Cnx.NewWatchTopicListClose(Cmd, RequestId).handle((v, exception) =>
+                try
                 {
-                    ChannelHandlerContext Ctx = Cnx.Ctx();
-                    bool IgnoreException = Ctx == null || !Ctx.channel().isActive();
-                    if (IgnoreException && exception != null)
-                    {
-                        log.debug("Exception ignored in closing watcher", exception);
-                    }
-                    CleanupAtClose(CloseFuture, IgnoreException ? null : exception);
-                    return null;
-                });
+                    var cmd = Commands.NewWatchTopicListClose(_watcherId, requestId);
+                    response = await _cnx.Ask<CommandSuccess>(new Payload(cmd, requestId, "NewWatchTopicListClose"), _conf.OperationTimeout).ConfigureAwait(false);
+
+                }
+                catch(Exception ex)
+                {
+                    _log.Debug($"Exception ignored in closing watcher {ex}");
+                    CleanupAtClose(ex);
+                }
+                
             }
 
-            return CloseFuture;
+            return new AskResponse(response);
         }
 
         // wrapper for connection methods
         private IActorRef Cnx()
         {
-            return _connectionHandler.Cnx();
+            return _cnx;
         }
 
-        public virtual void ConnectionClosed(ClientCnx ClientCnx)
+       private void ConnectionClosed(IActorRef clientCnx)
         {
-            this.connectionHandler.ConnectionClosed(ClientCnx);
+            _connectionHandler.Tell(new ConnectionClosed(clientCnx));
         }
 
 
-        internal virtual void DeregisterFromClientCnx()
+        private void DeregisterFromClientCnx()
         {
             ClientCnx = null;
         }
 
-        internal virtual void ReconnectLater(Exception Exception)
+        private void ReconnectLater(Exception exception)
         {
-            this.connectionHandler.ReconnectLater(Exception);
+            _connectionHandler.Tell(new ReconnectLater(exception));
         }
 
 
-        private void CleanupAtClose(CompletableFuture<Void> CloseFuture, Exception Exception)
+        private Exception CleanupAtClose(Exception exception)
         {
-            log.info("[{}] Closed topic list watcher", HandlerName);
-            State = State.Closed;
+            _log.Info($"[{HandlerName}] Closed topic list watcher");
+            _state.ConnectionState = HandlerState.State.Closed; 
             DeregisterFromClientCnx();
-            if (Exception != null)
+            if (exception != null)
             {
-                CloseFuture.completeExceptionally(Exception);
+                return exception;
             }
             else
             {
-                CloseFuture.complete(null);
+                return null;
             }
         }
 
-        public virtual void HandleCommandWatchTopicUpdate(CommandWatchTopicUpdate Update)
+        private void HandleCommandWatchTopicUpdate(CommandWatchTopicUpdate update, IActorRef sender)
         {
-            IList<string> Deleted = Update.getDeletedTopicsList();
-            if (Deleted.Count > 0)
+            IList<string> deleted = update.DeletedTopics;
+            if (deleted.Count > 0)
             {
-                topicsChangeListener.OnTopicsRemoved(Deleted);
+               sender.Tell(new TopicsRemoved(deleted));
             }
-            IList<string> Added = Update.getNewTopicsList();
-            if (Added.Count > 0)
+            IList<string> added = update.NewTopics;
+            if (added.Count > 0)
             {
-                topicsChangeListener.OnTopicsAdded(Added);
+                sender.Tell(new TopicsAdded(added));
             }
         }
     }
