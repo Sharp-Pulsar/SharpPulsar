@@ -116,7 +116,10 @@ namespace SharpPulsar
                 Interceptors.OnPartitionsChange(topicName, partitions);
             }
         }
-
+        public override string ToString()
+        {
+            return "ProducerBase{" + "topic='" + Topic + '\'' + '}';
+        }
         protected internal enum MultiSchemaMode
 		{
 			Auto,

@@ -65,7 +65,7 @@ namespace SharpPulsar.Configuration
 		public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;
         public IMessageRouter CustomMessageRouter { get; set; } = null;
 		public bool ChunkingEnabled { get; set; } = false;
-
+        public int ChunkMaxMessageSize { get; set; } = -1;
         private int _maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
         private int _maxPendingMessages = DefaultMaxPendingMessages;
 
