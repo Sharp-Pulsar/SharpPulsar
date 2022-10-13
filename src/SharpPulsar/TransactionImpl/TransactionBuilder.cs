@@ -24,40 +24,40 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Transaction
+namespace SharpPulsar.TransactionImpl
 {
     /// <summary>
     /// The default implementation of transaction builder to build transactions.
     /// </summary>
-    internal class TransactionBuilder : ITransactionBuilder
-	{
+    public class TransactionBuilder : ITransactionBuilder
+    {
 
-		private readonly ActorSystem _actorSystem;
-		private readonly IActorRef _transactionCoordinatorClient;
-		private readonly IActorRef _client;
+        private readonly ActorSystem _actorSystem;
+        private readonly IActorRef _transactionCoordinatorClient;
+        private readonly IActorRef _client;
         private TimeSpan _txnTimeoutMs = TimeSpan.FromSeconds(60); // 1 minute
-		private readonly ILoggingAdapter _log;
+        private readonly ILoggingAdapter _log;
 
-		public TransactionBuilder(ActorSystem actorSystem, IActorRef client, IActorRef tcClient, ILoggingAdapter log)
-		{
-			_log = log;
-			_actorSystem = actorSystem;
-			_transactionCoordinatorClient = tcClient;
-			_client = client;
-		}
+        public TransactionBuilder(ActorSystem actorSystem, IActorRef client, IActorRef tcClient, ILoggingAdapter log)
+        {
+            _log = log;
+            _actorSystem = actorSystem;
+            _transactionCoordinatorClient = tcClient;
+            _client = client;
+        }
 
-		public virtual ITransactionBuilder WithTransactionTimeout(TimeSpan timeout)
-		{
-			_txnTimeoutMs = timeout;
-			return this;
-		}
+        public virtual ITransactionBuilder WithTransactionTimeout(TimeSpan timeout)
+        {
+            _txnTimeoutMs = timeout;
+            return this;
+        }
 
-		public ITransaction Build()
-		{
-			return BuildAsync().GetAwaiter().GetResult();
-		}
-		public async Task<ITransaction> BuildAsync()
-		{
+        public ITransaction Build()
+        {
+            return BuildAsync().GetAwaiter().GetResult();
+        }
+        public async Task<ITransaction> BuildAsync()
+        {
             // talk to TC to begin a transaction
             //       the builder is responsible for locating the transaction coorindator (TC)
             //       and start the transaction to get the transaction id.
@@ -76,8 +76,8 @@ namespace SharpPulsar.Transaction
 
             var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, timeout, txnID.LeastSigBits, txnID.MostSigBits));
             var tcOk = await transaction.Ask<TcClientOk>(GetTcClient.Instance).ConfigureAwait(false);
-            return new User.Transaction(txnID.LeastSigBits, txnID.MostSigBits, transaction);	
-		}
-	}
+            return new Transaction(txnID.LeastSigBits, txnID.MostSigBits, transaction);
+        }
+    }
 
 }

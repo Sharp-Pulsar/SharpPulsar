@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Builder;
+using SharpPulsar.TransactionImpl;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

@@ -5,7 +5,7 @@ using System;
 namespace SharpPulsar
 {
     [Serializable]
-	public abstract class MessageRouterBase : IMessageRouter
+	internal abstract class MessageRouterBase : IMessageRouter
 	{
 		public abstract int ChoosePartition<T>(IMessage<T> msg, TopicMetadata metadata);
 		public abstract int ChoosePartition<T>(IMessage<T> msg);

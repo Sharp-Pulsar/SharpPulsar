@@ -7,6 +7,7 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
+using SharpPulsar.TransactionImpl;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -90,7 +91,7 @@ namespace SharpPulsar
             return new TypedMessageBuilder<V>(_producerActor, schema, _conf);
         }
 
-        public TypedMessageBuilder<T> NewMessage(Transaction txn)
+        public ITypedMessageBuilder<T> NewMessage(Transaction txn)
         {
             // check the producer has proper settings to send transactional messages
             if (_conf.SendTimeoutMs.TotalMilliseconds > 0)

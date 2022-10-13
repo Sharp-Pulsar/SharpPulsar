@@ -1,4 +1,6 @@
-﻿namespace SharpPulsar.Messages.Transaction
+﻿using SharpPulsar.TransactionImpl;
+
+namespace SharpPulsar.Messages.Transaction
 {
     public sealed class AbortTxnID
     {

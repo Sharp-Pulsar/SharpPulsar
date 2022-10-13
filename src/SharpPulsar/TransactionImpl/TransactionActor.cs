@@ -27,10 +27,10 @@ using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Transaction
+namespace SharpPulsar.TransactionImpl
 {
     /// <summary>
-    /// The default implementation of <seealso cref="SharpPulsar.Transaction"/>.
+    /// The default implementation of <seealso cref="Transaction"/>.
     /// 
     /// <para>All the error handling and retry logic are handled by this class.
     /// The original pulsar client doesn't handle any transaction logic. It is only responsible
@@ -40,125 +40,125 @@ namespace SharpPulsar.Transaction
     /// </para>
     /// </summary>
     internal class TransactionActor : ReceiveActor, IWithUnboundedStash
-	{
+    {
 
-		private readonly IActorRef _client;
-		private readonly long _transactionTimeoutMs;
-		private readonly long _txnIdLeastBits;
-		private readonly long _txnIdMostBits;
-		private readonly ILoggingAdapter _log;
-		private long _sequenceId = 0L;
+        private readonly IActorRef _client;
+        private readonly long _transactionTimeoutMs;
+        private readonly long _txnIdLeastBits;
+        private readonly long _txnIdMostBits;
+        private readonly ILoggingAdapter _log;
+        private long _sequenceId = 0L;
         private volatile State _state;
         private readonly IActorRef _self;
         private IActorRef _sender;
 
         private readonly ISet<string> _registerPartitionMaps;
-		private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
-		private IActorRef _tcClient; //TransactionCoordinatorClientImpl
-		private IDictionary<IActorRef, int> _cumulativeAckConsumers;
+        private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
+        private IActorRef _tcClient; //TransactionCoordinatorClientImpl
+        private IDictionary<IActorRef, int> _cumulativeAckConsumers;
 
-		private readonly List<IMessageId> _sendList;
+        private readonly List<IMessageId> _sendList;
 
         public IStash Stash { get; set; }
 
         public TransactionActor(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
-		{
+        {
             _self = Self;
             _state = State.OPEN;
             _log = Context.System.Log;
-			_client = client;
-			_transactionTimeoutMs = transactionTimeoutMs;
-			_txnIdLeastBits = txnIdLeastBits;
-			_txnIdMostBits = txnIdMostBits;
+            _client = client;
+            _transactionTimeoutMs = transactionTimeoutMs;
+            _txnIdLeastBits = txnIdLeastBits;
+            _txnIdMostBits = txnIdMostBits;
 
-			_registerPartitionMaps = new HashSet<string>();
-			_registerSubscriptionMap = new Dictionary<string, List<string>>();
-			_sendList = new List<IMessageId>();
-			TcClient();
-		}
-		private void TcClient()
+            _registerPartitionMaps = new HashSet<string>();
+            _registerSubscriptionMap = new Dictionary<string, List<string>>();
+            _sendList = new List<IMessageId>();
+            TcClient();
+        }
+        private void TcClient()
         {
-			Receive<TcClient>(tc => 
-			{
-				var actor = tc.TCClient;
-				_log.Info($"Successfully Asked {actor.Path.Name} TC from Client Actor");
-				_tcClient = actor;
+            Receive<TcClient>(tc =>
+            {
+                var actor = tc.TCClient;
+                _log.Info($"Successfully Asked {actor.Path.Name} TC from Client Actor");
+                _tcClient = actor;
                 _sender.Tell(TcClientOk.Instance);
-				Become(Ready);
-			});
-			Receive<GetTcClient>(gtc => 
-			{
+                Become(Ready);
+            });
+            Receive<GetTcClient>(gtc =>
+            {
                 _sender = Sender;
                 _client.Tell(gtc);
             });
-			ReceiveAny(_=> Stash.Stash());
-			
+            ReceiveAny(_ => Stash.Stash());
+
         }
-		private void Ready()
+        private void Ready()
         {
-			Receive<NextSequenceId>(_ =>
-			{
-				Sender.Tell(NextSequenceId());
-			});
-			Receive<RegisterCumulativeAckConsumer>(r =>
-			{
-				RegisterCumulativeAckConsumer(r.Consumer);
-			});
-			Receive<GetTxnIdBits>(_ =>
-			{
-				Sender.Tell(new GetTxnIdBitsResponse(_txnIdMostBits, _txnIdLeastBits));
-			});
-			Receive<Abort>(_ =>
-			{
+            Receive<NextSequenceId>(_ =>
+            {
+                Sender.Tell(NextSequenceId());
+            });
+            Receive<RegisterCumulativeAckConsumer>(r =>
+            {
+                RegisterCumulativeAckConsumer(r.Consumer);
+            });
+            Receive<GetTxnIdBits>(_ =>
+            {
+                Sender.Tell(new GetTxnIdBitsResponse(_txnIdMostBits, _txnIdLeastBits));
+            });
+            Receive<Abort>(_ =>
+            {
                 if (CheckIfOpen())
                 {
-                    _sender = Sender; 
+                    _sender = Sender;
                     Become(Abort);
-                }                    
+                }
                 else
                     Sender.Tell(new TransactionNotOpenedException(_state.ToString()));
-			});
-			Receive<RegisterAckedTopic>(r =>
-			{
-				RegisterAckedTopic(r.Topic, r.Subscription);
-			});
-			Receive<IncomingMessagesCleared>(c =>
-			{
-				_cumulativeAckConsumers[Sender] = c.Cleared;
-			});
-			Receive<Commit>(_ =>
-			{
+            });
+            Receive<RegisterAckedTopic>(r =>
+            {
+                RegisterAckedTopic(r.Topic, r.Subscription);
+            });
+            Receive<IncomingMessagesCleared>(c =>
+            {
+                _cumulativeAckConsumers[Sender] = c.Cleared;
+            });
+            Receive<Commit>(_ =>
+            {
                 if (CheckIfOpen())
                 {
                     _sender = Sender;
                     Become(Commit);
                 }
                 else
-                    Sender.Tell(new TransactionNotOpenedException(_state.ToString()));                    
+                    Sender.Tell(new TransactionNotOpenedException(_state.ToString()));
             });
-			Receive<RegisterSendOp>(s =>
-			{
-				RegisterSendOp(s.MessageId);
-			});
-			Receive<RegisterProducedTopic>(p =>
-			{
+            Receive<RegisterSendOp>(s =>
+            {
+                RegisterSendOp(s.MessageId);
+            });
+            Receive<RegisterProducedTopic>(p =>
+            {
                 RegisterProducedTopic(p.Topic);
 
             });
-			Stash?.UnstashAll();
-		}
-		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
-        {
-			return Props.Create(() => new TransactionActor(client, transactionTimeoutMs, txnIdLeastBits, txnIdMostBits));
+            Stash?.UnstashAll();
         }
-		private long NextSequenceId()
-		{
-			return _sequenceId++;
-		}
+        public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
+        {
+            return Props.Create(() => new TransactionActor(client, transactionTimeoutMs, txnIdLeastBits, txnIdMostBits));
+        }
+        private long NextSequenceId()
+        {
+            return _sequenceId++;
+        }
 
-		// register the topics that will be modified by this transaction
-		private void RegisterProducedTopic(string topic)
-		{
+        // register the topics that will be modified by this transaction
+        private void RegisterProducedTopic(string topic)
+        {
             if (CheckIfOpen())
             {
                 if (!_registerPartitionMaps.Contains(topic))
@@ -172,24 +172,24 @@ namespace SharpPulsar.Transaction
             }
             else
                 Sender.Tell(new RegisterProducedTopicResponse(null));
-		}
+        }
 
         private void RegisterSendOp(IMessageId send)
-		{
-			_sendList.Add(send);
-		}
+        {
+            _sendList.Add(send);
+        }
 
-		// register the topics that will be modified by this transaction
-		private void RegisterAckedTopic(string topic, string subscription)
-		{
-			if (CheckIfOpen())
-			{
+        // register the topics that will be modified by this transaction
+        private void RegisterAckedTopic(string topic, string subscription)
+        {
+            if (CheckIfOpen())
+            {
                 if (!_registerSubscriptionMap.TryGetValue(topic, out var subs))
                 {
                     _registerSubscriptionMap.Add(topic, new List<string> { subscription });
                     _tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription), Sender);
                 }
-                else if(!subs.Contains(subscription))
+                else if (!subs.Contains(subscription))
                 {
                     _registerSubscriptionMap[topic].Add(subscription);
                     // we need to issue the request to TC to register the acked topic
@@ -202,9 +202,9 @@ namespace SharpPulsar.Transaction
                 Sender.Tell(new AskResponse(false));
         }
 
-		private void RegisterCumulativeAckConsumer(IActorRef consumer)
-		{
-            if(CheckIfOpen())
+        private void RegisterCumulativeAckConsumer(IActorRef consumer)
+        {
+            if (CheckIfOpen())
             {
                 if (_cumulativeAckConsumers == null)
                 {
@@ -212,22 +212,22 @@ namespace SharpPulsar.Transaction
                 }
                 _cumulativeAckConsumers[consumer] = 0;
             }
-		}
+        }
 
-		private void Commit()
-		{
+        private void Commit()
+        {
             _state = State.COMMITTING;
             Receive<EndTxnResponse>(e =>
             {
                 _log.Info("Got EndTxnResponse in Commit()");
-                if(e.Error != null)
+                if (e.Error != null)
                 {
                     var error = e.Error;
                     if (error is TransactionNotFoundException || error is InvalidTxnStatusException)
                     {
                         _state = State.ERROR;
                         _sender.Tell(error);
-                    }                        
+                    }
                     else
                     {
                         _state = State.COMMITTED;
@@ -239,10 +239,10 @@ namespace SharpPulsar.Transaction
                 Become(Ready);
             });
             ReceiveAny(any => Stash.Stash());
-			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
-		}
+            _tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
+        }
 
-		private void Abort()
+        private void Abort()
         {
             _state = State.ABORTING;
             Receive<EndTxnResponse>(e =>
@@ -273,14 +273,14 @@ namespace SharpPulsar.Transaction
             });
             ReceiveAny(any => Stash.Stash());
             if (_cumulativeAckConsumers != null)
-			{                
-				foreach(var c in _cumulativeAckConsumers)
+            {
+                foreach (var c in _cumulativeAckConsumers)
                 {
-					c.Key.Tell(ClearIncomingMessagesAndGetMessageNumber.Instance);
+                    c.Key.Tell(ClearIncomingMessagesAndGetMessageNumber.Instance);
                 }
-			}
-			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
-			
+            }
+            _tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
+
         }
         private bool CheckIfOpen()
         {

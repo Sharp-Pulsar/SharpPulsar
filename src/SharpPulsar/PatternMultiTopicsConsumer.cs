@@ -69,7 +69,7 @@ namespace SharpPulsar
                 var watcherId = idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false).GetAwaiter().GetResult();
                 var watcher = Context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.Match().ToString(), watcherId, _namespaceName, topicsHash, State));
                 var grabCnc = watcher.Ask<AskResponse>(Grab.Instance);
-                if(grabCnc.Exception != null)
+                if(grabCnc.Exception == null)
                     _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {grabCnc.Exception}");
                 
             }

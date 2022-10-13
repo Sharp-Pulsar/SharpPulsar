@@ -125,7 +125,7 @@ namespace SharpPulsar
 		private readonly IActorRef _connectionHandler;
 		private readonly IActorRef _generator;
 
-		private readonly Dictionary<long, (IMessageId messageid, TxnID txnid)> _ackRequests;
+		private readonly Dictionary<long, (IMessageId messageid, TransactionImpl.Transaction.TxnID txnid)> _ackRequests;
 
 		private readonly TopicName _topicName;
 		private readonly string _topicNameWithoutPartition;
@@ -175,7 +175,7 @@ namespace SharpPulsar
             Paused = conf.StartPaused;
 			_context = Context;
 			_clientConfigurationData = clientConfiguration;
-			_ackRequests = new Dictionary<long, (IMessageId messageid, TxnID txnid)>();
+			_ackRequests = new Dictionary<long, (IMessageId messageid, TransactionImpl.Transaction.TxnID txnid)>();
 			_generator = idGenerator;
 			_topicName = TopicName.Get(topic);
 			_cnxPool = cnxPool;
@@ -1068,7 +1068,7 @@ namespace SharpPulsar
 			{
 				var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
 				var bits = txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).GetAwaiter().GetResult();
-				DoTransactionAcknowledgeForResponse(messageId, ackType, null, properties, new TxnID(bits.MostBits, bits.LeastBits), requestId.Id);
+				DoTransactionAcknowledgeForResponse(messageId, ackType, null, properties, new TransactionImpl.Transaction.TxnID(bits.MostBits, bits.LeastBits), requestId.Id);
                 return;
             }
             _acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(messageId, ackType, properties));
@@ -2898,7 +2898,7 @@ namespace SharpPulsar
 					_log.Info($"Failed to add message with sequnceid {o.SequenceId} to IncomingMessages");
 			}
 		}
-		private void DoTransactionAcknowledgeForResponse(IMessageId messageId, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TxnID txnID, long requestId)
+		private void DoTransactionAcknowledgeForResponse(IMessageId messageId, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TransactionImpl.Transaction.TxnID txnID, long requestId)
 		{
 			long ledgerId;
 			long entryId;

@@ -568,7 +568,7 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException.NotAllowedException">broker don't support transaction </exception>
         /// 
         /// @since 2.7.0 </returns>
-        void AcknowledgeCumulative(IMessageId messageId, SharpPulsar.Transaction txn);
+        void AcknowledgeCumulative(IMessageId messageId, TransactionImpl.Transaction txn);
 
         /// <summary>
         /// Acknowledge the reception of all the messages in the stream up to (and including) the provided message with this
@@ -606,7 +606,7 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException.NotAllowedException">broker don't support transaction </exception>
         /// 
         /// @since 2.7.0 </returns>
-        ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, SharpPulsar.Transaction txn);
+        ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, TransactionImpl.Transaction txn);
 
         /// <summary>
         /// reconsumeLater the reception of all the messages in the stream up to (and including) the provided message.

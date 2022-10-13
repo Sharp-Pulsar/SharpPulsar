@@ -4,7 +4,7 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
-namespace SharpPulsar
+namespace SharpPulsar.TransactionImpl
 {
     public sealed class Transaction : ITransaction
     {

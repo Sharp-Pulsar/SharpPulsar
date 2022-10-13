@@ -18,6 +18,7 @@ using Serializer = SharpPulsar.Helpers.Serializer;
 using SharpPulsar.Extension;
 using Akka.Util.Internal;
 using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.TransactionImpl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -1,6 +1,4 @@
-﻿
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,16 +16,42 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Transaction
+namespace SharpPulsar.TransactionImpl
 {
-	/// <summary>
-	/// Exception thrown when a transaction try to acknowledge message when it shouldn't.
-	/// 
-	/// </summary>
-	public class TransactionConflictException : System.Exception
-	{
-        public TransactionConflictException(string message) : base(message)
-		{
-		}
-	}
+
+    /// <summary>
+    /// An identifier for representing a transaction.
+    /// </summary>
+
+    public class TxnID
+    {
+
+        public const long SerialVersionUID = 0L;
+
+        /*
+		 * The most significant 64 bits of this TxnID.
+		 *
+		 * @serial
+		 */
+        public readonly long MostSigBits;
+
+        /*
+		 * The least significant 64 bits of this TxnID.
+		 *
+		 * @serial
+		 */
+        public readonly long LeastSigBits;
+
+        public TxnID(long mostSigBits, long leastSigBits)
+        {
+            LeastSigBits = leastSigBits;
+            MostSigBits = mostSigBits;
+        }
+
+        public override string ToString()
+        {
+            return "(" + MostSigBits + "," + LeastSigBits + ")";
+        }
+    }
+
 }

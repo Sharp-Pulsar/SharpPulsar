@@ -103,7 +103,7 @@ namespace SharpPulsar.Interfaces
 		/// <seealso cref= #newMessage()
 		/// 
 		/// @since 2.7.0 </seealso>
-		TypedMessageBuilder<T> NewMessage(SharpPulsar.Transaction txn);
+		ITypedMessageBuilder<T> NewMessage(TransactionImpl.Transaction txn);
 		/// <summary>
 		/// Get the last sequence id that was published by this producer.
 		/// 

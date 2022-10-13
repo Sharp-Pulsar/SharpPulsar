@@ -6,7 +6,7 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Extension
 {
-    public static class ListPartition
+    internal static class ListPartition
     {
         public static IEnumerable<IList<MessageId>> PartitionMessageId(this IList<IMessageId> source, int chunkSize)
         {

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using SharpPulsar.TransactionImpl;
 
 namespace SharpPulsar
 {

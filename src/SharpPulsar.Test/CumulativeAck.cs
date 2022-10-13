@@ -675,7 +675,7 @@ namespace SharpPulsar.Test
             _output.WriteLine($"receive transaction messages count: {receiveCnt}");
         }
 
-        private async Task<SharpPulsar.Transaction> Txn() => (SharpPulsar.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
+        private async Task<TransactionImpl.Transaction> Txn() => (TransactionImpl.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
 
     }

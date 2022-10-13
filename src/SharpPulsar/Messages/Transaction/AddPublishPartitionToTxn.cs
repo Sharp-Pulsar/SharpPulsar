@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Protocol.Proto;
+using SharpPulsar.TransactionImpl;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 

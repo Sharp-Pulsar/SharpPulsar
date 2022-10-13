@@ -47,7 +47,7 @@ namespace SharpPulsar
         [NonSerialized]
         private ReadOnlySequence<byte> _content;
         [NonSerialized]
-        private readonly SharpPulsar.Transaction _txn;
+        private readonly TransactionImpl.Transaction _txn;
         [NonSerialized]
         private readonly ProducerConfigurationData _conf;
 
@@ -55,7 +55,7 @@ namespace SharpPulsar
 		{
 		}
 
-		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, SharpPulsar.Transaction txn, ProducerConfigurationData conf)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, TransactionImpl.Transaction txn, ProducerConfigurationData conf)
 		{
             _metadata = new MessageMetadata();
             _conf = conf;
