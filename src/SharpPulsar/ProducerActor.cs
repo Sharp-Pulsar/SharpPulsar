@@ -34,6 +34,7 @@ using SharpPulsar.Stats.Producer;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -42,6 +43,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using static SharpPulsar.Exceptions.PulsarClientException;
+using static SharpPulsar.ProducerActor<T>;
 using static SharpPulsar.Protocol.Commands;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -68,41 +70,41 @@ namespace SharpPulsar
 
     internal class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash
     {
-        /*private bool InstanceFieldsInitialized = false;
+        private bool InstanceFieldsInitialized = false;
 
         private void InitializeInstanceFields()
         {
-            lastSendFutureWrapper = LastSendFutureWrapper.Create(lastSendFuture);
+            _lastSendFutureWrapper = LastSendFutureWrapper.Create(_lastSendFuture);
         }
         private sealed class LastSendFutureWrapper
         {
-            internal readonly MessageId LastSendFuture;
+            internal readonly Akka.Util.AtomicReference<object> ThrowOnceUpdater = new Akka.Util.AtomicReference<object>(FALSE);
+
+            internal readonly TaskCompletionSource<IMessageId> LastSendFuture;
             internal const int FALSE = 0;
             internal const int TRUE = 1;
-            internal static readonly LastSendFutureWrapper ThrowOnceUpdater;
             internal volatile int ThrowOnce = FALSE;
 
-            internal LastSendFutureWrapper(MessageId lastSendFuture)
+            internal LastSendFutureWrapper(TaskCompletionSource<IMessageId> lastSendFuture)
             {
                 this.LastSendFuture = lastSendFuture;
             }
-            internal static LastSendFutureWrapper Create(MessageId lastSendFuture)
+            internal static LastSendFutureWrapper Create(TaskCompletionSource<IMessageId> lastSendFuture)
             {
                 return new LastSendFutureWrapper(lastSendFuture);
             }
             public void HandleOnce()
             {
-                return LastSendFuture.handle((ignore, t) =>
+                LastSendFuture.Task.ContinueWith( t =>
                 {
-                    if (t != null && ThrowOnceUpdater.compareAndSet(this, FALSE, TRUE))
+                    if (t.IsFaulted && ThrowOnceUpdater.CompareAndSet(LastSendFutureWrapper.FALSE, LastSendFutureWrapper.TRUE))
                     {
-                        throw FutureUtil.WrapToCompletionException(t);
+                        throw t.Exception;
                     }
-                    return null;
-                });
+                }); 
             }
         }
-        */
+        
         // Producer id, used to identify a producer within a single connection
         private readonly long _producerId;
 
@@ -116,12 +118,11 @@ namespace SharpPulsar
         private readonly Dictionary<string, IActorRef> _watchedActors = new Dictionary<string, IActorRef>();
 
         private readonly ICancelable _regenerateDataKeyCipherCancelable;
-
+        private LastSendFutureWrapper _lastSendFutureWrapper;
         // Globally unique producer name
         private string _producerName;
         private readonly bool _userProvidedProducerName = false;
-        private TaskCompletionSource<Message<T>> _lastSendFuture;
-
+        private TaskCompletionSource<IMessageId> _lastSendFuture;
 
         private readonly ILoggingAdapter _log;
 
@@ -169,12 +170,12 @@ namespace SharpPulsar
         public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, Option<string> overrideProducerName) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
         {
             Self.Path.WithUid(producerid);
-            /*if (!InstanceFieldsInitialized)
+            if (!InstanceFieldsInitialized)
             {
                 InitializeInstanceFields();
                 InstanceFieldsInitialized = true;
             }
-            */
+            
 
 
             _memoryLimitController = new MemoryLimitController(clientConfiguration.MemoryLimitBytes);
@@ -295,10 +296,15 @@ namespace SharpPulsar
             {
                 _metadata = new SortedDictionary<string, string>(Configuration.Properties);
             }
+        }
+        protected override void PreStart()
+        {
+            base.PreStart();
+
             Ready();
             GrabCnx();
-        }
 
+        }
         public static Props Prop(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, Option<string> overrideProducerName)
         {
             return Props.Create(() => new ProducerActor<T>(producerid, client, lookup, cnxPool, idGenerator, topic, conf, producerCreatedFuture, partitionIndex, schema, interceptors, clientConfiguration, overrideProducerName));
@@ -670,7 +676,7 @@ namespace SharpPulsar
             return await Task.FromResult(_lastSequenceIdPublished);
         }
 
-        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> future)
+        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<IMessageId> future)
         {
             _sender = Sender;
             var interceptorMessage = (Message<T>)BeforeSend(message);
@@ -681,7 +687,7 @@ namespace SharpPulsar
             var callback = new SendCallback<T>(this, future, interceptorMessage);
             await Send(interceptorMessage, callback);
         }
-        private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
+        private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<IMessageId> callback)
         {
 
             if (txn == null)
@@ -1594,7 +1600,7 @@ namespace SharpPulsar
             return Math.Max(op.HighestSequenceId, op.SequenceId);
         }
 
-        private async ValueTask ResendMessages(ProducerResponse response)
+        private async ValueTask ResendMessages(ProducerResponse response, long expectedEpoch)
         {
             var messagesToResend = _pendingMessages.Count;
             if (messagesToResend == 0)
@@ -1666,14 +1672,35 @@ namespace SharpPulsar
 
         private async ValueTask Flush()
         {
+            
             if (BatchMessagingEnabled)
             {
-                await BatchMessageAndSend();
+               await BatchMessageAndSend(false);
             }
-            if (_lastSendFuture != null)
-                await _lastSendFuture.Task;
-        }
+            TaskCompletionSource<IMessageId> LastSendFuture = _lastSendFuture;
+            if (!(LastSendFuture == _lastSendFutureWrapper.LastSendFuture))
+            {
+                _lastSendFutureWrapper = LastSendFutureWrapper.Create(LastSendFuture);
+            }
 
+            _lastSendFutureWrapper.HandleOnce();
+        }
+        private void CloseProducerTasks()
+        {
+            Timeout Timeout = sendTimeout;
+            if (Timeout != null)
+            {
+                Timeout.cancel();
+                sendTimeout = null;
+            }
+
+            if (keyGeneratorTask != null && !keyGeneratorTask.isCancelled())
+            {
+                keyGeneratorTask.cancel(false);
+            }
+
+            stats.CancelStatsTimeout();
+        }
         private async ValueTask TriggerFlush()
         {
             if (BatchMessagingEnabled)
@@ -1681,7 +1708,99 @@ namespace SharpPulsar
                 await BatchMessageAndSend();
             }
         }
+        // must acquire semaphore before calling
+        private void MaybeScheduleBatchFlushTask()
+        {
+            if (_batchFlushTask != null || State != State.Ready)
+            {
+                return;
+            }
+            ScheduleBatchFlushTask(Conf.BatchingMaxPublishDelayMicros);
+        }
 
+        // must acquire semaphore before calling
+        private void ScheduleBatchFlushTask(long BatchingDelayMicros)
+        {
+            ClientCnx Cnx = Cnx();
+            if (Cnx != null && BatchMessagingEnabled)
+            {
+                this.batchFlushTask = Cnx.Ctx().executor().schedule(catchingAndLoggingThrowables(this.batchFlushTask), BatchingDelayMicros, TimeUnit.MICROSECONDS);
+            }
+        }
+        private void BatchFlushTask()
+        {
+            lock (this)
+            {
+                if (log.isTraceEnabled())
+                {
+                    log.trace("[{}] [{}] Batching the messages from the batch container from flush thread", Topic, producerName);
+                }
+                this.batchFlushTask = null;
+                // If we're not ready, don't schedule another flush and don't try to send.
+                if (State != State.Ready)
+                {
+                    return;
+                }
+                // If a batch was sent more recently than the BatchingMaxPublishDelayMicros, schedule another flush to run just
+                // at BatchingMaxPublishDelayMicros after the last send.
+                long MicrosSinceLastSend = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - lastBatchSendNanoTime);
+                if (MicrosSinceLastSend < Conf.getBatchingMaxPublishDelayMicros())
+                {
+                    ScheduleBatchFlushTask(Conf.getBatchingMaxPublishDelayMicros() - MicrosSinceLastSend);
+                }
+                else if (lastBatchSendNanoTime == 0)
+                {
+                    // The first time a producer sends a message, the lastBatchSendNanoTime is 0.
+                    lastBatchSendNanoTime = System.nanoTime();
+                    ScheduleBatchFlushTask(Conf.getBatchingMaxPublishDelayMicros());
+                }
+                else
+                {
+                    BatchMessageAndSend(true);
+                }
+            }
+        }
+
+        // must acquire semaphore before enqueuing
+        private void BatchMessageAndSend(bool ShouldScheduleNextBatchFlush)
+        {
+            if (log.isTraceEnabled())
+            {
+                log.trace("[{}] [{}] Batching the messages from the batch container with {} messages", Topic, producerName, batchMessageContainer.getNumMessagesInBatch());
+            }
+            if (!batchMessageContainer.isEmpty())
+            {
+                try
+                {
+                    lastBatchSendNanoTime = System.nanoTime();
+                    IList<OpSendMsg> OpSendMsgs;
+                    if (batchMessageContainer.isMultiBatches())
+                    {
+                        OpSendMsgs = batchMessageContainer.CreateOpSendMsgs();
+                    }
+                    else
+                    {
+                        OpSendMsgs = Collections.singletonList(batchMessageContainer.CreateOpSendMsg());
+                    }
+                    batchMessageContainer.clear();
+                    foreach (OpSendMsg OpSendMsg in OpSendMsgs)
+                    {
+                        ProcessOpSendMsg(OpSendMsg);
+                    }
+                }
+                catch (Exception T)
+                {
+                    log.warn("[{}] [{}] error while create opSendMsg by batch message container", Topic, producerName, T);
+                }
+                finally
+                {
+                    if (ShouldScheduleNextBatchFlush)
+                    {
+                        MaybeScheduleBatchFlushTask();
+                    }
+                }
+            }
+        }
         // must acquire semaphore before enqueuing
         private async ValueTask BatchMessageAndSend()
         {
@@ -1752,7 +1871,7 @@ namespace SharpPulsar
             }
         }
 
-        private async ValueTask RecoverProcessOpSendMsgFrom(Message<T> from)
+        private async ValueTask RecoverProcessOpSendMsgFrom(Message<T> from, long expectedEpoch)
         {
             var pendingMessages = _pendingMessages;
             OpSendMsg<T> pendingRegisteringOp = null;
@@ -1801,7 +1920,23 @@ namespace SharpPulsar
                 await TryRegisterSchema(pendingRegisteringOp.Msg);
             }
         }
-
+        /// <summary>
+		///  Check if final message size for non-batch and non-chunked messages is larger than max message size.
+		/// </summary>
+		private bool IsMessageSizeExceeded(OpSendMsg Op)
+        {
+            if (Op.Msg != null && !Conf.isChunkingEnabled())
+            {
+                int MessageSize = Op.MessageHeaderAndPayloadSize;
+                if (MessageSize > ClientCnx.getMaxMessageSize())
+                {
+                    ReleaseSemaphoreForSendOp(Op);
+                    Op.SendComplete(new PulsarClientException.InvalidMessageException(format("The producer %s of the topic %s sends a message with %d bytes that exceeds %d bytes", producerName, Topic, MessageSize, ClientCnx.getMaxMessageSize()), Op.SequenceId));
+                    return true;
+                }
+            }
+            return false;
+        }
         public virtual long DelayInMillis
         {
             get
@@ -1839,6 +1974,17 @@ namespace SharpPulsar
 
         public virtual int PendingQueueSize
         {
+            get
+            {
+                if (BatchMessagingEnabled)
+                {
+                    lock (this)
+                    {
+                        return pendingMessages.MessagesCount() + batchMessageContainer.getNumMessagesInBatch();
+                    }
+                }
+                return pendingMessages.MessagesCount();
+            }
             get
             {
                 return _pendingMessages.Count;

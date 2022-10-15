@@ -218,7 +218,7 @@ namespace SharpPulsar
             }
             await Task.CompletedTask;
         }
-        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
+        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<IMessageId> callback)
         {
             await Internal(message);
 
@@ -237,7 +237,7 @@ namespace SharpPulsar
             await Task.CompletedTask;
         }
 
-        private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
+        private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<IMessageId> callback)
         {
 
             await Internal(message);
@@ -255,7 +255,7 @@ namespace SharpPulsar
             }
             return;
         }
-        private void ConnectionState(TaskCompletionSource<Message<T>> callback) 
+        private void ConnectionState(TaskCompletionSource<IMessageId> callback) 
         {
             switch (State.ConnectionState)
             {
