@@ -72,6 +72,15 @@ namespace SharpPulsar.Messages.Requests
     {
         public static GetEpoch Instance = new GetEpoch();
     }
+    public sealed class SwitchClientCnx
+    {
+        public IActorRef ClientCnx { get; }
+        public SwitchClientCnx(IActorRef clientCnx)
+        {
+            ClientCnx = clientCnx;
+        }
+    }
+    
     public sealed class GetEpochResponse
     {
         public long Epoch { get; }
