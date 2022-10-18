@@ -40,6 +40,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -1355,15 +1356,37 @@ namespace SharpPulsar
             // Use null for cnx to ensure that the pending messages are failed immediately
             FailPendingMessages(null, Ex);
         }
-        private bool ShouldWriteOpSendMsg()
-        {
-            return Connected();
-        }
         protected internal override bool Connected()
+        {
+            return CnxIfReady != null;
+        }
+
+        /// <summary>
+        /// Hook method for testing. By returning null, it's possible to prevent messages
+        /// being delivered to the broker.
+        /// </summary>
+        /// <returns> cnx if OpSend messages should be written to open connection. Caller must
+        /// verify that the returned cnx is not null before using reference. </returns>
+        protected internal virtual IActorRef CnxIfReady
+        {
+            get
+            {
+                if (State.ConnectionState == HandlerState.State.Ready)
+                {;
+                    return Cnx().GetAwaiter().GetResult();
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+       
+        /*protected internal override bool Connected()
         {
             var cnx = _cnx;
             return cnx != null && (State.ConnectionState == HandlerState.State.Ready);
-        }
+        }*/
         private void DisconnectedTimestamp()
         {
             Receive<LastConnectionClosedTimestampResponse>(l =>
@@ -1778,98 +1801,61 @@ namespace SharpPulsar
         // must acquire semaphore before calling
         private void MaybeScheduleBatchFlushTask()
         {
-            if (_batchFlushTask != null || State != State.Ready)
+            if (_batchFlushTask != null || State.ConnectionState != HandlerState.State.Ready)
             {
                 return;
             }
-            ScheduleBatchFlushTask(Conf.BatchingMaxPublishDelayMicros);
+            ScheduleBatchFlushTask((long)Conf.BatchingMaxPublishDelayMs);
         }
 
         // must acquire semaphore before calling
-        private void ScheduleBatchFlushTask(long BatchingDelayMicros)
+        private void ScheduleBatchFlushTask(long batchingDelayMicros)
         {
-            ClientCnx Cnx = Cnx();
-            if (Cnx != null && BatchMessagingEnabled)
+            if (_cnx != null && BatchMessagingEnabled)
             {
-                this.batchFlushTask = Cnx.Ctx().executor().schedule(catchingAndLoggingThrowables(this.batchFlushTask), BatchingDelayMicros, TimeUnit.MICROSECONDS);
+                _batchFlushTask = _scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(batchingDelayMicros), TimeSpan.FromMilliseconds(batchingDelayMicros), ()=> { });
             }
         }
-        private void BatchFlushTask()
+        private async ValueTask BatchFlushTask()
         {
-            lock (this)
+            if (_log.IsDebugEnabled/*.isTraceEnabled()*/)
             {
-                if (log.isTraceEnabled())
-                {
-                    log.trace("[{}] [{}] Batching the messages from the batch container from flush thread", Topic, producerName);
-                }
-                this.batchFlushTask = null;
-                // If we're not ready, don't schedule another flush and don't try to send.
-                if (State != State.Ready)
-                {
-                    return;
-                }
-                // If a batch was sent more recently than the BatchingMaxPublishDelayMicros, schedule another flush to run just
-                // at BatchingMaxPublishDelayMicros after the last send.
-                long MicrosSinceLastSend = TimeUnit.NANOSECONDS.toMicros(System.nanoTime() - lastBatchSendNanoTime);
-                if (MicrosSinceLastSend < Conf.getBatchingMaxPublishDelayMicros())
-                {
-                    ScheduleBatchFlushTask(Conf.getBatchingMaxPublishDelayMicros() - MicrosSinceLastSend);
-                }
-                else if (lastBatchSendNanoTime == 0)
-                {
-                    // The first time a producer sends a message, the lastBatchSendNanoTime is 0.
-                    lastBatchSendNanoTime = System.nanoTime();
-                    ScheduleBatchFlushTask(Conf.getBatchingMaxPublishDelayMicros());
-                }
-                else
-                {
-                    BatchMessageAndSend(true);
-                }
+                _log.Debug($"[{Topic}] [{_producerName}] Batching the messages from the batch container from flush thread");
+            }
+            _batchFlushTask.Cancel();
+            _batchFlushTask = null;
+            // If we're not ready, don't schedule another flush and don't try to send.
+            if (State.ConnectionState != HandlerState. State.Ready)
+            {
+                return;
+            }
+            // If a batch was sent more recently than the BatchingMaxPublishDelayMicros, schedule another flush to run just
+            // at BatchingMaxPublishDelayMicros after the last send.
+            var microsSinceLastSend = (long)TimeSpan.FromMilliseconds(NanoTime() - _lastBatchSendNanoTime).TotalMilliseconds;
+            if (microsSinceLastSend < Conf.BatchingMaxPublishDelayMs)
+            {
+                ScheduleBatchFlushTask((long)(Conf.BatchingMaxPublishDelayMs - microsSinceLastSend));
+            }
+            else if (_lastBatchSendNanoTime == 0)
+            {
+                // The first time a producer sends a message, the lastBatchSendNanoTime is 0.
+                _lastBatchSendNanoTime = NanoTime();
+                ScheduleBatchFlushTask((long)Conf.BatchingMaxPublishDelayMs);
+            }
+            else
+            {
+               await BatchMessageAndSend(true);
             }
         }
-
-        // must acquire semaphore before enqueuing
-        private void BatchMessageAndSend(bool ShouldScheduleNextBatchFlush)
+        private static long NanoTime()
         {
-            if (log.isTraceEnabled())
-            {
-                log.trace("[{}] [{}] Batching the messages from the batch container with {} messages", Topic, producerName, batchMessageContainer.getNumMessagesInBatch());
-            }
-            if (!batchMessageContainer.isEmpty())
-            {
-                try
-                {
-                    lastBatchSendNanoTime = System.nanoTime();
-                    IList<OpSendMsg> OpSendMsgs;
-                    if (batchMessageContainer.isMultiBatches())
-                    {
-                        OpSendMsgs = batchMessageContainer.CreateOpSendMsgs();
-                    }
-                    else
-                    {
-                        OpSendMsgs = Collections.singletonList(batchMessageContainer.CreateOpSendMsg());
-                    }
-                    batchMessageContainer.clear();
-                    foreach (OpSendMsg OpSendMsg in OpSendMsgs)
-                    {
-                        ProcessOpSendMsg(OpSendMsg);
-                    }
-                }
-                catch (Exception T)
-                {
-                    log.warn("[{}] [{}] error while create opSendMsg by batch message container", Topic, producerName, T);
-                }
-                finally
-                {
-                    if (ShouldScheduleNextBatchFlush)
-                    {
-                        MaybeScheduleBatchFlushTask();
-                    }
-                }
-            }
+            var nano = 10000L * Stopwatch.GetTimestamp();
+            nano /= TimeSpan.TicksPerMillisecond;
+            nano *= 100L;
+            return nano;
         }
         // must acquire semaphore before enqueuing
-        private async ValueTask BatchMessageAndSend()
+        private async ValueTask BatchMessageAndSend(bool shouldScheduleNextBatchFlush)
         {
             if (_log.IsDebugEnabled)
             {
@@ -1898,6 +1884,13 @@ namespace SharpPulsar
                 {
                     _log.Warning($"[{Topic}] [{_producerName}] error while create opSendMsg by batch message container: {t}");
                 }
+                finally
+                {
+                    if (shouldScheduleNextBatchFlush)
+                    {
+                        MaybeScheduleBatchFlushTask();
+                    }
+                }
             }
         }
         private async ValueTask ProcessOpSendMsg(OpSendMsg<T> op)
@@ -1906,22 +1899,28 @@ namespace SharpPulsar
             {
                 if (op.Msg != null && BatchMessagingEnabled)
                 {
-                    await BatchMessageAndSend();
+                    await BatchMessageAndSend(false);
                 }
-                _pendingMessages.Enqueue(op);
+                if (IsMessageSizeExceeded(op))
+                {
+                    return;
+                }
+                _pendingMessages.Add(op);
                 if (op.Msg != null)
                 {
                     LastSequenceIdPushed = Math.Max(LastSequenceIdPushed, GetHighestSequenceId(op));
                 }
-                if (ShouldWriteOpSendMsg())
+                var cnx = CnxIfReady;
+                if (cnx != null)
                 {
                     if (op.Msg != null && op.Msg.GetSchemaState() == Message<T>.SchemaState.None)
                     {
-                        await TryRegisterSchema(op.Msg);
+                        var epoch = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
+                        await TryRegisterSchema(op.Msg, op.Callback, epoch.Epoch);
                         return;
                     }
                     _stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
-                    SendCommand(op);
+                    //SendCommand(op);
                 }
                 else
                 {
@@ -1940,6 +1939,17 @@ namespace SharpPulsar
 
         private async ValueTask RecoverProcessOpSendMsgFrom(Message<T> from, long expectedEpoch)
         {
+            var epoch = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
+            if (expectedEpoch != epoch.Epoch || await Cnx() == null)
+            {
+                // In this case, the cnx passed to this method is no longer the active connection. This method will get
+                // called again once the new connection registers the producer with the broker.
+                _log.Info($"[{Topic}][{_producerName}] Producer epoch mismatch or the current connection is null. Skip re-sending the  {_pendingMessages.messagesCount} pending messages since they will deliver using another connection.");
+                return;
+            }
+            var protocolVersionResponse = await _cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance).ConfigureAwait(false);
+            
+            var stripChecksum = protocolVersionResponse.Version < BrokerChecksumSupportedVersion();
             var pendingMessages = _pendingMessages;
             OpSendMsg<T> pendingRegisteringOp = null;
             foreach (var op in pendingMessages)
@@ -1968,23 +1978,42 @@ namespace SharpPulsar
                     }
                     else if (op.Msg.GetSchemaState() == Message<T>.SchemaState.Broken)
                     {
-                        _pendingMessages = new Queue<OpSendMsg<T>>(_pendingMessages.Where(x => x.Msg != op.Msg));
+                        _pendingMessages.Remove();
                         op.Msg.Recycle();
                         continue;
                     }
                 }
-
+                if (op.Cmd.IsEmpty)
+                {
+                    if (IsMessageSizeExceeded(op))
+                    {
+                        continue;
+                    }
+                }
                 if (_log.IsDebugEnabled)
                 {
                     _log.Debug($"[{Topic}] [{_producerName}] Re-Sending message in sequenceId {op.Msg.SequenceId}");
                 }
-                SendCommand(op);
+                //SendCommand(op);
                 op.UpdateSentTimestamp();
                 _stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
             }
+            if (!State.ChangeToReadyState())
+            {
+                // Producer was closed while reconnecting, close the connection to make sure the broker
+                // drops the producer on its side
+                _cnx.Tell(Messages.Requests.Close.Instance);
+                return;
+            }
+            // If any messages were enqueued while the producer was not Ready, we would have skipped
+            // scheduling the batch flush task. Schedule it now, if there are messages in the batch container.
+            if (BatchMessagingEnabled && !_batchMessageContainer.Empty)
+            {
+                MaybeScheduleBatchFlushTask();
+            }
             if (pendingRegisteringOp != null)
             {
-                await TryRegisterSchema(pendingRegisteringOp.Msg, expectedEpoch);
+                await TryRegisterSchema(pendingRegisteringOp.Msg, pendingRegisteringOp.Callback, expectedEpoch);
             }
         }
         /// <summary>
