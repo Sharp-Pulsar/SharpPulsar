@@ -672,7 +672,7 @@ namespace SharpPulsar
 					break;
 
 				case ServerError.NotAllowedError:
-					_producers[producerId].Tell(new RecoverNotAllowedError(sequenceId));
+					_producers[producerId].Tell(new RecoverNotAllowedError(sequenceId, sendError.Message));
 					break;
 
 				default:

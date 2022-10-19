@@ -1,14 +1,8 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util;
-using Akka.Util.Internal;
 using App.Metrics.Concurrency;
-using Avro.IO;
-using Avro.Util;
 using DotNetty.Common.Utilities;
-using Org.BouncyCastle.Asn1.Ocsp;
-using Org.BouncyCastle.Asn1.Pkcs;
-using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
@@ -38,7 +32,6 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -358,14 +351,14 @@ namespace SharpPulsar
                     Terminated(x.ClientCnx);
                 }
             );
-            Receive<RecoverChecksumError>(x =>
+            ReceiveAsync<RecoverChecksumError>(async x =>
                 {
-                    RecoverChecksumError(x.ClientCnx, x.SequenceId);
+                   await RecoverChecksumError(x.ClientCnx, x.SequenceId);
                 }
             );
             Receive<RecoverNotAllowedError>(x =>
                 {
-                    RecoverNotAllowedError(x.SequenceId);
+                    RecoverNotAllowedError(x.SequenceId, x.ErrorMsg);
                 }
             );
             ReceiveAsync<BatchTask>(async _ => {
@@ -487,7 +480,7 @@ namespace SharpPulsar
             var response = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
             _requestId = response.Id;
             _log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
+            var cmd = NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
             var payload = new Payload(cmd, _requestId, "NewProducer");
             await _cnx.Ask<AskResponse>(payload).ContinueWith(async response =>
              {
@@ -620,7 +613,7 @@ namespace SharpPulsar
                              _lastSequenceIdPublished = lastSequenceId;
                              _msgIdGenerator = lastSequenceId + 1;
                          }
-                         if (!ProducerCreatedFuture.Task.IsCompleted && BatchMessagingEnabled)
+                        /* if (!ProducerCreatedFuture.Task.IsCompleted && BatchMessagingEnabled)
                          {
                              _batchTimerTask = _scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(Conf.BatchingMaxPublishDelayMs),
                                  TimeSpan.FromMilliseconds(Conf.BatchingMaxPublishDelayMs), async () =>
@@ -635,8 +628,8 @@ namespace SharpPulsar
                                      }
                                      await BatchMessageAndSend();
                                  });
-                         }
-                         await ResendMessages(res, epoch);
+                         }*/
+                         await ResendMessages(_cnx, epoch);
                      }
                      catch (Exception e)
                      {
@@ -686,7 +679,7 @@ namespace SharpPulsar
             }
             _log.Info($"[{Topic}] [{_producerName}] Batching the messages from the batch container from timer thread");
 
-            await BatchMessageAndSend();
+            await BatchMessageAndSend(true);
         }
         private bool BatchMessagingEnabled
         {
@@ -965,22 +958,6 @@ namespace SharpPulsar
                 chunkMsgMetadata.NumChunksFromMsg = totalChunks;
                 chunkMsgMetadata.TotalChunkMsgSize = compressedPayloadSize;
             }
-            if (!HasPublishTime(chunkMsgMetadata.PublishTime))
-            {
-                chunkMsgMetadata.PublishTime = (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                if (!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
-                {
-                    _log.Warning($"changing producer name from '{chunkMsgMetadata.ProducerName}' to ''. Just helping out ;)");
-                    chunkMsgMetadata.ProducerName = string.Empty;
-                }
-                chunkMsgMetadata.ProducerName = _producerName;
-                if (Conf.CompressionType != CompressionType.None)
-                {
-                    chunkMsgMetadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType);
-                }
-                chunkMsgMetadata.UncompressedSize = (uint)uncompressedSize;
-            }
-
             if (CanAddToBatch(msg) && totalChunks <= 1)
             {
                 if (CanAddToCurrentBatch(msg))
@@ -1016,12 +993,12 @@ namespace SharpPulsar
                             _lastSendFuture = callback.Future;
                             if (isBatchFull)
                             {
-                                await BatchMessageAndSend();
+                                await BatchMessageAndSend(false);
                             }
-                            /*else
+                            else
                             {
-                                callback.Future.TrySetResult(null);
-                            }*/
+                                MaybeScheduleBatchFlushTask();
+                            }
                         }
                         _isLastSequenceIdPotentialDuplicated = false;
                     }
@@ -1193,23 +1170,23 @@ namespace SharpPulsar
         {
             if (messageId is MessageId)
             {
-                return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+                return NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
             }
             else
             {
-                return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, -1, -1, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+                return NewSend(producerId, sequenceId, numMessages, ChecksumType, -1, -1, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
             }
         }
         private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
             _log.Info($"Send message with {_producerName}:{producerId}");
-            return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+            return NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
         }
         private ReadOnlySequence<byte> SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
-            return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+            return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
         }
-        private Commands.ChecksumType ChecksumType
+        private ChecksumType ChecksumType
         {
             get
             {
@@ -1248,7 +1225,7 @@ namespace SharpPulsar
             }
             try
             {
-                await BatchMessageAndSend();
+                await BatchMessageAndSend(false);
                 _batchMessageContainer.Add(msg, callback);
                 _lastSendFuture = callback.Future;
             }
@@ -1428,9 +1405,10 @@ namespace SharpPulsar
         /// </summary>
         /// <param name="cnx"> </param>
         /// <param name="sequenceId"> </param>
-        private void RecoverChecksumError(IActorRef cnx, long sequenceId)
+        private async ValueTask RecoverChecksumError(IActorRef cnx, long sequenceId)
         {
-            if (!_pendingMessages.TryPeek(out var op))
+            var op = _pendingMessages.Peek();
+            if (op == null)
             {
                 if (_log.IsDebugEnabled)
                 {
@@ -1446,12 +1424,11 @@ namespace SharpPulsar
                     if (corrupted)
                     {
                         // remove message from pendingMessages queue and fail callback
-                        var error = new PulsarClientException.ChecksumException($"The checksum of the message which is produced by producer {_producerName} to the topic '{Topic}' is corrupted");
-                        _pendingMessages.TryDequeue(out op);
+                       _pendingMessages.Remove();
                         try
                         {
 
-                            op.SendComplete(error);
+                            op.SendComplete(new ChecksumException($"The checksum of the message which is produced by producer {_producerName} to the topic '{Topic}' is corrupted"));
                         }
                         catch (Exception t)
                         {
@@ -1477,6 +1454,9 @@ namespace SharpPulsar
                     }
                 }
             }
+            // as msg is not corrupted : let producer resend pending-messages again including checksum failed message
+            var epoch = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
+            await ResendMessages(cnx, epoch.Epoch);
         }
 
         /// <summary>
@@ -1509,14 +1489,16 @@ namespace SharpPulsar
             }
         }
        
-        private void RecoverNotAllowedError(long sequenceId)
+        private void RecoverNotAllowedError(long sequenceId, string errorMsg)
         {
-            if (_pendingMessages.TryPeek(out var op) && sequenceId == GetHighestSequenceId(op))
+            var op = _pendingMessages.Peek();
+            if (op == null && sequenceId == GetHighestSequenceId(op))
             {
-                _pendingMessages.TryDequeue(out op);
+                _pendingMessages.Remove();
                 try
                 {
-                    op.SendComplete(new NotAllowedException($"The size of the message which is produced by producer {_producerName} to the topic '{Topic}' is not allowed"));
+                    //op.SendComplete(new NotAllowedException($"The size of the message which is produced by producer {_producerName} to the topic '{Topic}' is not allowed"));
+                    op.SendComplete(new NotAllowedException(errorMsg));
                 }
                 catch (Exception t)
                 {
@@ -1581,7 +1563,8 @@ namespace SharpPulsar
         private void AckReceived(AckReceived ackReceived)
         {
             var cnx = _cnx;
-            if (!_pendingMessages.TryPeek(out var op))
+            var op = _pendingMessages.Peek();
+            if (op == null)
             {
                 var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg {ackReceived.SequenceId} - {ackReceived.HighestSequenceId}";
                 if (_log.IsDebugEnabled)
@@ -1592,7 +1575,7 @@ namespace SharpPulsar
             }
             else if (ackReceived.SequenceId > op.SequenceId)
             {
-                var msg = $"[{Topic}] [{_producerName}] Got ack for msg. expecting: {op.Msg.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId} - queue-size: {_pendingMessages.Count}";
+                var msg = $"[{Topic}] [{_producerName}] Got ack for msg. expecting: {op.Msg.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId} - queue-size: {_pendingMessages.MessagesCount()}";
                 _log.Warning(msg);
                 // Force connection closing so that messages can be re-transmitted in a new connection
                 cnx.Tell(Messages.Requests.Close.Instance);
@@ -1618,11 +1601,11 @@ namespace SharpPulsar
                         _log.Debug($"[{Topic}] [{_producerName}] Received ack for msg {ackReceived.SequenceId} ");
                     }
 
-                    _pendingMessages.TryDequeue(out op);
+                    _pendingMessages.Remove();
                 }
                 else
                 {
-                    var msg = $"[{Topic}] [{_producerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId} - queue-size: {_pendingMessages.Count}";
+                    var msg = $"[{Topic}] [{_producerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId} - queue-size: {_pendingMessages.MessagesCount()}";
                     _log.Warning(msg);
                     // Force connection closing so that messages can be re-transmitted in a new connection
                     cnx.Tell(Messages.Requests.Close.Instance);
@@ -1671,9 +1654,14 @@ namespace SharpPulsar
             return Math.Max(op.HighestSequenceId, op.SequenceId);
         }
 
-        private async ValueTask ResendMessages(ProducerResponse response, long expectedEpoch)
+        private async ValueTask ResendMessages(IActorRef cnx, long expectedEpoch)
         {
-            var messagesToResend = _pendingMessages.Count;
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            {
+                cnx.Tell(Messages.Requests.Close.Instance);
+                return;
+            }
+            var messagesToResend = _pendingMessages.MessagesCount();
             if (messagesToResend == 0)
             {
                 if (_log.IsDebugEnabled)
@@ -1684,11 +1672,14 @@ namespace SharpPulsar
                 if (State.ChangeToReadyState())
                 {
                     ProducerCreatedFuture.TrySetResult(_self);
+                    ScheduleBatchFlushTask(0);
+                    return;
                 }
+                cnx.Tell(Messages.Requests.Close.Instance);
                 return;
             }
             _log.Info($"[{Topic}] [{_producerName}] Re-Sending {messagesToResend} messages to server");
-            await RecoverProcessOpSendMsgFrom(null);
+            await RecoverProcessOpSendMsgFrom(null, expectedEpoch);
         }
 
         /// <summary>
@@ -1734,7 +1725,7 @@ namespace SharpPulsar
                 {
                     // The diff is less than or equal to zero, meaning that the message has been timed out.
                     // Set the callback to timeout on every message, then clear the pending queue.
-                    _log.Info($"[{Topic}] [{_producerName}] Message send timed out. Failing {_pendingMessages.messagesCount} messages");
+                    _log.Info($"[{Topic}] [{_producerName}] Message send timed out. Failing {PendingQueueSize} messages");
 
                     var msg = new TimeoutException($"The producer {_producerName} can not send message to the topic {Topic} within given timeout: {Conf.SendTimeoutMs}");
                     if (firstMsg != null)
@@ -1795,7 +1786,7 @@ namespace SharpPulsar
         {
             if (BatchMessagingEnabled)
             {
-                await BatchMessageAndSend();
+                await BatchMessageAndSend(false);
             }
         }
         // must acquire semaphore before calling
@@ -1813,7 +1804,7 @@ namespace SharpPulsar
         {
             if (_cnx != null && BatchMessagingEnabled)
             {
-                _batchFlushTask = _scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(batchingDelayMicros), TimeSpan.FromMilliseconds(batchingDelayMicros), ()=> { });
+                _batchFlushTask = _scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(batchingDelayMicros), async ()=> await BatchFlushTask());
             }
         }
         private async ValueTask BatchFlushTask()
@@ -2068,23 +2059,17 @@ namespace SharpPulsar
             }
         }
 
-        public virtual int PendingQueueSize
+        private int PendingQueueSize
         {
             get
             {
                 if (BatchMessagingEnabled)
                 {
-                    lock (this)
-                    {
-                        return pendingMessages.MessagesCount() + batchMessageContainer.getNumMessagesInBatch();
-                    }
+                    return _pendingMessages.MessagesCount() + _batchMessageContainer.NumMessagesInBatch;
                 }
-                return pendingMessages.MessagesCount();
+                return _pendingMessages.MessagesCount();
             }
-            get
-            {
-                return _pendingMessages.Count;
-            }
+            
         }
 
         protected internal override async ValueTask<string> ProducerName()
@@ -2416,6 +2401,22 @@ namespace SharpPulsar
                     //cmdHeader.resetReaderIndex();
                     return msgHeadersAndPayloadSize;
                 }
+            }
+            internal void Recycle()
+            {
+                Msg = null;
+                Msgs = null;
+                Cmd = ReadOnlySequence<byte>.Empty;
+                SequenceId = -1L;
+                CreatedAt = -1L;
+                HighestSequenceId = -1L;
+                FirstSentAt = -1L;
+                LastSentAt = -1L;
+                TotalChunks = 0;
+                ChunkId = -1;
+                NumMessagesInBatch = 1;
+                BatchSizeByte = 0;
+                ChunkedMessageCtx = null;
             }
         }
         private long Size(object o)

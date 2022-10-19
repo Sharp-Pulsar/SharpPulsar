@@ -24,9 +24,11 @@ namespace SharpPulsar.Messages
     public sealed class RecoverNotAllowedError
     {
         public long SequenceId { get; }
-        public RecoverNotAllowedError(long sequenceId)
+        public string ErrorMsg { get; }
+        public RecoverNotAllowedError(long sequenceId, string errorMsg)
         {
             SequenceId = sequenceId;
+            ErrorMsg = errorMsg;   
         }
     }
 }
