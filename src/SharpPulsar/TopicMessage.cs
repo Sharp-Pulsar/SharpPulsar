@@ -23,6 +23,7 @@ using SharpPulsar.Auth;
 namespace SharpPulsar
 {
     using System.Buffers;
+    using Akka.Actor;
     using global::Akka.Util;
     using SharpPulsar.Interfaces;
 
@@ -36,11 +37,14 @@ namespace SharpPulsar
 		private readonly IMessage<T> _msg;
 		private readonly TopicMessageId _messageId;
 
-		public TopicMessage(string topicPartitionName, string topicName, IMessage<T> msg)
+        // consumer if this message is received by that consumer
+        internal readonly IActorRef ReceivedByconsumer;
+
+        public TopicMessage(string topicPartitionName, string topicName, IMessage<T> msg, IActorRef receivedByConsumer)
 		{
 			_topicPartitionName = topicPartitionName;
-
-			_msg = msg;
+            ReceivedByconsumer = receivedByConsumer;
+            _msg = msg;
 			_messageId = new TopicMessageId(topicPartitionName, topicName, msg.MessageId);
 		}
 
@@ -152,6 +156,31 @@ namespace SharpPulsar
             }
         }
 
+        public bool HasBrokerPublishTime()
+        {
+            return _msg.HasBrokerPublishTime();
+        }
+
+        public long? BrokerPublishTime
+        {
+            get
+            {
+                return _msg.BrokerPublishTime;
+            }
+        }
+
+        public bool HasIndex()
+        {
+            return _msg.HasIndex();
+        }
+
+        public long? Index
+        {
+            get
+            {
+                return _msg.Index;
+            }
+        }
 
     }
 

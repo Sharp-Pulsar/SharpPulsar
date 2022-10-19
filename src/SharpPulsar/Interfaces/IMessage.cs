@@ -227,6 +227,37 @@ namespace SharpPulsar.Interfaces
 		string ReplicatedFrom { get; }
 
         void AddProperty(IDictionary<string, string> props);
-	}
+
+        /// <summary>
+		/// Check whether the message has a broker publish time.
+		/// 
+		/// @since 2.9.0 </summary>
+		/// <returns> true if the message has a broker publish time, otherwise false. </returns>
+		bool HasBrokerPublishTime();
+
+        /// <summary>
+        /// Get broker publish time from broker entry metadata.
+        /// Note that only if the feature is enabled in the broker then the value is available.
+        /// 
+        /// @since 2.9.0 </summary>
+        /// <returns> broker publish time from broker entry metadata, or empty if the feature is not enabled in the broker. </returns>
+        long? BrokerPublishTime { get; }
+
+        /// <summary>
+        /// Check whether the message has an index.
+        /// 
+        /// @since 2.9.0 </summary>
+        /// <returns> true if the message has an index, otherwise false. </returns>
+        bool HasIndex();
+
+        /// <summary>
+        /// Get index from broker entry metadata.
+        /// Note that only if the feature is enabled in the broker then the value is available.
+        /// 
+        /// @since 2.9.0 </summary>
+        /// <returns> index from broker entry metadata, or empty if the feature is not enabled in the broker. </returns>
+        long? Index { get; }
+
+    }
 
 }

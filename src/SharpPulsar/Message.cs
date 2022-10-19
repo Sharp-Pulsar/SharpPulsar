@@ -792,6 +792,46 @@ namespace SharpPulsar
         {
             _properties = props;   
         }
+        public bool HasBrokerPublishTime()
+        {
+            return _brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeBrokerTimestamp();
+        }
+
+        public long? BrokerPublishTime
+        {
+            get
+            {
+                if (_brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeBrokerTimestamp())
+                {
+                    return (long)_brokerEntryMetadata.BrokerTimestamp;
+                }
+                return null;
+            }
+        }
+
+        public bool HasIndex()
+        {
+            return _brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeIndex();
+        }
+
+        public  long? Index
+        {
+            get
+            {
+                if (_brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeIndex())
+                {
+                    if (_metadata.NumMessagesInBatch > 0 && _messageId is BatchMessageId)
+                    {
+                        var BatchSize = ((BatchMessageId)_messageId).BatchSize;
+                        var BatchIndex = ((BatchMessageId)_messageId).BatchIndex;
+                        return ((long)_brokerEntryMetadata.Index - BatchSize + BatchIndex + 1);
+                    }
+                    return (long)_brokerEntryMetadata.Index;
+                }
+                return null;
+            }
+        }
+
     }
     public sealed class Metadata
     {

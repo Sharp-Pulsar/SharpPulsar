@@ -1,8 +1,10 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
+using DotNetty.Common.Utilities;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Configuration;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Protocol;
@@ -118,13 +120,56 @@ namespace SharpPulsar
 				BatchReceivePolicy = BatchReceivePolicy.DefaultPolicy;
 			}
 
-			if (BatchReceivePolicy.TimeoutMs > 0)
-			{
-				//BatchReceiveTimeout = ListenerExecutor.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(BatchReceivePolicy.TimeoutMs)), PendingBatchReceiveTask);
-				
-			}
 			_stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), Self, SendState.Instance, ActorRefs.NoSender);
 		}
+        protected internal virtual void TriggerBatchReceiveTimeoutTask()
+        {
+            if (!HasBatchReceiveTimeout() && BatchReceivePolicy.getTimeoutMs() > 0)
+            {
+                BatchReceiveTimeout = ClientConflict.Timer().newTimeout(this.pendingBatchReceiveTask, BatchReceivePolicy.getTimeoutMs(), TimeUnit.MILLISECONDS);
+            }
+        }
+
+        public virtual void InitReceiverQueueSize()
+        {
+            if (Conf.isAutoScaledReceiverQueueSizeEnabled())
+            {
+                CurrentReceiverQueueSizeUpdater.set(this, MinReceiverQueueSize());
+            }
+            else
+            {
+                CurrentReceiverQueueSizeUpdater.set(this, MaxReceiverQueueSize);
+            }
+        }
+        public abstract int MinReceiverQueueSize();
+        protected internal virtual void ExpectMoreIncomingMessages()
+        {
+            if (!Conf.isAutoScaledReceiverQueueSizeEnabled())
+            {
+                return;
+            }
+            // JAVA TO C# CONVERTER TODO TASK: Method reference arbitrary object instance method syntax is not converted by Java to C# Converter:
+            double Usage = MemoryLimitController.map(MemoryLimitController::currentUsagePercent).orElse(0d);
+            if (Usage < MemoryThresholdForReceiverQueueSizeExpansion && ScaleReceiverQueueHint.compareAndSet(true, false))
+            {
+                int OldSize = CurrentReceiverQueueSize;
+                int NewSize = Math.Min(MaxReceiverQueueSize, OldSize * 2);
+                CurrentReceiverQueueSize = NewSize;
+            }
+        }
+        protected internal virtual void ReduceCurrentReceiverQueueSize()
+        {
+            if (!Conf.isAutoScaledReceiverQueueSizeEnabled())
+            {
+                return;
+            }
+            int OldSize = CurrentReceiverQueueSize;
+            int NewSize = Math.Max(MinReceiverQueueSize(), OldSize / 2);
+            if (OldSize > NewSize)
+            {
+                CurrentReceiverQueueSize = NewSize;
+            }
+        }
         protected bool VerifyBatchReceive()
         {
             if (Conf.MessageListener != null)
@@ -177,6 +222,15 @@ namespace SharpPulsar
                 }
             }
         }
+        public override Message<T> Receive()
+        {
+            if (Listener != null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+            }
+            VerifyConsumerState();
+            return InternalReceive();
+        }
         protected void Receive()
         {
             if(VerifyConsumerState())
@@ -203,6 +257,60 @@ namespace SharpPulsar
                 }
                 else
                     Sender.Tell(new AskResponse());
+            }
+        }
+        public override CompletableFuture<Message<T>> ReceiveAsync()
+        {
+            if (Listener != null)
+            {
+                return FutureUtil.failedFuture(new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set"));
+            }
+            try
+            {
+                VerifyConsumerState();
+            }
+            catch (PulsarClientException E)
+            {
+                return FutureUtil.failedFuture(E);
+            }
+            return InternalReceiveAsync();
+        }
+        protected internal abstract Message<T> InternalReceive();
+
+        protected internal abstract CompletableFuture<Message<T>> InternalReceiveAsync();
+        public override Message<T> Receive(int Timeout, TimeUnit Unit)
+        {
+            if (CurrentReceiverQueueSize == 0)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
+            }
+            if (Listener != null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+            }
+
+            VerifyConsumerState();
+            return InternalReceive(Timeout, Unit);
+        }
+        protected internal abstract Message<T> InternalReceive(long timeout, TimeUnit unit);
+        public override Messages<T> BatchReceive()
+        {
+            VerifyBatchReceive();
+            VerifyConsumerState();
+            return InternalBatchReceive();
+        }
+
+        public override CompletableFuture<Messages<T>> BatchReceiveAsync()
+        {
+            try
+            {
+                VerifyBatchReceive();
+                VerifyConsumerState();
+                return InternalBatchReceiveAsync();
+            }
+            catch (PulsarClientException E)
+            {
+                return FutureUtil.failedFuture(E);
             }
         }
         private bool VerifyConsumerState()
@@ -319,22 +427,7 @@ namespace SharpPulsar
 				Interceptors.OnNegativeAcksSend(Self, messageIds);
 			}
 		}
-        // If message consumer epoch is smaller than consumer epoch present that
-        // it has been sent to the client before the user calls redeliverUnacknowledgedMessages, this message is invalid.
-        // so we should release this message and receive again
-        protected internal virtual bool IsValidConsumerEpoch(IMessage<T> msg)
-        {
-            var message = msg is Message<T>? (Message<T>)msg: (Message<T>)((TopicMessage<T>) msg).Message;
-            
-            if ((SubType == CommandSubscribe.SubType.Failover || SubType == CommandSubscribe.SubType.Exclusive) && message.ConsumerEpoch != Commands.DefaultConsumerEpoch && message.ConsumerEpoch < ConsumerEpoch)
-            {
-                _log.Warning($"Consumer filter old epoch message, topic : [{Topic}], messageId : [{message.MessageId}], consumerEpoch : [{ConsumerEpoch}]");
-                
-                message.Recycle();
-                return false;
-            }
-            return true;
-        }
+        
         protected internal virtual void OnAckTimeoutSend(ISet<IMessageId> messageIds)
 		{
 			if (Interceptors != null)
@@ -356,8 +449,28 @@ namespace SharpPulsar
 				return new Messages<T>(BatchReceivePolicy.MaxNumMessages, BatchReceivePolicy.MaxNumBytes);
 			}
 		}
+        // If message consumer epoch is smaller than consumer epoch present that
+        // it has been sent to the client before the user calls redeliverUnacknowledgedMessages, this message is invalid.
+        // so we should release this message and receive again
+        protected internal virtual bool IsValidConsumerEpoch(IMessage<T> msg)
+        {
+            var message = msg is Message<T> ? (Message<T>)msg : (Message<T>)((TopicMessage<T>)msg).Message;
 
-	}
+            if ((SubType == SubType.Failover || SubType == SubType.Exclusive) && message.ConsumerEpoch != Commands.DefaultConsumerEpoch && message.ConsumerEpoch < ConsumerEpoch)
+            {
+                _log.Warning($"Consumer filter old epoch message, topic : [{Topic}], messageId : [{message.MessageId}], consumerEpoch : [{ConsumerEpoch}]");
+
+                message.Recycle();
+                return false;
+            }
+            return true;
+        }
+        public virtual bool HasBatchReceiveTimeout()
+        {
+            return BatchReceiveTimeout != null;
+        }
+
+    }
 	internal class ConsumerStateActor: ReceiveActor
     {
 		private HandlerState.State _state;
