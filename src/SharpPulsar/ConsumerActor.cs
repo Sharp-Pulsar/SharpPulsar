@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.Util;
 using Akka.Util.Internal;
+using DotNetty.Common.Utilities;
 using ProtoBuf;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
@@ -586,7 +587,12 @@ namespace SharpPulsar
 				else
 					IncreaseAvailablePermits(_clientCnx);
 			});
-			ReceiveAsync<IAcknowledge>(async ack => 
+
+            Receive<IncreaseAvailablePermits<T>>(i =>
+            {
+                 IncreaseAvailablePermits((Message<T>)i.Message);
+            });
+            ReceiveAsync<IAcknowledge>(async ack => 
 			{
                 _replyTo = Sender;
 				await Acknowledge(ack);
@@ -1688,6 +1694,23 @@ namespace SharpPulsar
             // and return undecrypted payload
             return !IsMessageUndecryptable(messageMetadata) && (messageMetadata.ShouldSerializeNumMessagesInBatch() || messageMetadata.NumMessagesInBatch != 1);
         }
+        private void ExecuteNotifyCallback(Message<T> message)
+        {
+            // Enqueue the message so that it can be retrieved when application calls receive()
+            // if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
+            // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
+            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            {
+                if (HasNextPendingReceive())
+                {
+                    NotifyPendingReceivedCallback(message, null);
+                }
+                else if (EnqueueMessageAndCheckBatchReceive(message) && HasPendingBatchReceive())
+                {
+                    NotifyPendingBatchReceivedCallBack();
+                }
+            });
+        }
         private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet, long consumerEpoch)
         {
             var msgPayload = MessagePayload.Create(new ReadOnlySequence<byte>(payload));
@@ -1701,7 +1724,8 @@ namespace SharpPulsar
                 {
                     if (message != null)
                     {
-                        EnqueueMessageAndCheckBatchReceive(message);
+                        ExecuteNotifyCallback((Message<T>)message);
+                        //EnqueueMessageAndCheckBatchReceive(message);
                     }
                     else
                     {
@@ -1728,18 +1752,65 @@ namespace SharpPulsar
             TryTriggerListener();
         }
 
-        private void TryTriggerListener()
-        {
-            if (Listener != null)
-            {
-                TriggerListener();
-            }
-        }
         private bool HasNumMessagesInBatch(MessageMetadata m)
 		{
 			var should = m.ShouldSerializeNumMessagesInBatch();
 			return should;
 		}
+        /// <summary>
+		/// Notify waiting asyncReceive request with the received message.
+		/// </summary>
+		/// <param name="message"> </param>
+		internal virtual void NotifyPendingReceivedCallback(in Message<T> Message, Exception Exception)
+        {
+            if (PendingReceives.isEmpty())
+            {
+                return;
+            }
+
+            // fetch receivedCallback from queue
+            CompletableFuture<Message<T>> ReceivedFuture = NextPendingReceive();
+            if (ReceivedFuture == null)
+            {
+                return;
+            }
+
+            if (Exception != null)
+            {
+                InternalPinnedExecutor.execute(() => ReceivedFuture.completeExceptionally(Exception));
+                return;
+            }
+
+            if (Message == null)
+            {
+                System.InvalidOperationException E = new System.InvalidOperationException("received message can't be null");
+                InternalPinnedExecutor.execute(() => ReceivedFuture.completeExceptionally(E));
+                return;
+            }
+
+            if (CurrentReceiverQueueSize == 0)
+            {
+                // call interceptor and complete received callback
+                TrackMessage(Message);
+                InterceptAndComplete(Message, ReceivedFuture);
+                return;
+            }
+
+            // increase permits for available message-queue
+            MessageProcessed(Message);
+            // call interceptor and complete received callback
+            InterceptAndComplete(Message, ReceivedFuture);
+        }
+
+        private void InterceptAndComplete(IMessage<T> message, TaskCompletionSource<IMessage<T>> receivedFuture)
+        {
+            // call proper interceptor
+            // JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
+            // ORIGINAL LINE: final org.apache.pulsar.client.api.Message<T> interceptMessage = beforeConsume(message);
+           var interceptMessage = BeforeConsume(message);
+            // return message to receivedCallback
+            CompletePendingReceive(receivedFuture, interceptMessage);
+        }
 
         private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId, IActorRef cnx)
 		{
@@ -1843,7 +1914,109 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx, long consumerEpoch)
+        protected internal override IMessage<T> InternalReceive()
+        {
+            IMessage<T> message;
+            try
+            {
+                if (IncomingMessages.Count == 0)
+                {
+                    ExpectMoreIncomingMessages();
+                }
+                IncomingMessages.TryReceive(out message);
+                MessageProcessed(message);
+                if (!IsValidConsumerEpoch(message))
+                {
+                    return InternalReceive();
+                }
+                return BeforeConsume(message);
+            }
+            catch (Exception E)
+            {
+                Stats.IncrementNumReceiveFailed();
+                throw PulsarClientException.Unwrap(E);
+            }
+        }
+        protected internal override TaskCompletionSource<IMessage<T>> InternalReceiveAsync()
+        {
+            var result = new TaskCompletionSource<IMessage<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            {
+                IncomingMessages.TryReceive(out var message);
+                if (message == null)
+                {
+                    ExpectMoreIncomingMessages();
+                    PendingReceives.Enqueue(result);
+                    result.Task.ContinueWith(s =>
+                    {
+                        if (s.IsCanceled)
+                            PendingReceives.TryDequeue(out result);
+                    });
+                }
+                else
+                {
+                    MessageProcessed(message);
+                    if (!IsValidConsumerEpoch(message))
+                    {
+                        PendingReceives.Enqueue(result);
+                        result.Task.ContinueWith(s =>
+                        {
+                            if (s.IsCanceled)
+                                PendingReceives.TryDequeue(out result);
+                        });
+                        return;
+                    }
+                    result.SetResult(BeforeConsume(message));
+                }
+            });
+
+            return result;
+        }
+        protected internal override IMessage<T> InternalReceive(TimeSpan timeOut)
+        {
+            IMessage<T> message;
+            var callTime = NanoTime();
+            try
+            {
+                if (IncomingMessages.Count == 0)
+                {
+                    ExpectMoreIncomingMessages();
+                }
+                IncomingMessages.TryReceive(out message);
+                if (message == null)
+                {
+                    return null;
+                }
+                MessageProcessed(message);
+                if (!IsValidConsumerEpoch(message))
+                {
+                    var executionTime = NanoTime() - callTime;
+                    var timeoutInNanos = timeOut.Ticks;
+                    if (executionTime >= timeoutInNanos)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime));
+                    }
+                }
+                return BeforeConsume(message);
+            }
+            catch (Exception e)
+            {
+                if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState. State.Closed)
+                {
+                    Stats.IncrementNumReceiveFailed();
+                    throw PulsarClientException.Unwrap(e);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+        private void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx, long consumerEpoch)
 		{
 			var batchSize = msgMetadata.NumMessagesInBatch;
 			// create ack tracker for entry aka batch
@@ -1986,8 +2159,16 @@ namespace SharpPulsar
 				}
 			}
 		}
-
-		internal virtual void IncreaseAvailablePermits(IActorRef currentCnx)
+        internal virtual void IncreaseAvailablePermits(Message<T> msg)
+        {
+            var currentCnx = _clientCnx;
+            var msgCnx = msg.Cnx();
+            if (msgCnx == currentCnx)
+            {
+                IncreaseAvailablePermits(currentCnx);
+            }
+        }
+        internal virtual void IncreaseAvailablePermits(IActorRef currentCnx)
 		{
 			IncreaseAvailablePermits(currentCnx, 1);
 		}
@@ -3019,7 +3200,7 @@ namespace SharpPulsar
 
         internal static ChunkedMessageCtx Get(int numChunksFromMsg, List<byte> chunkedMsgBuffer)
         {
-            ChunkedMessageCtx ctx = new ChunkedMessageCtx
+            var ctx = new ChunkedMessageCtx
             {
                 TotalChunks = numChunksFromMsg,
                 ChunkedMsgBuffer = chunkedMsgBuffer,

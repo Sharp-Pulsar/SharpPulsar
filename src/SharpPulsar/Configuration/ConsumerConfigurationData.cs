@@ -44,7 +44,9 @@ namespace SharpPulsar.Configuration
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor<T>> Interceptors { get; set; }
-		public SubType SubscriptionType { get; set; } = SubType.Exclusive;
+        public bool IsAutoScaledReceiverQueueSizeEnabled { get; set; }  
+
+        public SubType SubscriptionType { get; set; } = SubType.Exclusive;
 		internal IMessageListener<T> MessageListener { get; set; }
         public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }

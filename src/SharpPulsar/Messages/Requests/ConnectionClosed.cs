@@ -1,6 +1,7 @@
 ﻿
 using Akka.Actor;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Requests
 {
@@ -30,6 +31,14 @@ namespace SharpPulsar.Messages.Requests
         public IncreaseAvailablePermits(int available)
         {
             Available = available;
+        }
+    }
+    public sealed class IncreaseAvailablePermits<T>
+    {
+        public IMessage<T> Message { get; }
+        public IncreaseAvailablePermits(IMessage<T> message)
+        {
+           Message = message;
         }
     }
     public sealed class ConnectionAlreadySet

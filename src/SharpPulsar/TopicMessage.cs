@@ -38,20 +38,26 @@ namespace SharpPulsar
 		private readonly TopicMessageId _messageId;
 
         // consumer if this message is received by that consumer
-        internal readonly IActorRef ReceivedByconsumer;
-
-        public TopicMessage(string topicPartitionName, string topicName, IMessage<T> msg, IActorRef receivedByConsumer)
+        internal readonly IActorRef ReceivedByConsumer;
+        public readonly Consumer<T> ReceivedByconsumer;
+        internal TopicMessage(string topicPartitionName, string topicName, IMessage<T> msg, IActorRef receivedByConsumer)
 		{
 			_topicPartitionName = topicPartitionName;
-            ReceivedByconsumer = receivedByConsumer;
+            ReceivedByConsumer = receivedByConsumer;
             _msg = msg;
 			_messageId = new TopicMessageId(topicPartitionName, topicName, msg.MessageId);
 		}
-
-		/// <summary>
-		/// Get the topic name without partition part of this message. </summary>
-		/// <returns> the name of the topic on which this message was published </returns>
-		public virtual string Topic => _msg.Topic;
+        public TopicMessage(string topicPartitionName, string topicName, IMessage<T> msg, Consumer<T> receivedByConsumer)
+        {
+            _topicPartitionName = topicPartitionName;
+            ReceivedByconsumer = receivedByConsumer;
+            _msg = msg;
+            _messageId = new TopicMessageId(topicPartitionName, topicName, msg.MessageId);
+        }
+        /// <summary>
+        /// Get the topic name without partition part of this message. </summary>
+        /// <returns> the name of the topic on which this message was published </returns>
+        public virtual string Topic => _msg.Topic;
 		/// <summary>
 		/// Get the topic name which contains partition part for this message. </summary>
 		/// <returns> the topic name which contains Partition part </returns>
