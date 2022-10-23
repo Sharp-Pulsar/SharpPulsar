@@ -539,9 +539,18 @@ namespace SharpPulsar
             {
                 BatchReceive();
             });
-            Receive<Messages.Consumer.Receive>(_ =>
+            Receive<Messages.Consumer.Receive>(receive =>
             {
-                Receive();
+                try
+                {
+                    var message = receive.Time == TimeSpan.Zero ? Receive() : Receive(receive.Time);
+                    Sender.Tell(new AskResponse(message));
+                }
+                catch(Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
+               
             });
             Receive<SendState>(_ =>
 			{
@@ -1761,45 +1770,45 @@ namespace SharpPulsar
 		/// Notify waiting asyncReceive request with the received message.
 		/// </summary>
 		/// <param name="message"> </param>
-		internal virtual void NotifyPendingReceivedCallback(in Message<T> Message, Exception Exception)
+		internal virtual void NotifyPendingReceivedCallback(IMessage<T> message, Exception exception)
         {
-            if (PendingReceives.isEmpty())
+            if (PendingReceives.Count == 0)
             {
                 return;
             }
 
             // fetch receivedCallback from queue
-            CompletableFuture<Message<T>> ReceivedFuture = NextPendingReceive();
-            if (ReceivedFuture == null)
+           var receivedFuture = NextPendingReceive();
+            if (receivedFuture == null)
             {
                 return;
             }
 
-            if (Exception != null)
+            if (exception != null)
             {
-                InternalPinnedExecutor.execute(() => ReceivedFuture.completeExceptionally(Exception));
+                receivedFuture.SetException(exception);
                 return;
             }
 
-            if (Message == null)
+            if (message == null)
             {
-                System.InvalidOperationException E = new System.InvalidOperationException("received message can't be null");
-                InternalPinnedExecutor.execute(() => ReceivedFuture.completeExceptionally(E));
+                var e = new InvalidOperationException("received message can't be null");
+                receivedFuture.SetException(e);
                 return;
             }
 
             if (CurrentReceiverQueueSize == 0)
             {
                 // call interceptor and complete received callback
-                TrackMessage(Message);
-                InterceptAndComplete(Message, ReceivedFuture);
+                TrackMessage(message);
+                InterceptAndComplete(message, receivedFuture);
                 return;
             }
 
             // increase permits for available message-queue
-            MessageProcessed(Message);
+            MessageProcessed(message);
             // call interceptor and complete received callback
-            InterceptAndComplete(Message, ReceivedFuture);
+            InterceptAndComplete(message, receivedFuture);
         }
 
         private void InterceptAndComplete(IMessage<T> message, TaskCompletionSource<IMessage<T>> receivedFuture)
@@ -1931,10 +1940,10 @@ namespace SharpPulsar
                 }
                 return BeforeConsume(message);
             }
-            catch (Exception E)
+            catch (Exception e)
             {
                 Stats.IncrementNumReceiveFailed();
-                throw PulsarClientException.Unwrap(E);
+                throw Unwrap(e);
             }
         }
         protected internal override TaskCompletionSource<IMessage<T>> InternalReceiveAsync()
@@ -2008,7 +2017,7 @@ namespace SharpPulsar
                 if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState. State.Closed)
                 {
                     Stats.IncrementNumReceiveFailed();
-                    throw PulsarClientException.Unwrap(e);
+                    throw Unwrap(e);
                 }
                 else
                 {

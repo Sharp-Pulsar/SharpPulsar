@@ -178,13 +178,37 @@ namespace SharpPulsar
             {
                 return;
             }
-            int OldSize = CurrentReceiverQueueSize;
-            int NewSize = Math.Max(MinReceiverQueueSize(), OldSize / 2);
-            if (OldSize > NewSize)
+            var oldSize = CurrentReceiverQueueSize;
+            var newSize = Math.Max(MinReceiverQueueSize(), oldSize / 2);
+            if (oldSize > newSize)
             {
-                CurrentReceiverQueueSize = NewSize;
+                CurrentReceiverQueueSize = newSize;
             }
         }
+        protected internal virtual IMessage<T> Receive()
+        {
+            if (Listener != null)
+            {
+                throw new InvalidConfigurationException("Cannot use receive() when a listener has been set");
+            }
+            VerifyConsumerState();
+            return InternalReceive();
+        }
+        protected internal virtual IMessage<T> Receive(TimeSpan time)
+        {
+            if (CurrentReceiverQueueSize == 0)
+            {
+                throw new InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
+            }
+            if (Listener != null)
+            {
+                throw new InvalidConfigurationException("Cannot use receive() when a listener has been set");
+            }
+
+            VerifyConsumerState();
+            return InternalReceive(time);
+        }
+
         protected bool VerifyBatchReceive()
         {
             if (Listener != null)
@@ -237,36 +261,7 @@ namespace SharpPulsar
                 }
             }
         }
-        
-        protected void Receive()
-        {
-            if(VerifyConsumerState())
-            {
-                if (Conf.ReceiverQueueSize == 0)
-                {
-                    Sender.Tell(new AskResponse(new InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0")));
-                    return;
-                }
-                if (Conf.MessageListener != null)
-                {
-                    Sender.Tell(new AskResponse(new InvalidConfigurationException("Cannot use receive() when a listener has been set")));
-                    return;
-                }
-                if (IncomingMessages.TryReceive(out var message))
-                {
-                    Self.Tell(new MessageProcessed<T>(message));
-                    if (!IsValidConsumerEpoch(message))
-                    {
-                        Receive();
-                        return;
-                    }
-                    Sender.Tell(new AskResponse(BeforeConsume(message)));
-                }
-                else
-                    Sender.Tell(new AskResponse());
-            }
-        }
-       
+              
         
         private bool VerifyConsumerState()
         {

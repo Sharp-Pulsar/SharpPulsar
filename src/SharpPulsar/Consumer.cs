@@ -215,7 +215,7 @@ namespace SharpPulsar
 
         public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan time)
         {
-            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, time).ConfigureAwait(false);
+            var response = await _consumerActor.Ask<AskResponse>(new Messages.Consumer.Receive(time)).ConfigureAwait(false);
 
             if (response.Failed)
                 throw response.Exception;
