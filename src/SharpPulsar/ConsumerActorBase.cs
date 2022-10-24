@@ -52,7 +52,9 @@ namespace SharpPulsar
 	{
 		internal abstract long LastDisconnectedTimestamp();
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
-		internal abstract void Resume();
+        internal abstract TaskCompletionSource<IMessages<T>> BatchReceiveAsync();
+        internal abstract IMessages<T> BatchReceive();
+        internal abstract void Resume();
 		internal abstract void Pause();
 		internal abstract bool Connected();
 		internal abstract ValueTask Seek(long timestamp);
@@ -235,57 +237,28 @@ namespace SharpPulsar
                 return message;
             }
         }
-        protected void BatchReceive()
-        {
-            if(VerifyConsumerState())
-            {
-                if(VerifyBatchReceive())
-                {
-                    if (HasEnoughMessagesForBatchReceive())
-                    {
-                        var messages = new Messages<T>(BatchReceivePolicy.MaxNumMessages, BatchReceivePolicy.MaxNumBytes);
-
-                        while (IncomingMessages.TryReceive(out var message) && messages.CanAdd(message))
-                        {
-                            Self.Tell(new MessageProcessed<T>(message));
-
-                            if (!IsValidConsumerEpoch(message))
-                                continue;
-
-                            messages.Add(BeforeConsume(message));
-                        }
-                        Sender.Tell(new AskResponse(messages));
-                    }
-                    else
-                        Sender.Tell(new AskResponse());
-                }
-            }
-        }
-              
-        
-        private bool VerifyConsumerState()
+      
+        protected void VerifyConsumerState()
         {
             var state = State.ConnectionState;
             switch (state)
             {
                 case HandlerState.State.Ready:
                 case HandlerState.State.Connecting:
-                    return true;
+                    break; // Ok
                 case HandlerState.State.Closing:
                 case HandlerState.State.Closed:
-                   Sender.Tell(new AskResponse(new AlreadyClosedException("Consumer already closed")));
-                    return false;
+                   throw new AlreadyClosedException("Consumer already closed");
                 case HandlerState.State.Terminated:
-                    Sender.Tell(new AskResponse(new TopicTerminatedException("Topic was terminated")));
-                    return false;
+                    throw new TopicTerminatedException("Topic was terminated");
                 case HandlerState.State.Failed:
                 case HandlerState.State.Uninitialized:
+                    throw new NotConnectedException();
                 default:
-                    Sender.Tell(new AskResponse(new NotConnectedException()));
-                    return false;
+                    break;
             }
         }
-        private bool HasEnoughMessagesForBatchReceive()
+        protected bool HasEnoughMessagesForBatchReceive()
         {
             var mesageSize = IncomingMessagesSize;
             var mesageCount = IncomingMessages.Count;
