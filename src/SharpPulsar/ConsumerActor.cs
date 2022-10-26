@@ -8,9 +8,11 @@ using SharpPulsar.Batch;
 using SharpPulsar.Builder;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.Common.Enum;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
+using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
@@ -41,6 +43,7 @@ using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
+using ConsumerCryptoFailureAction = SharpPulsar.Common.Compression.ConsumerCryptoFailureAction;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -345,6 +348,10 @@ namespace SharpPulsar
         {
             return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
         }
+        protected internal override void CompleteOpBatchReceive(OpBatchReceive op)
+        {
+            NotifyPendingBatchReceivedCallBack(op);
+        }
         private async ValueTask ConnectionOpened(ConnectionOpened c)
         {
             try
@@ -539,33 +546,14 @@ namespace SharpPulsar
             {
                 try
                 {
-
+                    var message = BatchReceive();
+                    Sender.Tell(new AskResponse(message));
                 }
-                catch { }
-
-                if (VerifyConsumerState())
+                catch (Exception ex)
                 {
-                    if (VerifyBatchReceive())
-                    {
-                        if (HasEnoughMessagesForBatchReceive())
-                        {
-                            var messages = new Messages<T>(BatchReceivePolicy.MaxNumMessages, BatchReceivePolicy.MaxNumBytes);
-
-                            while (IncomingMessages.TryReceive(out var message) && messages.CanAdd(message))
-                            {
-                                Self.Tell(new MessageProcessed<T>(message));
-
-                                if (!IsValidConsumerEpoch(message))
-                                    continue;
-
-                                messages.Add(BeforeConsume(message));
-                            }
-                            Sender.Tell(new AskResponse(messages));
-                        }
-                        else
-                            Sender.Tell(new AskResponse());
-                    }
+                    Sender.Tell(new AskResponse(ex));
                 }
+
             });
             Receive<Messages.Consumer.Receive>(receive =>
             {
@@ -961,7 +949,10 @@ namespace SharpPulsar
                     else
                         ackFuture.TrySetException(task.Exception);
 
-                });
+                }).ContinueWith(task =>
+                {
+                    txn.Tell(new RegisterAckOp(task.Exception));
+                }); 
             }
             else
             {
@@ -1002,13 +993,23 @@ namespace SharpPulsar
                 }
             }
         }
-
+        public override int MinReceiverQueueSize()
+        {
+            var size = Math.Min(InitialReceiverQueueSize, MaxReceiverQueueSize);
+            if (BatchReceivePolicy.MaxNumMessages > 0)
+            {
+                // consumerImpl may store (half-1) permits locally.
+                size = Math.Max(size, 2 * BatchReceivePolicy.MaxNumMessages - 2);
+            }
+            return size;
+        }
         protected override void PostStop()
         {
             _tokenSource.Cancel();
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
                 CloseConsumerTasks();
+                FailPendingReceive();
             }
 
             if (!Connected())
@@ -1018,6 +1019,7 @@ namespace SharpPulsar
                 CloseConsumerTasks();
                 DeregisterFromClientCnx();
                 _client.Tell(new CleanupConsumer(Self));
+                FailPendingReceive();
             }
 
             _stats.StatTimeout?.Cancel();
@@ -1428,8 +1430,10 @@ namespace SharpPulsar
 			CloseConsumerTasks();
 			DeregisterFromClientCnx();
 			_client.Tell(new CleanupConsumer(Self));
+            // fail all pending-receive futures to notify application
+            FailPendingReceive();
             
-		}
+        }
 
 		private void CloseConsumerTasks()
 		{
@@ -1841,9 +1845,6 @@ namespace SharpPulsar
 
         private void InterceptAndComplete(IMessage<T> message, TaskCompletionSource<IMessage<T>> receivedFuture)
         {
-            // call proper interceptor
-            // JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-            // ORIGINAL LINE: final org.apache.pulsar.client.api.Message<T> interceptMessage = beforeConsume(message);
            var interceptMessage = BeforeConsume(message);
             // return message to receivedCallback
             CompletePendingReceive(receivedFuture, interceptMessage);
@@ -2197,11 +2198,14 @@ namespace SharpPulsar
 		}
 		private bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
 		{
-			if (CanEnqueueMessage(message))
-			{
-				Push(message);
-			}
-			return true;
+            if (CanEnqueueMessage(message))
+            {
+                // After we have enqueued the messages on `incomingMessages` queue, we cannot touch the message instance
+                // anymore, since for pooled messages, this instance was possibly already been released and recycled.
+                Push(message);
+                UpdateAutoScaleReceiverQueueHint();
+            }
+            return HasEnoughMessagesForBatchReceive();
 		}
 		private bool IsPriorEntryIndex(long idx)
 		{
@@ -2226,7 +2230,7 @@ namespace SharpPulsar
         /// 
         /// Periodically, it sends a Flow command to notify the broker that it can push more messages
         /// </summary>
-        private void MessageProcessed(IMessage<T> msg)
+        protected internal override void MessageProcessed(IMessage<T> msg)
 		{
 			var currentCnx = _clientCnx;
 			var msgCnx = ((Message<T>)msg).Cnx();
@@ -2237,12 +2241,17 @@ namespace SharpPulsar
 				// The processed message did belong to the old queue that was cleared after reconnection.
 				return;
 			}
+            else
+            {
+                if (Listener == null)
+                {
+                    IncreaseAvailablePermits(currentCnx);
+                }
+                Stats.UpdateNumMsgsReceived(msg);
 
-			IncreaseAvailablePermits(currentCnx);
-			Stats.UpdateNumMsgsReceived(msg);
-
-			TrackMessage(msg);
-			IncomingMessagesSize -= msg.Data.Length;
+                TrackMessage(msg);
+            }
+            DecreaseIncomingMessageSize(msg);
 		}
 
 		protected internal virtual void TrackMessage(IMessage<T> msg)
@@ -2488,7 +2497,14 @@ namespace SharpPulsar
 				var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 				cnx.Tell(payload);
 
-				if(currentSize > 0)
+                // we should increase epoch every time, because MultiTopicsConsumerImpl also increase it,
+                // we need to keep both epochs the same
+                if (Conf.SubscriptionType == SubType.Failover || Conf.SubscriptionType == SubType.Exclusive)
+                {
+                    ConsumerEpoch += 1;
+                }
+
+                if (currentSize > 0)
 					IncreaseAvailablePermits(cnx, currentSize);
 
 				if (_log.IsDebugEnabled)
@@ -3198,7 +3214,15 @@ namespace SharpPulsar
 					_log.Info($"Failed to add message with sequnceid {o.SequenceId} to IncomingMessages");
 			}
 		}
-		private void DoTransactionAcknowledgeForResponse(IMessageId messageId, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TransactionImpl.TxnID txnID, long requestId)
+        protected internal void UpdateAutoScaleReceiverQueueHint()
+        {
+            var prev = ScaleReceiverQueueHint.GetAndSet(AvailablePermits() + IncomingMessages.Count >= CurrentReceiverQueueSize);
+            if (_log.IsDebugEnabled && prev != ScaleReceiverQueueHint)
+            {
+                _log.Debug($"updateAutoScaleReceiverQueueHint {prev} -> {ScaleReceiverQueueHint}");
+            }
+        }
+        private void DoTransactionAcknowledgeForResponse(IMessageId messageId, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TransactionImpl.TxnID txnID, long requestId)
 		{
 			long ledgerId;
 			long entryId;
@@ -3264,6 +3288,9 @@ namespace SharpPulsar
                     }
                     else
                         ackFuture.TrySetException(task.Exception);
+
+                }).ContinueWith(task =>
+                {
 
                 });
             }

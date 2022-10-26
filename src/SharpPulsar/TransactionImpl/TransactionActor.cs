@@ -6,6 +6,7 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
+using System;
 using System.Collections.Generic;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
@@ -41,7 +42,7 @@ namespace SharpPulsar.TransactionImpl
     /// </summary>
     internal class TransactionActor : ReceiveActor, IWithUnboundedStash
     {
-
+        private long _opCount = 0L;
         private readonly IActorRef _client;
         private readonly long _transactionTimeoutMs;
         private readonly long _txnIdLeastBits;
@@ -51,13 +52,11 @@ namespace SharpPulsar.TransactionImpl
         private volatile State _state;
         private readonly IActorRef _self;
         private IActorRef _sender;
-
+        private bool _hasOpsFailed = false;
         private readonly ISet<string> _registerPartitionMaps;
         private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
         private IActorRef _tcClient; //TransactionCoordinatorClientImpl
         private IDictionary<IActorRef, int> _cumulativeAckConsumers;
-
-        private readonly List<IMessageId> _sendList;
 
         public IStash Stash { get; set; }
 
@@ -73,7 +72,6 @@ namespace SharpPulsar.TransactionImpl
 
             _registerPartitionMaps = new HashSet<string>();
             _registerSubscriptionMap = new Dictionary<string, List<string>>();
-            _sendList = new List<IMessageId>();
             TcClient();
         }
         private void TcClient()
@@ -138,7 +136,32 @@ namespace SharpPulsar.TransactionImpl
             });
             Receive<RegisterSendOp>(s =>
             {
-                RegisterSendOp(s.MessageId);
+                _opCount++;
+                if (s.MessageId == null)
+                {
+                    _log.Error($"The transaction [{_txnIdMostBits}:{_txnIdLeastBits}] get an exception when send messages.");
+                    if (!_hasOpsFailed)
+                    {
+                        _hasOpsFailed = true;
+                    }
+                    _opCount--;
+
+                }
+            });
+            Receive<RegisterAckOp>(s =>
+            {
+                _opCount++;
+                if(s.Exception != null)
+                {
+                    _log.Error($"The transaction [{_txnIdMostBits}:{_txnIdLeastBits}] get an exception when ack messages. {s.Exception}");
+                    if (!_hasOpsFailed)
+                    {
+                        _hasOpsFailed = true;
+                    }
+                    _opCount--;
+
+                }
+                   
             });
             Receive<RegisterProducedTopic>(p =>
             {
@@ -172,11 +195,6 @@ namespace SharpPulsar.TransactionImpl
             }
             else
                 Sender.Tell(new RegisterProducedTopicResponse(null));
-        }
-
-        private void RegisterSendOp(IMessageId send)
-        {
-            _sendList.Add(send);
         }
 
         // register the topics that will be modified by this transaction

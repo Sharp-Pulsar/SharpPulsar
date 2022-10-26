@@ -1,4 +1,5 @@
 ﻿
+using System;
 using Akka.Actor;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
@@ -89,6 +90,15 @@ namespace SharpPulsar.Messages.Transaction
         public RegisterSendOp(IMessageId messageId)
         {
             MessageId = messageId;
+
+        }
+    }
+    public sealed class RegisterAckOp
+    {
+        public Exception Exception { get; }
+        public RegisterAckOp(Exception exception)
+        {
+            Exception = exception;
 
         }
     }
