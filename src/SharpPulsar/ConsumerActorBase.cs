@@ -762,6 +762,71 @@ namespace SharpPulsar
             }
         }
 
+        protected internal virtual TaskCompletionSource<Task> DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+        {
+            var ackFuture = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (txn != null)
+            {
+                
+                txn.Ask(new RegisterAckedTopic(Topic, Subscription))
+                    .ContinueWith(task =>
+                    {
+                        var msgid = messageId;
+                        if (!task.IsFaulted)
+                        {
+                            DoAcknowledge(msgid, ackType, properties, txn);
+                            ackFuture.TrySetResult(null);
+                        }
+                        else
+                            ackFuture.TrySetException(task.Exception);
+
+                    }).ContinueWith(task =>
+                    {
+                        txn.Tell(new RegisterAckOp(ackFuture));
+                    });
+            }
+            else
+            {
+                DoAcknowledge(messageId, ackType, properties, txn);
+                ackFuture.TrySetResult(null);
+            }
+            return ackFuture;
+        }
+        protected internal virtual TaskCompletionSource<Task> DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+        {
+            var ackFuture = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (txn != null)
+            {
+                txn.Ask(new RegisterAckedTopic(Topic, Subscription)).ContinueWith(task =>
+                {
+                    var msgidList = messageIdList;
+                    if (task.Exception != null)
+                    {
+                        DoAcknowledge(msgidList, ackType, properties, txn);
+                        ackFuture.TrySetResult(null);
+                    }
+                    else
+                        ackFuture.TrySetException(task.Exception);
+
+                }).ContinueWith(task =>
+                {
+                    txn.Tell(new RegisterAckOp(ackFuture));
+                });
+            }
+            else
+            {
+                DoAcknowledge(messageIdList, ackType, properties, txn);
+                ackFuture.TrySetResult(null);
+            }
+            return ackFuture;
+        }
+
+        protected internal abstract void  DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
+
+        protected internal abstract void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
+
+        protected internal abstract void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, string> properties, TimeSpan delayTime);
+
         protected internal abstract void CompleteOpBatchReceive(OpBatchReceive op);
         
         // If message consumer epoch is smaller than consumer epoch present that

@@ -1,6 +1,8 @@
 ﻿
 using System;
+using System.Threading.Tasks;
 using Akka.Actor;
+using DotNetty.Common.Concurrency;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 
@@ -95,11 +97,10 @@ namespace SharpPulsar.Messages.Transaction
     }
     public sealed class RegisterAckOp
     {
-        public Exception Exception { get; }
-        public RegisterAckOp(Exception exception)
+        public TaskCompletionSource<Task> Task { get; }
+        public RegisterAckOp(TaskCompletionSource<Task> task)
         {
-            Exception = exception;
-
+           Task = task;
         }
     }
 }

@@ -151,17 +151,18 @@ namespace SharpPulsar.TransactionImpl
             Receive<RegisterAckOp>(s =>
             {
                 _opCount++;
-                if(s.Exception != null)
+                s.Task.Task.ContinueWith(t =>
                 {
-                    _log.Error($"The transaction [{_txnIdMostBits}:{_txnIdLeastBits}] get an exception when ack messages. {s.Exception}");
-                    if (!_hasOpsFailed)
+                    if(t.Exception != null)
                     {
-                        _hasOpsFailed = true;
+                        _log.Error($"The transaction [{_txnIdMostBits}:{_txnIdLeastBits}] get an exception when ack messages. {t.Exception}");
+                        if (!_hasOpsFailed)
+                        {
+                            _hasOpsFailed = true;
+                        }
+                        _opCount--;
                     }
-                    _opCount--;
-
-                }
-                   
+                });
             });
             Receive<RegisterProducedTopic>(p =>
             {

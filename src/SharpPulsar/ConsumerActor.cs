@@ -933,34 +933,7 @@ namespace SharpPulsar
                 _replyTo.Tell(new AskResponse(new PulsarClientException(ex)));
             }
         }
-        private TaskCompletionSource<object> DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
-        {
-            var ackFuture = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (txn != null)
-            {
-                txn.Ask(new RegisterAckedTopic(Topic, Subscription)).ContinueWith(task =>
-                {
-                    var msgidList = messageIdList;
-                    if (task.Exception != null)
-                    {
-                        DoAcknowledge(msgidList, ackType, properties, txn);
-                        ackFuture.TrySetResult(null);
-                    }
-                    else
-                        ackFuture.TrySetException(task.Exception);
-
-                }).ContinueWith(task =>
-                {
-                    txn.Tell(new RegisterAckOp(task.Exception));
-                }); 
-            }
-            else
-            {
-                DoAcknowledge(messageIdList, ackType, properties, txn);
-                ackFuture.TrySetResult(null);
-            }
-            return ackFuture;
-        }
+        
         private void Unsubscribe()
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
@@ -1091,7 +1064,7 @@ namespace SharpPulsar
             }
         }
 
-        private void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+        protected internal override void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
             Condition.CheckArgument(messageId is MessageId);
             if (State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
@@ -1118,11 +1091,11 @@ namespace SharpPulsar
             }
             _acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(messageId, ackType, properties));
         }
-        private void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+        protected internal override void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
             _acknowledgmentsGroupingTracker.Tell(new AddListAcknowledgment(messageIdList, ackType, properties));
         }
-        private TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
+        protected internal override TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
         {
             var result = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -3266,41 +3239,6 @@ namespace SharpPulsar
 			_clientCnx.Tell(payload);
 		}
 
-		private TaskCompletionSource<object> DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
-		{
-            var ackFuture = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (txn != null)
-			{
-				// it is okay that we register acked topic after sending the acknowledgements. because
-				// the transactional ack will not be visiable for consumers until the transaction is
-				// committed
-				if (ackType == AckType.Cumulative)
-				{
-					txn.Tell(new RegisterCumulativeAckConsumer(_self));
-				}
-                txn.Ask(new RegisterAckedTopic(Topic, Subscription)).ContinueWith(task =>
-                {
-                    var msgid = messageId;
-                    if (!task.IsFaulted)
-                    {
-                        DoAcknowledge(msgid, ackType, properties, txn);
-                        ackFuture.TrySetResult(null);
-                    }
-                    else
-                        ackFuture.TrySetException(task.Exception);
-
-                }).ContinueWith(task =>
-                {
-
-                });
-            }
-			else
-            {
-                DoAcknowledge(messageId, ackType, properties, txn);
-                ackFuture.TrySetResult(null);
-            }
-            return ackFuture;
-        }
 		private void AckReceipt(long requestId)
 		{
 			if (_ackRequests.TryGetValue(requestId, out var ot))
