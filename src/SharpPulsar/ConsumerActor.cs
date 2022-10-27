@@ -1116,7 +1116,8 @@ namespace SharpPulsar
             {
                 var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
                 var bits = txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).GetAwaiter().GetResult();
-                return DoTransactionAcknowledgeForResponse(messageIdList, ackType, null, properties, new TransactionImpl.TxnID(bits.MostBits, bits.LeastBits), requestId.Id);
+                DoTransactionAcknowledgeForResponse(messageIdList, ackType, null, properties, new TransactionImpl.TxnID(bits.MostBits, bits.LeastBits), requestId.Id);
+                return;
             }
             else
             {
@@ -1220,7 +1221,7 @@ namespace SharpPulsar
                             {
                                 try
                                 {
-                                    DoAcknowledge(finalMessageId, ackType, properties, null);
+                                    DoAcknowledge(finalMessageId, ackType, new Dictionary<string, long>(), null);
                                     result.TrySetResult(null);
                                 }
                                 catch (Exception ex)
@@ -1247,7 +1248,7 @@ namespace SharpPulsar
                             {
                                 try
                                 {
-                                    DoAcknowledge(finalMessageId, ackType, properties, null);
+                                    DoAcknowledge(finalMessageId, ackType, new Dictionary<string, long>(), null);
                                     result.TrySetResult(null);
                                 }
                                 catch (Exception ex)
