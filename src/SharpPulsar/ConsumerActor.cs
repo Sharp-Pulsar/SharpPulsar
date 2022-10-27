@@ -3,6 +3,7 @@ using Akka.Util;
 using Akka.Util.Internal;
 using DotNetty.Common.Utilities;
 using ProtoBuf;
+using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Builder;
@@ -129,7 +130,7 @@ namespace SharpPulsar
         private readonly IActorRef _connectionHandler;
         private readonly IActorRef _generator;
 
-        private readonly Dictionary<long, (IMessageId messageid, TransactionImpl.TxnID txnid)> _ackRequests;
+        private readonly Dictionary<long, (List<IMessageId> messageid, TransactionImpl.TxnID txnid)> _ackRequests;
 
         private readonly TopicName _topicName;
         private readonly string _topicNameWithoutPartition;
@@ -179,7 +180,7 @@ namespace SharpPulsar
             Paused = conf.StartPaused;
             _context = Context;
             _clientConfigurationData = clientConfiguration;
-            _ackRequests = new Dictionary<long, (IMessageId messageid, TransactionImpl.TxnID txnid)>();
+            _ackRequests = new Dictionary<long, (List<IMessageId> messageid, TransactionImpl.TxnID txnid)>();
             _generator = idGenerator;
             _topicName = TopicName.Get(topic);
             _cnxPool = cnxPool;
@@ -1079,7 +1080,7 @@ namespace SharpPulsar
                 {
                     OnAcknowledgeCumulative(messageId, exception);
                 }
-                return;
+                throw exception;
             }
 
             if (txn != null)
@@ -1093,9 +1094,37 @@ namespace SharpPulsar
         }
         protected internal override void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
-            _acknowledgmentsGroupingTracker.Tell(new AddListAcknowledgment(messageIdList, ackType, properties));
+            foreach (var messageId in messageIdList)
+            {
+               Condition.CheckArgument(messageId is MessageId);
+            }
+            if (State.ConnectionState != HandlerState. State.Ready && State.ConnectionState != HandlerState.State.Connecting)
+            {
+                Stats.IncrementNumAcksFailed();
+                var exception = new PulsarClientException("Consumer not ready. State: " + State);
+                if (AckType.Individual.Equals(ackType))
+                {
+                    OnAcknowledge(messageIdList, exception);
+                }
+                else if (AckType.Cumulative.Equals(ackType))
+                {
+                    OnAcknowledgeCumulative(messageIdList, exception);
+                }
+                throw exception;
+            }
+            if (txn != null)
+            {
+                var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
+                var bits = txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).GetAwaiter().GetResult();
+                return DoTransactionAcknowledgeForResponse(messageIdList, ackType, null, properties, new TransactionImpl.TxnID(bits.MostBits, bits.LeastBits), requestId.Id);
+            }
+            else
+            {
+                _acknowledgmentsGroupingTracker.Tell(new AddListAcknowledgment(messageIdList, ackType, properties));
+                return;
+            };
         }
-        protected internal override TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
+        protected internal override TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, string> properties, TimeSpan delayTime)
         {
             var result = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -3226,7 +3255,7 @@ namespace SharpPulsar
 				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, new long[]{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
 			}
 
-			_ackRequests.Add(requestId, (messageId, txnID));
+			_ackRequests.Add(requestId, (new List<IMessageId> { messageId}, txnID));
 			if(ackType == AckType.Cumulative)
 			{
 				_unAckedMessageTracker.Tell(new RemoveMessagesTill(messageId));
@@ -3238,8 +3267,74 @@ namespace SharpPulsar
 			var payload = new Payload(cmd, requestId, "NewAckForReceipt");
 			_clientCnx.Tell(payload);
 		}
+        private void DoTransactionAcknowledgeForResponse(IList<IMessageId> messageIds, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TransactionImpl.TxnID txnID, long requestId)
+        {
+            long ledgerId;
+            long entryId;
+            ReadOnlySequence<byte> cmd;
+            IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
+            var msgIds = new List<IMessageId>();
+            foreach (var messageId in messageIds)
+            {
+                msgIds.Add(messageId);
+                if (messageId is BatchMessageId batchMessageId)
+                {
+                    var bitSet = new BitSet(batchMessageId.BatchSize);
+                    ledgerId = batchMessageId.LedgerId;
+                    entryId = batchMessageId.EntryId;
+                    if (ackType == AckType.Cumulative)
+                    {
+                        batchMessageId.AckCumulative();
+                        bitSet.Set(0, batchMessageId.BatchSize);
+                        bitSet.Clear(0, batchMessageId.BatchIndex + 1);
+                    }
+                    else
+                    {
+                        bitSet.Set(0, batchMessageId.BatchSize);
+                        bitSet.Clear(batchMessageId.BatchIndex);
+                    }
+                    var messageIdData = new MessageIdData
+                    {
+                        ledgerId = (ulong)batchMessageId.LedgerId,
+                        entryId = (ulong)batchMessageId.EntryId,
+                        BatchSize = batchMessageId.BatchSize
+                    };
+                    var s = bitSet.ToLongArray();
+                    for (var i = 0; i < s.Length; i++)
+                    {
+                        messageIdData.AckSets.Append(s[i]);
+                    }
+                    messageIdDataList.Add(messageIdData);
+                }
+                else
+                {
+                    var singleMessage = (MessageId)messageId;
+                    ledgerId = singleMessage.LedgerId;
+                    entryId = singleMessage.EntryId;
+                    var messageIdData = new MessageIdData
+                    {
+                        ledgerId = (ulong)ledgerId,
+                        entryId = (ulong)entryId
+                    };
+                    messageIdDataList.Add(messageIdData);
+                }
 
-		private void AckReceipt(long requestId)
+                if (ackType == AckType.Cumulative)
+                {
+                    _unAckedMessageTracker.Tell(new RemoveMessagesTill(messageId));
+                }
+                else
+                {
+                    _unAckedMessageTracker.Tell(new Remove(messageId));
+                }
+            }
+            _ackRequests.Add(requestId, (msgIds, txnID));
+            cmd = Commands.NewAck(_consumerId, messageIdDataList, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
+            var payload = new Payload(cmd, requestId, "NewAckForReceipt");
+            _clientCnx.Tell(payload);
+        }
+
+        private void AckReceipt(long requestId)
 		{
 			if (_ackRequests.TryGetValue(requestId, out var ot))
 			{

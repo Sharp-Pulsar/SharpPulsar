@@ -419,16 +419,28 @@ namespace SharpPulsar
 				Interceptors.OnAcknowledge(Self, messageId, exception);
 			}
 		}
-
-		protected internal virtual void OnAcknowledgeCumulative(IMessageId messageId, Exception exception)
+        protected internal virtual void OnAcknowledge(IList<IMessageId> messageIds, Exception exception)
+        {
+            if (Interceptors != null)
+            {
+                messageIds.ForEach(messageId => Interceptors.OnAcknowledge(Self, messageId, exception));
+            }
+        }
+        protected internal virtual void OnAcknowledgeCumulative(IMessageId messageId, Exception exception)
 		{
 			if (Interceptors != null)
 			{
 				Interceptors.OnAcknowledgeCumulative(Self, messageId, exception);
 			}
 		}
-
-		protected internal virtual void OnNegativeAcksSend(ISet<IMessageId> messageIds)
+        protected internal virtual void OnAcknowledgeCumulative(IList<IMessageId> messageIds, Exception exception)
+        {
+            if (Interceptors != null)
+            {
+                messageIds.ForEach(messageId => Interceptors.OnAcknowledgeCumulative(Self, messageId, exception));
+            }
+        }
+        protected internal virtual void OnNegativeAcksSend(ISet<IMessageId> messageIds)
 		{
 			if (Interceptors != null)
 			{
@@ -825,7 +837,7 @@ namespace SharpPulsar
 
         protected internal abstract void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
-        protected internal abstract void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, string> properties, TimeSpan delayTime);
+        protected internal abstract TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, string> properties, TimeSpan delayTime);
 
         protected internal abstract void CompleteOpBatchReceive(OpBatchReceive op);
         

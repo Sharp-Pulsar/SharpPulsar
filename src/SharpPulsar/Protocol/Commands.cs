@@ -19,6 +19,7 @@ using SharpPulsar.Extension;
 using Akka.Util.Internal;
 using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.TransactionImpl;
+using static SharpPulsar.Protocol.Proto.CommandAck;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -907,7 +908,15 @@ namespace SharpPulsar.Protocol
 			return NewAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError,
 					properties, txnIdLeastBits, txnIdMostBits, requestId, -1);
 		}
-        
+        public static ReadOnlySequence<byte> NewAck(long consumerId, IList<MessageIdData> messageIds, AckType ackType,
+                                 ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits,
+                                 long txnIdMostBits, long requestId)
+        {
+            var ack = new CommandAck { ConsumerId = (ulong)consumerId, ack_type = ackType };
+            ack.MessageIds.AddRange(messageIds);
+
+            return NewAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack);
+        }
         public static ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, int batchSize)
 		{
             var ack = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = ackType};
@@ -918,38 +927,39 @@ namespace SharpPulsar.Protocol
                 messageIdData.AckSets = ackSets;
             }
             ack.MessageIds.Add(messageIdData);
-			if (validationError != null)
-			{
-				ack.validation_error = (CommandAck.ValidationError) validationError;
-			}
-
 			if (batchSize >= 0)
 			{
 				messageIdData.BatchSize = batchSize;
 			}
+            return NewAck(validationError.Value, properties, txnIdLeastBits, txnIdMostBits, requestId, ack);
+        }
+        private static ReadOnlySequence<byte> NewAck(ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits,
+                                  long txnIdMostBits, long requestId, CommandAck ack)
+        {
+            if (validationError != null)    
+                ack.validation_error = validationError.Value;
 
-			if (requestId >= 0)
-			{
-				ack.RequestId = (ulong)requestId;
-			}
-			if (txnIdMostBits > 0)
-			{
-				ack.TxnidMostBits = (ulong)txnIdMostBits;
-			}
-			if (txnIdLeastBits > 0)
-			{
-				ack.TxnidLeastBits = (ulong)txnIdLeastBits;
-			}
-			foreach (var e in properties.ToList())
-			{
-				ack.Properties.Add(new KeyLongValue(){Key = e.Key, Value = (ulong)e.Value});
-			}
+            if (txnIdMostBits >= 0)
+            {
+                ack.TxnidMostBits = (ulong) txnIdMostBits;
+            }
+            if (txnIdLeastBits >= 0)
+            {
+                ack.TxnidLeastBits = (ulong)txnIdLeastBits;
+            }
 
-			return Serializer.Serialize(ack.ToBaseCommand());
-			
-			
-		}
-        
+            if (requestId >= 0)
+            {
+                ack.RequestId = (ulong)requestId;
+            }
+            foreach (var e in properties.ToList())
+            {
+                ack.Properties.Add(new KeyLongValue() { Key = e.Key, Value = (ulong)e.Value });
+            }
+
+            return Serializer.Serialize(ack.ToBaseCommand());
+        }
+
         public static ReadOnlySequence<byte> NewFlow(long consumerId, int messagePermits)
 		{
             var flow = new CommandFlow {ConsumerId = (ulong) consumerId, messagePermits = (uint) messagePermits};
