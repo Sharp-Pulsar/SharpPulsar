@@ -10,6 +10,7 @@ using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Enum;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
@@ -360,8 +361,8 @@ namespace SharpPulsar
 		{
 			NegativeAcknowledge(message.MessageId);
 		}
-
-		internal virtual void NegativeAcknowledge(IMessages<T> messages)
+        internal abstract void Unsubscribe();
+        internal virtual void NegativeAcknowledge(IMessages<T> messages)
 		{
 			messages.ForEach(NegativeAcknowledge);
 		}
@@ -403,14 +404,6 @@ namespace SharpPulsar
 				return _consumerName;
 			}
 		}
-
-		/// <summary>
-		/// Redelivers the given unacknowledged messages. In Failover mode, the request is ignored if the consumer is not
-		/// active for the given topic. In Shared mode, the consumers messages to be redelivered are distributed across all
-		/// the connected consumers. This is a non blocking call and doesn't throw an exception. In case the connection
-		/// breaks, the messages are redelivered after reconnect.
-		/// </summary>
-		protected internal abstract Task RedeliverUnacknowledged(ISet<IMessageId> messageIds);
 
 		protected internal virtual void OnAcknowledge(IMessageId messageId, Exception exception)
 		{
@@ -735,8 +728,7 @@ namespace SharpPulsar
         protected internal virtual void ClearIncomingMessages()
         {
             // release messages if they are pooled messages
-            IncomingMessages.forEach(Message.release);
-            IncomingMessages.Ise.Clear();
+            IncomingMessages.Empty();
             ResetIncomingMessageSize();
         }
         protected internal virtual void ResetIncomingMessageSize()
@@ -832,7 +824,14 @@ namespace SharpPulsar
             }
             return ackFuture;
         }
-
+        /// <summary>
+		/// Redelivers the given unacknowledged messages. In Failover mode, the request is ignored if the consumer is not
+		/// active for the given topic. In Shared mode, the consumers messages to be redelivered are distributed across all
+		/// the connected consumers. This is a non blocking call and doesn't throw an exception. In case the connection
+		/// breaks, the messages are redelivered after reconnect.
+		/// </summary>
+		protected internal abstract void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds);
+        protected internal abstract void RedeliverUnacknowledgedMessages();
         protected internal abstract void  DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
         protected internal abstract void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
@@ -844,10 +843,8 @@ namespace SharpPulsar
         // If message consumer epoch is smaller than consumer epoch present that
         // it has been sent to the client before the user calls redeliverUnacknowledgedMessages, this message is invalid.
         // so we should release this message and receive again
-        protected internal virtual bool IsValidConsumerEpoch(IMessage<T> msg)
+        protected internal virtual bool IsValidConsumerEpoch(Message<T> message)
         {
-            var message = msg is Message<T> ? (Message<T>)msg : (Message<T>)((TopicMessage<T>)msg).Message;
-
             if ((SubType == SubType.Failover || SubType == SubType.Exclusive) && message.ConsumerEpoch != Commands.DefaultConsumerEpoch && message.ConsumerEpoch < ConsumerEpoch)
             {
                 _log.Warning($"Consumer filter old epoch message, topic : [{Topic}], messageId : [{message.MessageId}], consumerEpoch : [{ConsumerEpoch}]");

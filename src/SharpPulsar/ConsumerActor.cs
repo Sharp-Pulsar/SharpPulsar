@@ -806,14 +806,14 @@ namespace SharpPulsar
             });
             Receive<RedeliverUnacknowledgedMessages>(m =>
             {
-                RedeliverUnacknowledged();
+                RedeliverUnacknowledgedMessages();
                 Sender.Tell(new AskResponse());
             });
-            ReceiveAsync<RedeliverUnacknowledgedMessageIds>(async m =>
+            Receive<RedeliverUnacknowledgedMessageIds>( m =>
             {
                 try
                 {
-                    await RedeliverUnacknowledged(m.MessageIds);
+                    RedeliverUnacknowledgedMessages(m.MessageIds);
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -934,8 +934,8 @@ namespace SharpPulsar
                 _replyTo.Tell(new AskResponse(new PulsarClientException(ex)));
             }
         }
-        
-        private void Unsubscribe()
+
+        internal override void Unsubscribe()
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
@@ -1036,7 +1036,7 @@ namespace SharpPulsar
             }
             try
             {
-                var tcs = DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime);
+                var tcs = DoReconsumeLater(message, AckType.Individual, new Dictionary<string, string>(), delayTime);
                 await tcs.Task;
             }
             catch (Exception e)
@@ -1266,7 +1266,7 @@ namespace SharpPulsar
                         messageId
                     };
                     _unAckedMessageTracker.Tell(new Remove(messageId));
-                    Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await RedeliverUnacknowledged(messageIds));
+                    Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
                 }
             }
             else
@@ -1278,7 +1278,7 @@ namespace SharpPulsar
                         finalMessageId
                     };
                 _unAckedMessageTracker.Tell(new Remove(finalMessageId));
-                Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await RedeliverUnacknowledged(messageIds));
+                Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
             }
             return result;
         }
@@ -1507,7 +1507,7 @@ namespace SharpPulsar
             }
         }
 
-		private void ProcessMessage(MessageReceived received)
+		private void PhhrocessMessage(MessageReceived received)
         {
 			var messageId = received.MessageId;
             var data = received.Payload.ToArray();
@@ -1977,6 +1977,10 @@ namespace SharpPulsar
                 Stats.IncrementNumReceiveFailed();
                 throw Unwrap(e);
             }
+        }
+        private bool IsValidConsumerEpoch(IMessage<T> message)
+        {
+            return base.IsValidConsumerEpoch((Message<T>)message);
         }
         protected internal override TaskCompletionSource<IMessage<T>> InternalReceiveAsync()
         {
@@ -2485,9 +2489,15 @@ namespace SharpPulsar
 			return IncomingMessages.Count;
 		}
 
-		private void RedeliverUnacknowledged()
-		{
-			var cnx = _clientCnx;
+        protected internal override void RedeliverUnacknowledgedMessages()
+        {
+            // First : synchronized in order to handle consumer reconnect produce race condition, when broker receive
+            // redeliverUnacknowledgedMessages and consumer have not be created and
+            // then receive reconnect epoch change the broker is smaller than the client epoch, this will cause client epoch
+            // smaller than broker epoch forever. client will not receive message anymore.
+            // Second : we should synchronized `ClientCnx cnx = cnx()` to
+            // prevent use old cnx to send redeliverUnacknowledgedMessages to a old broker
+            var cnx = _clientCnx;
 			var protocolVersion = _protocolVersion;
 			if (Connected() && protocolVersion >= (int)ProtocolVersion.V2)
 			{
@@ -2532,14 +2542,13 @@ namespace SharpPulsar
 		private int ClearIncomingMessagesAndGetMessageNumber()
 		{
 			var messagesNumber = IncomingMessages.Count;
-			IncomingMessages.Empty();
-			IncomingMessagesSize = 0;
-			_unAckedMessageTracker.Tell(Clear.Instance);
+            ClearIncomingMessages();
+            _unAckedMessageTracker.Tell(Clear.Instance);
 
 			return messagesNumber;
 		}
 
-		protected internal override async Task RedeliverUnacknowledged(ISet<IMessageId> messageIds)
+		protected internal override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
 		{
 			if(messageIds.Count == 0)
 			{
@@ -2550,9 +2559,9 @@ namespace SharpPulsar
 
 			if(Conf.SubscriptionType != CommandSubscribe.SubType.Shared && Conf.SubscriptionType != CommandSubscribe.SubType.KeyShared)
 			{
-				// We cannot redeliver single messages if subscription type is not Shared
-				RedeliverUnacknowledged();
-				return;
+                // We cannot redeliver single messages if subscription type is not Shared
+                RedeliverUnacknowledgedMessages();
+                return;
 			}
 			var cnx = _clientCnx;
 			var protocolVersion = _protocolVersion;
@@ -2563,13 +2572,18 @@ namespace SharpPulsar
 				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
 				foreach(var ids in batches)
                 {
-                    var messageIdData = await GetRedeliveryMessageIdData(ids);
-                    if (messageIdData.Count > 0)
+                    GetRedeliveryMessageIdData(ids).AsTask().ContinueWith(task =>
                     {
-                        var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdData);
-                        var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
-                        cnx.Tell(payload);
-                    }
+                       var messageIdData = task.Result;
+                        if (messageIdData.Count > 0)
+                        {
+                            var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdData);
+                            var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
+                            cnx.Tell(payload);
+                        }
+
+                    });
+                    
                 }
 				if(messagesFromQueue > 0)
 				{
