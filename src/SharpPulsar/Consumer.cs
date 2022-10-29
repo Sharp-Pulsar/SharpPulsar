@@ -314,7 +314,15 @@ namespace SharpPulsar
             if (ask.Failed)
                 throw ask.Exception;
         }
-
+        public void ReconsumeLaterCumulative(IMessage<T> message, IDictionary<string, string> properties, TimeSpan delayTimeInMs)
+           => ReconsumeLaterCumulativeAsync(message, properties, delayTimeInMs).GetAwaiter().GetResult();
+        public async ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, IDictionary<string, string> properties, TimeSpan delayTimeInMs)
+        {
+            var ask = await _consumerActor.Ask<AskResponse>(new ReconsumeLaterCumulative<T>(message, properties, delayTimeInMs))
+                .ConfigureAwait(false);
+            if (ask.Failed)
+                throw ask.Exception;
+        }
         public void RedeliverUnacknowledgedMessages()
             => RedeliverUnacknowledgedMessagesAsync().ConfigureAwait(false);
         public async ValueTask RedeliverUnacknowledgedMessagesAsync()
@@ -515,6 +523,21 @@ namespace SharpPulsar
             }
             throw new PulsarClientException("Only support seek by messageId or timestamp");
 
+            throw new NotImplementedException();
+        }
+
+        public void ReconsumeLater(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ValueTask ReconsumeLaterAsync(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispose()
+        {
             throw new NotImplementedException();
         }
     }

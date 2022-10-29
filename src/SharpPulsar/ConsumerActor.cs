@@ -924,7 +924,10 @@ namespace SharpPulsar
                         await DoAcknowledgeWithTxn(ack.MessageId, AckType.Cumulative, _properties, ack.Txn).Task;
                         break;
                     case ReconsumeLaterCumulative<T> ack:
-                        await DoReconsumeLater(ack.Message, AckType.Cumulative, _properties, ack.DelayTime).Task;
+                        if(ack.Properties != null)
+                            await DoReconsumeLater(ack.Message, AckType.Cumulative, ack.Properties, ack.DelayTime).Task;
+                        else
+                            await DoReconsumeLater(ack.Message, AckType.Cumulative, new Dictionary<string, string>(), ack.DelayTime).Task;
                         break;
                     default:
                         _log.Warning($"{cumulative.GetType().FullName} not supported");
