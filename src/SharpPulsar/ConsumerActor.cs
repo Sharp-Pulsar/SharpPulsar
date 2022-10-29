@@ -2,6 +2,7 @@
 using Akka.Util;
 using Akka.Util.Internal;
 using DotNetty.Common.Utilities;
+using Org.BouncyCastle.Crypto;
 using ProtoBuf;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Auth;
@@ -869,23 +870,35 @@ namespace SharpPulsar
                 switch (ack)
                 {
                     case AcknowledgeMessage<T> m:
+                        ValidateMessageId(m.Message.MessageId);
                         await DoAcknowledgeWithTxn(m.Message.MessageId, AckType.Individual, _properties, null).Task;
                         break;
                     case AcknowledgeMessageId id:
+                        ValidateMessageId(id.MessageId);
                         await DoAcknowledgeWithTxn(id.MessageId, AckType.Individual, _properties, null).Task;
                         break;
                     case AcknowledgeMessageIds ids:
+                        foreach (var message in ids.MessageIds)
+                        {
+                            ValidateMessageId(message);
+                        }
                         await DoAcknowledgeWithTxn(ids.MessageIds, AckType.Individual, _properties, null).Task;
                         break;
                     case AcknowledgeWithTxnMessages mTxn:
+                        foreach (var message in mTxn.MessageIds)
+                        {
+                            ValidateMessageId(message);
+                        }
                         await DoAcknowledgeWithTxn(mTxn.MessageIds, mTxn.AckType, mTxn.Properties, mTxn.Txn).Task;
                         break;
                     case AcknowledgeWithTxn txn:
+                        ValidateMessageId(txn.MessageId);
                         await DoAcknowledgeWithTxn(txn.MessageId, txn.AckType, txn.Properties, txn.Txn).Task;
                         break;
                     case AcknowledgeMessages<T> ms:
                         foreach (var x in ms.Messages)
                         {
+                            ValidateMessageId(x.MessageId);
                             await DoAcknowledgeWithTxn(x.MessageId, AckType.Individual, _properties, null).Task;
                         }
                         break;
@@ -902,6 +915,13 @@ namespace SharpPulsar
             }
         }
 
+        private void ValidateMessageId(IMessageId messageId)
+        {
+            if (messageId == null)
+            {
+                throw new PulsarClientException.InvalidMessageException("Cannot handle message with null messageId");
+            }
+        }
         private async ValueTask Cumulative(ICumulative cumulative)
         {
             try

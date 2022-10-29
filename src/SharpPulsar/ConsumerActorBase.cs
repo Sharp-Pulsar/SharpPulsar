@@ -268,13 +268,6 @@ namespace SharpPulsar
             }
         }
 
-        private static void ValidateMessageId(IMessageId messageId)
-        {
-            if (messageId == null)
-            {
-                throw new PulsarClientException.InvalidMessageException("Cannot handle message with null messageId");
-            }
-        }
         protected internal virtual async Task ReconsumeLater(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
         {           
             if (!Conf.RetryEnable)
