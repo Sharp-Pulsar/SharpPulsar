@@ -38,10 +38,17 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         public IMessages<T> Messages { get; }
         public TimeSpan DelayTime { get; }
+        public ImmutableDictionary<string, string> Properties { get; }
         public ReconsumeLaterMessages(IMessages<T> messages, TimeSpan delayTime)
         {
             Messages = messages;
             DelayTime = delayTime;
+        }
+        public ReconsumeLaterMessages(IMessages<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+        {
+            Messages = message;
+            DelayTime = delayTime;
+            Properties = customProperties.ToImmutableDictionary();
         }
     } 
     public sealed class ReconsumeLaterMessage<T>
@@ -55,10 +62,17 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         public IMessage<T> Message { get; }
         public TimeSpan DelayTime { get; }
+        public ImmutableDictionary<string, string> Properties { get; }    
         public ReconsumeLaterMessage(IMessage<T> message, TimeSpan delayTime)
         {
             Message = message;
             DelayTime = delayTime;
+        }
+        public ReconsumeLaterMessage(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+        {
+            Message = message;
+            DelayTime = delayTime;
+            Properties = customProperties.ToImmutableDictionary();
         }
     }
 }

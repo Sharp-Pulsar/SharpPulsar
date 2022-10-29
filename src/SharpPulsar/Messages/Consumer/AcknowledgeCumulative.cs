@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Akka.Actor;
 using SharpPulsar.Interfaces;
 
@@ -63,7 +64,7 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         public IMessage<T> Message { get; }
         public TimeSpan DelayTime { get; }
-        public IDictionary<string, string> Properties { get; }  
+        public ImmutableDictionary<string, string> Properties { get; }  
         public ReconsumeLaterCumulative(IMessage<T> message, TimeSpan delayTime)
         {
             Message = message;
@@ -73,7 +74,7 @@ namespace SharpPulsar.Messages.Consumer
         {
             Message = message;
             DelayTime = delayTime;
-            Properties = properties;    
+            Properties = properties.ToImmutableDictionary();    
         }
     }
     public interface ICumulative { }

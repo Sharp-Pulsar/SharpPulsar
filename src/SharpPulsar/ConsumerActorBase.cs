@@ -256,7 +256,7 @@ namespace SharpPulsar
                 }
             }
         }
-        private void ValidateMessageId(IMessage<T> message)
+        private static void ValidateMessageId(IMessage<T> message)
         {
             if (message == null)
             {
@@ -268,12 +268,51 @@ namespace SharpPulsar
             }
         }
 
-        private void ValidateMessageId(IMessageId messageId)
+        private static void ValidateMessageId(IMessageId messageId)
         {
             if (messageId == null)
             {
                 throw new PulsarClientException.InvalidMessageException("Cannot handle message with null messageId");
             }
+        }
+        protected internal virtual async Task ReconsumeLater(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+        {           
+            if (!Conf.RetryEnable)
+            {
+                throw new PulsarClientException("reconsumeLater method not support!");
+            }
+            try
+            {
+                ValidateMessageId(message);
+            }
+            catch (PulsarClientException e)
+            {
+                throw e;
+            }
+            await DoReconsumeLater(message, AckType.Individual, customProperties, delayTime).Task;
+        }
+        protected internal virtual void ReconsumeLater(IMessages<T> messages, TimeSpan delayTime)
+        {
+            foreach (var message in messages)
+            {
+                try
+                {
+                    ValidateMessageId(message);
+                }
+                catch (PulsarClientException e)
+                {
+                     throw e;
+                }
+            }
+            try
+            {
+                messages.ForEach(async message => await ReconsumeLater(message, new Dictionary<string, string>(), delayTime));
+            }
+            catch (NullReferenceException npe)
+            {
+                throw new PulsarClientException.InvalidMessageException(npe.Message);
+            }
+            
         }
         protected internal virtual IMessage<T> Receive()
         {

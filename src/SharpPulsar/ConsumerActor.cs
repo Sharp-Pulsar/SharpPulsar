@@ -798,8 +798,9 @@ namespace SharpPulsar
             {
                 try
                 {
+
                     _replyTo = Sender;
-                    await ReconsumeLater(m.Message, m.DelayTime);
+                    await ReconsumeLater(m.Message, m.Properties != null ? m.Properties.ToDictionary(p => p.Key, p => p.Value) : new Dictionary<string, string>(), m.DelayTime);
                     _replyTo.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -1033,44 +1034,6 @@ namespace SharpPulsar
                 return _stats;
             }
         }
-
-        private async Task ReconsumeLater(IMessage<T> message, TimeSpan delayTime)
-        {
-            if (!Conf.RetryEnable)
-            {
-                throw new PulsarClientException("reconsumeLater method not support!");
-            }
-            try
-            {
-                var tcs = DoReconsumeLater(message, AckType.Individual, new Dictionary<string, string>(), delayTime);
-                await tcs.Task;
-            }
-            catch (Exception e)
-            {
-                var t = e.InnerException;
-                if (t is PulsarClientException)
-                {
-                    throw (PulsarClientException)t;
-                }
-                else
-                {
-                    throw new PulsarClientException(t);
-                }
-            }
-        }
-
-        private void ReconsumeLater(IMessages<T> messages, TimeSpan delayTime)
-        {
-            try
-            {
-                messages.ForEach(async message => await ReconsumeLater(message, delayTime));
-            }
-            catch (NullReferenceException npe)
-            {
-                throw new PulsarClientException.InvalidMessageException(npe.Message);
-            }
-        }
-
         protected internal override void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
             Condition.CheckArgument(messageId is MessageId);

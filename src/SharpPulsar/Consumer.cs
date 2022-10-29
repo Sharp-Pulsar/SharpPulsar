@@ -294,6 +294,15 @@ namespace SharpPulsar
             if (ask.Failed)
                 throw ask.Exception;
         }
+        public void ReconsumeLater(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+            => ReconsumeLaterAsync(message, customProperties, delayTime).GetAwaiter().GetResult();
+        public async ValueTask ReconsumeLaterAsync(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+        {
+            var ask = await _consumerActor.Ask<AskResponse>(new ReconsumeLaterMessage<T>(message, customProperties, delayTime))
+                .ConfigureAwait(false);
+            if (ask.Failed)
+                throw ask.Exception;
+        }
 
         public void ReconsumeLater(IMessages<T> messages, TimeSpan delayTimeInMs)
             => ReconsumeLaterAsync(messages, delayTimeInMs).GetAwaiter().GetResult();
@@ -526,16 +535,7 @@ namespace SharpPulsar
             throw new NotImplementedException();
         }
 
-        public void ReconsumeLater(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask ReconsumeLaterAsync(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
-        {
-            throw new NotImplementedException();
-        }
-
+        
         public void Dispose()
         {
             throw new NotImplementedException();
