@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
+using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Batch;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
@@ -592,17 +593,14 @@ namespace SharpPulsar
 				newConsumers.ForEach(consumer =>
 				{
 					consumer.Tell(new IncreaseAvailablePermits(Conf.ReceiverQueueSize));
+                    Akka.Dispatch.ActorTaskScheduler.RunTask(async()=> await ReceiveMessageFromConsumer(consumer, true));
 				});
 			}
 		}
-		private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, IMessage<T> message)
+		private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, bool batchReceive)
 		{
 			var c = _consumers.Where(x => x.Value == consumer).FirstOrDefault();
 			var topic = await consumer.Ask<string>(GetTopic.Instance);
-			if (_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
-			}
 			MessageReceived(topic, message);
 			var size = IncomingMessages.Count;
 			if (size >= MaxReceiverQueueSize || (size > _sharedQueueResumeThreshold && _pausedConsumers.Count > 0))
@@ -610,7 +608,60 @@ namespace SharpPulsar
 				_pausedConsumers.Enqueue(consumer);
 				consumer.Tell(Messages.Consumer.Pause.Instance);
 			}
-		}
+            IList<IMessage<T>> messages;
+            if (batchReceive)
+            {
+                var msg = await consumer.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance);
+                messages = msg.ConvertTo<IMessages<T>>().MessageList();
+            }
+            else
+            {
+                var msg = await consumer.Ask<AskResponse>(Messages.Consumer.Receive.Instance);
+                messages = new List<IMessage<T>> { msg.ConvertTo<IMessage<T>>() };
+            }
+            try
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
+                }
+                messages.ForEach(msg => MessageReceived(consumer, msg));
+                int Size = IncomingMessages.size();
+                int maxReceiverQueueSize = CurrentReceiverQueueSize;
+                int SharedQueueResumeThreshold = maxReceiverQueueSize / 2;
+                if (Size >= maxReceiverQueueSize || (Size > SharedQueueResumeThreshold && !pausedConsumers.isEmpty()))
+                {
+                    pausedConsumers.add(Consumer);
+                    ResumeReceivingFromPausedConsumersIfNeeded();
+                }
+                else
+                {
+                    ReceiveMessageFromConsumer(Consumer, messages.size() > 0);
+                }
+            }
+            catch
+            {
+
+            }
+            
+            MessagesFuture.thenAcceptAsync(messages =>
+            {
+                if (log.isDebugEnabled())
+                {
+                    log.debug("[{}] [{}] Receive message from sub consumer:{}", Topic, SubscriptionConflict, Consumer.Topic);
+                }
+                
+            }, InternalPinnedExecutor).exceptionally(ex =>
+            {
+                if (ex is PulsarClientException.AlreadyClosedException || ex.getCause() is PulsarClientException.AlreadyClosedException)
+                {
+                    return null;
+                }
+                log.error("Receive operation failed on consumer {} - Retrying later", Consumer, ex);
+                ((ScheduledExecutorService)ClientConflict.ScheduledExecutorProvider.Executor).schedule(() => ReceiveMessageFromConsumer(Consumer, true), 10, TimeUnit.SECONDS);
+                return null;
+            });
+        }
 
 		private void MessageReceived(string topic, IMessage<T> message)
 		{
@@ -642,7 +693,35 @@ namespace SharpPulsar
 				IncomingMessages.Post(topicMessage);
             }
 		}
-		protected override void Unhandled(object message)
+        // Must be called from the internalPinnedExecutor thread
+        private void MessageReceived(IActorRef consumer, IMessage<T> message)
+        {            
+            var topic = consumer.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
+            var topicNameWithoutPartition = consumer.Ask<string>(GetTopicNameWithoutPartition.Instance).GetAwaiter().GetResult();
+            Condition.CheckArgument(message is Message<T>);
+            var topicMessage = new TopicMessage<T>(topic, topicNameWithoutPartition, message, consumer);
+
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}][{Subscription}] Received message from topics-consumer {message.MessageId}");
+            }
+            _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId));
+
+            // if asyncReceive is waiting : return message to callback without adding to incomingMessages queue
+            CompletableFuture<Message<T>> ReceivedFuture = NextPendingReceive();
+            if (ReceivedFuture != null)
+            {
+                _unAckedMessageTracker.Add(topicMessage.MessageId, topicMessage.RedeliveryCount);
+                CompletePendingReceive(ReceivedFuture, TopicMessage);
+            }
+            else if (EnqueueMessageAndCheckBatchReceive(TopicMessage) && HasPendingBatchReceive())
+            {
+                NotifyPendingBatchReceivedCallBack();
+            }
+
+            TryTriggerListener();
+        }
+        protected override void Unhandled(object message)
 		{
 			_log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
 		}

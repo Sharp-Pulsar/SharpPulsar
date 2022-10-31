@@ -30,6 +30,9 @@ namespace SharpPulsar.Interfaces
 		/// Get number of messages.
 		/// </summary>
 		int Size();
-	}
+
+        public IList<IMessage<T>> MessageList();
+
+    }
 
 }

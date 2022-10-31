@@ -41,7 +41,7 @@ namespace SharpPulsar
 			_maxSizeOfMessages = maxSizeOfMessages;
 			_messageList = maxNumberOfMessages > 0 ? new List<IMessage<T>>(maxNumberOfMessages) : new List<IMessage<T>>();
 		}
-
+        public IList<IMessage<T>> MessageList() { return _messageList; }      
 		public virtual bool CanAdd(IMessage<T> message)
 		{
 			if (_maxNumberOfMessages > 0 && _currentNumberOfMessages + 1 > _maxNumberOfMessages)
@@ -80,6 +80,7 @@ namespace SharpPulsar
 			_currentSizeOfMessages = 0;
 			_messageList.Clear();
 		}
+
 
 		public IEnumerator<IMessage<T>> Iterator()
 		{

@@ -656,6 +656,9 @@ namespace SharpPulsar
             });
             Receive<GetSubscription>(m => {
                 Sender.Tell(Subscription);
+            }); 
+            Receive<GetTopicNameWithoutPartition>(m => {
+                Sender.Tell(TopicNameWithoutPartition);
             });
             Receive<GetTopic>(m => {
                 Sender.Tell(_topicName.ToString());
