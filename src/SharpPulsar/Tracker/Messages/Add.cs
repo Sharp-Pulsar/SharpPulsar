@@ -9,6 +9,12 @@ namespace SharpPulsar.Tracker.Messages
             MessageId = messageId;
         }
 
+        public Add(IMessageId messageId, int redeliveryCount)
+        {
+            MessageId = messageId;
+            RedeliveryCount = redeliveryCount;
+        }
         public IMessageId MessageId { get; }
+        public int RedeliveryCount { get; } 
     }
 }

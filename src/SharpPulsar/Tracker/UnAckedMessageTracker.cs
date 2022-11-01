@@ -21,9 +21,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
+using Akka.Util.Internal;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Tracker.Messages;
@@ -32,7 +33,8 @@ namespace SharpPulsar.Tracker
 {
     public class UnAckedMessageTracker:ReceiveActor, IWithUnboundedStash
     {
-        internal readonly ConcurrentDictionary<IMessageId, SortedSet<IMessageId>> MessageIdPartitionMap;
+        internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> MessageIdPartitionMap;
+        public ArrayDeque<HashSet<IMessageId>> TimePartitions { get; }
         private readonly ILoggingAdapter _log;
         private ICancelable _timeout;
         private readonly IActorRef _consumer;
@@ -41,7 +43,7 @@ namespace SharpPulsar.Tracker
         private readonly IScheduler _scheduler;
         private readonly IActorRef _unack;
 
-        public UnAckedMessageTracker(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack)
+        public UnAckedMessageTracker(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack, IRedeliveryBackoff ackTimeoutRedeliveryBackoff = null)
         {
             Precondition.Condition.CheckArgument(tickDurationInMs > TimeSpan.Zero && ackTimeoutMillis >= tickDurationInMs);
             _scheduler = Context.System.Scheduler;
@@ -50,16 +52,24 @@ namespace SharpPulsar.Tracker
             _tickDuration = tickDurationInMs;
             _ackTimeout = ackTimeoutMillis;
             _unack = unack;
-            MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, SortedSet<IMessageId>>();
-            TimePartitions = new Queue<SortedSet<IMessageId>>();
-
-            var blankPartitions = (int) Math.Ceiling((double) ackTimeoutMillis.TotalMilliseconds / _tickDuration.TotalMilliseconds);
-            for (var i = 0; i < blankPartitions + 1; i++)
+            if(ackTimeoutRedeliveryBackoff == null)
             {
-                TimePartitions.Enqueue(new SortedSet<IMessageId>());
+                MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, HashSet<IMessageId>>();
+                TimePartitions = new ArrayDeque<HashSet<IMessageId>>();
+                var blankPartitions = (int)Math.Ceiling((double)ackTimeoutMillis.TotalMilliseconds / _tickDuration.TotalMilliseconds);
+                for (var i = 0; i < blankPartitions + 1; i++)
+                {
+                    TimePartitions.Add(new HashSet<IMessageId>());
+                }
+
+                _timeout = _scheduler.ScheduleTellOnceCancelable(_ackTimeout, Self, RunJob.Instance, ActorRefs.NoSender);
+            }
+            else
+            {
+                MessageIdPartitionMap = null;
+                TimePartitions = null;
             }
             BecomeReady();
-            _timeout = _scheduler.ScheduleTellOnceCancelable(_ackTimeout, Self, RunJob.Instance, ActorRefs.NoSender);
 
         }
         private void BecomeReady()
@@ -82,7 +92,12 @@ namespace SharpPulsar.Tracker
             });
             Receive<Add>(c =>
             {
-                var added = Add(c.MessageId);
+                bool added;
+                if(c.RedeliveryCount > 0)
+                    added = Add(c.MessageId, c.RedeliveryCount);
+                else
+                    added = Add(c.MessageId);
+
                 Sender.Tell(added);
             });
             Receive<Size>(c =>
@@ -90,41 +105,50 @@ namespace SharpPulsar.Tracker
                 var size = Size();
                 Sender.Tell(size);
             });
-            ReceiveAsync<RunJob>(async _=> 
+            Receive<RunJob>(_=> 
             {
-                await RedeliverMessages();
+                RedeliverMessages();
             });
         }
-        private async ValueTask RedeliverMessages()
+        private void RedeliverMessages()
         {
             var messagesToRedeliver = new HashSet<IMessageId>();
-            if (TimePartitions.TryDequeue(out var headPartition))
+            try
             {
+                var headPartition = TimePartitions.RemoveFirst();
                 if (headPartition.Count > 0)
                 {
-                    _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
-                    foreach (var messageId in headPartition)
+                    _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages will be re-delivered");
+                    headPartition.ForEach(async messageId =>
                     {
-                        var ids = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId}));
+                        var ids = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId }));
                         foreach (var i in ids.MessageIds)
                             messagesToRedeliver.Add(i);
 
                         messagesToRedeliver.Add(messageId);
                         _unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
                         _ = MessageIdPartitionMap.TryRemove(messageId, out var _);
-                    }
-                    
-                    headPartition?.Clear();
-                    TimePartitions.Enqueue(headPartition);
+                    });
+                    headPartition.Clear();
+                    TimePartitions.AddLast(headPartition);
+                }
+            }
+            finally
+            {
+                try
+                {
+                    _timeout = _scheduler.ScheduleTellOnceCancelable(_ackTimeout, Self, RunJob.Instance, ActorRefs.NoSender);
+                }
+                catch
+                {
                     if (messagesToRedeliver.Count > 0)
                     {
                         _consumer.Tell(new AckTimeoutSend(messagesToRedeliver));
                         _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
                     }
                 }
-            }
-
-            _timeout = _scheduler.ScheduleTellOnceCancelable(_ackTimeout, Self, RunJob.Instance, ActorRefs.NoSender);
+               
+            }   
 
         }
 
@@ -133,10 +157,7 @@ namespace SharpPulsar.Tracker
             try
             {
                 MessageIdPartitionMap.Clear();
-                foreach (var t in TimePartitions)
-                {
-                    t.Clear();
-                }
+                TimePartitions.ForEach(tp => tp.Clear());
             }
 
             catch (Exception ex)
@@ -149,15 +170,16 @@ namespace SharpPulsar.Tracker
         {
             try
             {
-                var partition = TimePartitions.Peek();
-                 if (!MessageIdPartitionMap.TryGetValue(messageId, out var _))
-                 {
-                     var added = partition.Add(messageId);
-                     MessageIdPartitionMap[messageId] = partition;
+
+                var partition = TimePartitions.Last;
+                if (!MessageIdPartitionMap.TryGetValue(messageId, out var _))
+                {
+                    MessageIdPartitionMap[messageId] = partition;
+                    var added = partition.Add(messageId);
                      return added;
                  }
 
-                 return partition.Add(messageId);
+                 return false;
             }
             catch (Exception ex)
             {
@@ -165,12 +187,16 @@ namespace SharpPulsar.Tracker
                 return false;
             }
         }
+        private bool Add(IMessageId messageId, int redeliveryCount)
+        {
+            return Add(messageId);
+        }
 
         private bool Empty()
         {
             try
             {
-                return MessageIdPartitionMap.IsEmpty;
+                return MessageIdPartitionMap.Count == 0;
             }
 
             catch (Exception ex)
@@ -232,7 +258,6 @@ namespace SharpPulsar.Tracker
             }
         }
 
-        public Queue<SortedSet<IMessageId>> TimePartitions { get; }
         public IStash Stash { get; set; }
 
         protected override void PostStop()
@@ -241,9 +266,9 @@ namespace SharpPulsar.Tracker
             Clear();
         }
 
-        public static Props Prop(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack)
+        public static Props Prop(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack, IRedeliveryBackoff ackTimeoutRedeliveryBackoff)
         {
-            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, consumer, unack));
+            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, consumer, unack, ackTimeoutRedeliveryBackoff));
         }
     }
 

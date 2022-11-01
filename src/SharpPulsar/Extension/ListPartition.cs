@@ -39,5 +39,11 @@ namespace SharpPulsar.Extension
                 .Select(x => x.Select(v => v.Value).ToList())
                 .ToList();
         }
+        public static ISet<IMessageId> RemoveMessageId(this LinkedList<HashSet<IMessageId>> source, int chunkSize)
+        {
+            var first = source.First;
+            source.RemoveFirst();
+            return first.Value;
+        }
     }
 }
