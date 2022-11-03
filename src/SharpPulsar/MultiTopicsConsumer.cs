@@ -1,15 +1,19 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
+using DotNetty.Common.Utilities;
+using Org.Apache.Pulsar.Client.Impl;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Batch;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
+using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Java;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
@@ -29,6 +33,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Protocol.Proto.CommandAck;
+using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -141,11 +146,11 @@ namespace SharpPulsar
 			{
 				if (conf.TickDuration > TimeSpan.Zero)
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(conf.AckTimeout, conf.TickDuration, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedTopicMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(conf.AckTimeout, conf.TickDuration, Self, UnAckedChunckedMessageIdSequenceMap, conf.AckTimeoutRedeliveryBackoff), "UnAckedTopicMessageTracker");
 				}
 				else
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf.AckTimeout), "UnAckedTopicMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf.AckTimeout, conf.AckTimeoutRedeliveryBackoff), "UnAckedTopicMessageTracker");
 				}
 			}
 			else
@@ -215,11 +220,27 @@ namespace SharpPulsar
 			});
 			Receive<BatchReceive>(_ =>
 			{
-                BatchReceive();
-			});
-            Receive<Messages.Consumer.Receive>(_ =>
+                try
+                {
+                    var message = BatchReceive();
+                    Sender.Tell(new AskResponse(message));
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
+            });
+            Receive<Messages.Consumer.Receive>(receive =>
             {
-                Receive();
+                try
+                {
+                    var message = receive.Time == TimeSpan.Zero ? Receive() : Receive(receive.Time);
+                    Sender.Tell(new AskResponse(message));
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
             });
             ReceiveAsync<UpdatePartitionSub>(async s =>
 			{
@@ -248,8 +269,9 @@ namespace SharpPulsar
             {
                 Sender.Tell(new AskResponse(IncomingMessages.Count));
             });
-            ReceiveAsync<ReceivedMessage<T>>(async m => {
-				await ReceiveMessageFromConsumer(Sender, m.Message);
+            //ZeroQueueConsumer hasParentConsumer
+            Receive<ReceivedMessage<T>>(m => {
+				ReceiveMessageFromConsumer(Sender, m.Message);
 			});
 			Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
 				UnAckedChunckedMessageIdSequenceMap.Tell(new Clear());
@@ -593,106 +615,71 @@ namespace SharpPulsar
 				newConsumers.ForEach(consumer =>
 				{
 					consumer.Tell(new IncreaseAvailablePermits(Conf.ReceiverQueueSize));
+                    
                     Akka.Dispatch.ActorTaskScheduler.RunTask(async()=> await ReceiveMessageFromConsumer(consumer, true));
 				});
 			}
 		}
-		private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, bool batchReceive)
-		{
-			var c = _consumers.Where(x => x.Value == consumer).FirstOrDefault();
-			var topic = await consumer.Ask<string>(GetTopic.Instance);
-			MessageReceived(topic, message);
-			var size = IncomingMessages.Count;
-			if (size >= MaxReceiverQueueSize || (size > _sharedQueueResumeThreshold && _pausedConsumers.Count > 0))
-			{
-				_pausedConsumers.Enqueue(consumer);
-				consumer.Tell(Messages.Consumer.Pause.Instance);
-			}
-            IList<IMessage<T>> messages;
-            if (batchReceive)
-            {
-                var msg = await consumer.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance);
-                messages = msg.ConvertTo<IMessages<T>>().MessageList();
-            }
-            else
-            {
-                var msg = await consumer.Ask<AskResponse>(Messages.Consumer.Receive.Instance);
-                messages = new List<IMessage<T>> { msg.ConvertTo<IMessage<T>>() };
-            }
+        
+        private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, bool batchReceive)
+        {
             try
             {
+                IList<IMessage<T>> messages;
+                if (batchReceive)
+                {
+                    var msg = await consumer.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance);
+                    messages = msg.ConvertTo<IMessages<T>>().MessageList();
+                }
+                else
+                {
+                    var msg = await consumer.Ask<AskResponse>(Messages.Consumer.Receive.Instance);
+                    messages = new List<IMessage<T>> { msg.ConvertTo<IMessage<T>>() };
+                }
                 if (_log.IsDebugEnabled)
                 {
-                    _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
+                    _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{consumer.Path.Address}");
                 }
                 messages.ForEach(msg => MessageReceived(consumer, msg));
-                int Size = IncomingMessages.size();
-                int maxReceiverQueueSize = CurrentReceiverQueueSize;
-                int SharedQueueResumeThreshold = maxReceiverQueueSize / 2;
-                if (Size >= maxReceiverQueueSize || (Size > SharedQueueResumeThreshold && !pausedConsumers.isEmpty()))
+                var size = IncomingMessages.Count;
+                var maxReceiverQueueSize = CurrentReceiverQueueSize;
+                var sharedQueueResumeThreshold = maxReceiverQueueSize / 2;
+                if (size >= maxReceiverQueueSize || (size > sharedQueueResumeThreshold && _pausedConsumers.Count() == 0))
                 {
-                    pausedConsumers.add(Consumer);
+                    _pausedConsumers.Enqueue(consumer);
                     ResumeReceivingFromPausedConsumersIfNeeded();
                 }
                 else
                 {
-                    ReceiveMessageFromConsumer(Consumer, messages.size() > 0);
+                    await ReceiveMessageFromConsumer(consumer, messages.Count > 0);
                 }
             }
-            catch
+            catch (Exception ex)    
             {
-
-            }
+                if (ex is PulsarClientException.AlreadyClosedException || ex.InnerException is PulsarClientException.AlreadyClosedException)
+                {
+                    return;
+                }
+                _log.Error($"Receive operation failed on consumer {consumer.Path} - Retrying later: {ex}");
+                Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), async ()=> await ReceiveMessageFromConsumer(consumer, true));
+            }           
             
-            MessagesFuture.thenAcceptAsync(messages =>
-            {
-                if (log.isDebugEnabled())
-                {
-                    log.debug("[{}] [{}] Receive message from sub consumer:{}", Topic, SubscriptionConflict, Consumer.Topic);
-                }
-                
-            }, InternalPinnedExecutor).exceptionally(ex =>
-            {
-                if (ex is PulsarClientException.AlreadyClosedException || ex.getCause() is PulsarClientException.AlreadyClosedException)
-                {
-                    return null;
-                }
-                log.error("Receive operation failed on consumer {} - Retrying later", Consumer, ex);
-                ((ScheduledExecutorService)ClientConflict.ScheduledExecutorProvider.Executor).schedule(() => ReceiveMessageFromConsumer(Consumer, true), 10, TimeUnit.SECONDS);
-                return null;
-            });
         }
-
-		private void MessageReceived(string topic, IMessage<T> message)
-		{
-			Condition.CheckArgument(message is Message<T>);
-			var topicMessage = new TopicMessage<T>(topic, TopicName.Get(topic).PartitionedTopicName, message);
-
-			if(_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}][{Subscription}] Received message from topics-consumer {message.MessageId}");
-			}
-			_unAckedMessageTracker.Tell(new Add(topicMessage.MessageId));
-			if (Listener != null)
-			{
-				try
-				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {message.MessageId}");
-					}
-					Listener.Received(_self, message);
-				}
-				catch (Exception t)
-				{
-					_log.Error($"[{Topic}][{Subscription}] Message listener error in processing message: {message}: {t}");
-				}
-			}
-            else
+        private void ReceiveMessageFromConsumer(IActorRef consumer, IMessage<T> message)
+        {
+            if (_log.IsDebugEnabled)
             {
-				IncomingMessages.Post(topicMessage);
+                _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
             }
-		}
+            MessageReceived(consumer, message);
+            var size = IncomingMessages.Count;
+            if (size >= MaxReceiverQueueSize || (size > _sharedQueueResumeThreshold && _pausedConsumers.Count > 0))
+            {
+                _pausedConsumers.Enqueue(consumer);
+                consumer.Tell(Messages.Consumer.Pause.Instance);
+            }
+        }
+       
         // Must be called from the internalPinnedExecutor thread
         private void MessageReceived(IActorRef consumer, IMessage<T> message)
         {            
@@ -705,16 +692,15 @@ namespace SharpPulsar
             {
                 _log.Debug($"[{Topic}][{Subscription}] Received message from topics-consumer {message.MessageId}");
             }
-            _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId));
-
+            
             // if asyncReceive is waiting : return message to callback without adding to incomingMessages queue
-            CompletableFuture<Message<T>> ReceivedFuture = NextPendingReceive();
-            if (ReceivedFuture != null)
+            var receivedFuture = NextPendingReceive();
+            if (receivedFuture != null)
             {
-                _unAckedMessageTracker.Add(topicMessage.MessageId, topicMessage.RedeliveryCount);
-                CompletePendingReceive(ReceivedFuture, TopicMessage);
+                _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId, topicMessage.RedeliveryCount));
+                CompletePendingReceive(receivedFuture, topicMessage);
             }
-            else if (EnqueueMessageAndCheckBatchReceive(TopicMessage) && HasPendingBatchReceive())
+            else if (EnqueueMessageAndCheckBatchReceive(topicMessage) && HasPendingBatchReceive())
             {
                 NotifyPendingBatchReceivedCallBack();
             }
@@ -725,16 +711,16 @@ namespace SharpPulsar
 		{
 			_log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
 		}
-		private void MessageProcessed(IMessage<T> msg)
+
+        protected internal override void MessageProcessed(IMessage<T> msg)
 		{
-			_unAckedMessageTracker.Tell(new Add(msg.MessageId));
-			IncomingMessagesSize -= msg.Data.Length;
-			ResumeReceivingFromPausedConsumersIfNeeded();
-		}
+            _unAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
+            DecreaseIncomingMessageSize(msg);
+        }
 
 		private void ResumeReceivingFromPausedConsumersIfNeeded()
 		{
-            if(IncomingMessages.Count <= _sharedQueueResumeThreshold && _pausedConsumers.Count > 0)
+            if(IncomingMessages.Count <= CurrentReceiverQueueSize / 2 && _pausedConsumers.Count > 0)
 			{
                 while (true)
 				{
@@ -746,7 +732,8 @@ namespace SharpPulsar
                         {
                             break;
                         }
-                        consumer.Tell(Messages.Consumer.Resume.Instance);
+                        //consumer.Tell(Messages.Consumer.Resume.Instance);
+                        Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
                     }
                     catch
                     {

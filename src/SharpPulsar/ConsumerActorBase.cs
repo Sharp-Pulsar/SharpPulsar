@@ -74,6 +74,7 @@ namespace SharpPulsar
 			PARTITIONED,
 			NonPartitioned
 		}
+        internal bool HasParentConsumer = false;
         protected readonly ILoggingAdapter _log;
 		private readonly string _subscription;
 		protected internal readonly ConsumerConfigurationData<T> Conf;
@@ -242,7 +243,6 @@ namespace SharpPulsar
 
         private void FailPendingBatchReceives()
         {
-           
             while (HasNextBatchReceive())
             {
                 var opBatchReceive = NextBatchReceive();
@@ -256,6 +256,7 @@ namespace SharpPulsar
                 }
             }
         }
+
         private static void ValidateMessageId(IMessage<T> message)
         {
             if (message == null)
@@ -772,7 +773,7 @@ namespace SharpPulsar
 
         protected internal virtual void DecreaseIncomingMessageSize(in IMessage<T> message)
         {
-            IncomingMessagesSize -= message.Size();
+            IncomingMessagesSize -= message.Data.Length;
             //MemoryLimitController.ifPresent(limiter => limiter.releaseMemory(Message.size()));
         }
         protected internal virtual Messages<T> NewMessages
@@ -890,7 +891,35 @@ namespace SharpPulsar
         {
             return BatchReceiveTimeout != null;
         }
+        protected internal virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
+        {
+            if (CanEnqueueMessage(message))
+            {
+                // After we have enqueued the messages on `incomingMessages` queue, we cannot touch the message instance
+                // anymore, since for pooled messages, this instance was possibly already been released and recycled.
+                Push(message);
+                UpdateAutoScaleReceiverQueueHint();
+            }
+            return HasEnoughMessagesForBatchReceive();
+        }
+        protected internal abstract void UpdateAutoScaleReceiverQueueHint();
+        private void Push(IMessage<T> obj)
+        {
+            var o = (Message<T>)obj;
+            if (HasParentConsumer)
+            {
+                Context.Parent.Tell(new ReceivedMessage<T>(o));
+                _log.Info($"Pushed message with sequnceid {o.SequenceId} (topic:{Topic}) to consumer parent");
 
+            }
+            else
+            {
+                if (IncomingMessages.Post(o))
+                    _log.Info($"Added message with sequnceid {o.SequenceId} (key:{o.Key}) to IncomingMessages. Message Count: {IncomingMessages.Count}");
+                else
+                    _log.Info($"Failed to add message with sequnceid {o.SequenceId} to IncomingMessages");
+            }
+        }
     }
 	internal class ConsumerStateActor: ReceiveActor
     {

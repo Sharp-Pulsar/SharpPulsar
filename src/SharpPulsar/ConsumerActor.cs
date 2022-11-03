@@ -90,7 +90,6 @@ namespace SharpPulsar
         private readonly ClientConfigurationData _clientConfigurationData;
         private readonly long _subscribeTimeout;
         private readonly int _partitionIndex;
-        private readonly bool _hasParentConsumer;
 
         private readonly int _receiverQueueRefillThreshold;
 
@@ -211,7 +210,7 @@ namespace SharpPulsar
             _availablePermits = 0;
             _subscribeTimeout = DateTimeHelper.CurrentUnixTimeMillis() + (long)clientConfiguration.OperationTimeout.TotalMilliseconds;
             _partitionIndex = partitionIndex;
-            _hasParentConsumer = hasParentConsumer;
+            HasParentConsumer = hasParentConsumer;
             _receiverQueueRefillThreshold = conf.ReceiverQueueSize / 2;
             _priorityLevel = conf.PriorityLevel;
             _readCompacted = conf.ReadCompacted;
@@ -238,11 +237,11 @@ namespace SharpPulsar
             {
                 if (conf.TickDuration.TotalMilliseconds > 0)
                 {
-                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, conf.TickDuration > conf.AckTimeout ? conf.AckTimeout : conf.TickDuration, _self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, conf.TickDuration > conf.AckTimeout ? conf.AckTimeout : conf.TickDuration, _self, UnAckedChunckedMessageIdSequenceMap, conf.AckTimeoutRedeliveryBackoff), "UnAckedMessageTracker");
                 }
                 else
                 {
-                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, TimeSpan.Zero, _self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, TimeSpan.Zero, _self, UnAckedChunckedMessageIdSequenceMap, conf.AckTimeoutRedeliveryBackoff), "UnAckedMessageTracker");
                 }
             }
             else
@@ -447,7 +446,7 @@ namespace SharpPulsar
                     }
                     ResetBackoff();
                     var firstTimeConnect = SubscribeFuture.TrySetResult(_self);
-                    if (!(firstTimeConnect && _hasParentConsumer) && Conf.ReceiverQueueSize != 0)
+                    if (!(firstTimeConnect && HasParentConsumer) && Conf.ReceiverQueueSize != 0)
                     {
                         IncreaseAvailablePermits(Conf.ReceiverQueueSize);
                     }
@@ -2216,17 +2215,7 @@ namespace SharpPulsar
 				IncreaseAvailablePermits(cnx, skippedMessages);
 			}
 		}
-		private bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
-		{
-            if (CanEnqueueMessage(message))
-            {
-                // After we have enqueued the messages on `incomingMessages` queue, we cannot touch the message instance
-                // anymore, since for pooled messages, this instance was possibly already been released and recycled.
-                Push(message);
-                UpdateAutoScaleReceiverQueueHint();
-            }
-            return HasEnoughMessagesForBatchReceive();
-		}
+		
 		private bool IsPriorEntryIndex(long idx)
 		{
 			return _resetIncludeHead ? idx < _startMessageId.EntryId : idx <= _startMessageId.EntryId;
@@ -2278,11 +2267,16 @@ namespace SharpPulsar
 		{
 			if(msg != null)
 			{
-				TrackMessage(msg.MessageId);
+				TrackMessage(msg.MessageId, msg.RedeliveryCount);
 			}
 		}
 
-		protected internal virtual void TrackMessage(IMessageId messageId)
+        protected internal virtual void TrackMessage(IMessageId messageId)
+        {
+            TrackMessage(messageId, 0);
+        }
+
+        protected internal virtual void TrackMessage(IMessageId messageId, int redeliveryCount)
 		{
 			if(Conf.AckTimeout > TimeSpan.Zero)
 			{
@@ -2295,7 +2289,7 @@ namespace SharpPulsar
 				else
 					id = (MessageId)messageId;
 
-				if (_hasParentConsumer)
+				if (HasParentConsumer)
 				{
 					//TODO: check parent consumer here
 					// we should no longer track this message, TopicsConsumer will take care from now onwards
@@ -2303,7 +2297,7 @@ namespace SharpPulsar
 				}
 				else
 				{
-					_unAckedMessageTracker.Tell(new Add(id));
+					_unAckedMessageTracker.Tell(new Add(id, redeliveryCount));
 				}
 			}
 		}
@@ -3226,24 +3220,8 @@ namespace SharpPulsar
 			chunkedMsgCtx.Recycle();
 			_pendingChunkedMessageCount--;
 		}
-		private void Push(IMessage<T> obj)
-		{
-			var o = (Message<T>)obj;
-			if (_hasParentConsumer)
-            {
-				_context.Parent.Tell(new ReceivedMessage<T>(o));
-				_log.Info($"Pushed message with sequnceid {o.SequenceId} (topic:{Topic}) to consumer parent");
-
-			}
-			else
-            {
-				if (IncomingMessages.Post(o))
-					_log.Info($"Added message with sequnceid {o.SequenceId} (key:{o.Key}) to IncomingMessages. Message Count: {IncomingMessages.Count}");
-				else
-					_log.Info($"Failed to add message with sequnceid {o.SequenceId} to IncomingMessages");
-			}
-		}
-        protected internal void UpdateAutoScaleReceiverQueueHint()
+		
+        protected internal override void UpdateAutoScaleReceiverQueueHint()
         {
             var prev = ScaleReceiverQueueHint.GetAndSet(AvailablePermits() + IncomingMessages.Count >= CurrentReceiverQueueSize);
             if (_log.IsDebugEnabled && prev != ScaleReceiverQueueHint)

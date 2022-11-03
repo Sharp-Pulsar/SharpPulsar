@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Tracker.Messages;
 using System;
 using System.Collections.Generic;
@@ -25,23 +26,23 @@ namespace SharpPulsar.Tracker
 {
     public class UnAckedTopicMessageTracker : UnAckedMessageTracker
 	{
-		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout) : base(ackTimeout, TimeSpan.Zero, consumerBase, unack)
+		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, IRedeliveryBackoff redeliveryBackoff) : base(ackTimeout, TimeSpan.Zero, consumerBase, unack, redeliveryBackoff)
 		{
 		}
 
-		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, TimeSpan tickDuration) : base(ackTimeout, tickDuration, consumerBase, unack)
+		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, TimeSpan tickDuration, IRedeliveryBackoff redeliveryBackoff) : base(ackTimeout, tickDuration, consumerBase, unack, redeliveryBackoff)
 		{
 			Receive<RemoveTopicMessages>(m => {
 				RemoveTopicMessages(m.Topic);
 			});
 		}
-		public static Props Prop(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout)
+		public static Props Prop(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, IRedeliveryBackoff redeliveryBackoff)
         {
-			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeout));
+			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeout, redeliveryBackoff));
         }
-		public static Props Prop(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, TimeSpan tickDuration)
+		public static Props Prop(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, TimeSpan tickDuration, IRedeliveryBackoff redeliveryBackoff)
         {
-			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeout, tickDuration));
+			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeout, tickDuration, redeliveryBackoff));
         }
 		public virtual int RemoveTopicMessages(string topicName)
 		{
