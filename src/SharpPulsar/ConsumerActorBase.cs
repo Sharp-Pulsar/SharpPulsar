@@ -395,7 +395,7 @@ namespace SharpPulsar
 			NegativeAcknowledge(message.MessageId);
 		}
         internal abstract void Unsubscribe();
-        internal virtual void NegativeAcknowledge(IMessages<T> messages)
+        protected internal virtual void NegativeAcknowledge(IMessages<T> messages)
 		{
 			messages.ForEach(NegativeAcknowledge);
 		}

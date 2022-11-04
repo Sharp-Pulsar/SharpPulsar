@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Util;
 using Akka.Util.Internal;
 using DotNetty.Common.Utilities;
 using Org.Apache.Pulsar.Client.Impl;
@@ -29,6 +30,7 @@ using SharpPulsar.Tracker.Messages;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -509,8 +511,351 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
-		}
+        }
         
+        // Check topics are valid.
+        // - each topic is valid,
+        // - topic names are unique.
+        private bool TopicNamesValid(List<string> topics)
+        {
+            if (topics == null && topics.Count == 0)
+                throw new ArgumentException("topics should contain more than 1 topic");
+
+            var result = topics.Where(topic => !TopicName.IsValid(topic)).FirstOrDefault();
+
+            if (result != null && result.Count() > 0)
+            {
+
+                _log.Warning($"Received invalid topic name: {result[0]}");
+                return false;
+            }
+
+            // check topic names are unique
+            var set = new HashSet<string>(topics);
+            if (set.Count == topics.Count)
+            {
+                return true;
+            }
+            else
+            {
+                _log.Warning($"Topic names not unique. unique/all : {set.Count}/{topics.Count}");
+                return false;
+            }
+        }
+
+        private void StartReceivingMessages(IList<IActorRef> newConsumers)
+        {
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}] startReceivingMessages for {newConsumers.Count} new consumers in topics consumer, state: {State.ConnectionState}");
+            }
+            if (State.ConnectionState == HandlerState.State.Ready)
+            {
+                newConsumers.ForEach(consumer =>
+                {
+                    consumer.Tell(new IncreaseAvailablePermits(Conf.ReceiverQueueSize));
+
+                    Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
+                });
+            }
+        }
+
+        private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, bool batchReceive)
+        {
+            try
+            {
+                IList<IMessage<T>> messages;
+                if (batchReceive)
+                {
+                    var msg = await consumer.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance);
+                    messages = msg.ConvertTo<IMessages<T>>().MessageList();
+                }
+                else
+                {
+                    var msg = await consumer.Ask<AskResponse>(Messages.Consumer.Receive.Instance);
+                    messages = new List<IMessage<T>> { msg.ConvertTo<IMessage<T>>() };
+                }
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{consumer.Path.Address}");
+                }
+                messages.ForEach(msg => MessageReceived(consumer, msg));
+                var size = IncomingMessages.Count;
+                var maxReceiverQueueSize = CurrentReceiverQueueSize;
+                var sharedQueueResumeThreshold = maxReceiverQueueSize / 2;
+                if (size >= maxReceiverQueueSize || (size > sharedQueueResumeThreshold && _pausedConsumers.Count() > 0))
+                {
+                    _pausedConsumers.Enqueue(consumer);
+                    ResumeReceivingFromPausedConsumersIfNeeded();
+                }
+                else
+                {
+                    await ReceiveMessageFromConsumer(consumer, messages.Count > 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ex is PulsarClientException.AlreadyClosedException || ex.InnerException is PulsarClientException.AlreadyClosedException)
+                {
+                    return;
+                }
+                _log.Error($"Receive operation failed on consumer {consumer.Path} - Retrying later: {ex}");
+                Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), async () => await ReceiveMessageFromConsumer(consumer, true));
+            }
+
+        }
+        private void ReceiveMessageFromConsumer(IActorRef consumer, IMessage<T> message)
+        {
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
+            }
+            MessageReceived(consumer, message);
+            var size = IncomingMessages.Count;
+            if (size >= MaxReceiverQueueSize || (size > _sharedQueueResumeThreshold && _pausedConsumers.Count > 0))
+            {
+                _pausedConsumers.Enqueue(consumer);
+                consumer.Tell(Messages.Consumer.Pause.Instance);
+            }
+        }
+
+        // Must be called from the internalPinnedExecutor thread
+        private void MessageReceived(IActorRef consumer, IMessage<T> message)
+        {
+            var topic = consumer.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
+            var topicNameWithoutPartition = consumer.Ask<string>(GetTopicNameWithoutPartition.Instance).GetAwaiter().GetResult();
+            Condition.CheckArgument(message is Message<T>);
+            var topicMessage = new TopicMessage<T>(topic, topicNameWithoutPartition, message, consumer);
+
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}][{Subscription}] Received message from topics-consumer {message.MessageId}");
+            }
+
+            // if asyncReceive is waiting : return message to callback without adding to incomingMessages queue
+            var receivedFuture = NextPendingReceive();
+            if (receivedFuture != null)
+            {
+                _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId, topicMessage.RedeliveryCount));
+                CompletePendingReceive(receivedFuture, topicMessage);
+            }
+            else if (EnqueueMessageAndCheckBatchReceive(topicMessage) && HasPendingBatchReceive())
+            {
+                NotifyPendingBatchReceivedCallBack();
+            }
+
+            TryTriggerListener();
+        }
+        protected internal override void MessageProcessed(IMessage<T> msg)
+        {
+            _unAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
+            DecreaseIncomingMessageSize(msg);
+        }
+        private void ResumeReceivingFromPausedConsumersIfNeeded()
+        {
+            if (IncomingMessages.Count <= CurrentReceiverQueueSize / 2 && _pausedConsumers.Count > 0)
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var consumer = _pausedConsumers.Dequeue();
+
+                        if (consumer == null)
+                        {
+                            break;
+                        }
+                        //consumer.Tell(Messages.Consumer.Resume.Instance);
+                        Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
+                    }
+                    catch
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // If message consumer epoch is smaller than consumer epoch present that
+        // it has been sent to the client before the user calls redeliverUnacknowledgedMessages, this message is invalid.
+        // so we should release this message and receive again
+        private bool IsValidConsumerEpoch(IMessage<T> message)
+        {
+            return base.IsValidConsumerEpoch(((Message<T>)(((TopicMessage<T>)message)).Message));
+        }
+
+        public override int MinReceiverQueueSize()
+        {
+            var size = Math.Min(InitialReceiverQueueSize, MaxReceiverQueueSize);
+            if (BatchReceivePolicy.MaxNumMessages > 0)
+            {
+                size = Math.Max(size, BatchReceivePolicy.MaxNumMessages);
+            }
+            if (AllTopicPartitionsNumber > 0)
+            {
+                size = Math.Max(AllTopicPartitionsNumber, size);
+            }
+            return size;
+        }
+
+        protected internal override IMessage<T> InternalReceive()
+        {
+            IMessage<T> message;
+            try
+            {
+                if (IncomingMessages.Count == 0)
+                {
+                    ExpectMoreIncomingMessages();
+                }
+                message = IncomingMessages.Receive();
+                DecreaseIncomingMessageSize(message);
+                checkState(Message is TopicMessageImpl);
+                if (!IsValidConsumerEpoch(message))
+                {
+                    ResumeReceivingFromPausedConsumersIfNeeded();
+                    message = null;
+                    return InternalReceive();
+                }
+                unAckedMessageTracker.Add(Message.getMessageId(), Message.getRedeliveryCount());
+                ResumeReceivingFromPausedConsumersIfNeeded();
+                return message;
+            }
+            catch (Exception e)
+            {
+                throw PulsarClientException.Unwrap(e);
+            }
+        }
+
+       protected internal override IMessage<T> InternalReceive(TimeSpan time)
+        {
+            IMessage<T> message;
+
+            var callTime = NanoTime();
+            try
+            {
+                if (IncomingMessages.Count == 0)
+                {
+                    ExpectMoreIncomingMessages();
+                }
+                message = IncomingMessages.poll(Timeout, Unit);
+                if (message != null)
+                {
+                    DecreaseIncomingMessageSize(message);
+                    checkArgument(Message is TopicMessageImpl);
+                    if (!IsValidConsumerEpoch(message))
+                    {
+                        var executionTime = NanoTime() - callTime;
+                        var timeoutInNanos = time.TotalMilliseconds;
+                        if (executionTime >= timeoutInNanos)
+                        {
+                            return null;
+                        }
+                        else
+                        {
+                            ResumeReceivingFromPausedConsumersIfNeeded();
+                            return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime).TotalMilliseconds);
+                        }
+                    }
+                    unAckedMessageTracker.Add(Message.getMessageId(), Message.getRedeliveryCount());
+                }
+                ResumeReceivingFromPausedConsumersIfNeeded();
+                return message;
+            }
+            catch (Exception e)
+            {
+                throw PulsarClientException.Unwrap(e);
+            }
+        }
+        protected internal IMessages<T> InternalBatchReceive()
+        {
+            try
+            {
+                return InternalBatchReceiveAsync().Task.GetAwaiter().GetResult();
+            }
+            catch (Exception e)
+            {
+                if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState.State.Closed)
+                {
+                    Stats.IncrementNumBatchReceiveFailed();
+                    throw Unwrap(e);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        protected internal TaskCompletionSource<IMessages<T>> InternalBatchReceiveAsync()
+        {
+            var result = new TaskCompletionSource<IMessages<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            {
+                if (HasEnoughMessagesForBatchReceive())
+                {
+                    var messages = NewMessages;
+                    IncomingMessages.TryReceive(out var msg);
+                    while (msg != null && messages.CanAdd(msg))
+                    {
+                        if (msg != null)
+                        {
+                            DecreaseIncomingMessageSize(msg);
+                            if (!IsValidConsumerEpoch(msg))
+                            {
+                                IncomingMessages.TryReceive(out msg);
+                                continue;
+                            }
+                            var interceptMsg = BeforeConsume(msg);
+                            messages.Add(interceptMsg);
+                        }
+                    }
+                    result.SetResult(messages);
+                }
+                else
+                {
+                    ExpectMoreIncomingMessages();
+                    var opBatchReceive = OpBatchReceive.Of(result);
+                    PendingBatchReceives.Enqueue(opBatchReceive);
+                    TriggerBatchReceiveTimeoutTask();
+                    result.Task.ContinueWith(s =>
+                    {
+                        if (s.IsCanceled)
+                            PendingBatchReceives.TakeLast(1);
+                    });
+                }
+                ResumeReceivingFromPausedConsumersIfNeeded();
+            });
+            return result;
+        }
+        protected internal override TaskCompletionSource<IMessage<T>> InternalReceiveAsync()
+        {
+            var result = new TaskCompletionSource<IMessage<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            {
+                IncomingMessages.TryReceive(out var message);
+                if (message == null)
+                {
+                    ExpectMoreIncomingMessages();
+                    PendingReceives.Enqueue(result);
+                    result.Task.ContinueWith(s =>
+                    {
+                        if (s.IsCanceled)
+                            PendingReceives.TryDequeue(out result);
+                    });
+                }
+                else
+                {
+                    DecreaseIncomingMessageSize(message);
+                    CheckState(Message is TopicMessageImpl);
+                    unAckedMessageTracker.Add(Message.getMessageId(), Message.getRedeliveryCount());
+                    ResumeReceivingFromPausedConsumersIfNeeded();
+                    result.SetResult(message);
+                }
+            });
+
+            return result;
+        }
+       
         // subscribe one more given topic
         protected internal async ValueTask Subscribe(string topicName, bool createTopicIfDoesNotExist)
 		{
@@ -603,147 +948,13 @@ namespace SharpPulsar
 			return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _log, _lookup);
 		}
 		
-
-		private void StartReceivingMessages(IList<IActorRef> newConsumers)
-		{
-			if(_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}] startReceivingMessages for {newConsumers.Count} new consumers in topics consumer, state: {State.ConnectionState}");
-			}
-			if(State.ConnectionState == HandlerState.State.Ready)
-			{
-				newConsumers.ForEach(consumer =>
-				{
-					consumer.Tell(new IncreaseAvailablePermits(Conf.ReceiverQueueSize));
-                    
-                    Akka.Dispatch.ActorTaskScheduler.RunTask(async()=> await ReceiveMessageFromConsumer(consumer, true));
-				});
-			}
-		}
-        
-        private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, bool batchReceive)
-        {
-            try
-            {
-                IList<IMessage<T>> messages;
-                if (batchReceive)
-                {
-                    var msg = await consumer.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance);
-                    messages = msg.ConvertTo<IMessages<T>>().MessageList();
-                }
-                else
-                {
-                    var msg = await consumer.Ask<AskResponse>(Messages.Consumer.Receive.Instance);
-                    messages = new List<IMessage<T>> { msg.ConvertTo<IMessage<T>>() };
-                }
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{consumer.Path.Address}");
-                }
-                messages.ForEach(msg => MessageReceived(consumer, msg));
-                var size = IncomingMessages.Count;
-                var maxReceiverQueueSize = CurrentReceiverQueueSize;
-                var sharedQueueResumeThreshold = maxReceiverQueueSize / 2;
-                if (size >= maxReceiverQueueSize || (size > sharedQueueResumeThreshold && _pausedConsumers.Count() == 0))
-                {
-                    _pausedConsumers.Enqueue(consumer);
-                    ResumeReceivingFromPausedConsumersIfNeeded();
-                }
-                else
-                {
-                    await ReceiveMessageFromConsumer(consumer, messages.Count > 0);
-                }
-            }
-            catch (Exception ex)    
-            {
-                if (ex is PulsarClientException.AlreadyClosedException || ex.InnerException is PulsarClientException.AlreadyClosedException)
-                {
-                    return;
-                }
-                _log.Error($"Receive operation failed on consumer {consumer.Path} - Retrying later: {ex}");
-                Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), async ()=> await ReceiveMessageFromConsumer(consumer, true));
-            }           
-            
-        }
-        private void ReceiveMessageFromConsumer(IActorRef consumer, IMessage<T> message)
-        {
-            if (_log.IsDebugEnabled)
-            {
-                _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
-            }
-            MessageReceived(consumer, message);
-            var size = IncomingMessages.Count;
-            if (size >= MaxReceiverQueueSize || (size > _sharedQueueResumeThreshold && _pausedConsumers.Count > 0))
-            {
-                _pausedConsumers.Enqueue(consumer);
-                consumer.Tell(Messages.Consumer.Pause.Instance);
-            }
-        }
-       
-        // Must be called from the internalPinnedExecutor thread
-        private void MessageReceived(IActorRef consumer, IMessage<T> message)
-        {            
-            var topic = consumer.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
-            var topicNameWithoutPartition = consumer.Ask<string>(GetTopicNameWithoutPartition.Instance).GetAwaiter().GetResult();
-            Condition.CheckArgument(message is Message<T>);
-            var topicMessage = new TopicMessage<T>(topic, topicNameWithoutPartition, message, consumer);
-
-            if (_log.IsDebugEnabled)
-            {
-                _log.Debug($"[{Topic}][{Subscription}] Received message from topics-consumer {message.MessageId}");
-            }
-            
-            // if asyncReceive is waiting : return message to callback without adding to incomingMessages queue
-            var receivedFuture = NextPendingReceive();
-            if (receivedFuture != null)
-            {
-                _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId, topicMessage.RedeliveryCount));
-                CompletePendingReceive(receivedFuture, topicMessage);
-            }
-            else if (EnqueueMessageAndCheckBatchReceive(topicMessage) && HasPendingBatchReceive())
-            {
-                NotifyPendingBatchReceivedCallBack();
-            }
-
-            TryTriggerListener();
-        }
         protected override void Unhandled(object message)
 		{
 			_log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
 		}
 
-        protected internal override void MessageProcessed(IMessage<T> msg)
-		{
-            _unAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
-            DecreaseIncomingMessageSize(msg);
-        }
 
-		private void ResumeReceivingFromPausedConsumersIfNeeded()
-		{
-            if(IncomingMessages.Count <= CurrentReceiverQueueSize / 2 && _pausedConsumers.Count > 0)
-			{
-                while (true)
-				{
-                    try
-                    {
-                        var consumer = _pausedConsumers.Dequeue();
-
-                        if (consumer == null)
-                        {
-                            break;
-                        }
-                        //consumer.Tell(Messages.Consumer.Resume.Instance);
-                        Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
-                    }
-                    catch
-                    {
-                        break;
-                    }
-				}
-			}
-		}
-
-		private void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txnImpl)
+        protected internal override void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txnImpl)
 		{
 			Condition.CheckArgument(messageId is TopicMessageId);
 			var topicMessageId = (TopicMessageId) messageId;
@@ -776,7 +987,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+        protected internal override void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			if(ackType == AckType.Cumulative)
 			{
@@ -811,7 +1022,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
+        protected internal override TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
 		{
 			var messageId = message.MessageId;
 			Condition.CheckArgument(messageId is TopicMessageId);
@@ -850,6 +1061,15 @@ namespace SharpPulsar
 			var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 			consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
 		}
+        protected internal void NegativeAcknowledge(IMessage<T> message)
+        {
+            var messageId = message.MessageId;
+            Condition.CheckArgument(messageId is TopicMessageId);
+            var topicMessageId = (TopicMessageId)messageId;
+
+            var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
+        }
         protected override void PostStop()
         {
 			Close();
@@ -1112,7 +1332,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Subscribe to topic {topicName} metadata.partitions: {numPartitions}");
 			}
-            List<Task> futureList = new List<Task>();
+            var futureList = new List<Task>();
             PulsarClientException lastError = null;
             if (numPartitions != PartitionedTopicMetadata.NonPartitioned)
 			{
@@ -1334,36 +1554,7 @@ namespace SharpPulsar
 			_log.Info($"[{topicName}] [{Subscription}] [{ConsumerName}] Removed Topics Consumer, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
 
 		}
-        // Check topics are valid.
-        // - each topic is valid,
-        // - topic names are unique.
-        private bool TopicNamesValid(List<string> topics)
-        {
-            if(topics == null && topics.Count == 0)
-                throw new ArgumentException("topics should contain more than 1 topic");
-
-            var result = topics.Where(topic => !TopicName.IsValid(topic)).FirstOrDefault();
-
-            if (result != null && result.Count() > 0)
-            {
-
-                _log.Warning($"Received invalid topic name: {result[0]}");
-                return false;
-            }
-
-            // check topic names are unique
-            var set = new HashSet<string>(topics);
-            if (set.Count == topics.Count)
-            {
-                return true;
-            }
-            else
-            {
-                _log.Warning($"Topic names not unique. unique/all : {set.Count}/{topics.Count}");
-                return false;
-            }
-        }
-
+        
         // get topics name
         internal virtual IList<string> Topics
 		{
