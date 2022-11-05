@@ -832,7 +832,13 @@ namespace SharpPulsar
             {
                 try
                 {
-                    Unsubscribe();
+                    var uns = Unsubscribe();
+                    if (uns.Task.Exception != null)
+                    {
+                        Sender.Tell(new AskResponse(uns.Task.Exception));
+                    }
+                    else
+                     Sender.Tell(uns);
                 }
                 catch (Exception ex)
                 {
@@ -964,11 +970,12 @@ namespace SharpPulsar
             }
         }
 
-        internal override void Unsubscribe()
+        internal override TaskCompletionSource<AskResponse> Unsubscribe()
         {
+            var unsubscribeFuture = new TaskCompletionSource<AskResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
-                Sender.Tell(new AskResponse(new AlreadyClosedException("AlreadyClosedException: Consumer was already closed")));
+                unsubscribeFuture.SetException(new AlreadyClosedException("AlreadyClosedException: Consumer was already closed"));
             }
             else
             {
@@ -986,15 +993,16 @@ namespace SharpPulsar
                     _log.Info($"[{Topic}][{Subscription}] Successfully unsubscribed from topic");
                     State.ConnectionState = HandlerState.State.Closed;
                     Sender.Tell(new AskResponse());
+                    unsubscribeFuture.SetResult(new AskResponse());
                 }
                 else
                 {
                     var err = $"The client is not connected to the broker when unsubscribing the subscription {Subscription} of the topic {_topicName}";
-
-                    Sender.Tell(new AskResponse(new PulsarClientException(err)));
+                    unsubscribeFuture.SetException(new PulsarClientException(err));
                     _log.Error(err);
                 }
             }
+            return unsubscribeFuture;
         }
         public override int MinReceiverQueueSize()
         {

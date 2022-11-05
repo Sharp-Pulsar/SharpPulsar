@@ -34,6 +34,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
 
@@ -455,7 +456,7 @@ namespace SharpPulsar
 			{
 				try
 				{
-					RedeliverUnacknowledged();
+                    RedeliverUnacknowledgedMessages();
                     Sender.Tell(new AskResponse());
 				}
 				catch (Exception ex)
@@ -463,11 +464,11 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
 				}
 			});
-			ReceiveAsync<RedeliverUnacknowledgedMessageIds>(async m =>
+			Receive<RedeliverUnacknowledgedMessageIds>(m =>
 			{
 				try
 				{
-					await RedeliverUnacknowledged(m.MessageIds);
+                    RedeliverUnacknowledgedMessages(m.MessageIds);
                     Sender.Tell(new AskResponse());
 				}
 				catch (Exception ex)
@@ -475,18 +476,23 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
 				}
 			});
-			Receive<UnsubscribeTopic>( u =>
+			Receive<Unsubscribe>( u =>
 			{
-				try
-				{
-					Unsubscribe(u.Topic);
-                    Sender.Tell(new AskResponse());
-				}
-				catch (Exception ex)
-				{
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
-				}
-			});
+                try
+                {
+                    var uns = Unsubscribe();
+                    if (uns.Task.Exception != null)
+                    {
+                        Sender.Tell(new AskResponse(uns.Task.Exception));
+                    }
+                    else
+                        Sender.Tell(uns);
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                }
+            });
 			ReceiveAsync<SeekMessageId>(async m =>
 			{
 				try
@@ -1061,7 +1067,7 @@ namespace SharpPulsar
 			var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 			consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
 		}
-        protected internal void NegativeAcknowledge(IMessage<T> message)
+        protected internal new void NegativeAcknowledge(IMessage<T> message)
         {
             var messageId = message.MessageId;
             Condition.CheckArgument(messageId is TopicMessageId);
@@ -1074,6 +1080,48 @@ namespace SharpPulsar
         {
 			Close();
             base.PostStop();
+        }
+        internal override TaskCompletionSource<AskResponse> Unsubscribe()
+        {
+            var unsubscribeFuture = new TaskCompletionSource<AskResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            {
+                unsubscribeFuture.SetException(new AlreadyClosedException("AlreadyClosedException: Consumer was already closed"));
+            }
+
+            State.ConnectionState = HandlerState.State.Closing;
+            var futureList = _consumers.Values.Select(async consumer => await consumer.Ask<AskResponse>(Messages.Consumer.Unsubscribe.Instance)).ToList();
+            try
+            {
+                // Wait for all the tasks to finish.
+                Task.WaitAll(futureList.ToArray());
+
+                State.ConnectionState = HandlerState.State.Closed;
+                CleanupMultiConsumer();
+                _log.Error($"[{Topic}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer");
+                FailPendingReceive();
+                unsubscribeFuture.SetResult(new AskResponse());
+            }
+            catch (Exception e)
+            {
+                State.ConnectionState = HandlerState.State.Failed;
+                _log.Error($"[{Topic}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {e.InnerException}");
+                unsubscribeFuture.SetException(e.InnerException);
+            }
+            return unsubscribeFuture;
+        }
+        private void CleanupMultiConsumer()
+        {
+            if (_unAckedMessageTracker != null)
+            {
+                _unAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(500));
+            }
+            if (_partitionsAutoUpdateTimeout != null)
+            {
+                _partitionsAutoUpdateTimeout.Cancel();
+                _partitionsAutoUpdateTimeout = null;
+            }
+            _client.Tell(new CleanupConsumer(Context.Self));
         }
         internal void Close()
 		{
@@ -1128,20 +1176,24 @@ namespace SharpPulsar
 			}
 		}
 
-		private void RedeliverUnacknowledged()
-		{
-			_consumers.Values.ForEach(consumer =>
-			{
-				consumer.Tell(RedeliverUnacknowledgedMessages.Instance);
-				consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
-			});
-			IncomingMessages.Empty();
-			IncomingMessagesSize =  0;
-			_unAckedMessageTracker.Tell(Clear.Instance);
-			ResumeReceivingFromPausedConsumersIfNeeded();
-		}
+        protected internal override void RedeliverUnacknowledgedMessages()
+        {
+            Akka.Dispatch.ActorTaskScheduler.RunTask(()=>
+            {
+                ConsumerEpoch++;
+                _consumers.Values.ForEach(consumer =>
+                {
+                    consumer.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
+                    consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
+                });
+                ClearIncomingMessages();
+                _unAckedMessageTracker.Tell(Clear.Instance);
+            });
 
-		protected internal override async Task RedeliverUnacknowledged(ISet<IMessageId> messageIds)
+            ResumeReceivingFromPausedConsumersIfNeeded();
+        }
+
+        protected internal override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
 		{
 			if(messageIds.Count == 0)
 			{
@@ -1152,19 +1204,27 @@ namespace SharpPulsar
 
 			if(Conf.SubscriptionType != CommandSubscribe.SubType.Shared)
 			{
-				// We cannot redeliver single messages if subscription type is not Shared
-				RedeliverUnacknowledged();
-				return;
+                // We cannot redeliver single messages if subscription type is not Shared
+                RedeliverUnacknowledgedMessages();
+                return;
 			}
 			RemoveExpiredMessagesFromQueue(messageIds);
 			messageIds.Select(messageId => (TopicMessageId)messageId).Collect()
 				.ForEach(t => _consumers.GetValueOrNull(t.First().TopicPartitionName)
 				.Tell(new RedeliverUnacknowledgedMessageIds(t.Select(mid => mid.InnerMessageId).ToHashSet())));
 			ResumeReceivingFromPausedConsumersIfNeeded();
-            await Task.CompletedTask;
 		}
+        protected internal override void UpdateAutoScaleReceiverQueueHint()
+        {
+            ScaleReceiverQueueHint.GetAndSet(IncomingMessages.Count >= CurrentReceiverQueueSize);
+        }
 
-		internal override async ValueTask Seek(IMessageId messageId)
+        protected internal override void CompleteOpBatchReceive(OpBatchReceive op)
+        {
+            NotifyPendingBatchReceivedCallBack(op);
+            ResumeReceivingFromPausedConsumersIfNeeded();
+        }
+        internal override async ValueTask Seek(IMessageId messageId)
 		{
             var targetMessageId = MessageId.ConvertToMessageId(messageId);
             if (targetMessageId == null || IsIllegalMultiTopicsMessageId(messageId))
@@ -1174,8 +1234,7 @@ namespace SharpPulsar
             _consumers.Values.ForEach(c => c.Tell(new SeekMessageId(targetMessageId)));
 
             _unAckedMessageTracker.Tell(Clear.Instance);
-            IncomingMessages.Empty();
-            IncomingMessagesSize = 0;
+            ClearIncomingMessages();
             await Task.CompletedTask;
 		}
 
@@ -1209,7 +1268,11 @@ namespace SharpPulsar
 		}
 		private async ValueTask<bool> HasMessageAvailable()
 		{
-			foreach (var c in _consumers.Values)
+            if (NumMessagesInQueue() > 0)
+            {
+                return true;
+            }
+            foreach (var c in _consumers.Values)
 			{
                 try
                 {
@@ -1457,70 +1520,10 @@ namespace SharpPulsar
 			}
 		}
 
-		// un-subscribe a given topic
-		private void Unsubscribe(string topicName)
-		{
-			Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
+        
 
-			if(State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-			{
-				Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed")));
-			}
-
-			if(_partitionsAutoUpdateTimeout != null)
-			{
-				_partitionsAutoUpdateTimeout.Cancel();
-				_partitionsAutoUpdateTimeout = null;
-			}
-
-			var topicPartName = TopicName.Get(topicName).PartitionedTopicName;
-
-			var recFromTops = new List<IActorRef>();
-			foreach (var c in _consumers.Values)
-			{
-				var consumerTopicName = c.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
-				if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
-				{
-					recFromTops.Add(c);
-				}
-			}
-			var unsubed = true;
-			ClientExceptions except = null;
-			foreach(var co in recFromTops)
-            {
-				var response = co.Ask(Messages.Consumer.Unsubscribe.Instance).GetAwaiter().GetResult();
-				if (response == null)
-				{
-					var t = co.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
-					_consumers.TryRemove(t, out _);
-					_pausedConsumers = new Queue<IActorRef>(_pausedConsumers.Where(x => x != co));
-					--AllTopicPartitionsNumber;
-				}
-				else
-                {
-					unsubed = false;
-					except = response as ClientExceptions;
-				}
-
-				
-			}
-			if(unsubed)
-			{
-				RemoveTopic(topicName);
-				_unAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
-				_log.Info($"[{topicName}] [{Subscription}] [{ConsumerName}] Unsubscribed Topics Consumer, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
-
-			}
-            else
-            {
-				State.ConnectionState = HandlerState.State.Failed;
-				_log.Error($"[{topicName}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {except?.Exception}");
-                
-			}
-		}
-
-		// Remove a consumer for a topic
-		private async ValueTask RemoveConsumer(string topicName)
+        // Remove a consumer for a topic
+        private async ValueTask RemoveConsumer(string topicName)
 		{
 			Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
 
