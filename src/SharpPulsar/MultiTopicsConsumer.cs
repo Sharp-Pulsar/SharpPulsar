@@ -36,6 +36,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
+using InvalidMessageException = SharpPulsar.Exceptions.PulsarClientException.InvalidMessageException;
 using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
 
 /// <summary>
@@ -429,7 +430,10 @@ namespace SharpPulsar
                         DoAcknowledge(m.MessageId, AckType.Cumulative, new Dictionary<string, long>(), m.Txn);
                         break;
                     case ReconsumeLaterCumulative<T> ack:
-                        DoReconsumeLater(ack.Message, AckType.Cumulative, new Dictionary<string, long>(), ack.DelayTime);
+                        if (ack.Properties != null)
+                            DoReconsumeLater(ack.Message, AckType.Cumulative, ack.Properties, ack.DelayTime);
+                        else
+                            DoReconsumeLater(ack.Message, AckType.Cumulative, new Dictionary<string, string>(), ack.DelayTime);
                         break;
                     default:
                         Sender.Tell(new AskResponse());
@@ -443,7 +447,7 @@ namespace SharpPulsar
                 try
                 {
                     foreach(var message in m.Messages)
-                        DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), m.DelayTime);
+                        DoReconsumeLater(message, AckType.Individual, new Dictionary<string, string>(), m.DelayTime);
 
                     Sender.Tell(new AskResponse());
                 }
@@ -614,7 +618,7 @@ namespace SharpPulsar
         {
             if (_log.IsDebugEnabled)
             {
-                _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
+                _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer");
             }
             MessageReceived(consumer, message);
             var size = IncomingMessages.Count;
@@ -715,14 +719,14 @@ namespace SharpPulsar
                 }
                 message = IncomingMessages.Receive();
                 DecreaseIncomingMessageSize(message);
-                checkState(Message is TopicMessageImpl);
+                //checkState(Message is TopicMessageImpl);
                 if (!IsValidConsumerEpoch(message))
                 {
                     ResumeReceivingFromPausedConsumersIfNeeded();
                     message = null;
                     return InternalReceive();
                 }
-                unAckedMessageTracker.Add(Message.getMessageId(), Message.getRedeliveryCount());
+                _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                 ResumeReceivingFromPausedConsumersIfNeeded();
                 return message;
             }
@@ -743,11 +747,11 @@ namespace SharpPulsar
                 {
                     ExpectMoreIncomingMessages();
                 }
-                message = IncomingMessages.poll(Timeout, Unit);
+                IncomingMessages.TryReceive(out message);
                 if (message != null)
                 {
                     DecreaseIncomingMessageSize(message);
-                    checkArgument(Message is TopicMessageImpl);
+                    //checkArgument(Message is TopicMessageImpl);
                     if (!IsValidConsumerEpoch(message))
                     {
                         var executionTime = NanoTime() - callTime;
@@ -759,10 +763,10 @@ namespace SharpPulsar
                         else
                         {
                             ResumeReceivingFromPausedConsumersIfNeeded();
-                            return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime).TotalMilliseconds);
+                            return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime));
                         }
                     }
-                    unAckedMessageTracker.Add(Message.getMessageId(), Message.getRedeliveryCount());
+                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                 }
                 ResumeReceivingFromPausedConsumersIfNeeded();
                 return message;
@@ -852,8 +856,8 @@ namespace SharpPulsar
                 else
                 {
                     DecreaseIncomingMessageSize(message);
-                    CheckState(Message is TopicMessageImpl);
-                    unAckedMessageTracker.Add(Message.getMessageId(), Message.getRedeliveryCount());
+                    //CheckState(Message is TopicMessageImpl);
+                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                     ResumeReceivingFromPausedConsumersIfNeeded();
                     result.SetResult(message);
                 }
@@ -1028,15 +1032,15 @@ namespace SharpPulsar
 			}
 		}
 
-        protected internal override TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
-		{
+        protected internal override TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, string> properties, TimeSpan delayTime)
+        {
 			var messageId = message.MessageId;
 			Condition.CheckArgument(messageId is TopicMessageId);
 			var topicMessageId = (TopicMessageId) messageId;
 			if(State.ConnectionState != HandlerState.State.Ready)
 			{
-				Sender.Tell(new AskResponse(new PulsarClientException("Consumer already closed")));
-                return;
+				throw new PulsarClientException("Consumer already closed");
+                
 			}
 
 			if(ackType == AckType.Cumulative)
@@ -1048,7 +1052,7 @@ namespace SharpPulsar
 				}
 				else
 				{
-                    Sender.Tell(new AskResponse(new PulsarClientException.NotConnectedException()));
+                    throw new PulsarClientException.NotConnectedException();
 				}
 			}
 			else
@@ -1057,6 +1061,7 @@ namespace SharpPulsar
 				consumer.Tell(new ReconsumeLaterMessage<T>(message, delayTime), Sender);
 				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
 			}
+            return null;
 		}
 
 		internal override void NegativeAcknowledge(IMessageId messageId)
@@ -1344,7 +1349,7 @@ namespace SharpPulsar
                 {
                     foreach (var m in messageList)
                     {
-                        IncomingMessagesSize -= m.Data.Length;
+                        DecreaseIncomingMessageSize(m);
                         var messageId = m.MessageId;
                         if (!messageIds.Contains(messageId))
                         {
