@@ -27,7 +27,7 @@ namespace SharpPulsar
     using global::Akka.Util;
     using SharpPulsar.Interfaces;
 
-    internal class TopicMessage<T> : IMessage<T>
+    public class TopicMessage<T> : IMessage<T>
 	{
 
 		/// <summary>

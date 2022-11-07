@@ -2,9 +2,11 @@
 using Akka.Util;
 using Akka.Util.Internal;
 using DotNetty.Common.Utilities;
+using Microsoft.Extensions.Configuration;
 using Org.Apache.Pulsar.Client.Impl;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Batch;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
@@ -1425,7 +1427,7 @@ namespace SharpPulsar
                     {
                         var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
                         var partitionName = TopicName.Get(topicName).GetPartition(i).ToString();
-                        var newConsumer = await CreateConsumer(consumerId, partitionName, configurationData, i, schema, createIfDoesNotExist).Task;
+                        var newConsumer = await CreateInternalConsumer(consumerId, partitionName, configurationData, i, schema, createIfDoesNotExist).Task;
                         if (_paused)
                         {
                             newConsumer.Tell(Messages.Consumer.Pause.Instance);
@@ -1452,7 +1454,7 @@ namespace SharpPulsar
                 try
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
-                    var newConsumer = await CreateConsumer(consumerId, topicName, _internalConfig, -1, schema, createIfDoesNotExist).Task;
+                    var newConsumer = await CreateInternalConsumer(consumerId, topicName, _internalConfig, -1, schema, createIfDoesNotExist).Task;
                     _consumers.TryAdd(topicName, newConsumer);
                 }
                 catch (PulsarClientException ex)
@@ -1482,16 +1484,13 @@ namespace SharpPulsar
             subscribeResult.TrySetResult(null);
         }
 
-        private TaskCompletionSource<IActorRef> CreateConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
+        private TaskCompletionSource<IActorRef> CreateInternalConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
         {
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            if (conf.ReceiverQueueSize == 0)
-			{                
-				_context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, _startMessageId, schema, createIfDoesNotExist, _clientConfiguration, tcs)));
-			}
-            else
-			   _context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
+            var internalBatchReceivePolicy = new BatchReceivePolicy.Builder().MaxNumMessages(Math.Max(conf.ReceiverQueueSize / 2, 1)).MaxNumBytes(-1).Timeout((int)TimeSpan.FromSeconds(1).TotalMilliseconds).Build();
+            conf.BatchReceivePolicy = internalBatchReceivePolicy;
+            
+			_context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
             
             return tcs;
 		}
@@ -1670,7 +1669,7 @@ namespace SharpPulsar
                             var consumerTcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                             try
                             {
-                                _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, partitionIndex, true, null, Schema, true, _clientConfiguration, consumerTcs)));
+                                _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, partitionIndex, true, Listener != null, null, Schema, true, _clientConfiguration, consumerTcs)));
                                 var newConsumer = await consumerTcs.Task;
                                 if (_paused)
                                 {
