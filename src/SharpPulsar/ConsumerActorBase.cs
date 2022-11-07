@@ -59,8 +59,6 @@ namespace SharpPulsar
         protected internal const int InitialReceiverQueueSize = 1;
         internal abstract long LastDisconnectedTimestamp();
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
-        internal abstract TaskCompletionSource<IMessages<T>> BatchReceiveAsync();
-        internal abstract IMessages<T> BatchReceive();
         internal abstract void Resume();
 		internal abstract void Pause();
 		internal abstract bool Connected();
@@ -344,7 +342,26 @@ namespace SharpPulsar
                 throw new InvalidConfigurationException("Can't use batch receive, if the queue size is 0");
             }
         }
+        protected internal virtual IMessages<T> BatchReceive()
+        {
+            VerifyBatchReceive();
+            VerifyConsumerState();
+            return InternalBatchReceive();
+        }
 
+        protected internal virtual TaskCompletionSource<IMessages<T>> BatchReceiveAsync()
+        {
+            try
+            {
+                VerifyBatchReceive();
+                VerifyConsumerState();
+                return InternalBatchReceiveAsync();
+            }
+            catch (PulsarClientException e)
+            {
+                throw;
+            }
+        }
         protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
         {
             if (Interceptors != null)
@@ -564,7 +581,9 @@ namespace SharpPulsar
         protected internal abstract IMessage<T> InternalReceive();
 
         protected internal abstract TaskCompletionSource<IMessage<T>> InternalReceiveAsync();
+        protected internal abstract IMessages<T> InternalBatchReceive();
         protected internal abstract IMessage<T> InternalReceive(TimeSpan timeOut);
+        protected internal abstract TaskCompletionSource<IMessages<T>> InternalBatchReceiveAsync();
         protected internal virtual void CallMessageListener(IMessage<T> msg)
         {
             try

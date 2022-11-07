@@ -2037,26 +2037,7 @@ namespace SharpPulsar
 
             return result;
         }
-        internal override IMessages<T> BatchReceive()
-        {
-            VerifyBatchReceive();
-            VerifyConsumerState();
-            return InternalBatchReceive();
-        }
-
-        internal override TaskCompletionSource<IMessages<T>> BatchReceiveAsync()
-        {
-            try
-            {
-                VerifyBatchReceive();
-                VerifyConsumerState();
-                return InternalBatchReceiveAsync();
-            }
-            catch (PulsarClientException e)
-            {
-                throw;
-            }
-        }
+       
         protected internal override IMessage<T> InternalReceive(TimeSpan timeOut)
         {
             IMessage<T> message;
@@ -2102,7 +2083,7 @@ namespace SharpPulsar
             }
         }
 
-        protected internal IMessages<T> InternalBatchReceive()
+        protected internal override IMessages<T> InternalBatchReceive()
         {
             try
             {
@@ -2122,7 +2103,7 @@ namespace SharpPulsar
             }
         }
 
-        protected internal TaskCompletionSource<IMessages<T>> InternalBatchReceiveAsync()
+        protected internal override TaskCompletionSource<IMessages<T>> InternalBatchReceiveAsync()
         {
             var result = new TaskCompletionSource<IMessages<T>>();
             Akka.Dispatch.ActorTaskScheduler.RunTask(() =>

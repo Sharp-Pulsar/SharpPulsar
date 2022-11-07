@@ -776,7 +776,7 @@ namespace SharpPulsar
                 throw PulsarClientException.Unwrap(e);
             }
         }
-        protected internal IMessages<T> InternalBatchReceive()
+        protected internal override IMessages<T> InternalBatchReceive()
         {
             try
             {
@@ -796,7 +796,7 @@ namespace SharpPulsar
             }
         }
 
-        protected internal TaskCompletionSource<IMessages<T>> InternalBatchReceiveAsync()
+        protected internal override TaskCompletionSource<IMessages<T>> InternalBatchReceiveAsync()
         {
             var result = new TaskCompletionSource<IMessages<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
             Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
