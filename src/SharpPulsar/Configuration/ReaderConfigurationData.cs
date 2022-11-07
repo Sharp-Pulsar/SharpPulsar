@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using DotNetty.Common.Utilities;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Interfaces;
 
@@ -40,7 +41,8 @@ namespace SharpPulsar.Configuration
 
 		public bool ReadCompacted { get; set; } = false;
 		public bool ResetIncludeHead { get; set; } = true;
-		
+        [NonSerialized]
+        public IList<IReaderInterceptor<T>> ReaderInterceptorList;
         public string SubscriptionRolePrefix { get; set; }
 
 		public string TopicName 
@@ -63,8 +65,14 @@ namespace SharpPulsar.Configuration
 		public List<string> TopicNames { get; set; } = new List<string>();
 
         public string ReaderName { get; set; }
-		
-		
-	}
+
+        // max pending chunked message to avoid sending incomplete message into the queue and memory
+        public int MaxPendingChunkedMessage { get; set; } = 10;
+
+        public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; } = false;
+
+        public long ExpireTimeOfIncompleteChunkedMessage { get; set; } = (long)TimeSpan.FromMinutes(1).TotalMilliseconds;
+
+    }
 
 }

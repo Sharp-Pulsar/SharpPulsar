@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Event;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
@@ -47,7 +48,7 @@ namespace SharpPulsar
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 
-			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
+			var consumerConfiguration = new ConsumerConfigurationData<T>();
 			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 			consumerConfiguration.SubscriptionName = subscription;
 			consumerConfiguration.SubscriptionType = SubType.Exclusive;
@@ -55,9 +56,15 @@ namespace SharpPulsar
 			consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
 			consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
 
-			// Reader doesn't need any batch receiving behaviours
-			// disable the batch receive timer for the ConsumerImpl instance wrapped by the ReaderImpl
-			consumerConfiguration.BatchReceivePolicy = _disabledBatchReceivePolicy;
+            // chunking configuration
+            consumerConfiguration.MaxPendingChuckedMessage = readerConfiguration.MaxPendingChunkedMessage;
+            consumerConfiguration.AutoAckOldestChunkedMessageOnQueueFull = readerConfiguration.AutoAckOldestChunkedMessageOnQueueFull;
+            consumerConfiguration.ExpireTimeOfIncompleteChunkedMessage = TimeSpan.FromMilliseconds(readerConfiguration.ExpireTimeOfIncompleteChunkedMessage);
+
+
+            // Reader doesn't need any batch receiving behaviours
+            // disable the batch receive timer for the ConsumerImpl instance wrapped by the ReaderImpl
+            consumerConfiguration.BatchReceivePolicy = _disabledBatchReceivePolicy;
 
 			if (readerConfiguration.StartMessageId != null)
 				consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;
@@ -89,17 +96,11 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-
-			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-			if (consumerConfiguration.ReceiverQueueSize == 0)
-			{
-				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, false, readerConfiguration.StartMessageId, schema, true, clientConfigurationData, subscribeFuture)));
-			}
-			else
-			{
-				_consumer = Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, clientConfigurationData, subscribeFuture));
-			}
-			Receive<HasReachedEndOfTopic>(m => {
+            var consumerInterceptors = ReaderInterceptorUtil.ConvertToConsumerInterceptors(Self, readerConfiguration.ReaderInterceptorList);
+            var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
+            consumerConfiguration.Interceptors = consumerInterceptors;
+			_consumer = Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, false, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, clientConfigurationData, subscribeFuture));
+            Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m, Sender);
 			});
 			Receive<AcknowledgeCumulativeMessage<T>> (m => {
