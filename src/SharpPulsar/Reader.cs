@@ -141,5 +141,32 @@ namespace SharpPulsar
             }
             return null;
         }
+        public void Seek(Func<string, object> function)
+           => SeekAsync(function).GetAwaiter().GetHashCode();
+
+        public async ValueTask SeekAsync(Func<string, object> function)
+        {
+            if (function == null)
+            {
+                throw new PulsarClientException("Function must be set");
+            }
+            var topic = await TopicAsync().ConfigureAwait(false);
+            var seekPosition = function(topic);
+            if (seekPosition == null)
+            {
+                return;
+            }
+            if (seekPosition is MessageId msgId)
+            {
+                await SeekAsync(msgId).ConfigureAwait(false);
+                return;
+            }
+            else if (seekPosition is long timeStamp)
+            {
+                await SeekAsync(timeStamp).ConfigureAwait(false);
+                return;
+            }
+            throw new PulsarClientException("Only support seek by messageId or timestamp");
+        }
     }
 }

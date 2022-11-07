@@ -13,6 +13,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using SharpPulsar.TransactionImpl;
+using SharpPulsar.Admin.Public;
 
 namespace SharpPulsar
 {
@@ -525,14 +526,14 @@ namespace SharpPulsar
             if (seekPosition is MessageId msgId)
             {
                 await SeekAsync(msgId).ConfigureAwait(false);
+                return;
             }
             else if (seekPosition is long timeStamp)
             {
                 await SeekAsync(timeStamp).ConfigureAwait(false);
+                return;
             }
             throw new PulsarClientException("Only support seek by messageId or timestamp");
-
-            throw new NotImplementedException();
         }
 
         

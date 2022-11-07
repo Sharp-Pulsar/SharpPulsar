@@ -121,6 +121,44 @@ namespace SharpPulsar.Interfaces
 		/// <param name="timestamp"> the message publish time where to reposition the reader </param>
 		void Seek(long timestamp);
 		ValueTask SeekAsync(long timestamp);
-	}
+
+        /// <summary>
+        /// Reset the subscription associated with this consumer to a specific message ID or message publish time.
+        /// <para>
+        /// The Function input is topic+partition. It returns only timestamp or MessageId.
+        /// </para>
+        /// <para>
+        /// The return value is the seek position/timestamp of the current partition.
+        /// Exception is thrown if other object types are returned.
+        /// </para>
+        /// <para>
+        /// If returns null, the current partition will not do any processing.
+        /// Exception in a partition may affect other partitions.
+        /// </para>
+        /// </summary>
+        /// <param name="function"> </param>
+        /// <exception cref="PulsarClientException"> </exception>
+        void Seek(Func<string, object> function);
+
+        /// <summary>
+        /// Reset the subscription associated with this consumer to a specific message ID
+        /// or message publish time asynchronously.
+        /// <para>
+        /// The Function input is topic+partition. It returns only timestamp or MessageId.
+        /// </para>
+        /// <para>
+        /// The return value is the seek position/timestamp of the current partition.
+        /// Exception is thrown if other object types are returned.
+        /// </para>
+        /// <para>
+        /// If returns null, the current partition will not do any processing.
+        /// Exception in a partition may affect other partitions.
+        /// </para>
+        /// </summary>
+        /// <param name="function">
+        /// @return </param>
+        ValueTask SeekAsync(Func<string, object> function);
+
+    }
 
 }
