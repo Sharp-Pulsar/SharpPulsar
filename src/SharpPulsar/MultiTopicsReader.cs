@@ -1,4 +1,6 @@
 ﻿using Akka.Actor;
+using Avro.Util;
+using DotNetty.Common.Utilities;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
@@ -43,11 +45,20 @@ namespace SharpPulsar
         public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
 		{
 			_generator = idGenerator;
-			var subscription = "multiTopicsReader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
-			if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
-			{
-				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
-			}
+            string subscription;
+            if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionName))
+            {
+                subscription = readerConfiguration.SubscriptionName;
+            }
+            else
+            {
+                subscription = "multiTopicsReader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+                if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
+                {
+                    subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
+                }
+            }
+            
 			var consumerConfiguration = new ConsumerConfigurationData<T>();
 			foreach(var topic in readerConfiguration.TopicNames)
 				consumerConfiguration.TopicNames.Add(topic);
@@ -58,7 +69,13 @@ namespace SharpPulsar
 			consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
 			consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
 
-			if(readerConfiguration.ReaderListener != null)
+            // chunking configuration
+            consumerConfiguration.MaxPendingChuckedMessage = readerConfiguration.MaxPendingChunkedMessage;
+            consumerConfiguration.AutoAckOldestChunkedMessageOnQueueFull = readerConfiguration.AutoAckOldestChunkedMessageOnQueueFull;
+            consumerConfiguration.ExpireTimeOfIncompleteChunkedMessage = TimeSpan.FromMilliseconds(readerConfiguration.ExpireTimeOfIncompleteChunkedMessage);
+
+
+            if (readerConfiguration.ReaderListener != null)
 			{
 				var readerListener = readerConfiguration.ReaderListener;
 				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(Self, readerListener);
@@ -83,7 +100,11 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, schema, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, subscribeFuture)));
+            if (readerConfiguration.AutoUpdatePartitions)
+            {
+                consumerConfiguration.AutoUpdatePartitionsInterval = readerConfiguration.AutoUpdatePartitionsInterval;
+            }
+            _consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, schema, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, subscribeFuture)));
 
             ReceiveAsync<Subscribe>(async sub => 
             {

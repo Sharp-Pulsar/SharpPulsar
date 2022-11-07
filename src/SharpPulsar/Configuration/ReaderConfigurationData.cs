@@ -30,7 +30,9 @@ namespace SharpPulsar.Configuration
         public IList<Common.Range> KeyHashRanges { get; set; }
 		public IMessageId StartMessageId { get; set; }
 		public IConsumerEventListener EventListener { get; set; }
-		public long StartMessageFromRollbackDurationInSec { get; set; }
+        public bool AutoUpdatePartitions { get; set; } = true;
+        public TimeSpan AutoUpdatePartitionsInterval = TimeSpan.FromSeconds(60);
+        public long StartMessageFromRollbackDurationInSec { get; set; }
         public ISchema<T> Schema { get; set; }
 		public int ReceiverQueueSize { get; set; } = 1000;
 
@@ -65,6 +67,7 @@ namespace SharpPulsar.Configuration
 		public List<string> TopicNames { get; set; } = new List<string>();
 
         public string ReaderName { get; set; }
+        public string SubscriptionName { get; set; }
 
         // max pending chunked message to avoid sending incomplete message into the queue and memory
         public int MaxPendingChunkedMessage { get; set; } = 10;

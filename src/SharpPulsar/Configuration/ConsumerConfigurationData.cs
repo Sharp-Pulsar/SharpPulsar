@@ -32,13 +32,12 @@ namespace SharpPulsar.Configuration
 {
     public sealed class ConsumerConfigurationData<T>
 	{
-		private TimeSpan _autoUpdatePartitionsInterval = TimeSpan.FromSeconds(5);
 		public void SetAutoUpdatePartitionsInterval(TimeSpan interval)
 		{
 			Condition.CheckArgument(interval.TotalMilliseconds > 0, "interval needs to be > 0");
-			_autoUpdatePartitionsInterval = interval;
+            AutoUpdatePartitionsInterval = interval;
 		}
-		public TimeSpan AutoUpdatePartitionsInterval { get => _autoUpdatePartitionsInterval; }
+        public TimeSpan AutoUpdatePartitionsInterval { get; set; } = TimeSpan.FromSeconds(5);
 		public IMessageCrypto MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
