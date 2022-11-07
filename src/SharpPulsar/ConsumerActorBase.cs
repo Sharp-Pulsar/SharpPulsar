@@ -66,6 +66,7 @@ namespace SharpPulsar
 		internal abstract ValueTask Seek(IMessageId messageId);
 		internal abstract IConsumerStatsRecorder Stats { get; }
         internal readonly AtomicBoolean ScaleReceiverQueueHint = new AtomicBoolean(false);
+
         internal int CurrentReceiverQueueSize;
         internal enum ConsumerType
 		{

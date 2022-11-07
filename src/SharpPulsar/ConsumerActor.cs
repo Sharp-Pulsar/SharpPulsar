@@ -2158,7 +2158,7 @@ namespace SharpPulsar
             return result;
         }
 
-        private void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx, long consumerEpoch)
+        internal virtual void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx, long consumerEpoch)
 		{
 			var batchSize = msgMetadata.NumMessagesInBatch;
 			// create ack tracker for entry aka batch
@@ -3374,8 +3374,11 @@ namespace SharpPulsar
 			}
 			//ConsumerQueue.AcknowledgeException.Add(new ClientExceptions(pulsarClientException));
 		}
-
-	}
+        internal IActorRef Cnx()
+        {
+            return _clientCnx;
+        }
+    }
     internal class ChunkedMessageCtx
     {
 
