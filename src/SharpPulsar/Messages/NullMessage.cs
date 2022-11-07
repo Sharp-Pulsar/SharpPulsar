@@ -53,6 +53,10 @@ namespace SharpPulsar.Messages
 
         public string ReplicatedFrom => throw new NotImplementedException();
 
+        public long? BrokerPublishTime => throw new NotImplementedException();
+
+        public long? Index => throw new NotImplementedException();
+
         public string GetProperty(string name)
         {
             throw new NotImplementedException();
@@ -82,6 +86,16 @@ namespace SharpPulsar.Messages
         {
             throw new NotImplementedException();
         }
+
+        public bool HasBrokerPublishTime()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool HasIndex()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public sealed class NullMessages<T> : IMessages<T>
@@ -102,6 +116,11 @@ namespace SharpPulsar.Messages
         }
 
         IEnumerator IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IList<IMessage<T>> MessageList()
         {
             throw new NotImplementedException();
         }
