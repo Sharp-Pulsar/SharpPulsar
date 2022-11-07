@@ -170,6 +170,7 @@ namespace SharpPulsar
 
         private IActorRef _clientCnxUsedForConsumerRegistration;
         private readonly Dictionary<string, long> _properties = new Dictionary<string, long>();
+        
 
         public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture) : this
             (consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfigurationData, subscribeFuture)
@@ -345,12 +346,25 @@ namespace SharpPulsar
         }
         public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, schema, createTopicIfDoesNotExist, clientConfigurationData, subscribeFuture));
+            return Props.Create(() => 
+                conf.ReceiverQueueSize == 0 
+                ? 
+                new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, startMessageId, schema, true, clientConfigurationData, subscribeFuture) 
+                :
+                new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, schema, createTopicIfDoesNotExist, clientConfigurationData, subscribeFuture)
+           );
+        
         }
 
         public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
+            return Props.Create(() =>
+                conf.ReceiverQueueSize == 0
+                ?
+                new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, false, startMessageId, schema, true, clientConfiguration, subscribeFuture)
+                :
+                new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
+           );
         }
         protected internal override void CompleteOpBatchReceive(OpBatchReceive op)
         {
