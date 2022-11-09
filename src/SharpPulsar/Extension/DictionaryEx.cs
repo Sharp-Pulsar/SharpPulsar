@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Tracker;
 
 namespace SharpPulsar.Extension
 {
@@ -27,6 +28,17 @@ namespace SharpPulsar.Extension
             {
                 collection.Add(item);
             }
+        }
+        public static HashSet<UnackMessageIdWrapper> PutIfAbsent(this Dictionary<UnackMessageIdWrapper, HashSet<UnackMessageIdWrapper>> map, UnackMessageIdWrapper key, HashSet<UnackMessageIdWrapper> value)
+        {
+            if (!map.ContainsKey(key))
+            {
+                map.Add(key, value);
+                return value;
+            }
+                
+            else
+                return map[key];
         }
     }
 }

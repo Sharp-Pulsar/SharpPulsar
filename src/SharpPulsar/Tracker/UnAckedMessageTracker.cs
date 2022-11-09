@@ -26,13 +26,11 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
-using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Tracker.Messages;
-using SharpPulsar.Utility;
 
 namespace SharpPulsar.Tracker
 {
@@ -42,21 +40,21 @@ namespace SharpPulsar.Tracker
         public ArrayDeque<HashSet<IMessageId>> TimePartitions { get; }
         private readonly ILoggingAdapter _log;
         private ICancelable _timeout;
-        private readonly IActorRef _consumer;
+        internal readonly IActorRef Consumer;
         protected internal readonly long AckTimeout;
         protected internal readonly long TickDuration;
         private readonly IScheduler _scheduler;
-        private readonly IActorRef _unack;
-        private ISet<IMessageId> _messageIds;
+        internal readonly IActorRef Unack;
+        internal ISet<IMessageId> MessageIds;
         public UnAckedMessageTracker(IActorRef consumer, IActorRef unack, ConsumerConfigurationData<T> conf)
         {
             AckTimeout = (long)conf.AckTimeout.TotalMilliseconds;
             TickDuration = (long)Math.Min(conf.TickDuration.TotalMilliseconds, conf.AckTimeout.TotalMilliseconds);
-            _messageIds = new HashSet<IMessageId>();
+            MessageIds = new HashSet<IMessageId>();
             Precondition.Condition.CheckArgument(conf.TickDuration > TimeSpan.Zero && conf.AckTimeout >= conf.TickDuration);
             _scheduler = Context.System.Scheduler;
-            _consumer = consumer;
-            _unack = unack;
+            Consumer = consumer;
+            Unack = unack;
             _log = Context.System.Log;
             if(conf.AckTimeoutRedeliveryBackoff == null)
             {
@@ -118,18 +116,17 @@ namespace SharpPulsar.Tracker
         }
         internal virtual void RedeliverMessages()
         {
-            _messageIds.Clear();
-            var messagesToRedeliver = new HashSet<IMessageId>();
+            MessageIds.Clear();
             try
             {
                 var headPartition = TimePartitions.RemoveFirst();
                 if (headPartition.Count > 0)
                 {
-                    _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages will be re-delivered");
+                    _log.Warning($"[{Consumer.Path.Name}] {headPartition.Count} messages will be re-delivered");
                     headPartition.ForEach(async messageId =>
                     {
-                        await AddChunkedMessageIdsAndRemoveFromSequenceMap(messageId, _messageIds, _unack);
-                        _messageIds.Add(messageId);
+                        await AddChunkedMessageIdsAndRemoveFromSequenceMap(messageId, MessageIds, Unack);
+                        MessageIds.Add(messageId);
                         _ = MessageIdPartitionMap.TryRemove(messageId, out var _);
                     });
                     headPartition.Clear();
@@ -144,10 +141,10 @@ namespace SharpPulsar.Tracker
                 }
                 catch
                 {
-                    if (messagesToRedeliver.Count > 0)
+                    if (MessageIds.Count > 0)
                     {
-                        _consumer.Tell(new AckTimeoutSend(messagesToRedeliver));
-                        _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
+                        Consumer.Tell(new AckTimeoutSend(MessageIds));
+                        Consumer.Tell(new RedeliverUnacknowledgedMessageIds(MessageIds));
                     }
                 }
                
@@ -158,12 +155,12 @@ namespace SharpPulsar.Tracker
         {            
             if (messageId is MessageId)
             {
-                var chunkedMsgIds = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId })); ;
+                var chunkedMsgIds = await Unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId })); ;
                 if (chunkedMsgIds != null && chunkedMsgIds.MessageIds.Length > 0)
                 {
-                    _messageIds = messageIds.Select(m => m).Concat(chunkedMsgIds.MessageIds.Select(c => c)).ToHashSet();
+                    MessageIds = messageIds.Select(m => m).Concat(chunkedMsgIds.MessageIds.Select(c => c)).ToHashSet();
                 }
-                _unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
+                Unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
             }
         }
         internal virtual void Clear()

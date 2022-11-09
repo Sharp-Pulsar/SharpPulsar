@@ -33,12 +33,12 @@ namespace SharpPulsar.Tracker
 		}
 
 
-		internal UnackMessageIdWrapper ValueOf(MessageId messageId)
+		internal UnackMessageIdWrapper ValueOf(IMessageId messageId)
 		{
 			return Create(messageId, 0);
 		}
 
-		internal UnackMessageIdWrapper ValueOf(MessageId messageId, int redeliveryCount)
+		internal UnackMessageIdWrapper ValueOf(IMessageId messageId, int redeliveryCount)
 		{
 			return Create(messageId, redeliveryCount);
 		}
