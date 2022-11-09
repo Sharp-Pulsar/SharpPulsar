@@ -21,48 +21,54 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
+using SharpPulsar.Admin.Admin.Models;
+using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Tracker.Messages;
+using SharpPulsar.Utility;
 
 namespace SharpPulsar.Tracker
 {
-    public class UnAckedMessageTracker:ReceiveActor, IWithUnboundedStash
+    internal class UnAckedMessageTracker<T>:ReceiveActor, IWithUnboundedStash
     {
         internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> MessageIdPartitionMap;
         public ArrayDeque<HashSet<IMessageId>> TimePartitions { get; }
         private readonly ILoggingAdapter _log;
         private ICancelable _timeout;
         private readonly IActorRef _consumer;
-        private readonly TimeSpan _tickDuration;
-        private readonly TimeSpan _ackTimeout;
+        protected internal readonly long AckTimeout;
+        protected internal readonly long TickDuration;
         private readonly IScheduler _scheduler;
         private readonly IActorRef _unack;
-
-        public UnAckedMessageTracker(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack, IRedeliveryBackoff ackTimeoutRedeliveryBackoff = null)
+        private ISet<IMessageId> _messageIds;
+        public UnAckedMessageTracker(IActorRef consumer, IActorRef unack, ConsumerConfigurationData<T> conf)
         {
-            Precondition.Condition.CheckArgument(tickDurationInMs > TimeSpan.Zero && ackTimeoutMillis >= tickDurationInMs);
+            AckTimeout = (long)conf.AckTimeout.TotalMilliseconds;
+            TickDuration = (long)Math.Min(conf.TickDuration.TotalMilliseconds, conf.AckTimeout.TotalMilliseconds);
+            _messageIds = new HashSet<IMessageId>();
+            Precondition.Condition.CheckArgument(conf.TickDuration > TimeSpan.Zero && conf.AckTimeout >= conf.TickDuration);
             _scheduler = Context.System.Scheduler;
             _consumer = consumer;
-            _log = Context.System.Log;
-            _tickDuration = tickDurationInMs;
-            _ackTimeout = ackTimeoutMillis;
             _unack = unack;
-            if(ackTimeoutRedeliveryBackoff == null)
+            _log = Context.System.Log;
+            if(conf.AckTimeoutRedeliveryBackoff == null)
             {
                 MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, HashSet<IMessageId>>();
                 TimePartitions = new ArrayDeque<HashSet<IMessageId>>();
-                var blankPartitions = (int)Math.Ceiling((double)ackTimeoutMillis.TotalMilliseconds / _tickDuration.TotalMilliseconds);
+                var blankPartitions = (int)Math.Ceiling((double)AckTimeout / TickDuration);
                 for (var i = 0; i < blankPartitions + 1; i++)
                 {
                     TimePartitions.Add(new HashSet<IMessageId>());
                 }
 
-                _timeout = _scheduler.ScheduleTellOnceCancelable(_ackTimeout, Self, RunJob.Instance, ActorRefs.NoSender);
+                _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(AckTimeout), Self, RunJob.Instance, ActorRefs.NoSender);
             }
             else
             {
@@ -76,7 +82,7 @@ namespace SharpPulsar.Tracker
         {
             Receive<Empty>(c =>
             {
-                var emptied = Empty();
+                var emptied = Empty;
                 Sender.Tell(emptied);
             });
             Receive<Clear>(c => Clear());
@@ -110,8 +116,9 @@ namespace SharpPulsar.Tracker
                 RedeliverMessages();
             });
         }
-        private void RedeliverMessages()
+        internal virtual void RedeliverMessages()
         {
+            _messageIds.Clear();
             var messagesToRedeliver = new HashSet<IMessageId>();
             try
             {
@@ -121,12 +128,8 @@ namespace SharpPulsar.Tracker
                     _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages will be re-delivered");
                     headPartition.ForEach(async messageId =>
                     {
-                        var ids = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId }));
-                        foreach (var i in ids.MessageIds)
-                            messagesToRedeliver.Add(i);
-
-                        messagesToRedeliver.Add(messageId);
-                        _unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
+                        await AddChunkedMessageIdsAndRemoveFromSequenceMap(messageId, _messageIds, _unack);
+                        _messageIds.Add(messageId);
                         _ = MessageIdPartitionMap.TryRemove(messageId, out var _);
                     });
                     headPartition.Clear();
@@ -137,7 +140,7 @@ namespace SharpPulsar.Tracker
             {
                 try
                 {
-                    _timeout = _scheduler.ScheduleTellOnceCancelable(_ackTimeout, Self, RunJob.Instance, ActorRefs.NoSender);
+                    _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(AckTimeout), Self, RunJob.Instance, ActorRefs.NoSender);
                 }
                 catch
                 {
@@ -151,8 +154,19 @@ namespace SharpPulsar.Tracker
             }   
 
         }
-
-        private void Clear()
+        internal async ValueTask AddChunkedMessageIdsAndRemoveFromSequenceMap(IMessageId messageId, ISet<IMessageId> messageIds, IActorRef unack)
+        {            
+            if (messageId is MessageId)
+            {
+                var chunkedMsgIds = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId })); ;
+                if (chunkedMsgIds != null && chunkedMsgIds.MessageIds.Length > 0)
+                {
+                    _messageIds = messageIds.Select(m => m).Concat(chunkedMsgIds.MessageIds.Select(c => c)).ToHashSet();
+                }
+                _unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
+            }
+        }
+        internal virtual void Clear()
         {
             try
             {
@@ -166,7 +180,7 @@ namespace SharpPulsar.Tracker
             }
         }
 
-        private  bool Add(IMessageId messageId)
+        internal virtual bool Add(IMessageId messageId)
         {
             try
             {
@@ -187,26 +201,30 @@ namespace SharpPulsar.Tracker
                 return false;
             }
         }
-        private bool Add(IMessageId messageId, int redeliveryCount)
+        internal virtual bool Add(IMessageId messageId, int redeliveryCount)
         {
             return Add(messageId);
         }
 
-        private bool Empty()
+        internal virtual bool Empty
         {
-            try
+            get
             {
-                return MessageIdPartitionMap.Count == 0;
-            }
+                try
+                {
+                    return MessageIdPartitionMap.Count == 0;
+                }
 
-            catch (Exception ex)
-            {
-                _log.Error(ex.ToString());
-                return false;
+                catch (Exception ex)
+                {
+                    _log.Error(ex.ToString());
+                    return false;
+                }
             }
+            
         }
 
-        private bool Remove(IMessageId messageId)
+        internal virtual bool Remove(IMessageId messageId)
         {
             try
             {
@@ -226,12 +244,12 @@ namespace SharpPulsar.Tracker
             }
         }
 
-        private long Size()
+        internal virtual long Size()
         {
             return MessageIdPartitionMap.Count;
         }
 
-        private int RemoveMessagesTill(IMessageId msgId)
+        internal virtual int RemoveMessagesTill(IMessageId msgId)
         { 
             try
             {
@@ -266,9 +284,9 @@ namespace SharpPulsar.Tracker
             Clear();
         }
 
-        public static Props Prop(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack, IRedeliveryBackoff ackTimeoutRedeliveryBackoff)
+        public static Props Prop(IActorRef consumer, IActorRef unack, ConsumerConfigurationData<T> conf)
         {
-            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, consumer, unack, ackTimeoutRedeliveryBackoff));
+            return Props.Create(()=> new UnAckedMessageTracker<T>(consumer, unack, conf));
         }
     }
 

@@ -20,10 +20,11 @@
 /// </summary>
 namespace Org.Apache.Pulsar.Client.Impl
 {
-	using MessageId = Org.Apache.Pulsar.Client.Api.MessageId;
-	using Org.Apache.Pulsar.Client.Impl.Conf;
+    using MessageId = Org.Apache.Pulsar.Client.Api.MessageId;
+    using Org.Apache.Pulsar.Client.Impl.Conf;
+    using SharpPulsar.Tracker;
 
-	public class UnAckedTopicMessageRedeliveryTracker : UnAckedMessageRedeliveryTracker
+    public class UnAckedTopicMessageRedeliveryTracker : UnAckedMessageRedeliveryTracker
 	{
 
 // JAVA TO C# CONVERTER TODO TASK: Wildcard generics in constructor parameters are not converted. Move the generic type parameter and constraint to the class header:
