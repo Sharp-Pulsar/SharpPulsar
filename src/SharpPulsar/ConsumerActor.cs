@@ -1,21 +1,13 @@
 ﻿using Akka.Actor;
 using Akka.Util;
-using Akka.Util.Internal;
-using DotNetty.Common.Utilities;
-using Org.BouncyCastle.Crypto;
 using ProtoBuf;
-using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Builder;
-using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Common.Entity;
-using SharpPulsar.Common.Enum;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
-using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
@@ -30,7 +22,6 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
-using SharpPulsar.Table.Messages;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Utils;
@@ -846,13 +837,8 @@ namespace SharpPulsar
             {
                 try
                 {
-                    var uns = Unsubscribe();
-                    if (uns.Task.Exception != null)
-                    {
-                        Sender.Tell(new AskResponse(uns.Task.Exception));
-                    }
-                    else
-                     Sender.Tell(uns);
+                    
+                    Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
                 {
@@ -984,12 +970,11 @@ namespace SharpPulsar
             }
         }
 
-        internal override TaskCompletionSource<AskResponse> Unsubscribe()
+        internal override void Unsubscribe()
         {
-            var unsubscribeFuture = new TaskCompletionSource<AskResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
-                unsubscribeFuture.SetException(new AlreadyClosedException("AlreadyClosedException: Consumer was already closed"));
+                throw new AlreadyClosedException("AlreadyClosedException: Consumer was already closed");
             }
             else
             {
@@ -1006,17 +991,15 @@ namespace SharpPulsar
                     _client.Tell(new CleanupConsumer(Self));
                     _log.Info($"[{Topic}][{Subscription}] Successfully unsubscribed from topic");
                     State.ConnectionState = HandlerState.State.Closed;
-                    Sender.Tell(new AskResponse());
-                    unsubscribeFuture.SetResult(new AskResponse());
                 }
                 else
                 {
                     var err = $"The client is not connected to the broker when unsubscribing the subscription {Subscription} of the topic {_topicName}";
-                    unsubscribeFuture.SetException(new PulsarClientException(err));
                     _log.Error(err);
+                    throw new PulsarClientException(err);
+                    
                 }
             }
-            return unsubscribeFuture;
         }
         public override int MinReceiverQueueSize()
         {

@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Interfaces;
+using SharpPulsar.Configuration;
 using SharpPulsar.Tracker.Messages;
-using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -24,26 +23,20 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Tracker
 {
-    public class UnAckedTopicMessageTracker : UnAckedMessageTracker
+    internal class UnAckedTopicMessageTracker<T> : UnAckedMessageTracker<T>
 	{
-		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, IRedeliveryBackoff redeliveryBackoff) : base(ackTimeout, TimeSpan.Zero, consumerBase, unack, redeliveryBackoff)
-		{
-		}
 
-		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, TimeSpan tickDuration, IRedeliveryBackoff redeliveryBackoff) : base(ackTimeout, tickDuration, consumerBase, unack, redeliveryBackoff)
+		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, ConsumerConfigurationData<T> conf) : base(consumerBase, unack, conf)
 		{
 			Receive<RemoveTopicMessages>(m => {
-				RemoveTopicMessages(m.Topic);
+				RemoveTopicMessages(m.TopicName);
 			});
 		}
-		public static Props Prop(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, IRedeliveryBackoff redeliveryBackoff)
+		public new static Props Prop(IActorRef unack, IActorRef consumerBase, ConsumerConfigurationData<T> conf)
         {
-			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeout, redeliveryBackoff));
+			return Props.Create(() => new UnAckedTopicMessageTracker<T>(unack, consumerBase, conf));
         }
-		public static Props Prop(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout, TimeSpan tickDuration, IRedeliveryBackoff redeliveryBackoff)
-        {
-			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeout, tickDuration, redeliveryBackoff));
-        }
+		
 		public virtual int RemoveTopicMessages(string topicName)
 		{
 			int removed = 0;

@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
-using DotNetty.Common.Utilities;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +28,7 @@ using SharpPulsar.Utility;
 /// </summary>
 namespace SharpPulsar.Tracker
 {
-    
+
     internal class UnAckedMessageRedeliveryTracker<T> : UnAckedMessageTracker<T>
     {
         private readonly ILoggingAdapter _log;

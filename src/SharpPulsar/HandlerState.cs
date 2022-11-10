@@ -1,11 +1,10 @@
-﻿using System.Threading;
-using Akka.Actor;
+﻿using Akka.Actor;
 using SharpPulsar.Extension;
 
 namespace SharpPulsar
 {
-	
-	public class HandlerState
+
+    public class HandlerState
 	{
 		public enum State
 		{

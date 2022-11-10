@@ -3,11 +3,7 @@ using Akka.Dispatch;
 using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
-using Avro.IO;
-using DotNetty.Common.Utilities;
-using NLog.Fluent;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Common.Enum;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
@@ -16,17 +12,12 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Stats.Consumer.Api;
-using SharpPulsar.TransactionImpl;
-using SharpPulsar.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reactive.Concurrency;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Exceptions.PulsarClientException;
@@ -412,7 +403,7 @@ namespace SharpPulsar
 		{
 			NegativeAcknowledge(message.MessageId);
 		}
-        internal abstract TaskCompletionSource<AskResponse> Unsubscribe();
+        internal abstract void Unsubscribe();
         protected internal virtual void NegativeAcknowledge(IMessages<T> messages)
 		{
 			messages.ForEach(NegativeAcknowledge);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DotNetty.Common.Utilities;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Stats.Consumer.Api;
 
@@ -76,6 +75,25 @@ namespace SharpPulsar.Interfaces
         /// </summary>
         /// <exception cref="PulsarClientException"> if the operation fails </exception>
         void Unsubscribe();
+
+
+        /// <summary>
+        /// Unsubscribe the consumer.
+        /// 
+        /// <para>This call blocks until the consumer is unsubscribed.
+        /// 
+        /// </para>
+        /// <para>Unsubscribing will the subscription to be deleted and all the
+        /// data retained can potentially be deleted as well.
+        /// 
+        /// </para>
+        /// <para>The operation will fail when performed on a shared subscription
+        /// where multiple consumers are currently connected.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <exception cref="PulsarClientException"> if the operation fails </exception>
+        ValueTask UnsubscribeAsync();
 
         /// <summary>
         /// Receive a single message.

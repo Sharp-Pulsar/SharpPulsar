@@ -1,5 +1,4 @@
-﻿using Akka;
-using Akka.Actor;
+﻿using Akka.Actor;
 using Akka.Util.Internal;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;

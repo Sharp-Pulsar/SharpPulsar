@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DotNetty.Common.Utilities;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Interfaces;
 

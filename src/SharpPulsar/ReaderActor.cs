@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;

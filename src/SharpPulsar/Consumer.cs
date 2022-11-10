@@ -13,7 +13,6 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using SharpPulsar.TransactionImpl;
-using SharpPulsar.Admin.Public;
 
 namespace SharpPulsar
 {
@@ -495,7 +494,14 @@ namespace SharpPulsar
         }
         public void Unsubscribe()
         {
-            _consumerActor.Tell(Messages.Consumer.Unsubscribe.Instance);
+            UnsubscribeAsync().GetAwaiter().GetResult();    
+        }
+        public async ValueTask UnsubscribeAsync ()
+        {
+            var ask = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Unsubscribe.Instance)
+                .ConfigureAwait(false);
+            if (ask.Failed)
+                throw ask.Exception;
         }
         public void NegativeAcknowledge(IMessageId messageId)
             => NegativeAcknowledgeAsync(messageId).GetAwaiter().GetResult();

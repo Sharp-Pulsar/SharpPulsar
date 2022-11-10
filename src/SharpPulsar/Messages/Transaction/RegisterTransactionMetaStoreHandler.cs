@@ -1,8 +1,5 @@
-﻿
-using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Akka.Actor;
-using DotNetty.Common.Concurrency;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 
