@@ -236,13 +236,13 @@ namespace SharpPulsar
 
             if (conf.AckTimeout.TotalMilliseconds > 0)
             {
-                if (conf.TickDuration.TotalMilliseconds > 0)
+                if (conf.AckTimeoutRedeliveryBackoff != null)
                 {
-                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, conf.TickDuration > conf.AckTimeout ? conf.AckTimeout : conf.TickDuration, _self, UnAckedChunckedMessageIdSequenceMap, conf.AckTimeoutRedeliveryBackoff), "UnAckedMessageTracker");
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageRedeliveryTracker<T>.Prop(Self,UnAckedChunckedMessageIdSequenceMap, conf), "UnAckedMessageRedeliveryTracker");
                 }
                 else
                 {
-                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, TimeSpan.Zero, _self, UnAckedChunckedMessageIdSequenceMap, conf.AckTimeoutRedeliveryBackoff), "UnAckedMessageTracker");
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker<T>.Prop(Self, UnAckedChunckedMessageIdSequenceMap, conf), "UnAckedMessageTracker");
                 }
             }
             else

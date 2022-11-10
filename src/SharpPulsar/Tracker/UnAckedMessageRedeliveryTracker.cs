@@ -69,8 +69,8 @@ namespace SharpPulsar.Tracker
                     headPartition.ForEach(unackMessageIdWrapper =>
                     {
                         AddAckTimeoutMessages(unackMessageIdWrapper);
-                        outerInstance.RedeliveryMessageIdPartitionMap.Remove(unackMessageIdWrapper);
-                        unackMessageIdWrapper.recycle();
+                        RedeliveryMessageIdPartitionMap.Remove(unackMessageIdWrapper);
+                        unackMessageIdWrapper.Recycle();
                     });
                 }
                 headPartition.Clear();
