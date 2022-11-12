@@ -646,7 +646,7 @@ namespace SharpPulsar
             var receivedFuture = NextPendingReceive();
             if (receivedFuture != null)
             {
-                _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId, topicMessage.RedeliveryCount));
+                _unAckedMessageTracker.Tell(new Add<T>(topicMessage.MessageId, topicMessage.RedeliveryCount));
                 CompletePendingReceive(receivedFuture, topicMessage);
             }
             else if (EnqueueMessageAndCheckBatchReceive(topicMessage) && HasPendingBatchReceive())
@@ -658,7 +658,7 @@ namespace SharpPulsar
         }
         protected internal override void MessageProcessed(IMessage<T> msg)
         {
-            _unAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
+            _unAckedMessageTracker.Tell(new Add<T>(msg.MessageId, msg.RedeliveryCount));
             DecreaseIncomingMessageSize(msg);
         }
         private void ResumeReceivingFromPausedConsumersIfNeeded()
@@ -726,7 +726,7 @@ namespace SharpPulsar
                     message = null;
                     return InternalReceive();
                 }
-                _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                _unAckedMessageTracker.Tell(new Add<T>(message.MessageId, message.RedeliveryCount));
                 ResumeReceivingFromPausedConsumersIfNeeded();
                 return message;
             }
@@ -766,7 +766,7 @@ namespace SharpPulsar
                             return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime));
                         }
                     }
-                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                    _unAckedMessageTracker.Tell(new Add<T>(message.MessageId, message.RedeliveryCount));
                 }
                 ResumeReceivingFromPausedConsumersIfNeeded();
                 return message;
@@ -857,7 +857,7 @@ namespace SharpPulsar
                 {
                     DecreaseIncomingMessageSize(message);
                     //CheckState(Message is TopicMessageImpl);
-                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                    _unAckedMessageTracker.Tell(new Add<T>(message.MessageId, message.RedeliveryCount));
                     ResumeReceivingFromPausedConsumersIfNeeded();
                     result.SetResult(message);
                 }

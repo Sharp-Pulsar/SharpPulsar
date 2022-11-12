@@ -9,6 +9,12 @@ namespace SharpPulsar.Configuration
 
         private ITopicNameMatcher _topicNameMatcher;
         private int _priorityLevel;
+        public TopicConsumerConfigurationData(ITopicNameMatcher topicNameMatcher, int priorityLevel)
+        {
+            _topicNameMatcher = topicNameMatcher;
+            _priorityLevel = priorityLevel;
+        }
+    
         public static TopicConsumerConfigurationData<T> OfTopicsPattern(Regex topicsPattern, int priorityLevel)
         {
             return Of(new TopicNameMatcherTopicsPattern(topicsPattern), priorityLevel);
@@ -46,13 +52,14 @@ namespace SharpPulsar.Configuration
             public TopicNameMatcherTopicsPattern(TopicConsumerConfigurationData<T> outerInstance)
             {
                 _outerInstance = outerInstance;
+
             }
 
             internal readonly Regex TopicsPattern;
 
-            public virtual bool Matches(string TopicName)
+            public virtual bool Matches(string topicName)
             {
-                return TopicsPattern.Match(TopicName).Success;
+                return TopicsPattern.Match(topicName).Success;
             }
         }
 

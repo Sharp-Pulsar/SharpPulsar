@@ -1292,7 +1292,7 @@ namespace SharpPulsar
         }
         internal override void NegativeAcknowledge(IMessageId messageId)
 		{
-			_negativeAcksTracker.Tell(new Add(messageId));
+			_negativeAcksTracker.Tell(new Add<T>(messageId));
 
 			// Ensure the message is not redelivered for ack-timeout, since we did receive an "ack"
 			_unAckedMessageTracker.Tell(new Remove(messageId));
@@ -2283,7 +2283,7 @@ namespace SharpPulsar
 				}
 				else
 				{
-					_unAckedMessageTracker.Tell(new Add(id, redeliveryCount));
+					_unAckedMessageTracker.Tell(new Add<T>(id, redeliveryCount));
 				}
 			}
 		}
@@ -2368,7 +2368,7 @@ namespace SharpPulsar
 					case ConsumerCryptoFailureAction.Fail:
 						var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
 						_log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message");
-						_unAckedMessageTracker.Tell(new Add(m));
+						_unAckedMessageTracker.Tell(new Add<T>(m));
 						return null;
 				}
 			}
@@ -2392,7 +2392,7 @@ namespace SharpPulsar
 				case ConsumerCryptoFailureAction.Fail:
 					var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
 					_log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since unable to decrypt incoming message");
-					_unAckedMessageTracker.Tell(new Add(m));
+					_unAckedMessageTracker.Tell(new Add<T>(m));
 					return null;
 			}
 			return null;
