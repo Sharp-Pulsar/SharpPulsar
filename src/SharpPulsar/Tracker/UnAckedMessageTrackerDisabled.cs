@@ -3,7 +3,7 @@ using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
 {
-    public class UnAckedMessageTrackerDisabled: ReceiveActor
+    public class UnAckedMessageTrackerDisabled<T> : ReceiveActor
     {
         public UnAckedMessageTrackerDisabled()
         {
@@ -13,7 +13,7 @@ namespace SharpPulsar.Tracker
                 Sender.Tell(true);
             });
             Receive<RemoveMessagesTill>(c => { Sender.Tell(0);});
-            Receive<Add>(c => { Sender.Tell(true);});
+            Receive<Add<T>>(c => { Sender.Tell(true);});
             Receive<Size>(c => { Sender.Tell(0L);});
             ReceiveAny(_ =>
             {

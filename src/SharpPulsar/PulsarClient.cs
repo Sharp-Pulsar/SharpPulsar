@@ -272,7 +272,7 @@ namespace SharpPulsar
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
-                    var consumer = _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, null, schema, true, _clientConfigurationData, tcs));
+                    var consumer = _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
                     cnsr = await tcs.Task.ConfigureAwait(false);
 
                     _client.Tell(new AddConsumer(cnsr));

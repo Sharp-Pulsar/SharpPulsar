@@ -152,7 +152,7 @@ namespace SharpPulsar
             }
             else
             {
-                _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
+                _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled<T>.Prop(), "UnAckedMessageTrackerDisabled");
             }
 
             _internalConfig = InternalConsumerConfig;

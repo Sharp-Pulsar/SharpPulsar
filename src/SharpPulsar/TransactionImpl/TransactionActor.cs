@@ -1,10 +1,12 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
+using System;
 using System.Collections.Generic;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
@@ -47,7 +49,7 @@ namespace SharpPulsar.TransactionImpl
         private readonly long _txnIdMostBits;
         private readonly ILoggingAdapter _log;
         private long _sequenceId = 0L;
-        private volatile State _state;
+        private TransactionState _state;
         private readonly IActorRef _self;
         private IActorRef _sender;
         private bool _hasOpsFailed = false;
@@ -55,19 +57,21 @@ namespace SharpPulsar.TransactionImpl
         private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
         private IActorRef _tcClient; //TransactionCoordinatorClientImpl
         private IDictionary<IActorRef, int> _cumulativeAckConsumers;
-
+        private readonly List<IMessageId> _sendList;
+        private readonly List<object> ackFutureList;
+        private ICancelable _timeout = null;
         public IStash Stash { get; set; }
 
         public TransactionActor(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
         {
             _self = Self;
-            _state = State.OPEN;
+            _state = TransactionState.OPEN;
             _log = Context.System.Log;
             _client = client;
             _transactionTimeoutMs = transactionTimeoutMs;
             _txnIdLeastBits = txnIdLeastBits;
             _txnIdMostBits = txnIdMostBits;
-
+            _sendList = new List<IMessageId>();
             _registerPartitionMaps = new HashSet<string>();
             _registerSubscriptionMap = new Dictionary<string, List<string>>();
             TcClient();
@@ -121,6 +125,10 @@ namespace SharpPulsar.TransactionImpl
             Receive<IncomingMessagesCleared>(c =>
             {
                 _cumulativeAckConsumers[Sender] = c.Cleared;
+            });
+            Receive<TransState>(_ =>
+            {
+                Sender.Tell(_state);
             });
             Receive<Commit>(_ =>
             {
@@ -233,7 +241,7 @@ namespace SharpPulsar.TransactionImpl
 
         private void Commit()
         {
-            _state = State.COMMITTING;
+            _state = TransactionState.COMMITTING;
             Receive<EndTxnResponse>(e =>
             {
                 _log.Info("Got EndTxnResponse in Commit()");
@@ -242,17 +250,18 @@ namespace SharpPulsar.TransactionImpl
                     var error = e.Error;
                     if (error is TransactionNotFoundException || error is InvalidTxnStatusException)
                     {
-                        _state = State.ERROR;
+                        _state = TransactionState.ERROR;
                         _sender.Tell(error);
                     }
                     else
                     {
-                        _state = State.COMMITTED;
+                        _state = TransactionState.COMMITTED;
                         _sender.Tell(NoException.Instance);
                     }
                 }
                 else
                     _sender.Tell(NoException.Instance);
+
                 Become(Ready);
             });
             ReceiveAny(any => Stash.Stash());
@@ -261,7 +270,7 @@ namespace SharpPulsar.TransactionImpl
 
         private void Abort()
         {
-            _state = State.ABORTING;
+            _state = TransactionState.ABORTING;
             Receive<EndTxnResponse>(e =>
             {
                 _log.Info("Got EndTxnResponse in Commit()");
@@ -275,12 +284,12 @@ namespace SharpPulsar.TransactionImpl
                     var error = e.Error;
                     if (error is TransactionNotFoundException || error is InvalidTxnStatusException)
                     {
-                        _state = State.ERROR;
+                        _state = TransactionState.ERROR;
                         _sender.Tell(error);
                     }
                     else
                     {
-                        _state = State.ABORTED;
+                        _state = TransactionState.ABORTED;
                         _sender.Tell(NoException.Instance);
                     }
                 }
@@ -301,21 +310,42 @@ namespace SharpPulsar.TransactionImpl
         }
         private bool CheckIfOpen()
         {
-            if (_state == State.OPEN)
+            if (_state == TransactionState.OPEN)
                 return true;
 
             _log.Error($"InvalidTxnStatusException({_txnIdMostBits}: {_txnIdLeastBits}] with unexpected state : {_state}, expect OPEN state!");
             return false;
         }
 
-    }
-    public enum State
-    {
-        OPEN,
-        COMMITTING,
-        ABORTING,
-        COMMITTED,
-        ABORTED,
-        ERROR
+        private void CheckIfOpenOrCommitting()
+        {
+            if (_state == TransactionState.OPEN || _state == TransactionState.COMMITTING)
+            {
+                return;
+            }
+            else
+            {
+                InvalidTxnStatusFuture();
+            }
+        }
+
+        private void CheckIfOpenOrAborting()
+        {
+            if (_state == TransactionState.OPEN || _state == TransactionState.ABORTING)
+            {
+                return ;
+            }
+            else
+            {
+                InvalidTxnStatusFuture();
+            }
+        }
+
+        private void InvalidTxnStatusFuture()
+        {
+            throw new InvalidTxnStatusException("[" + _txnIdMostBits + ":" + _txnIdLeastBits + "] with unexpected state : " + _state.ToString() + ", expect " + TransactionState.OPEN + " state!");
+        }
+
+
     }
 }

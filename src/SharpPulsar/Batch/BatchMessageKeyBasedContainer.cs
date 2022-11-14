@@ -9,8 +9,10 @@ using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
+using static SharpPulsar.Protocol.Commands;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -156,7 +158,7 @@ namespace SharpPulsar.Batch
 			{
 				keyedBatch.MessageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
 			}
-			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
+            var cmd = SendMessage(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.Messages[0].MessageId, keyedBatch.MessageMetadata, encryptedPayload);
 
 			var op = ProducerActor<T>.OpSendMsg<T>.Create((List<Message<T>>)keyedBatch.Messages, cmd, keyedBatch.SequenceId, keyedBatch.FirstCallback);
 
@@ -164,8 +166,18 @@ namespace SharpPulsar.Batch
 			op.BatchSizeByte = currentBatchSizeBytes;
 			return op;
 		}
-
-		public override IList<ProducerActor<T>.OpSendMsg<T>> CreateOpSendMsgs()
+        private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, IMessageId messageId, MessageMetadata msgMetadata, byte[] compressedPayload)
+        {
+            if (messageId is MessageId)
+            {
+                return NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+            }
+            else
+            {
+                return NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, -1, -1, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+            }
+        }
+        public override IList<ProducerActor<T>.OpSendMsg<T>> CreateOpSendMsgs()
 		{
 			var result = new List<ProducerActor<T>.OpSendMsg<T>>();
 			var list = new List<KeyedBatch>(_batches.Values);

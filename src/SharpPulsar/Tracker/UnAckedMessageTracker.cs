@@ -94,7 +94,7 @@ namespace SharpPulsar.Tracker
                 var removed = RemoveMessagesTill(c.MessageId);
                 Sender.Tell(removed);
             });
-            Receive<Add>(c =>
+            Receive<Add<T>>(c =>
             {
                 bool added;
                 if(c.RedeliveryCount > 0)

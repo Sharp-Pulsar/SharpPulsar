@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using SharpPulsar.TransactionImpl;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -39,6 +40,18 @@ namespace SharpPulsar.Interfaces.Transaction
 		/// <returns> the future represents the abort result. </returns>
 		void Abort();
         ValueTask AbortAsync();
+
+        /// <summary>
+		/// Get TxnID of the transaction. </summary>
+		///  <returns> <seealso cref="TxnID"/> the txnID. </returns>
+		TxnID TxnID { get; }
+
+        /// <summary>
+        /// Get transaction state.
+        /// </summary>
+        /// <returns> <seealso cref="State"/> the state of the transaction. </returns>
+        TransactionState State { get; }
+
 
     }
 

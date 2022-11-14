@@ -37,4 +37,9 @@ namespace SharpPulsar.Messages.Transaction
     {
         public static Commit Instance = new Commit();
     }
+
+    public sealed class TransState
+    {
+        public static TransactionState Instance = new TransactionState();
+    }
 }

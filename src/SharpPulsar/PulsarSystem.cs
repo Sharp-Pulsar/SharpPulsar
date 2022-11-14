@@ -9,6 +9,7 @@ using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Public;
 using SharpPulsar.Builder;
 using SharpPulsar.Events;
+using SharpPulsar.TransactionImpl;
 
 namespace SharpPulsar
 {

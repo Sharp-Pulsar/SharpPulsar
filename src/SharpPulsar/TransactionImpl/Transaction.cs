@@ -2,6 +2,7 @@
 using Akka.Actor;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages.Transaction;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 namespace SharpPulsar.TransactionImpl
@@ -11,6 +12,7 @@ namespace SharpPulsar.TransactionImpl
         private readonly IActorRef _txn;
         private readonly long _mostSigBits;
         private readonly long _leastSigBits;
+        private volatile TransactionState _state;
         public Transaction(long leastBits, long mostBits, IActorRef txn)
         {
             _mostSigBits = mostBits;
@@ -50,5 +52,14 @@ namespace SharpPulsar.TransactionImpl
         public long LeastSigBits => _leastSigBits;
         public long MostSigBits => _mostSigBits;
         internal IActorRef Txn => _txn;
+        public TxnID TxnID => new TxnID(_mostSigBits, _leastSigBits);
+
+        public TransactionState State
+        {
+            get
+            {
+                return _txn.Ask<TransactionState>(TransState.Instance).GetAwaiter().GetResult();
+            }
+        }
     }
 }

@@ -318,7 +318,7 @@ namespace SharpPulsar.Protocol
             {
                 send.MessageId = new MessageIdData { ledgerId = (ulong)ledgerId, entryId = (ulong)entryId };
             }
-            return Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
+            return Serializer.Serialize(send.ToBaseCommand(), checksumType, messageData, payload);
 		}
 
 		public static ReadOnlySequence<byte> NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
