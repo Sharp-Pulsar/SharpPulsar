@@ -64,7 +64,7 @@ namespace SharpPulsar.Test
             builder.SubscriptionName("TestAckTracker-sub");
             var consumer = await _client.NewConsumerAsync(builder);
             var unack = _client.ActorSystem.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
-            var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker.Prop(TimeSpan.FromSeconds(1000000), TimeSpan.FromSeconds(1000000), consumer.ConsumerActor, unack));
+            var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker<byte[]>.Prop(consumer.ConsumerActor, unack, builder.ConsumerConfigurationData));
 
             var empty = await tracker.Ask<bool>(Empty.Instance);
             Assert.True(empty);
@@ -73,16 +73,16 @@ namespace SharpPulsar.Test
             Assert.Equal(0, size);
 
             var mid = new MessageId(1L, 1L, -1);
-            var added = await tracker.Ask<bool>(new Add(mid));
+            var added = await tracker.Ask<bool>(new Add<object>(mid));
             Assert.True(added);
-            added = await tracker.Ask<bool>(new Add(mid));
+            added = await tracker.Ask<bool>(new Add<object>(mid));
             Assert.False(added);
             size = await tracker.Ask<long>(Size.Instance);
             Assert.Equal(1, size);
 
             tracker.Tell(Clear.Instance);
 
-            added = await tracker.Ask<bool>(new Add(mid));
+            added = await tracker.Ask<bool>(new Add<object>(mid));
             Assert.True(added);
 
             size = await tracker.Ask<long>(Size.Instance);

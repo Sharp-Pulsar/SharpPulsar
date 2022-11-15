@@ -34,7 +34,7 @@ using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
 {
-    internal class UnAckedMessageTracker<T>:ReceiveActor, IWithUnboundedStash
+    public class UnAckedMessageTracker<T>:ReceiveActor, IWithUnboundedStash
     {
         internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> MessageIdPartitionMap;
         public ArrayDeque<HashSet<IMessageId>> TimePartitions { get; }

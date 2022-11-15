@@ -28,7 +28,7 @@ namespace SharpPulsar.Tracker
 
         public static Props Prop()
         {
-            return Props.Create(()=> new UnAckedMessageTrackerDisabled());
+            return Props.Create(()=> new UnAckedMessageTrackerDisabled<T>());
         }
     }
 }

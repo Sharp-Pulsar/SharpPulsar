@@ -197,7 +197,7 @@ namespace SharpPulsar.Test.API
             var payload = ReadOnlySequence<byte>.Empty;
             var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
             msg.SetMessageId(new MessageId(-1, -1, -1));
-            var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg);
+            var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg, null);
 
             Assert.True(topicMessage.Replicated);
             Assert.Equal(msg.ReplicatedFrom, from);
@@ -211,7 +211,7 @@ namespace SharpPulsar.Test.API
             var payload = ReadOnlySequence<byte>.Empty;
             var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
             msg.SetMessageId(new MessageId(-1, -1, -1));
-            var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg);
+            var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg, null);
 
             Assert.False(topicMessage.Replicated);
             Assert.Null(topicMessage.ReplicatedFrom);
