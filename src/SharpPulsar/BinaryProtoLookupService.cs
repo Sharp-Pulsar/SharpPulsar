@@ -57,6 +57,7 @@ namespace SharpPulsar
         private readonly IActorContext _context;
         private IActorRef _replyTo;
         private long _requestId = -1;
+        private TopicName _topicName;
         private Backoff _getTopicsUnderNamespaceBackOff;
         private Backoff _getPartitionedTopicMetadataBackOff;
 
@@ -77,8 +78,8 @@ namespace SharpPulsar
         private void UpdateServiceUrl(string serviceUrl)
         {
             _serviceNameResolver.UpdateServiceUrl(serviceUrl);
-            Sender.Tell(0);
-            Awaiting();
+            //Sender.Tell(0);
+            Become(Awaiting);
         }
         private async ValueTask Broke(GetBroker broker)
         {
@@ -92,7 +93,7 @@ namespace SharpPulsar
             {
                 _replyTo.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
             }
-            Awaiting();
+            //Become(Awaiting);
         }
         private async ValueTask PartitionedTopicMetadata(GetPartitionedTopicMetadata p)
         {
@@ -108,9 +109,10 @@ namespace SharpPulsar
             catch (Exception e)
             {
                 _replyTo.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
-
-                Become(Awaiting);
+                //Become(Awaiting);
             }
+
+            
         }
         private async ValueTask Schema(GetSchema s)
         {
@@ -124,7 +126,7 @@ namespace SharpPulsar
             {
                 _replyTo.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
             }
-            Awaiting();
+            Become(Awaiting);
         }
         private async ValueTask TopicsUnderNamespace(GetTopicsUnderNamespace t)
         {
@@ -145,12 +147,12 @@ namespace SharpPulsar
         }
         private void Awaiting()
         {
-			Receive<SetClient>(c => Become(Awaiting));
-			Receive<UpdateServiceUrl>(u => Become(()=> UpdateServiceUrl(u.ServiceUrl)));
-			Receive<GetBroker>(broke => Become(async ()=> await Broke(broke)));
-			Receive<GetPartitionedTopicMetadata>(p => Become(async ()=> await PartitionedTopicMetadata(p)));
-			Receive<GetSchema>(s => Become(async()=> await Schema(s)));            
-			Receive<GetTopicsUnderNamespace>( t => Become(async ()=> await TopicsUnderNamespace(t)));
+			Receive<SetClient>(c => { });
+			Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
+			ReceiveAsync<GetBroker>( async broke => await Broke(broke));
+			ReceiveAsync<GetPartitionedTopicMetadata>(async p =>  await PartitionedTopicMetadata(p));
+			ReceiveAsync<GetSchema>(async s => await Schema(s));            
+			ReceiveAsync<GetTopicsUnderNamespace>(async t => await TopicsUnderNamespace(t));
 		}
         private async ValueTask GetBroker(GetBroker broker)
         {
@@ -317,12 +319,18 @@ namespace SharpPulsar
         /// </summary>
         private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, TimeSpan opTimeout)
         {
-            await PartitionedTopicMetadata(topicName, opTimeout);
-            Receive<bool>(async l =>  await PartitionedTopicMetadata(topicName, _opTime));
+            _topicName = topicName;
+            await PartitionedTopicMetadata(topicName, opTimeout);        }
+        private void GetPartitionedTopicMetadata()
+        {
+            ReceiveAsync<bool>(async l =>
+            {
+                await PartitionedTopicMetadata(_topicName, _opTime);
+            });
             Receive<AskResponse>(l =>
             {
                 _replyTo.Tell(l);
-                
+
                 Stash.UnstashAll();
                 Become(Awaiting);
             });
@@ -335,6 +343,8 @@ namespace SharpPulsar
             var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
             if (askResponse.Failed)
             {
+
+                Become(GetPartitionedTopicMetadata);
                 var e = askResponse.Exception;
                 var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), opTimeout.TotalMilliseconds);
                 
@@ -369,8 +379,8 @@ namespace SharpPulsar
             }
             _getPartitionedTopicMetadataBackOff = null;
             
-            Stash.UnstashAll();
-            Become(Awaiting);
+            Stash?.UnstashAll();
+            //Become(Awaiting);
         }
         private async ValueTask GetSchema(TopicName topicName, byte[] version)
 		{
