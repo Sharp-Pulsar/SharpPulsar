@@ -1536,8 +1536,11 @@ namespace SharpPulsar
             var internalBatchReceivePolicy = new BatchReceivePolicy.Builder().MaxNumMessages(Math.Max(conf.ReceiverQueueSize / 2, 1)).MaxNumBytes(-1).Timeout((int)TimeSpan.FromSeconds(1).TotalMilliseconds).Build();
             conf.BatchReceivePolicy = internalBatchReceivePolicy;
             
-			_context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
-            
+            if (conf.ReceiverQueueSize == 0)
+                _context.ActorOf(ZeroQueueConsumer<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
+            else
+                _context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
+
             return tcs;
 		}
 		// handling failure during subscribe new topic, unsubscribe success created partitions

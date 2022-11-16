@@ -173,8 +173,9 @@ namespace SharpPulsar.Test
 			consumer.Close();
 			producer.Close();
 		}
-		
-        [Fact(Skip = "TestPauseAndResume")]
+
+        //[Fact(Skip = "TestPauseAndResume")]
+        [Fact]
 		public void TestPauseAndResume()
 		{
 			const string topicName = "zero-queue-pause-and-resume";

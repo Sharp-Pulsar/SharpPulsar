@@ -35,9 +35,12 @@ namespace SharpPulsar
 		private volatile bool _waitingOnReceiveForZeroQueueSize = false;
 		private volatile bool _waitingOnListenerForZeroQueueSize = false;
 
-		internal ZeroQueueConsumer(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, false, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
+		internal ZeroQueueConsumer(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
 		{
-		}
+            InitReceiverQueueSize();
+
+        }
+       
         public override int MinReceiverQueueSize()
         {
             return 0;

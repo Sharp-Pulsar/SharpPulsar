@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
@@ -18,6 +19,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
@@ -26,6 +28,7 @@ using SharpPulsar.Precondition;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
+using SharpPulsar.Table.Messages;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Utils;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
@@ -272,7 +275,11 @@ namespace SharpPulsar
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
-                    var consumer = _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
+                    if (conf.ReceiverQueueSize == 0)
+                        _actorSystem.ActorOf(ZeroQueueConsumer<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
+                    else
+                       _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
+                    
                     cnsr = await tcs.Task.ConfigureAwait(false);
 
                     _client.Tell(new AddConsumer(cnsr));
