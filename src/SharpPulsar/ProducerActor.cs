@@ -315,7 +315,7 @@ namespace SharpPulsar
         {
             base.PreStart();
 
-            Ready();
+           Become(Ready);
             GrabCnx();
 
         }
@@ -2219,7 +2219,7 @@ namespace SharpPulsar
 
             public virtual OpSendMsg<T> Peek()
             {
-                return Delegate.First();
+                return Delegate.FirstOrDefault();
             }
 
             public virtual int MessagesCount()

@@ -605,12 +605,12 @@ namespace SharpPulsar
             }
             catch (Exception ex)
             {
-                if (ex is PulsarClientException.AlreadyClosedException || ex.InnerException is PulsarClientException.AlreadyClosedException)
+                if (ex is AlreadyClosedException || ex.InnerException is PulsarClientException.AlreadyClosedException)
                 {
                     return;
                 }
                 _log.Error($"Receive operation failed on consumer {consumer.Path} - Retrying later: {ex}");
-                Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), async () => await ReceiveMessageFromConsumer(consumer, true));
+                _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), async () => await ReceiveMessageFromConsumer(consumer, true));
             }
 
         }

@@ -1968,7 +1968,8 @@ namespace SharpPulsar
                 if (IncomingMessages.Count == 0)
                 {
                     ExpectMoreIncomingMessages();
-                }
+                    return null;
+                }                
                 IncomingMessages.TryReceive(out message);
                 MessageProcessed(message);
                 if (!IsValidConsumerEpoch(message))
