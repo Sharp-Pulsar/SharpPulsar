@@ -7,9 +7,9 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Configuration;
 using System.Threading.Tasks.Dataflow;
-using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Utils;
+using SharpPulsar.Admin.v2;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
@@ -22,10 +22,14 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
         private readonly BufferBlock<IMessage<T>> _buffer;
-        private readonly Admin.Public.Admin _admin;
+        private readonly PulsarAdminRESTAPIClient _admin;
         public CurrentEventsByTagActor(CurrentEventsByTag<T> message, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());
+            var http = new HttpClient
+            {
+                BaseAddress = new Uri(message.AdminUrl)
+            };
+            _admin = new PulsarAdminRESTAPIClient(http);
             _message = message;
             _schema = schema;
             _client = client;
@@ -34,9 +38,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             _lookup = lookup;
             _generator = generator;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
-            var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
-            Setup(partitions.Body, topic);
-            Receive<Akka.Actor.Terminated>(t =>
+            var partitions = _admin.GetPartitionedMetadata2Async(message.Tenant, message.Namespace, message.Topic, false, false).GetAwaiter().GetResult();
+            Setup(partitions, topic);
+            Receive<Terminated>(t =>
             {
                 var children = Context.GetChildren();
                 if (!children.Any())

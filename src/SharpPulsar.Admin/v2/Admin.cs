@@ -15,6 +15,8 @@
 
 namespace SharpPulsar.Admin.v2
 {
+    using System.Collections.Generic;
+    using System.Net.Http.Headers;
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.16.1.0 (NJsonSchema v10.7.2.0 (Newtonsoft.Json v13.0.1.0))")]
@@ -3822,7 +3824,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="authoritative">Whether leader broker redirected this call to this broker. For internal use.</param>
         /// <param name="checkAllowAutoCreation">Is check configuration required to automatically create topic</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPartitionedMetadataAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation);
+        System.Threading.Tasks.Task<PartitionedTopicMetadata> GetPartitionedMetadataAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -3834,7 +3836,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="authoritative">Whether leader broker redirected this call to this broker. For internal use.</param>
         /// <param name="checkAllowAutoCreation">Is check configuration required to automatically create topic</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPartitionedMetadataAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<PartitionedTopicMetadata> GetPartitionedMetadataAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Increment partitions of an existing partitioned topic.
@@ -6323,7 +6325,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="authoritative">Whether leader broker redirected this call to this broker. For internal use.</param>
         /// <param name="checkAllowAutoCreation">Is check configuration required to automatically create topic</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPartitionedMetadata2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation);
+        System.Threading.Tasks.Task<PartitionedTopicMetadata> GetPartitionedMetadata2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -6335,7 +6337,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="authoritative">Whether leader broker redirected this call to this broker. For internal use.</param>
         /// <param name="checkAllowAutoCreation">Is check configuration required to automatically create topic</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPartitionedMetadata2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<PartitionedTopicMetadata> GetPartitionedMetadata2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Increment partitions of an existing partitioned topic.
@@ -35053,7 +35055,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="authoritative">Whether leader broker redirected this call to this broker. For internal use.</param>
         /// <param name="checkAllowAutoCreation">Is check configuration required to automatically create topic</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetPartitionedMetadataAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation)
+        public virtual System.Threading.Tasks.Task<PartitionedTopicMetadata> GetPartitionedMetadataAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation)
         {
             return GetPartitionedMetadataAsync(tenant, @namespace, topic, authoritative, checkAllowAutoCreation, System.Threading.CancellationToken.None);
         }
@@ -35068,7 +35070,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="authoritative">Whether leader broker redirected this call to this broker. For internal use.</param>
         /// <param name="checkAllowAutoCreation">Is check configuration required to automatically create topic</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetPartitionedMetadataAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<PartitionedTopicMetadata> GetPartitionedMetadataAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -35101,7 +35103,7 @@ namespace SharpPulsar.Admin.v2
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
-
+                    request_.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse("application/json"));
                     PrepareRequest(client_, request_, urlBuilder_);
 
                     var url_ = urlBuilder_.ToString();
@@ -35123,6 +35125,18 @@ namespace SharpPulsar.Admin.v2
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+                        if (status_ == 200 || status_ == 204)
+                        {
+
+                            ObjectResponseResult<PartitionedTopicMetadata> objectResponseResult = await ReadObjectResponseAsync<PartitionedTopicMetadata>(response_, headers_, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                            if (objectResponseResult.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponseResult.Text, headers_, null);
+                            }
+
+                            return objectResponseResult.Object;
+                        }
+                        else
                         if (status_ == 307)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -35163,13 +35177,6 @@ namespace SharpPulsar.Admin.v2
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                             throw new ApiException("Failed to validate cluster configuration", status_, responseText_, headers_, null);
-                        }
-                        else
-
-                        if (status_ == 200 || status_ == 204)
-                        {
-
-                            return;
                         }
                         else
                         {
@@ -52728,7 +52735,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="authoritative">Whether leader broker redirected this call to this broker. For internal use.</param>
         /// <param name="checkAllowAutoCreation">Is check configuration required to automatically create topic</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetPartitionedMetadata2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation)
+        public virtual System.Threading.Tasks.Task<PartitionedTopicMetadata> GetPartitionedMetadata2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation)
         {
             return GetPartitionedMetadata2Async(tenant, @namespace, topic, authoritative, checkAllowAutoCreation, System.Threading.CancellationToken.None);
         }
@@ -52743,7 +52750,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="authoritative">Whether leader broker redirected this call to this broker. For internal use.</param>
         /// <param name="checkAllowAutoCreation">Is check configuration required to automatically create topic</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetPartitionedMetadata2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<PartitionedTopicMetadata> GetPartitionedMetadata2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? checkAllowAutoCreation, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -52776,7 +52783,7 @@ namespace SharpPulsar.Admin.v2
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
-
+                    request_.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse("application/json"));
                     PrepareRequest(client_, request_, urlBuilder_);
 
                     var url_ = urlBuilder_.ToString();
@@ -52798,6 +52805,18 @@ namespace SharpPulsar.Admin.v2
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+                        if(status_ == 200 || status_ == 204)
+                        {
+
+                            ObjectResponseResult<PartitionedTopicMetadata> objectResponseResult = await ReadObjectResponseAsync<PartitionedTopicMetadata>(response_, headers_, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                            if (objectResponseResult.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponseResult.Text, headers_, null);
+                            }
+
+                            return objectResponseResult.Object;
+                        }
+                        else 
                         if (status_ == 307)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -52838,13 +52857,6 @@ namespace SharpPulsar.Admin.v2
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                             throw new ApiException("Internal server error", status_, responseText_, headers_, null);
-                        }
-                        else
-
-                        if (status_ == 200 || status_ == 204)
-                        {
-
-                            return;
                         }
                         else
                         {

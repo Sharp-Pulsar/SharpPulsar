@@ -1,5 +1,5 @@
-﻿using SharpPulsar.Sql.Message;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using SharpPulsar.Trino.Message;
 
 namespace SharpPulsar.EventSource.Messages
 {

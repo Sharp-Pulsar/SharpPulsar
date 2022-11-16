@@ -1,6 +1,4 @@
 ﻿using SharpPulsar.Schemas;
-using SharpPulsar.Sql.Client;
-using SharpPulsar.Sql.Message;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,6 +13,8 @@ using SharpPulsar.TestContainer;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Builder;
 using Akka.Actor;
+using SharpPulsar.Trino;
+using SharpPulsar.Trino.Message;
 
 namespace SharpPulsar.Test
 {

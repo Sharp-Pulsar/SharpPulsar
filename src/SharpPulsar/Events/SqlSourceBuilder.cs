@@ -1,5 +1,5 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Sql.Client;
+using SharpPulsar.Trino;
 using System.Collections.Generic;
 
 namespace SharpPulsar.Events

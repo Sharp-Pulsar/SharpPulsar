@@ -2,9 +2,9 @@
 using SharpPulsar.Configuration;
 using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Schemas;
-using SharpPulsar.Sql.Client;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
+using SharpPulsar.Trino;
 using SharpPulsar.Utils;
 using System;
 using System.Collections.Generic;

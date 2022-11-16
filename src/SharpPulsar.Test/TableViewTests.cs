@@ -12,6 +12,7 @@ using System.Net.Http;
 using SharpPulsar.Common.Naming;
 using FluentAssertions;
 using SharpPulsar.Test.Fixture;
+using SharpPulsar.Admin.v2;
 
 namespace SharpPulsar.Test
 {
@@ -21,11 +22,15 @@ namespace SharpPulsar.Test
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         public ClientConfigurationData _clientConfigurationData;
-        private Admin.Public.Admin _admin;
+        private PulsarAdminRESTAPIClient _admin;
 
         public TableViewTests(ITestOutputHelper output, PulsarFixture fixture)
         {
-            _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
+            var http = new HttpClient
+            {
+                BaseAddress = new Uri("http://localhost:8080/")
+            };
+            _admin = new PulsarAdminRESTAPIClient(http);
             _output = output;
             _client = fixture.Client;
             _clientConfigurationData = fixture.ClientConfigurationData;
@@ -65,7 +70,7 @@ namespace SharpPulsar.Test
             var topic = $"tableview-test-update-partitions";
             try
             {
-                var result = await _admin.CreatePartitionedTopicAsync("public", "default", topic, 3);
+                await _admin.CreatePartitionedTopicAsync("public", "default", topic, new PartitionedTopicMetadata { Partitions = 3 }, false);
             }
             catch
             {
@@ -89,7 +94,7 @@ namespace SharpPulsar.Test
 
             try
             {
-                _admin.UpdatePartitionedTopic("public", "default", topic, 4);
+               await _admin.UpdatePartitionedTopic2Async("public", "default", topic, false, false, false, 4);
             }
             catch { }
             var topicName = TopicName.Get(topic);

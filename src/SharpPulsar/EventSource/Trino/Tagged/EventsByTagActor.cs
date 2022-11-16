@@ -2,24 +2,29 @@
 using Akka.Actor;
 using SharpPulsar.EventSource.Messages.Presto;
 using System.Threading.Tasks.Dataflow;
-using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;
+using SharpPulsar.Admin.v2;
+using System;
 
 namespace SharpPulsar.EventSource.Trino.Tagged
 {
     public class EventsByTagActor : ReceiveActor
     {
         private readonly EventsByTag _message;
-        private readonly Admin.Public.Admin _admin;
+        private readonly PulsarAdminRESTAPIClient _admin;
         private readonly BufferBlock<IEventEnvelope> _buffer;
         public EventsByTagActor(EventsByTag message, BufferBlock<IEventEnvelope> buffer)
         {
-            _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());
+            var http = new HttpClient
+            {
+                BaseAddress = new Uri(message.AdminUrl)
+            };
+            _admin = new PulsarAdminRESTAPIClient(http);
             _message = message;
             _buffer = buffer;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
-            var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic, true);
-            Setup(partitions.Body);
+            var partitions = _admin.GetPartitionedMetadata2Async(message.Tenant, message.Namespace, message.Topic, false, false).GetAwaiter().GetResult();
+            Setup(partitions);
         }
 
         private void Setup(PartitionedTopicMetadata p)
@@ -28,13 +33,13 @@ namespace SharpPulsar.EventSource.Trino.Tagged
             {
                 for (var i = 0; i < p.Partitions; i++)
                 {
-                    Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, true, _message, _message.Tag));
+                    Context.ActorOf(TrinoTaggedSourceActor.Prop(_buffer, true, _message, _message.Tag));
 
                 }
             }
             else
             {
-                Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, true, _message, _message.Tag));
+                Context.ActorOf(TrinoTaggedSourceActor.Prop(_buffer, true, _message, _message.Tag));
             }
         }
         public static Props Prop(EventsByTag message, BufferBlock<IEventEnvelope> buffer)

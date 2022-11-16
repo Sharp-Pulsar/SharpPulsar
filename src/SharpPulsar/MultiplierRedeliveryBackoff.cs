@@ -1,7 +1,7 @@
 ﻿
 using System;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Sql.Precondition;
+using SharpPulsar.Precondition;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

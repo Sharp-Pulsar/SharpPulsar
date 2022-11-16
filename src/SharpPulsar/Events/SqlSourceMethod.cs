@@ -4,7 +4,7 @@ using SharpPulsar.EventSource.Messages.Presto;
 using SharpPulsar.EventSource.Trino;
 using SharpPulsar.EventSource.Trino.Tagged;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Sql.Client;
+using SharpPulsar.Trino;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;

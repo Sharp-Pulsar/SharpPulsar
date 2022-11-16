@@ -4,24 +4,28 @@ using System.Net.Http;
 using Akka.Actor;
 using SharpPulsar.EventSource.Messages.Presto;
 using System.Threading.Tasks.Dataflow;
-using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;
+using SharpPulsar.Admin.v2;
 
 namespace SharpPulsar.EventSource.Trino
 {
     public class CurrentEventsByTopicActor : ReceiveActor
     {
         private readonly CurrentEventsByTopic _message;
-        private readonly Admin.Public.Admin _admin;
+        private readonly PulsarAdminRESTAPIClient _admin;
         private readonly BufferBlock<IEventEnvelope> _buffer;
         public CurrentEventsByTopicActor(CurrentEventsByTopic message, BufferBlock<IEventEnvelope> buffer)
         {
-            _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());
+            var http = new HttpClient
+            {
+                BaseAddress = new Uri(message.AdminUrl)
+            };
+            _admin = new PulsarAdminRESTAPIClient(http);
             _buffer = buffer;
             _message = message;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
-            var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
-            Setup(partitions.Body, topic);
+            var partitions = _admin.GetPartitionedMetadata2Async(message.Tenant, message.Namespace, message.Topic, false, false).GetAwaiter().GetResult();
+            Setup(partitions, topic);
             Receive<Terminated>(t =>
             {
                 var children = Context.GetChildren();
@@ -39,13 +43,13 @@ namespace SharpPulsar.EventSource.Trino
             {
                 for (var i = 0; i < p.Partitions; i++)
                 {
-                    var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer, false, _message));
+                    var child = Context.ActorOf(TrinoSourceActor.Prop(_buffer, false, _message));
                     Context.Watch(child);
                 }
             }
             else
             {
-                var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer, false, _message));
+                var child = Context.ActorOf(TrinoSourceActor.Prop(_buffer, false, _message));
                 Context.Watch(child);
             }
         }

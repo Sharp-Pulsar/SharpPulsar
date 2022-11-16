@@ -1,7 +1,7 @@
 ﻿
 using System.Collections.Generic;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Sql.Client;
+using SharpPulsar.Trino;
 
 namespace SharpPulsar.EventSource.Messages.Presto
 {
@@ -22,7 +22,7 @@ namespace SharpPulsar.EventSource.Messages.Presto
     /// stored events is provided by <see cref="CurrentEventsByTopic"/>.
     /// </para>
     /// </summary>
-    public sealed class EventsByTopic : IPrestoEventSourceMessage
+    public sealed class EventsByTopic : ITrinoEventSourceMessage
     {
         public EventsByTopic(string tenant, string ns, string topic, HashSet<string> columns, long fromMessageId, long toMessageId, ClientOptions options, string adminUrl)
         {

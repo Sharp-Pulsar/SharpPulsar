@@ -2,7 +2,7 @@
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Sql.Client;
+using SharpPulsar.Trino;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

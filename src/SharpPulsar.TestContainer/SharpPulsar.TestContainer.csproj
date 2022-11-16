@@ -15,11 +15,11 @@
   <ItemGroup>
     <PackageReference Include="Ductus.FluentDocker" Version="2.10.57" />
     <PackageReference Include="Ductus.FluentDocker" Version="2.10.56" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.json" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.json" Version="7.0.0" />
     <PackageReference Include="polly" Version="7.2.3" />
     <PackageReference Include="SharpCompress" Version="0.32.2" />
-    <PackageReference Include="Testcontainers" Version="2.1.0" />
+    <PackageReference Include="Testcontainers" Version="2.2.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
   </ItemGroup>
 

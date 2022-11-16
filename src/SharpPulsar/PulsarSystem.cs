@@ -5,11 +5,10 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Client;
 using System;
 using System.Threading.Tasks;
-using SharpPulsar.Sql.Client;
-using SharpPulsar.Sql.Public;
 using SharpPulsar.Builder;
 using SharpPulsar.Events;
 using SharpPulsar.TransactionImpl;
+using SharpPulsar.Trino;
 
 namespace SharpPulsar
 {

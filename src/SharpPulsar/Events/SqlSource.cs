@@ -1,11 +1,14 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Admin.v2;
 using SharpPulsar.EventSource.Messages;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks.Dataflow;
+using static System.Net.WebRequestMethods;
 
 namespace SharpPulsar.Events
 {
@@ -13,23 +16,24 @@ namespace SharpPulsar.Events
     {
         private readonly IActorRef _eventSource;
         private readonly HttpClient _httpclient;
-        private readonly Admin.Public.Admin _admin;
+        private readonly PulsarAdminRESTAPIClient _admin;
         private readonly BufferBlock<IEventEnvelope> _buffer;
 
         public SqlSource(string brokerWebServiceUrl, BufferBlock<IEventEnvelope> buffer, IActorRef sourceActor)
         {
             _buffer = buffer;
             _eventSource = sourceActor;
-            _httpclient = new HttpClient();
-            _admin = new Admin.Public.Admin(brokerWebServiceUrl, _httpclient, true);
+            _httpclient = new HttpClient
+            {
+                BaseAddress = new Uri(brokerWebServiceUrl)
+            };
+            _admin = new PulsarAdminRESTAPIClient(_httpclient);
         }
         public IList<string> Topics(IEventTopics message)
         {
-            var response = _admin.GetTopics(message.Tenant, message.Namespace, "ALL");
-            var statusCode = response.Response.StatusCode;
-            if (response == null)
-                return new List<string>();
-            return response.Body;
+            var response = _admin.GetTopicsAsync(message.Tenant, message.Namespace, Mode.ALL, false).GetAwaiter().GetResult();
+           
+            return response.ToList();
         }
         /// <summary>
         /// Reads existing events and future events from Presto

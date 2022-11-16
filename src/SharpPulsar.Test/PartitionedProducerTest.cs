@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using SharpPulsar.Admin.v2;
 using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
@@ -35,10 +36,14 @@ namespace SharpPulsar.Test
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        private readonly Admin.Public.Admin _admin;
+        private readonly PulsarAdminRESTAPIClient _admin;
         public PartitionedProducerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
-            _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient()); ;
+            var http = new HttpClient
+            {
+                BaseAddress = new Uri("http://localhost:8080/")
+            };
+            _admin = new PulsarAdminRESTAPIClient(http);
             _output = output;
             _client = fixture.Client;
         }
@@ -53,15 +58,19 @@ namespace SharpPulsar.Test
             // create partitioned topic
             try
             {
-                var asf = await _admin.CreatePartitionedTopicAsync("public", "default", topicName, 1);
+                var part = new PartitionedTopicMetadata
+                {
+                    Partitions = 1
+                };
+                await _admin.CreatePartitionedTopicAsync("public", "default", topicName, part, false);
             }
             catch (Exception ex)
             {
                 var ss = ex.Message;
                 Assert.Equal("Operation returned an invalid status code 'NoContent'", ss);
             }
-            var partitions = await _admin.GetPartitionedMetadataAsync("public", "default", topicName);
-            var s = partitions.Body.Partitions;
+            var partitions = await _admin.GetPartitionedMetadata2Async("public", "default", topicName, false, false);
+            var s = partitions.Partitions;
             Assert.Equal(1, s);
 
             // 2. create producer

@@ -14,9 +14,9 @@ using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Sql.Client;
-using SharpPulsar.Sql.Message;
 using SharpPulsar.TransactionImpl;
+using SharpPulsar.Trino;
+using SharpPulsar.Trino.Message;
 using Spectre.Console;
 
 using Tutorials.PulsarTestContainer;

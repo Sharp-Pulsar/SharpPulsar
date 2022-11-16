@@ -2,8 +2,9 @@
 using Akka.Actor;
 using SharpPulsar.EventSource.Messages.Presto;
 using System.Threading.Tasks.Dataflow;
-using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;
+using SharpPulsar.Admin.v2;
+using System;
 
 namespace SharpPulsar.EventSource.Trino
 {
@@ -11,15 +12,19 @@ namespace SharpPulsar.EventSource.Trino
     {
         private readonly EventsByTopic _message;
         private readonly BufferBlock<IEventEnvelope> _buffer;
-        private readonly Admin.Public.Admin _admin;
+        private readonly PulsarAdminRESTAPIClient _admin;
         public EventsByTopicActor(EventsByTopic message, BufferBlock<IEventEnvelope> buffer)
         {
-            _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());
+            var client = new HttpClient
+            {
+                BaseAddress = new Uri(message.AdminUrl)
+            };
+            _admin = new PulsarAdminRESTAPIClient(client);
             _buffer = buffer;
             _message = message;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
-            var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
-            Setup(partitions.Body, topic);
+            var partitions = _admin.GetPartitionedMetadata2Async(message.Tenant, message.Namespace, message.Topic, false, false).GetAwaiter().GetResult();
+            Setup(partitions, topic);
         }
 
         private void Setup(PartitionedTopicMetadata p, string topic)
@@ -28,13 +33,13 @@ namespace SharpPulsar.EventSource.Trino
             {
                 for (var i = 0; i < p.Partitions; i++)
                 {
-                    Context.ActorOf(PrestoSourceActor.Prop(_buffer, true, _message));
+                    Context.ActorOf(TrinoSourceActor.Prop(_buffer, true, _message));
 
                 }
             }
             else
             {
-                Context.ActorOf(PrestoSourceActor.Prop(_buffer, true, _message));
+                Context.ActorOf(TrinoSourceActor.Prop(_buffer, true, _message));
             }
         }
         public static Props Prop(EventsByTopic message, BufferBlock<IEventEnvelope> buffer)
