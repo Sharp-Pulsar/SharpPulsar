@@ -97,6 +97,7 @@ namespace SharpPulsar
                 else
                 {
                     _producer.Tell(new InternalSend<T>(message, tcs));
+                    
                 }
                 if (_conf.BatchingEnabled)
                     return null;

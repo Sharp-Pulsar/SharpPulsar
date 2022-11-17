@@ -119,7 +119,7 @@ namespace SharpPulsar
         private string _producerName;
         private readonly bool _userProvidedProducerName = false;
         private TaskCompletionSource<IMessageId> _lastSendFuture;
-
+        private readonly Commands _commands = new Commands(); 
         private readonly ILoggingAdapter _log;
 
         private string _connectionId;
@@ -315,7 +315,7 @@ namespace SharpPulsar
         {
             base.PreStart();
 
-           Become(Ready);
+            Become(Ready);
             GrabCnx();
 
         }
@@ -323,7 +323,6 @@ namespace SharpPulsar
         {
             return Props.Create(() => new ProducerActor<T>(producerid, client, lookup, cnxPool, idGenerator, topic, conf, producerCreatedFuture, partitionIndex, schema, interceptors, clientConfiguration, overrideProducerName));
         }
-        //producerCreatedFuture used from here
         private void GrabCnx()
         {
             _connectionHandler.Tell(new GrabCnx($"Create connection from producer: {_producerName}"));
@@ -419,10 +418,10 @@ namespace SharpPulsar
             // producer, it will try to grab a new cnx
             // Because the state could have been updated while retrieving the connection, we set it back to connecting,
             // as long as the change from current state to connecting is a valid state change.
-            if (!State.ChangeToConnecting())
-            {
-                return;
-            }
+            //if (!State.ChangeToConnecting())
+            //{
+             //   return;
+            //}
             // We set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating
             // the producer, it will try to grab a new cnx. We also increment and get the epoch value for the producer.
             var epochResponse =  await _connectionHandler.Ask<GetEpochResponse> (new SwitchClientCnx(o.ClientCnx));
@@ -453,7 +452,7 @@ namespace SharpPulsar
                         // JSONSchema originally generated a schema for pojo based of of the JSON schema standard
                         // but now we have standardized on every schema to generate an Avro based schema
                         var protocolVersion = _protocolVersion;
-                        if (Commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
+                        if (_commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
                         {
                             _schemaInfo = Schema.SchemaInfo;
                         }
@@ -480,7 +479,7 @@ namespace SharpPulsar
             var response = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
             _requestId = response.Id;
             _log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-            var cmd = NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
+            var cmd = _commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
             var payload = new Payload(cmd, _requestId, "NewProducer");
             await _cnx.Ask<AskResponse>(payload).ContinueWith(async response =>
              {
@@ -502,7 +501,7 @@ namespace SharpPulsar
                      {
                          var r = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                          var id = r.Id;
-                         var c = NewCloseProducer(_producerId, id);
+                         var c = _commands.NewCloseProducer(_producerId, id);
                          _cnx.Tell(new SendRequestWithId(c, id));
                      }
                      if (ex is ProducerFencedException)
@@ -1024,6 +1023,15 @@ namespace SharpPulsar
                 OpSendMsg<T> op;
                 if (msg.GetSchemaState() == Message<T>.SchemaState.Ready)
                 {
+                    /* var ts = new TaskCompletionSource<OpSendMsg<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    Akka.Dispatch.ActorTaskScheduler.RunTask( () =>
+                    {
+                        var cmd = SendMessage(_producerId, sequenceId, numMessages, msg.MessageId, msgMetadata, encryptedPayload);
+                        var p = OpSendMsg<T>.Create(msg, cmd, sequenceId, callback);
+                        ts.TrySetResult(p);
+                    });
+                    var o = ts.Task.GetAwaiter().GetResult();
+                    op = o;*/
                     var cmd = SendMessage(_producerId, sequenceId, numMessages, msg.MessageId, msgMetadata, encryptedPayload);
                     op = OpSendMsg<T>.Create(msg, cmd, sequenceId, callback);
                 }
@@ -1103,12 +1111,12 @@ namespace SharpPulsar
             {
                 _schemaInfo = (SchemaInfo)ISchema<T>.Bytes.SchemaInfo;
             }
-            if (!PeerSupportsGetOrCreateSchema(_protocolVersion))
+            if (!_commands.PeerSupportsGetOrCreateSchema(_protocolVersion))
             {
                 var err = new PulsarClientException.NotSupportedException($"The command `GetOrCreateSchema` is not supported for the protocol version {_protocolVersion}. The producer is {_producerName}, topic is {base.Topic}");
                 _log.Error(err.ToString());
             }
-            var request = NewGetOrCreateSchema(_requestId, base.Topic, _schemaInfo);
+            var request = _commands.NewGetOrCreateSchema(_requestId, base.Topic, _schemaInfo);
             var payload = new Payload(request, _requestId, "SendGetOrCreateSchema");
             _log.Info($"[{Topic}] [{_producerName}] GetOrCreateSchema request", Topic, _producerName);
             var schemaResponse = await _cnx.Ask<GetOrCreateSchemaResponse>(payload).ConfigureAwait(false);
@@ -1168,29 +1176,30 @@ namespace SharpPulsar
 
         private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, IMessageId messageId, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
+            _log.Info($"Send message with {_producerName}:{producerId}");
             if (messageId is MessageId)
             {
-                return NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+                return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
             }
             else
-            {
-                return NewSend(producerId, sequenceId, numMessages, ChecksumType, -1, -1, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+            { 
+                return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, -1, -1, msgMetadata, compressedPayload);
             }
         }
         private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
             _log.Info($"Send message with {_producerName}:{producerId}");
-            return NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+            return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
         }
         private ReadOnlySequence<byte> SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
-            return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+            return _commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
         }
         private ChecksumType ChecksumType
         {
             get
             {
-                var protocolVersionResponse = _cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance).ConfigureAwait(false).GetAwaiter().GetResult();
+                /* var protocolVersionResponse = _cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance).ConfigureAwait(false).GetAwaiter().GetResult();
                 if (Cnx().GetAwaiter().GetResult() == null || protocolVersionResponse.Version >= BrokerChecksumSupportedVersion())
                 {
                     return Commands.ChecksumType.Crc32C;
@@ -1198,7 +1207,8 @@ namespace SharpPulsar
                 else
                 {
                     return Commands.ChecksumType.None;
-                }
+                }*/
+                return Commands.ChecksumType.Crc32C;
             }
         }
         private int BrokerChecksumSupportedVersion()
@@ -1314,7 +1324,7 @@ namespace SharpPulsar
             }
 
             var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).Id;
-            var cmd = NewCloseProducer(_producerId, requestId);
+            var cmd = _commands.NewCloseProducer(_producerId, requestId);
             var response = await cnx.Ask(new SendRequestWithId(cmd, requestId));
             if (!(response is Exception))
             {
@@ -1911,7 +1921,7 @@ namespace SharpPulsar
                         return;
                     }
                     _stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
-                    //SendCommand(op);
+                    SendCommand(op);
                 }
                 else
                 {

@@ -35,17 +35,17 @@ namespace SharpPulsar
 		private readonly Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)>();
 		// LookupRequests that waiting in client side.
 		private readonly LinkedList<KeyValuePair<long, KeyValuePair<ReadOnlySequence<byte>, LookupDataResult>>> _waitingLookupRequests;
-
-		private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
+        private readonly Commands _commands = new Commands();
+        private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
         private readonly ConcurrentDictionary<long, IActorRef> _watcher = new ConcurrentDictionary<long, IActorRef>();
         private readonly Dictionary<long, IActorRef> _consumers = new Dictionary<long, IActorRef>();
 		private readonly Dictionary<long, IActorRef> _transactionMetaStoreHandlers = new Dictionary<long, IActorRef>();
 
 		private readonly ConcurrentQueue<RequestTime> _requestTimeoutQueue = new ConcurrentQueue<RequestTime>();
         private readonly Dictionary<long, IActorRef> _topicListWatchers = new Dictionary<long, IActorRef>();
-        private volatile int _numberOfRejectRequests = 0;
+        private  int _numberOfRejectRequests = 0;
 
-		private static int _maxMessageSize = Commands.DefaultMaxMessageSize;
+		private int _maxMessageSize;
 
 		private readonly int _maxNumberOfRejectedRequestPerConnection;
 		private readonly int _rejectedRequestResetTimeSec = 60;
@@ -55,7 +55,7 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 
 		private readonly string _proxyToTargetBrokerAddress;
-		private readonly ReadOnlySequence<byte> _pong = Commands.NewPong();
+		private readonly ReadOnlySequence<byte> _pong;
 		private readonly List<byte> _pendingReceive;
         private bool _supportsTopicWatchers;
         private readonly string _remoteHostName;
@@ -72,12 +72,14 @@ namespace SharpPulsar
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker) : this(conf, endPoint, Commands.CurrentProtocolVersion, connectionFuture, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker) : this(conf, endPoint, new Commands().CurrentProtocolVersion, connectionFuture, targetBroker)
 		{
 		}
 
 		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker)
 		{
+            _pong = _commands.NewPong();
+            _maxMessageSize = _commands.DefaultMaxMessageSize;
             _connectionFuture = connectionFuture;
 			_parent = Context.Parent;
 			_pendingReceive = new List<byte>();
@@ -357,7 +359,7 @@ namespace SharpPulsar
                         return;
                     }
                     var auth = new AuthData { auth_data = (authData.Bytes) };
-                    var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, "2.9.1");
+                    var request = _commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, "2.9.1");
 
                     if (_log.IsDebugEnabled)
                     {
@@ -1184,7 +1186,7 @@ namespace SharpPulsar
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
 			var authData = _authenticationDataProvider.Authenticate(Auth.AuthData.InitAuthData);
 			var auth = new AuthData { auth_data = (authData.Bytes) };
-			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, "2.10.1", _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return _commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, "2.10.1", _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 		#region privates
 		internal enum State

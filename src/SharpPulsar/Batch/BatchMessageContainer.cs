@@ -74,7 +74,7 @@ namespace SharpPulsar.Batch
                     // some properties are common amongst the different messages in the batch, hence we just pick it up from
                     // the first message
                     _messageMetadata.SequenceId = (ulong)msg.SequenceId;
-                    _lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
+                    _lowestSequenceId = new Commands().InitBatchMessageMetadata(_messageMetadata);
 
                     _firstCallback = callback;
                     _batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize));
@@ -124,7 +124,7 @@ namespace SharpPulsar.Batch
                 {
                     var msg = _messages[i];
                     var msgMetadata = msg.Metadata.OriginalMetadata;
-                    Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+                    Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
                     messageWriter.Write(msg.Data.ToArray());
                 }
                 var batchedMessageMetadataAndPayload = stream.ToArray();
@@ -228,11 +228,11 @@ namespace SharpPulsar.Batch
         {
             if (messageId is MessageId)
             {
-                return NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+                return new Commands().NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
             }
             else
             {
-                return NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, -1, -1, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+                return new Commands().NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, -1, -1, msgMetadata, compressedPayload);
             }
         }
         public override bool HasSameSchema(Message<T> msg)

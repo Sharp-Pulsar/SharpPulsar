@@ -73,7 +73,7 @@ namespace SharpPulsar
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal BufferBlock<IMessage<T>> IncomingMessages;
 		protected internal IActorRef UnAckedChunckedMessageIdSequenceMap;
-
+        protected readonly Commands _commands = new Commands();
         protected internal readonly ConcurrentQueue<TaskCompletionSource<IMessage<T>>> PendingReceives;
         protected internal readonly ConcurrentQueue<OpBatchReceive> PendingBatchReceives;
         protected internal int MaxReceiverQueueSize;
@@ -889,7 +889,7 @@ namespace SharpPulsar
         // so we should release this message and receive again
         protected internal virtual bool IsValidConsumerEpoch(Message<T> message)
         {
-            if ((SubType == SubType.Failover || SubType == SubType.Exclusive) && message.ConsumerEpoch != Commands.DefaultConsumerEpoch && message.ConsumerEpoch < ConsumerEpoch)
+            if ((SubType == SubType.Failover || SubType == SubType.Exclusive) && message.ConsumerEpoch != _commands.DefaultConsumerEpoch && message.ConsumerEpoch < ConsumerEpoch)
             {
                 _log.Warning($"Consumer filter old epoch message, topic : [{Topic}], messageId : [{message.MessageId}], consumerEpoch : [{ConsumerEpoch}]");
 

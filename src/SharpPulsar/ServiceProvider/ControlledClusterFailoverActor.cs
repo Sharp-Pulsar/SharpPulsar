@@ -37,7 +37,7 @@ namespace SharpPulsar.ServiceProvider
     {
         private const int DefaultConnectTimeoutInSeconds = 10;
         private const int DefaultMaxRedirects = 20;
-
+        private readonly Commands _commands = new Commands();
         private PulsarClient pulsarClient;
         private volatile string _currentPulsarServiceUrl;
         private volatile ControlledConfiguration currentControlledConfiguration;
@@ -86,7 +86,7 @@ namespace SharpPulsar.ServiceProvider
                 Timeout = TimeSpan.FromMilliseconds(DefaultConnectTimeoutInSeconds * 1000)
             };
 
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue($"Sharp-Pulsar-v{Commands.CurrentProtocolVersion}")));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue($"Sharp-Pulsar-v{_commands.CurrentProtocolVersion}")));
             client.DefaultRequestHeaders.Connection.Add("keep-alive");
             return client;
         }

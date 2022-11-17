@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.5.0-alpha3" />
+    <PackageReference Include="Akka" Version="1.4.46" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.11.1" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
@@ -37,12 +37,14 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
     <PackageReference Include="NodaTime" Version="3.1.5" />
-    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.17.0" />
+    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.18.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="OpenTelemetry" Version="1.3.1" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="Pro.NBench.xUnit" Version="2.0.0" />
     <PackageReference Include="protobuf-net" Version="3.1.25" />
-    <PackageReference Include="SharpPulsar.Trino" Version="2.10.0-rc1191" />
     <PackageReference Include="SharpZipLib" Version="1.4.1" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
