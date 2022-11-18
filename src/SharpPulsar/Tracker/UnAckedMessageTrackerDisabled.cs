@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Event;
 using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
@@ -10,11 +11,11 @@ namespace SharpPulsar.Tracker
             Receive<Clear>(c => { });
             Receive<Remove>(c =>
             {
-                Sender.Tell(true);
+                //Sender.Tell(true);
             });
-            Receive<RemoveMessagesTill>(c => { Sender.Tell(0);});
-            Receive<Add<T>>(c => { Sender.Tell(true);});
-            Receive<Size>(c => { Sender.Tell(0L);});
+            Receive<RemoveMessagesTill>(c => { });
+            Receive<Add<T>>(c => { });
+            Receive<Size>(c => { });
             ReceiveAny(_ =>
             {
                 //no ops
@@ -23,7 +24,7 @@ namespace SharpPulsar.Tracker
 
         protected override void Unhandled(object message)
         {
-            // no ops
+            Context.GetLogger().Warning(message.ToString());
         }
 
         public static Props Prop()

@@ -1033,9 +1033,9 @@ namespace SharpPulsar
                     var o = ts.Task.GetAwaiter().GetResult();
                     op = o;*/
                     var cmd = SendMessage(_producerId, sequenceId, numMessages, msg.MessageId, msgMetadata, encryptedPayload);
-                    _log.Info($"Send message with 3");
+                   
                     op = OpSendMsg<T>.Create(msg, cmd, sequenceId, callback);
-                    _log.Info($"Send message with 4");
+                   
                 }
                 else
                 {
@@ -1044,9 +1044,9 @@ namespace SharpPulsar
                     op.Cmd = SendMessage(_producerId, sequenceId, numMessages, msg.MessageId, finalMsgMetadata, encryptedPayload);
                 }
                 op.NumMessagesInBatch = numMessages;
-                _log.Info($"Send message with 5");
+                
                 op.BatchSizeByte = encryptedPayload.Length;
-                _log.Info($"Send message with 6");
+                
                 if (totalChunks > 1)
                 {
                     op.TotalChunks = totalChunks;
@@ -1187,7 +1187,6 @@ namespace SharpPulsar
             }
             else
             {
-                _log.Info($"Send message with 2 {_producerName}:{producerId}");
                 return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, -1, -1, msgMetadata, compressedPayload);
                 
             }
@@ -1284,7 +1283,6 @@ namespace SharpPulsar
         }
         private void SendCommand(OpSendMsg<T> op)
         {
-            _log.Info($"Send message with 10");
             var pay = new Payload(op.Cmd, -1, "CommandMessage");
             if (_log.IsDebugEnabled)
             {
@@ -1908,7 +1906,6 @@ namespace SharpPulsar
         {
             try
             {
-                _log.Info($"Send message with 7");
                 if (op.Msg != null && BatchMessagingEnabled)
                 {
                     await BatchMessageAndSend(false);
@@ -1918,13 +1915,11 @@ namespace SharpPulsar
                     return;
                 }
                 _pendingMessages.Add(op);
-                _log.Info($"Send message with 8");
                 if (op.Msg != null)
                 {
                     LastSequenceIdPushed = Math.Max(LastSequenceIdPushed, GetHighestSequenceId(op));
                 }
                 var cnx = CnxIfReady;
-                _log.Info($"Send message with 9");
                 if (cnx != null)
                 {
                     if (op.Msg != null && op.Msg.GetSchemaState() == Message<T>.SchemaState.None)

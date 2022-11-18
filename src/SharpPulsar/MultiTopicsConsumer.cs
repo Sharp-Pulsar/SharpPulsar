@@ -565,55 +565,11 @@ namespace SharpPulsar
                 {
                     consumer.Tell(new IncreaseAvailablePermits(Conf.ReceiverQueueSize));
 
-                    Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
+                    //Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
                 });
             }
         }
 
-        private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, bool batchReceive)
-        {
-            try
-            {
-                IList<IMessage<T>> messages;
-                if (batchReceive)
-                {
-                    var msg = await consumer.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance);
-                    messages = msg.ConvertTo<IMessages<T>>().MessageList();
-                }
-                else
-                {
-                    var msg = await consumer.Ask<AskResponse>(Messages.Consumer.Receive.Instance);
-                    messages = new List<IMessage<T>> { msg.ConvertTo<IMessage<T>>() };
-                }
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{consumer.Path.Address}");
-                }
-                messages.ForEach(msg => MessageReceived(consumer, msg));
-                var size = IncomingMessages.Count;
-                var maxReceiverQueueSize = CurrentReceiverQueueSize;
-                var sharedQueueResumeThreshold = maxReceiverQueueSize / 2;
-                if (size >= maxReceiverQueueSize || (size > sharedQueueResumeThreshold && _pausedConsumers.Count() > 0))
-                {
-                    _pausedConsumers.Enqueue(consumer);
-                    ResumeReceivingFromPausedConsumersIfNeeded();
-                }
-                else
-                {
-                    await ReceiveMessageFromConsumer(consumer, messages.Count > 0);
-                }
-            }
-            catch (Exception ex)
-            {
-                if (ex is AlreadyClosedException || ex.InnerException is PulsarClientException.AlreadyClosedException)
-                {
-                    return;
-                }
-                _log.Error($"Receive operation failed on consumer {consumer.Path} - Retrying later: {ex}");
-                _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), async () => await ReceiveMessageFromConsumer(consumer, true));
-            }
-
-        }
         private void ReceiveMessageFromConsumer(IActorRef consumer, IMessage<T> message)
         {
             if (_log.IsDebugEnabled)
@@ -634,7 +590,7 @@ namespace SharpPulsar
         {
             var topic = consumer.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
             var topicNameWithoutPartition = consumer.Ask<string>(GetTopicNameWithoutPartition.Instance).GetAwaiter().GetResult();
-            Condition.CheckArgument(message is Message<T>);
+            Condition.CheckArgument(message is Message<T> );
             var topicMessage = new TopicMessage<T>(topic, topicNameWithoutPartition, message, consumer);
 
             if (_log.IsDebugEnabled)
@@ -660,6 +616,7 @@ namespace SharpPulsar
         {
             _unAckedMessageTracker.Tell(new Add<T>(msg.MessageId, msg.RedeliveryCount));
             DecreaseIncomingMessageSize(msg);
+            //ResumeReceivingFromPausedConsumersIfNeeded();
         }
         private void ResumeReceivingFromPausedConsumersIfNeeded()
         {
@@ -675,8 +632,8 @@ namespace SharpPulsar
                         {
                             break;
                         }
-                        //consumer.Tell(Messages.Consumer.Resume.Instance);
-                        Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
+                        consumer.Tell(Messages.Consumer.Resume.Instance);
+                        //Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
                     }
                     catch
                     {

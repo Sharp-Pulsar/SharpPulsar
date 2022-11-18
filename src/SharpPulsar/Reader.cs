@@ -109,7 +109,12 @@ namespace SharpPulsar
         public void Close() => CloseAsync().ConfigureAwait(false);
         public async ValueTask CloseAsync()
         {
-            await _readerActor.GracefulStop(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            try
+            {
+                await _readerActor.GracefulStop(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            }
+            catch { } 
+            
         }
         private async ValueTask<IMessage<T>> GetMessage()
         {
@@ -129,17 +134,25 @@ namespace SharpPulsar
 
         private async ValueTask<IMessage<T>> GetMessage(TimeSpan time)
         {
-            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, time).ConfigureAwait(false);
-            if (response.Failed)
-                throw response.Exception;
-            if (response.Data != null)
+            try
             {
-                var message = response.ConvertTo<IMessage<T>>();
-                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
-                _readerActor.Tell(new MessageProcessed<T>(message));
-                return message;
+                var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, time).ConfigureAwait(false);
+                if (response.Failed)
+                    throw response.Exception;
+                if (response.Data != null)
+                {
+                    var message = response.ConvertTo<IMessage<T>>();
+                    _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                    _readerActor.Tell(new MessageProcessed<T>(message));
+                    return message;
+                }
+                return null;
             }
-            return null;
+            catch
+            {
+                return null;    
+            }
+            
         }
         public void Seek(Func<string, object> function)
            => SeekAsync(function).GetAwaiter().GetHashCode();

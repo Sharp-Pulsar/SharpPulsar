@@ -914,11 +914,12 @@ namespace SharpPulsar
             return HasEnoughMessagesForBatchReceive();
         }
         protected internal abstract void UpdateAutoScaleReceiverQueueHint();
-        private void Push(IMessage<T> obj)
+        private void Push(IMessage<T> o)
         {
-            var o = (Message<T>)obj;
+            //var o = (Message<T>)obj;
             if (HasParentConsumer)
             {
+                //IncomingMessages.Post(o);
                 Context.Parent.Tell(new ReceivedMessage<T>(o));
                 _log.Info($"Pushed message with sequnceid {o.SequenceId} (topic:{Topic}) to consumer parent");
 

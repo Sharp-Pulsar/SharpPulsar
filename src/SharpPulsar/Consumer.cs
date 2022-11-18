@@ -503,6 +503,18 @@ namespace SharpPulsar
             if (ask.Failed)
                 throw ask.Exception;
         }
+        public void Unsubscribe(string topicName)
+        {
+            UnsubscribeAsync(topicName).GetAwaiter().GetResult();
+        }
+        public async ValueTask UnsubscribeAsync(string topicName)
+        {
+            //MultiTopicsConsumer<T>
+            var ask = await _consumerActor.Ask<AskResponse>(new UnsubscribeTopicName(topicName))
+                .ConfigureAwait(false);
+            if (ask.Failed)
+                throw ask.Exception;
+        }
         public void NegativeAcknowledge(IMessageId messageId)
             => NegativeAcknowledgeAsync(messageId).GetAwaiter().GetResult();
 

@@ -96,6 +96,18 @@ namespace SharpPulsar.Interfaces
         ValueTask UnsubscribeAsync();
 
         /// <summary>
+        /// MultiTopicsConsumer
+        /// </summary>
+        /// <param name="topicName"></param>
+        void Unsubscribe(string topicName);
+        /// <summary>
+        /// MultiTopicsConsumer
+        /// </summary>
+        /// <param name="topicName"></param>
+        /// <returns></returns>
+        ValueTask UnsubscribeAsync(string topicName);
+
+        /// <summary>
         /// Receive a single message.
         /// 
         /// <para>Retrieves a message, waiting up to the specified wait time if necessary.
