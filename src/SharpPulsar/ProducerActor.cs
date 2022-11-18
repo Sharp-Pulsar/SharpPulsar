@@ -1033,7 +1033,9 @@ namespace SharpPulsar
                     var o = ts.Task.GetAwaiter().GetResult();
                     op = o;*/
                     var cmd = SendMessage(_producerId, sequenceId, numMessages, msg.MessageId, msgMetadata, encryptedPayload);
+                    _log.Info($"Send message with 3");
                     op = OpSendMsg<T>.Create(msg, cmd, sequenceId, callback);
+                    _log.Info($"Send message with 4");
                 }
                 else
                 {
@@ -1042,7 +1044,9 @@ namespace SharpPulsar
                     op.Cmd = SendMessage(_producerId, sequenceId, numMessages, msg.MessageId, finalMsgMetadata, encryptedPayload);
                 }
                 op.NumMessagesInBatch = numMessages;
+                _log.Info($"Send message with 5");
                 op.BatchSizeByte = encryptedPayload.Length;
+                _log.Info($"Send message with 6");
                 if (totalChunks > 1)
                 {
                     op.TotalChunks = totalChunks;
@@ -1182,8 +1186,10 @@ namespace SharpPulsar
                 return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
             }
             else
-            { 
+            {
+                _log.Info($"Send message with 2 {_producerName}:{producerId}");
                 return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, -1, -1, msgMetadata, compressedPayload);
+                
             }
         }
         private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
@@ -1199,16 +1205,19 @@ namespace SharpPulsar
         {
             get
             {
-                /* var protocolVersionResponse = _cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance).ConfigureAwait(false).GetAwaiter().GetResult();
-                if (Cnx().GetAwaiter().GetResult() == null || protocolVersionResponse.Version >= BrokerChecksumSupportedVersion())
+                try
                 {
-                    return Commands.ChecksumType.Crc32C;
+                    var protocolVersionResponse = _cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance, TimeSpan.FromMilliseconds(1000)).ConfigureAwait(false).GetAwaiter().GetResult();
+                    if (protocolVersionResponse.Version >= BrokerChecksumSupportedVersion())
+                    {
+                        return ChecksumType.Crc32C;
+                    }
+                    else
+                    {
+                        return ChecksumType.None;
+                    }
                 }
-                else
-                {
-                    return Commands.ChecksumType.None;
-                }*/
-                return Commands.ChecksumType.Crc32C;
+                catch { return ChecksumType.None; }
             }
         }
         private int BrokerChecksumSupportedVersion()
@@ -1275,6 +1284,7 @@ namespace SharpPulsar
         }
         private void SendCommand(OpSendMsg<T> op)
         {
+            _log.Info($"Send message with 10");
             var pay = new Payload(op.Cmd, -1, "CommandMessage");
             if (_log.IsDebugEnabled)
             {
@@ -1315,15 +1325,15 @@ namespace SharpPulsar
             CloseProducerTasks();
             _stats.CancelStatsTimeout();
 
-            var cnx = await Cnx();
+            var cnx = Cnx();
             if (cnx == null || currentState != HandlerState.State.Ready)
             {
                 _log.Info("[{}] [{}] Closed Producer (not connected)", Topic, _producerName);
                 CloseAndClearPendingMessages();
                 return;
             }
-
-            var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).Id;
+            var resp = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+            var requestId = resp.Id; 
             var cmd = _commands.NewCloseProducer(_producerId, requestId);
             var response = await cnx.Ask(new SendRequestWithId(cmd, requestId));
             if (!(response is Exception))
@@ -1360,7 +1370,7 @@ namespace SharpPulsar
             {
                 if (State.ConnectionState == HandlerState.State.Ready)
                 {;
-                    return Cnx().GetAwaiter().GetResult();
+                    return Cnx();
                 }
                 else
                 {
@@ -1898,6 +1908,7 @@ namespace SharpPulsar
         {
             try
             {
+                _log.Info($"Send message with 7");
                 if (op.Msg != null && BatchMessagingEnabled)
                 {
                     await BatchMessageAndSend(false);
@@ -1907,11 +1918,13 @@ namespace SharpPulsar
                     return;
                 }
                 _pendingMessages.Add(op);
+                _log.Info($"Send message with 8");
                 if (op.Msg != null)
                 {
                     LastSequenceIdPushed = Math.Max(LastSequenceIdPushed, GetHighestSequenceId(op));
                 }
                 var cnx = CnxIfReady;
+                _log.Info($"Send message with 9");
                 if (cnx != null)
                 {
                     if (op.Msg != null && op.Msg.GetSchemaState() == Message<T>.SchemaState.None)
@@ -1941,7 +1954,7 @@ namespace SharpPulsar
         private async ValueTask RecoverProcessOpSendMsgFrom(Message<T> from, long expectedEpoch)
         {
             var epoch = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
-            if (expectedEpoch != epoch.Epoch || await Cnx() == null)
+            if (expectedEpoch != epoch.Epoch || Cnx() == null)
             {
                 // In this case, the cnx passed to this method is no longer the active connection. This method will get
                 // called again once the new connection registers the producer with the broker.
@@ -2088,13 +2101,17 @@ namespace SharpPulsar
         }
 
         // wrapper for connection methods
-        private async ValueTask<IActorRef> Cnx()
+        private IActorRef Cnx()
         {
-            var response = await _connectionHandler.Ask<AskResponse>(GetCnx.Instance);
+            if (!_cnx.IsNobody())
+                return _cnx;
+
+            throw new Exception("IActorRef null");
+           /* var response = await _connectionHandler.Ask<AskResponse>(GetCnx.Instance);
             if (response.Data == null)
                 return null;
 
-            return response.ConvertTo<IActorRef>();
+            return response.ConvertTo<IActorRef>();*/
         }
 
         private void ConnectionClosed(IActorRef cnx)
@@ -2102,9 +2119,9 @@ namespace SharpPulsar
             _connectionHandler.Tell(new ConnectionClosed(cnx));
         }
 
-        internal async ValueTask<IActorRef> ClientCnx()
+        internal IActorRef ClientCnx()
         {
-            return await Cnx();
+            return Cnx();
         }
         // / <summary>
         // / Compress the payload if compression is configured </summary>
