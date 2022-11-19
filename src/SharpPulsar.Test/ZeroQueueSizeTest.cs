@@ -14,6 +14,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -94,9 +95,9 @@ namespace SharpPulsar.Test
 		}
 
 		[Fact]
-		public void TestZeroQueueSizeMessageRedelivery()
+		public async Task TestZeroQueueSizeMessageRedelivery()
 		{
-			const string topic = "testZeroQueueSizeMessageRedelivery";
+			string topic = $"testZero{Guid.NewGuid()}";
 
 			var config = new ConsumerConfigBuilder<int>()
 				.Topic(topic)
@@ -117,14 +118,16 @@ namespace SharpPulsar.Test
 			{
 				producer.Send(i);
 			}
-
-			ISet<int> receivedMessages = new HashSet<int>();
+            await Task.Delay(5000);
+            ISet<int> receivedMessages = new HashSet<int>();
 			for(int i = 0; i < messages * 2; i++)
 			{
-				receivedMessages.Add(consumer.Receive().Value);
-			}
+                var v = consumer.Receive().Value;
+                receivedMessages.Add(v);
+                _output.WriteLine("Consumer received : " + receivedMessages.Count);
+            }
 
-			Assert.Equal(receivedMessages.Count, messages);
+			Assert.Equal(messages, receivedMessages.Count);
 
 			consumer.Close();
 			producer.Close();
@@ -168,7 +171,7 @@ namespace SharpPulsar.Test
 			}
 
 			latch.Wait();
-			Assert.Equal(receivedMessages.Count, messages);
+			Assert.Equal(messages, receivedMessages.Count);
 
 			consumer.Close();
 			producer.Close();

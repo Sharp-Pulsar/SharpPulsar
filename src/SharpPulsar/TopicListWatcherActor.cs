@@ -43,7 +43,7 @@ namespace SharpPulsar
         private readonly IActorRef _generator;
         private IActorRef _clientCnxUsedForWatcherRegistration;
         private readonly Commands _commands = new Commands();
-        public TopicListWatcherActor(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state)
+        public TopicListWatcherActor(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
         {
             _lookupDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + conf.LookupTimeout.TotalMilliseconds);
             _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(conf, state, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
@@ -54,54 +54,33 @@ namespace SharpPulsar
             _namespace = @namespace;
             _topicsHash = topicsHash;
             _log = Context.GetLogger();
-           // _watcherFuture = watcherFuture;
+           _watcherFuture = watcherFuture;
             _conf = conf;
-            _generator = idGenerator; 
+            _generator = idGenerator;
+            Handle();
+            GrabCnx();
         }
-        public static Props Prop(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state)
+        public static Props Prop(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
         {
-            return Props.Create(() => new TopicListWatcherActor(client, idGenerator, conf, topicsPattern, watcherId, @namespace, topicsHash, state));
+            return Props.Create(() => new TopicListWatcherActor(client, idGenerator, conf, topicsPattern, watcherId, @namespace, topicsHash, state, watcherFuture));
         }
         private void GrabCnx()
         {
-            Receive<Grab>(_ =>
-            {
-                _replyTo = Sender;
-                _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
-                Become(Connection);
-            });
-            ReceiveAny(s=> Stash.Stash());
+            _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
         }
-        private void Connection()
+        private void Handle()
         {
             ReceiveAsync<AskResponse>(async ask =>
             {
                 if (ask.Failed)
                 {
                     ConnectionFailed(ask.Exception);
-                    _replyTo.Tell(ask);
                 }
                 else
                 {
-                    var con =  await ConnectionOpened(ask.ConvertTo<ConnectionOpened>()).ConfigureAwait(false);
-                    if(con != null)
-                    {
-                        _replyTo.Tell(con);
-                        Become(Handle);
-                    }
-                        
+                    await ConnectionOpened(ask.ConvertTo<ConnectionOpened>()).ConfigureAwait(false);                    
                 }
-                   
-            });
-            ReceiveAny(s => Stash.Stash());
-        }
-        private void Handle()
-        {
-            Receive<Grab>(_ =>
-            {
-                _replyTo = Sender;
-                _connectionHandler.Tell(new GrabCnx($"Create connection from topicListWatcher: {_name}"));
-                Become(Connection);
+
             });
             Receive<Close>(_ =>
             {
@@ -115,23 +94,17 @@ namespace SharpPulsar
             {
                 ConnectionClosed(ctx.ClientCnx);
             });
-            Stash?.UnstashAll();
 
         }
-        protected override void PreStart()
-        {
-            base.PreStart();
-            Become(GrabCnx);
-        }
+       
         private void ConnectionFailed(PulsarClientException exception)
         {
             var nonRetriableError = !PulsarClientException.IsRetriableError(exception);
             if (nonRetriableError)
             {
                 exception.SetPreviousExceptions(_previousExceptions);
-                if (true)
+                if (_watcherFuture.TrySetException(exception))
                 {
-                    _watcherFuture.SetException(exception);
                     _state.ConnectionState = HandlerState.State.Failed;
                     _log.Info($"[Topic] Watcher creation failed for {_name} with non-retriable error {exception}");
                     DeregisterFromClientCnx();
@@ -143,7 +116,7 @@ namespace SharpPulsar
             }
         }
 
-        private async ValueTask<AskResponse> ConnectionOpened(ConnectionOpened c)
+        private async ValueTask ConnectionOpened(ConnectionOpened c)
         {
             ClientCnx = c.ClientCnx;
             _previousExceptions.Clear();
@@ -152,7 +125,7 @@ namespace SharpPulsar
             {
                 _state.ConnectionState = HandlerState.State.Closed;
                 DeregisterFromClientCnx();
-                return new AskResponse(_state.ConnectionState);
+                return;
             }
 
             _log.Info($"[Topic][{HandlerName}] Creating topic list watcher on cnx, watcherId {_watcherId}");
@@ -170,11 +143,10 @@ namespace SharpPulsar
                     _state.ConnectionState = HandlerState.State.Closed;
                     DeregisterFromClientCnx();
                     _cnx.Tell(Messages.Requests.Close.Instance);
-                    return new AskResponse(_state.ConnectionState);
+                    return;
                 }
                 ResetBackoff();
-                //watcherFuture.complete(this);
-                return new AskResponse(c);
+                _watcherFuture.SetResult(_self);
             }
             catch (Exception e) 
             {
@@ -182,17 +154,21 @@ namespace SharpPulsar
                 if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)
                 {
                     _cnx.Tell(Messages.Requests.Close.Instance);
+                    return;
                 }
                 _log.Warning($"[Topic][{HandlerName}] Failed to subscribe to topic on 'remoteAddress'");
                 if (e.InnerException is PulsarClientException && PulsarClientException.IsRetriableError(e.InnerException) && DateTimeHelper.CurrentUnixTimeMillis() < _createWatcherDeadline)
                 {
                     ReconnectLater(e.InnerException);
-                    return null;
+                }
+                else if (!_watcherFuture.Task.IsCompleted)
+                {
+                    _state.ConnectionState = HandlerState.State.Failed;
+                    _watcherFuture.SetException(PulsarClientException.Wrap(e, $"Failed to create topic list watcher {HandlerName} when connecting to the broker"));
                 }
                 else
                 {
-                    _state.ConnectionState = HandlerState.State.Failed;
-                    return new AskResponse(PulsarClientException.Wrap(e, $"Failed to create topic list watcher {HandlerName} when connecting to the broker"));
+                    ReconnectLater(e);
                 }
             }
             

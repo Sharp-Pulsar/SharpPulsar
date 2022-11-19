@@ -133,6 +133,10 @@ namespace SharpPulsar.Tracker
                     TimePartitions.AddLast(headPartition);
                 }
             }
+            catch(Exception ex)
+            {
+                _log.Error(ex.ToString());
+            }
             finally
             {
                 try

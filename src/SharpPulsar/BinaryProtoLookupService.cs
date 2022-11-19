@@ -20,6 +20,10 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.ServiceName;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
+using SharpPulsar.Admin.v2;
+using Mode = SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Mode;
+using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
+using ZstdNet;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -56,13 +60,16 @@ namespace SharpPulsar
         private readonly ILoggingAdapter _log;
         private readonly IActorContext _context;
         private IActorRef _replyTo;
+        private IActorRef _self;
         private long _requestId = -1;
         private TopicName _topicName;
         private Backoff _getTopicsUnderNamespaceBackOff;
         private Backoff _getPartitionedTopicMetadataBackOff;
         private readonly Commands _commands = new Commands();
+        private GetTopicsUnderNamespace _getTopicsUnderNamespace;
         public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout, TimeSpan timeCnx)
         {
+            _self = Self;
             _generator = idGenerator;
             _context = Context;
             _log = Context.GetLogger();
@@ -128,15 +135,17 @@ namespace SharpPulsar
             }
             Become(Awaiting);
         }
-        private async ValueTask TopicsUnderNamespace(GetTopicsUnderNamespace t)
+        
+        private async ValueTask TopicsUnderNamespaceAsync()
         {
             try
             {
+                var t = _getTopicsUnderNamespace;
                 var opTimeout = _operationTimeout;
                 _getTopicsUnderNamespaceBackOff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(opTimeout.Multiply(2)).SetMax(TimeSpan.FromMinutes(1)).Create();
-                _replyTo = Sender;
                 await GetCnxAndRequestId();
-                await GetTopicsUnderNamespace(t.Namespace, t.Mode, t.TopicsPattern, t.TopicsHash, opTimeout);
+                await TopicsUnderNamespace(t.Namespace, t.Mode, t.TopicsPattern, t.TopicsHash, opTimeout);
+               
             }
             catch (Exception e)
             {
@@ -152,7 +161,14 @@ namespace SharpPulsar
 			ReceiveAsync<GetBroker>( async broke => await Broke(broke));
 			ReceiveAsync<GetPartitionedTopicMetadata>(async p =>  await PartitionedTopicMetadata(p));
 			ReceiveAsync<GetSchema>(async s => await Schema(s));            
-			ReceiveAsync<GetTopicsUnderNamespace>(async t => await TopicsUnderNamespace(t));
+			ReceiveAsync<GetTopicsUnderNamespace>( async t => 
+            {
+                _replyTo = Sender;
+                Become(GetTopicsUnderNamespace);
+                _getTopicsUnderNamespace = t;    
+                await TopicsUnderNamespaceAsync();
+               
+            });
 		}
         private async ValueTask GetBroker(GetBroker broker)
         {
@@ -351,7 +367,7 @@ namespace SharpPulsar
                 var isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
                 if (nextDelay <= 0 || isLookupThrottling)
                 {
-                   Self.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(e)));
+                   _self.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(e)));
                     _log.Error(e.ToString());
                     _getPartitionedTopicMetadataBackOff = null;
                 }
@@ -361,7 +377,7 @@ namespace SharpPulsar
                     _opTime = opTimeout - TimeSpan.FromMilliseconds(nextDelay);
                     var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                     _requestId = id.Id;
-                    Self.Tell(askResponse.Failed);
+                    _self.Tell(askResponse.Failed);
                 }
                 return;
             }
@@ -426,10 +442,14 @@ namespace SharpPulsar
 
         public IStash Stash { get; set; }
         
-        private async ValueTask GetTopicsUnderNamespace(NamespaceName ns, Mode mode, string topicsPattern, string topicsHash, TimeSpan opTimeout)
+        private void GetTopicsUnderNamespace()
         {
-            await TopicsUnderNamespace(ns, mode, topicsPattern, topicsHash, opTimeout);
-            Receive<bool>(async l => await TopicsUnderNamespace(ns, mode, topicsPattern, topicsHash, _opTime));
+            
+            Receive<bool>(async l => 
+            {
+                var t = _getTopicsUnderNamespace;
+                await TopicsUnderNamespace(t.Namespace, t.Mode, t.TopicsPattern, t.TopicsHash, _opTime);
+            });
             Receive<AskResponse>(l =>
             {
                 _replyTo.Tell(l);
@@ -464,7 +484,7 @@ namespace SharpPulsar
                 }
                 //_replyTo.Tell(new AskResponse(new GetTopicsUnderNamespaceResponse(result)));
                 _opTime = opTimeout;
-                Self.Tell(new AskResponse(new GetTopicsUnderNamespaceResponse(result, res.TopicsHash, res.Changed, res.Filtered)));
+                _self.Tell(new AskResponse(new GetTopicsUnderNamespaceResponse(result, res.TopicsHash, res.Changed, res.Filtered)));
             }
             catch
             {
@@ -473,7 +493,7 @@ namespace SharpPulsar
                 if (nextDelay <= 0)
                 {
                     _opTime = opTimeout;
-                    Self.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout"))));
+                    _self.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout"))));
                 }
                 else
                 {
@@ -488,7 +508,7 @@ namespace SharpPulsar
 
                     _log.Warning($"Retrying 'GetTopicsUnderNamespace' after {nextDelay} ms delay with requestid '{reqId.Id}'");
 
-                    Self.Tell(false);
+                    _self.Tell(false);
                 }
             }
         }

@@ -65,12 +65,23 @@ namespace SharpPulsar
             
             if (_subscriptionMode == Mode.Persistent)
             {
-                var watcherId = idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false).GetAwaiter().GetResult();
-                var watcher = Context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, State));
-                var grabCnc = watcher.Ask<AskResponse>(Grab.Instance);
-                if(grabCnc.Exception == null)
-                    _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {grabCnc.Exception}");
-                
+                var tcs = new TaskCompletionSource<IActorRef>();
+                Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=>
+                {
+                    try
+                    {
+                        var watcherId = await idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false);
+                        var watcher = _context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, State, tcs));
+                       
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {ex}");
+                        tcs.SetException(ex);
+                    }
+
+                });
+                tcs.Task.ConfigureAwait(false).GetAwaiter().GetResult();
             }
             else
             {

@@ -40,13 +40,13 @@ namespace SharpPulsar
             InitReceiverQueueSize();
 
         }
-       
+        
         public override int MinReceiverQueueSize()
         {
             return 0;
         }
 
-        protected new internal void InitReceiverQueueSize()
+        protected internal void InitReceiverQueueSize()
         {
             if (Conf.IsAutoScaledReceiverQueueSizeEnabled)
             {
