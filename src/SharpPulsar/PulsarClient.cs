@@ -276,7 +276,7 @@ namespace SharpPulsar
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
                     if (conf.ReceiverQueueSize == 0)
-                        _actorSystem.ActorOf(ZeroQueueConsumer<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
+                        _actorSystem.ActorOf(ZeroQueueConsumer<T>.Prop(_client, consumerId, state, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
                     else
                        _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
                     

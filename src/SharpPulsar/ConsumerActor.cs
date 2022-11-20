@@ -137,8 +137,8 @@ namespace SharpPulsar
         private int _maxMessageSize;
         private int _protocolVersion;
 
-        private volatile Producer<T> _retryLetterProducer;
-        private volatile IActorRef _replyTo;
+        private Producer<T> _retryLetterProducer;
+        private IActorRef _replyTo;
 
         private long _subscribeDeadline = 0; // gets set on first successful connection
 

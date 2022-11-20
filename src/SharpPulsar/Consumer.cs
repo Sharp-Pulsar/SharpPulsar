@@ -75,8 +75,8 @@ namespace SharpPulsar
         public async ValueTask<int> NumMessagesInQueueAsync()
         {
             var askFormesageCount = await _consumerActor.Ask<AskResponse>(GetIncomingMessageCount.Instance).ConfigureAwait(false);
-            var mesageCount = askFormesageCount.ConvertTo<long>();
-            return (int)mesageCount;
+            var mesageCount = askFormesageCount.ConvertTo<int>();
+            return mesageCount;
         }
         public void Acknowledge(IMessageId messageId) => AcknowledgeAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessageId messageId)
