@@ -55,19 +55,19 @@ namespace SharpPulsar.Test
             tv.ForEachAndListen((k, v) => _output.WriteLine($"checkpoint {k} -> {Encoding.UTF8.GetString(v)}"));
 
             // Send more data
-            var keys2 = await PublishMessages(topic, count * 2, false);
-            await Task.Delay(3000);
+            var keys2 = await PublishMessages(topic, count, false);
+            //await Task.Delay(3000);
             _output.WriteLine($"Current tv size: {tv.Size()}");
-            await Task.Delay(5000);
-            Assert.Equal(tv.Size(), count * 2);
-            //Assert.True(count >= tv.Size());
+            //await Task.Delay(5000);
+            Assert.Equal(tv.Size(), count);
+            Assert.True(count >= tv.Size());
             tv.KeySet().Should().BeEquivalentTo(keys2);
         }
 
         [Fact]
         public async Task TestTableViewUpdatePartitions()
         {
-            var topic = $"tableview-test-update-partitions";
+            var topic = $"tableview-{Guid.NewGuid()}";
             try
             {
                 await _admin.CreatePartitionedTopicAsync("public", "default", topic, new PartitionedTopicMetadata { Partitions = 3 }, false);
@@ -76,7 +76,7 @@ namespace SharpPulsar.Test
             {
 
             }
-            topic = "persistent://public/default/tableview-test-update-partitions";
+            topic = $"persistent://public/default/{topic}-0";
             var count = 20;
             var keys = await PublishMessages(topic, count, false);
 
@@ -100,12 +100,12 @@ namespace SharpPulsar.Test
             var topicName = TopicName.Get(topic);
 
             // Send more data to partition 3, which is not in the current TableView, need update partitions
-            var keys2 = await PublishMessages(topicName.GetPartition(3).ToString(), count * 2, false);
-            await Task.Delay(3000);
+            var keys2 = await PublishMessages(topicName.GetPartition(3).ToString(), count, false);
+            //await Task.Delay(3000);
             _output.WriteLine($"Current tv size: {tv.Size()}");
-            await Task.Delay(6000);
-            Assert.Equal(tv.Size(), count * 2);
-            //Assert.True(count >= tv.Size());
+            //await Task.Delay(6000);
+            Assert.Equal(tv.Size(), count);
+            Assert.True(count >= tv.Size());
             tv.KeySet().Should().BeEquivalentTo(keys2);
         }
 

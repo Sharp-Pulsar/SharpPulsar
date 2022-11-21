@@ -85,6 +85,7 @@ namespace SharpPulsar.Test
 
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            await Task.Delay(TimeSpan.FromSeconds(5));
         }
         private void TestMessageOrderAndDuplicates<T>(ISet<T> messagesReceived, T receivedMessage, T expectedMessage)
         {

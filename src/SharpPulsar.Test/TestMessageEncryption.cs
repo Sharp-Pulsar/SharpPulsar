@@ -78,6 +78,7 @@ namespace SharpPulsar.Test
             Assert.True(receivedCount > 6);
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            await Task.Delay(TimeSpan.FromSeconds(5));
         }
     }
 }
