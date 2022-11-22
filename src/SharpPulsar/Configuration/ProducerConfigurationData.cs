@@ -51,7 +51,7 @@ namespace SharpPulsar.Configuration
         /// </summary>
         /// 
         public Common.ProducerAccessMode AccessMode = Common.ProducerAccessMode.Shared;
-        public int MaxMessageSize { get; set; } = -1;
+       // public int MaxMessageSize { get; set; } = -1;
         public string TopicName { get; set; }
         public string InitialSubscriptionName { get; set; } = "";
         public int Partitions { get; set; } = 0;

@@ -150,7 +150,15 @@ namespace SharpPulsar
         public void Close() => CloseAsync().ConfigureAwait(false);
         public async ValueTask CloseAsync()
         {
-            await _consumerActor.GracefulStop(_operationTimeout).ConfigureAwait(false);
+            try
+            {
+                await _consumerActor.GracefulStop(_operationTimeout).ConfigureAwait(false);
+            }
+            catch
+            {
+                
+            }
+           
         }
         public bool HasReachedEndOfTopic()
             => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();

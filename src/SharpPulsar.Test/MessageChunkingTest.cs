@@ -50,7 +50,7 @@ namespace SharpPulsar.Test
             var pBuilder = new ProducerConfigBuilder<byte[]>()
                 .Topic(topicName)
                 .EnableChunking(true)
-                .MaxMessageSize(5);
+                .ChunkMaxMessageSize(5);
             var producer = await _client.NewProducerAsync(pBuilder);
 
             IList<string> publishedMessages = new List<string>();
@@ -67,15 +67,23 @@ namespace SharpPulsar.Test
             IMessage<byte[]> msg = null;
             ISet<string> messageSet = new HashSet<string>();
             IList<IMessage<byte[]>> msgIds = new List<IMessage<byte[]>>();
-            await Task.Delay(TimeSpan.FromSeconds(60));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < totalMessages - 1; i++)
             {
-                msg = await consumer.ReceiveAsync();
-                var receivedMessage = Encoding.UTF8.GetString(msg.Data);
-                _output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");
-                var expectedMessage = publishedMessages[i];
-                TestMessageOrderAndDuplicates(messageSet, receivedMessage, expectedMessage);
-                msgIds.Add(msg);
+                try
+                {
+                    msg = await consumer.ReceiveAsync();
+                    var receivedMessage = Encoding.UTF8.GetString(msg.Data);
+                    _output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");
+                    var expectedMessage = publishedMessages[i];
+                    TestMessageOrderAndDuplicates(messageSet, receivedMessage, expectedMessage);
+                    msgIds.Add(msg);
+                }
+                catch (Exception ex) 
+                {
+                    _output.WriteLine(ex.ToString());
+                }
+
             }
 
             foreach (var msgId in msgIds)

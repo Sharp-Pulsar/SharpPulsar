@@ -85,6 +85,7 @@ namespace SharpPulsar.Test
             await producer2.CloseAsync();
             await consumer.CloseAsync();
             await consumer1.CloseAsync();
+            await Task.Delay(TimeSpan.FromSeconds(2));
         }
     }
 

@@ -1928,7 +1928,7 @@ namespace SharpPulsar
 				_log.Debug($"Chunked message completed chunkId {msgMetadata.ChunkId}, total-chunks {msgMetadata.NumChunksFromMsg}, msgId {msgId} sequenceId {msgMetadata.SequenceId}");
 			}
 			// remove buffer from the map, add chucked messageId to unack-message tracker, and reduce pending-chunked-message count
-			_chunkedMessagesMap.Remove(msgMetadata.Uuid);
+			//_chunkedMessagesMap.Remove(msgMetadata.Uuid);
 			UnAckedChunckedMessageIdSequenceMap.Tell(new AddMessageIds(msgId, chunkedMsgCtx.ChunkedMessageIds));
 			_pendingChunkedMessageCount--;
 			compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer.ToArray();

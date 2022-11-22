@@ -432,7 +432,7 @@ namespace SharpPulsar
             _cnx.Tell(new RegisterProducer(_producerId, _self));
             _protocolVersion = o.ProtocolVersion;
             _producerDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + ClientConfiguration.OperationTimeout.TotalMilliseconds);
-            _chunkMaxMessageSize = (int)Math.Min(Conf.ChunkMaxMessageSize, o.MaxMessageSize);
+            _chunkMaxMessageSize = Conf.ChunkMaxMessageSize > 0 ? (int)Math.Min(Conf.ChunkMaxMessageSize, o.MaxMessageSize) :(int) o.MaxMessageSize;
 
             if (_batchMessageContainer != null)
             {
@@ -742,9 +742,6 @@ namespace SharpPulsar
             Condition.CheckArgument(message is Message<T>);
             var maxMessageSize = (int)_maxMessageSize;
 
-            if (Conf.ChunkingEnabled && Conf.MaxMessageSize > 0)
-                maxMessageSize = Math.Min(Conf.MaxMessageSize, maxMessageSize);
-
             if (!IsValidProducerState(callback, message.SequenceId))
             {
                 return;
@@ -815,6 +812,7 @@ namespace SharpPulsar
                     // So there is a small chance that the final message size is larger than ClientCnx.getMaxMessageSize().
                     // But it won't cause produce failure as broker have 10 KB padding space for these cases.
                     payloadChunkSize = maxMessageSize - (int)Size(msgMetadata);
+                    
                     if (payloadChunkSize <= 0)
                     {
                         var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer {_producerName} of the topic {Topic} sends a message with {(int)Size(msgMetadata)} bytes metadata that exceeds {_maxMessageSize} bytes");
@@ -847,8 +845,8 @@ namespace SharpPulsar
                             msg.Metadata.OrderingKey = ord;
                         }
                     }
-                    await SerializeAndSendMessage(msg, payload, msgMetadata, sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressed, compressedPayload.Length, uncompressedSize, callback, chunkedMessageCtx);
-                    readStartIndex = ((chunkId + 1) * maxMessageSize);
+                    await SerializeAndSendMessage(msg, payload, msgMetadata, sequenceId, uuid, chunkId, totalChunks, readStartIndex, payloadChunkSize, compressedPayload, compressed, compressedPayload.Length, uncompressedSize, callback, chunkedMessageCtx);
+                    readStartIndex = ((chunkId + 1) * payloadChunkSize);
                 }
             }
             catch (PulsarClientException e)
@@ -943,8 +941,7 @@ namespace SharpPulsar
             var chunkMsgMetadata = msgMetadata;
             if (totalChunks > 1 && TopicName.Get(Topic).Persistent)
             {
-                chunkPayload = compressedPayload.Slice(readStartIndex,
-                    Math.Min(chunkMaxSizeInBytes, chunkPayload.Length - readStartIndex));
+                chunkPayload = compressedPayload.Slice(readStartIndex,  Math.Min(chunkMaxSizeInBytes, chunkPayload.Length - readStartIndex));
                 if (chunkId != totalChunks - 1)
                 {
                     chunkMsgMetadata = msgMetadata;
