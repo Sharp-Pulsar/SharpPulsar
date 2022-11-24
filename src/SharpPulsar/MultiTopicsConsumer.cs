@@ -1494,7 +1494,7 @@ namespace SharpPulsar
             conf.BatchReceivePolicy = internalBatchReceivePolicy;
             
             if (conf.ReceiverQueueSize == 0)
-                _context.ActorOf(ZeroQueueConsumer<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
+                _context.ActorOf(ZeroQueueConsumer<T>.Prop(_client, consumerId, _stateActor, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
             else
                 _context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
 
