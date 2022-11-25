@@ -11,11 +11,14 @@ namespace SharpPulsar.Tracker
             Receive<Clear>(c => { });
             Receive<Remove>(c =>
             {
-                //Sender.Tell(true);
+                Sender.Tell(true);
             });
-            Receive<RemoveMessagesTill>(c => { });
-            Receive<Add<T>>(c => { });
-            Receive<Size>(c => { });
+            Receive<RemoveMessagesTill>(c => 
+            {
+                Sender.Tell(0);
+            });
+            Receive<Add<T>>(c => { Sender.Tell(true); });
+            Receive<Size>(c => { Sender.Tell(0); });
             ReceiveAny(_ =>
             {
                 //no ops

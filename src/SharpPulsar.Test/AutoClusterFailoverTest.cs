@@ -67,12 +67,12 @@ namespace SharpPulsar.Test
                 }
                 await Act(consumer, producer);
 
-                await Task.Delay(TimeSpan.FromSeconds(30));
+                await Task.Delay(TimeSpan.FromSeconds(10));
                 await Act(consumer, producer);
 
                 await producer.CloseAsync();
                 await consumer.CloseAsync();
-
+                await Task.Delay(TimeSpan.FromSeconds(5));
             }
             catch (Exception ex)
             {
