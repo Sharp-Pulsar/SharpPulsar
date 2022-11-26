@@ -1229,7 +1229,11 @@ namespace SharpPulsar
 
         private bool CanAddToCurrentBatch(Message<T> msg)
         {
-            return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg)) && _batchMessageContainer.HasSameTxn(msg);
+            var enoughSpace = _batchMessageContainer.HaveEnoughSpace(msg);
+            var isMulti = !IsMultiSchemaEnabled(false);
+            var sameSchema = _batchMessageContainer.HasSameSchema(msg);
+            var txn = _batchMessageContainer.HasSameTxn(msg);
+            return enoughSpace && (isMulti || sameSchema) && txn;
         }
 
         private async ValueTask DoBatchSendAndAdd(Message<T> msg, SendCallback<T> callback, byte[] payload)

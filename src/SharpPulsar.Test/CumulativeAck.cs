@@ -375,7 +375,7 @@ namespace SharpPulsar.Test
                 }
 
                 // consume and ack messages with txn
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1000000));
                 for (var i = 0; i < messageCnt; i++)
                 {
                     var msg = await consumer.ReceiveAsync();

@@ -60,7 +60,30 @@ namespace SharpPulsar.Batch
 			return ((_maxBytesInBatch <= 0 && (messageSize + _currentBatchSizeBytes) <= _producerContainer.MaxMessageSize) || (_maxBytesInBatch > 0 && (messageSize + _currentBatchSizeBytes) <= _maxBytesInBatch)) && (_maxNumMessagesInBatch <= 0 || _numMessagesInBatch < _maxNumMessagesInBatch);
 		}
 
-		public virtual bool BatchFull => (_maxBytesInBatch > 0 && _currentBatchSizeBytes >= _maxBytesInBatch) || (_maxBytesInBatch <= 0 && _currentBatchSizeBytes >= _producerContainer.MaxMessageSize) || (_maxNumMessagesInBatch > 0 && _numMessagesInBatch >= _maxNumMessagesInBatch);
+        public virtual bool BatchFull 
+        {            
+            get
+            {
+                var inbatch = _maxBytesInBatch > 0;
+                var current = _currentBatchSizeBytes >= _maxBytesInBatch;
+                if (inbatch && current)
+                    return true;
+
+                inbatch = _maxBytesInBatch <= 0;
+                current = _currentBatchSizeBytes >= _producerContainer.MaxMessageSize;
+                if (inbatch && current)
+                    return true;
+
+                inbatch = _maxNumMessagesInBatch > 0;
+                current = _numMessagesInBatch >= _maxNumMessagesInBatch;
+                if (inbatch && current)
+                    return true;
+
+                return false;
+                //return (inbatch && current) || (_maxBytesInBatch <= 0 && _currentBatchSizeBytes >= _producerContainer.MaxMessageSize) || (_maxNumMessagesInBatch > 0 && _numMessagesInBatch >= _maxNumMessagesInBatch);
+
+            }
+        } 
 
         public virtual int NumMessagesInBatch
         {
