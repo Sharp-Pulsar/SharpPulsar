@@ -1686,55 +1686,41 @@ namespace SharpPulsar
             
             byte[] singleMessagePayload = null;
             SingleMessageMetadata singleMessageMetadata = null;
-            try
+            if (containMetadata)
             {
-                if (containMetadata)
-                {
-                    singleMessageMetadata = Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-                    singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
+                singleMessageMetadata = Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
 
-                }
-
-                // If the topic is non-persistent, we should not ignore any messages.
-                if (_topicName.Persistent && IsSameEntry(messageId) && IsPriorBatchIndex(index))
-                {
-                    // If we are receiving a batch message, we need to discard messages that were prior
-                    // to the startMessageId
-                    if (_log.IsDebugEnabled)
-                    {
-                        _log.Debug($"[{Subscription}] [{ConsumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
-                    }
-                    return null;
-                }
-
-                if (singleMessageMetadata != null && singleMessageMetadata.CompactedOut)
-                {
-                    // message has been compacted out, so don't send to the user
-                    return null;
-                }
-
-                if (ackBitSet != null && ackBitSet.Get(index, index) != null)
-                {
-                    return null;
-                }
-
-                var batchMessageId = new BatchMessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex, index, numMessages, acker);
-
-                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
-                message.BrokerEntryMetadata = brokerEntryMetadata;
-                return message;
             }
-            catch (Exception e) when (e is IOException || e is InvalidOperationException)
+
+            // If the topic is non-persistent, we should not ignore any messages.
+            if (_topicName.Persistent && IsSameEntry(messageId) && IsPriorBatchIndex(index))
             {
-                throw;
-            }
-            finally
-            {
-                if (singleMessagePayload != null)
+                // If we are receiving a batch message, we need to discard messages that were prior
+                // to the startMessageId
+                if (_log.IsDebugEnabled)
                 {
-                    singleMessagePayload = null;
+                    _log.Debug($"[{Subscription}] [{ConsumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
                 }
+                return null;
             }
+
+            if (singleMessageMetadata != null && singleMessageMetadata.CompactedOut)
+            {
+                // message has been compacted out, so don't send to the user
+                return null;
+            }
+
+            if (ackBitSet != null && ackBitSet.Get(index, index) != null)
+            {
+                return null;
+            }
+
+            var batchMessageId = new BatchMessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex, index, numMessages, acker);
+
+            var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
+            message.BrokerEntryMetadata = brokerEntryMetadata;
+            return message;
         }
 
         protected Message<T> NewMessage(MessageId messageId, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema, int redeliveryCount, long consumerEpoch)
@@ -2188,7 +2174,7 @@ namespace SharpPulsar
 
 			if(_log.IsDebugEnabled)
 			{
-				_log.Debug($"[{Subscription}] [{ConsumerName}] enqueued messages in batch. queue size - {IncomingMessages.Count}, available queue size - (-1)");
+				_log.Debug($"[{Subscription}] [{ConsumerName}] enqueued messages in batch. queue size - {IncomingMessages.Count}, available queue size - ({IncomingMessages.Count})");
 			}
 
 			if(skippedMessages > 0)

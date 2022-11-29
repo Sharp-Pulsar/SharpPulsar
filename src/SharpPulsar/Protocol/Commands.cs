@@ -932,7 +932,7 @@ namespace SharpPulsar.Protocol
 			{
 				messageIdData.BatchSize = batchSize;
 			}
-            return NewAck(validationError.Value, properties, txnIdLeastBits, txnIdMostBits, requestId, ack);
+            return NewAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack);
         }
         private static ReadOnlySequence<byte> NewAck(ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits,
                                   long txnIdMostBits, long requestId, CommandAck ack)

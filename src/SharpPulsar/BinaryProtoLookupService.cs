@@ -119,7 +119,7 @@ namespace SharpPulsar
                 //Become(Awaiting);
             }
 
-            
+
         }
         private async ValueTask Schema(GetSchema s)
         {
@@ -135,7 +135,7 @@ namespace SharpPulsar
             }
             Become(Awaiting);
         }
-        
+
         private async ValueTask TopicsUnderNamespaceAsync()
         {
             try
@@ -145,34 +145,34 @@ namespace SharpPulsar
                 _getTopicsUnderNamespaceBackOff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(opTimeout.Multiply(2)).SetMax(TimeSpan.FromMinutes(1)).Create();
                 await GetCnxAndRequestId();
                 await TopicsUnderNamespace(t.Namespace, t.Mode, t.TopicsPattern, t.TopicsHash, opTimeout);
-               
+
             }
             catch (Exception e)
             {
-                _replyTo.Tell(new AskResponse(PulsarClientException.Unwrap(e))); 
+                _replyTo.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
                 Become(Awaiting);
 
             }
         }
         private void Awaiting()
         {
-			Receive<SetClient>(c => { });
-			Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
-			ReceiveAsync<GetBroker>( async broke => await Broke(broke));
-			ReceiveAsync<GetPartitionedTopicMetadata>(async p =>  await PartitionedTopicMetadata(p));
-			ReceiveAsync<GetSchema>(async s => await Schema(s));            
-			ReceiveAsync<GetTopicsUnderNamespace>( async t => 
+            Receive<SetClient>(c => { });
+            Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
+            ReceiveAsync<GetBroker>(async broke => await Broke(broke));
+            ReceiveAsync<GetPartitionedTopicMetadata>(async p => await PartitionedTopicMetadata(p));
+            ReceiveAsync<GetSchema>(async s => await Schema(s));
+            ReceiveAsync<GetTopicsUnderNamespace>(async t =>
             {
                 _replyTo = Sender;
-                Become(GetTopicsUnderNamespace);
-                _getTopicsUnderNamespace = t;    
+                _getTopicsUnderNamespace = t;
                 await TopicsUnderNamespaceAsync();
-               
+
+                Become(GetTopicsUnderNamespace);
             });
-		}
+        }
         private async ValueTask GetBroker(GetBroker broker)
         {
-			var socketAddress = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
+            var socketAddress = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
             var askResponse = await NewLookup(broker.TopicName);
             if (askResponse.Failed)
             {
@@ -227,7 +227,7 @@ namespace SharpPulsar
             }
 
         }
-		private async ValueTask RedirectedGetBroker(TopicName topic, int redirectCount, DnsEndPoint address, bool authoritative)
+        private async ValueTask RedirectedGetBroker(TopicName topic, int redirectCount, DnsEndPoint address, bool authoritative)
         {
             var socketAddress = address ?? _serviceNameResolver.ResolveHost().ToDnsEndPoint();
             if (_maxLookupRedirects > 0 && redirectCount > _maxLookupRedirects)
@@ -252,7 +252,7 @@ namespace SharpPulsar
                     _log.Warning($"[{topic}] Lookup response exception> {data.Error}:{data.ErrorMessage}");
                 }
                 _replyTo.Tell(new AskResponse(new PulsarClientException(new Exception($"Lookup is not found: {data.Error}:{data.ErrorMessage}"))));
-               
+
             }
             else
             {
@@ -289,11 +289,11 @@ namespace SharpPulsar
                 }
             }
         }
-		private async ValueTask GetCnxAndRequestId()
+        private async ValueTask GetCnxAndRequestId()
         {
-			_clientCnx = null;
-			_requestId = -1;
-			var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
+            _clientCnx = null;
+            _requestId = -1;
+            var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
             var ask = await _connectionPool.Ask<AskResponse>(new GetConnection(address));
             if (ask.Failed)
                 throw ask.Exception;
@@ -302,12 +302,12 @@ namespace SharpPulsar
             var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
             _requestId = id.Id;
         }
-		private async ValueTask GetCnxAndRequestId(DnsEndPoint dnsEndPoint)
+        private async ValueTask GetCnxAndRequestId(DnsEndPoint dnsEndPoint)
         {
-			_clientCnx = null;
-			_requestId = -1;
-			var address = dnsEndPoint;
-			var ask = await _connectionPool.Ask<AskResponse>(new GetConnection(address));
+            _clientCnx = null;
+            _requestId = -1;
+            var address = dnsEndPoint;
+            var ask = await _connectionPool.Ask<AskResponse>(new GetConnection(address));
             if (ask.Failed)
                 throw ask.Exception;
             var o = ask.ConvertTo<ConnectionOpened>();
@@ -323,10 +323,10 @@ namespace SharpPulsar
         /// <param name="authoritative"></param>
         /// <returns> broker-socket-address that serves given topic </returns>
         private async ValueTask<AskResponse> NewLookup(TopicName topicName, bool authoritative = false)
-		{
+        {
             var request = _commands.NewLookup(topicName.ToString(), _listenerName, authoritative, _requestId);
-			var payload = new Payload(request, _requestId, "NewLookup");
-			return await _clientCnx.Ask<AskResponse>(payload);
+            var payload = new Payload(request, _requestId, "NewLookup");
+            return await _clientCnx.Ask<AskResponse>(payload);
         }
 
         /// <summary>
@@ -336,7 +336,10 @@ namespace SharpPulsar
         private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, TimeSpan opTimeout)
         {
             _topicName = topicName;
-            await PartitionedTopicMetadata(topicName, opTimeout);        }
+            await PartitionedTopicMetadata(topicName, opTimeout);
+        }
+    
+        
         private void GetPartitionedTopicMetadata()
         {
             ReceiveAsync<bool>(async l =>
@@ -363,11 +366,11 @@ namespace SharpPulsar
                 Become(GetPartitionedTopicMetadata);
                 var e = askResponse.Exception;
                 var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), opTimeout.TotalMilliseconds);
-                
+
                 var isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
                 if (nextDelay <= 0 || isLookupThrottling)
                 {
-                   _self.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(e)));
+                    _self.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(e)));
                     _log.Error(e.ToString());
                     _getPartitionedTopicMetadataBackOff = null;
                 }
@@ -381,7 +384,6 @@ namespace SharpPulsar
                 }
                 return;
             }
-
             var data = askResponse.ConvertTo<LookupDataResult>();
 
             if (data?.Error != ServerError.UnknownError)
