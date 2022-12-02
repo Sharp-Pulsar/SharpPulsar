@@ -69,6 +69,8 @@ namespace SharpPulsar
 
 		private readonly ICancelable _sendPing;
 		private readonly IActorRef _parent;
+        private readonly IScheduler _scheduler;
+        
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
@@ -78,6 +80,7 @@ namespace SharpPulsar
 
 		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker)
 		{
+            _scheduler = Context.System.Scheduler;
             _pong = _commands.NewPong();
             _maxMessageSize = _commands.DefaultMaxMessageSize;
             _connectionFuture = connectionFuture;
@@ -100,12 +103,13 @@ namespace SharpPulsar
 			_state = State.None;
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=>
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=>
             {
                 await Connect();
                 _socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
-            });           
-
+            });*/
+            Connect();
+            _socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
             Receives();
         }
         private async ValueTask Connect()
@@ -113,7 +117,7 @@ namespace SharpPulsar
             try
             {
                 await _socketClient.Connect();
-                _timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
+                _timeoutTask = _scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
 
                 //_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
 

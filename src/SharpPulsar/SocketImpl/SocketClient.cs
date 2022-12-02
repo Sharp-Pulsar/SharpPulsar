@@ -116,12 +116,14 @@ namespace SharpPulsar.SocketImpl
 
         IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)> observer, CancellationToken cancellationToken = default)
         {
+            _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
             return NewThreadScheduler.Default.Schedule(async () =>
             {
                 try
                 {
                     while (true)
                     {
+                        _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
                         cancellationToken.ThrowIfCancellationRequested();
                         var result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 

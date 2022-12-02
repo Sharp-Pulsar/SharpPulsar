@@ -97,51 +97,54 @@ namespace SharpPulsar
         }
         private IMessage<T> FetchSingleMessageFromBroker()
         {
-            // if cnx is null or if the connection breaks the connectionOpened function will send the flow again
-            _waitingOnReceiveForZeroQueueSize = true;
-            if (Connected())
+            // Just being cautious
+            if (IncomingMessages.Count > 0)
             {
-                IncreaseAvailablePermits(Cnx());
+                _log.Error("The incoming message queue should never be greater than 0 when Queue size is 0");
+                IncomingMessages.Empty();
             }
 
-            IMessage<T> message = IncomingMessages.One();
-            // Just being cautious
-            if (message != null) //0) Akka.NET Actor
-            {                
-                try
-                {                   
-                    //_log.Error("The incoming message queue should never be greater than 0 when Queue size is 0");
-                    //message = IncomingMessages.One();
-                    _lastDequeuedMessageId = message.MessageId;
-                    var msgCnx = ((Message<T>)message).Cnx();
-                    // if message received due to an old flow - discard it and wait for the message from the
-                    // latest flow command
-                    if (msgCnx == Cnx())
-                    {
-                        _waitingOnReceiveForZeroQueueSize = false;
-                    }
-                    Stats.UpdateNumMsgsReceived(message);
-                    return message;
-                }
-                catch (Exception e)
-                {
-                    Stats.IncrementNumReceiveFailed();
-                    throw PulsarClientException.Unwrap(e);
-                }
-                finally
-                {
-                    // Finally blocked is invoked in case the block on incomingMessages is interrupted
-                    _waitingOnReceiveForZeroQueueSize = false;
-                    // Clearing the queue in case there was a race with messageReceived
-                    IncomingMessages.Empty();
-                }
-            }
-            else
+            IMessage<T> message;
+            try
             {
-                _waitingOnReceiveForZeroQueueSize = false;
-                return null;
+                // if cnx is null or if the connection breaks the connectionOpened function will send the flow again
+                _waitingOnReceiveForZeroQueueSize = true;
+                if (Connected())
+                {
+                    IncreaseAvailablePermits(Cnx());
+                }
+                do
+                {
+                    if (IncomingMessages.TryReceive(out message))
+                    {
+                        _lastDequeuedMessageId = message.MessageId;
+                        var msgCnx = ((Message<T>)message).Cnx();
+                        // if message received due to an old flow - discard it and wait for the message from the
+                        // latest flow command
+                        if (msgCnx == Cnx())
+                        {
+                            _waitingOnReceiveForZeroQueueSize = false;
+                            break;
+                        }
+                    }
+
+                } while (true);
+
+                Stats.UpdateNumMsgsReceived(message);
+                return message;
             }
-            
+            catch (Exception e)
+            {
+                Stats.IncrementNumReceiveFailed();
+                throw PulsarClientException.Unwrap(e);
+            }
+            finally
+            {
+                // Finally blocked is invoked in case the block on incomingMessages is interrupted
+                _waitingOnReceiveForZeroQueueSize = false;
+                // Clearing the queue in case there was a race with messageReceived
+                IncomingMessages.Empty();
+            }
         }
         protected internal override void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
 		{

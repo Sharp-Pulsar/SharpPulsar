@@ -5,6 +5,7 @@ using SharpPulsar.Batch.Api;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
+using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
@@ -215,29 +216,13 @@ namespace SharpPulsar
             {
                 StateActor.Tell(new SetConumerState(State.ConnectionState));
             });
-            Receive<BatchReceive>(_ =>
+            Receive<BatchReceive>(batch =>
             {
-                try
-                {
-                    var message = BatchReceive();
-                    Sender.Tell(new AskResponse(message));
-                }
-                catch (Exception ex)
-                {
-                    Sender.Tell(new AskResponse(ex));
-                }
+                BatchReceives.Enqueue((Sender, batch));
             });
             Receive<Messages.Consumer.Receive>(receive =>
             {
-                try
-                {
-                    var message = receive.Time == TimeSpan.Zero ? Receive() : Receive(receive.Time);
-                    Sender.Tell(new AskResponse(message));
-                }
-                catch (Exception ex)
-                {
-                    Sender.Tell(new AskResponse(ex));
-                }
+                Receives.Enqueue((Sender, receive));
             });
             ReceiveAsync<UpdatePartitionSub>(async s =>
             {

@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Util;
+using OpenTelemetry;
 using ProtoBuf;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
@@ -538,31 +539,13 @@ namespace SharpPulsar
             {
                 OnAcknowledgeCumulative(on.MessageId, on.Exception);
             });
-            Receive<BatchReceive>(_ =>
+            Receive<BatchReceive>(batch =>
             {
-                try
-                {
-                    var message = BatchReceive();
-                    Sender.Tell(new AskResponse(message));
-                }
-                catch (Exception ex)
-                {
-                    Sender.Tell(new AskResponse(ex));
-                }
-
+                BatchReceives.Enqueue((Sender, batch));
             });
             Receive<Messages.Consumer.Receive>(receive =>
             {
-                try
-                {
-                    var message = receive.Time == TimeSpan.Zero ? Receive() : Receive(receive.Time);
-                    Sender.Tell(new AskResponse(message));
-                }
-                catch (Exception ex)
-                {
-                    Sender.Tell(new AskResponse(ex));
-                }
-
+                Receives.Enqueue((Sender, receive));   
             });
             Receive<SendState>(_ =>
             {
@@ -1001,52 +984,48 @@ namespace SharpPulsar
         protected override void PostStop()
         {
             _tokenSource.Cancel();
-            var tcs = new TaskCompletionSource<bool>();
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=>
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
-                if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-                {
-                    CloseConsumerTasks();
-                    FailPendingReceive();
-                }
-
-                if (!Connected())
-                {
-                    _log.Info($"[{Topic}] [{Subscription}] Closed Consumer (not connected)");
-                    State.ConnectionState = HandlerState.State.Closed;
-                    CloseConsumerTasks();
-                    DeregisterFromClientCnx();
-                    _client.Tell(new CleanupConsumer(Self));
-                    FailPendingReceive();
-                }
-
-                _stats.StatTimeout?.Cancel();
-
-                State.ConnectionState = HandlerState.State.Closing;
-
                 CloseConsumerTasks();
+                FailPendingReceive();
+            }
 
-                var requestId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+            if (!Connected())
+            {
+                _log.Info($"[{Topic}] [{Subscription}] Closed Consumer (not connected)");
+                State.ConnectionState = HandlerState.State.Closed;
+                CloseConsumerTasks();
+                DeregisterFromClientCnx();
+                _client.Tell(new CleanupConsumer(Self));
+                FailPendingReceive();
+            }
 
-                try
+            _stats.StatTimeout?.Cancel();
+
+            State.ConnectionState = HandlerState.State.Closing;
+
+            CloseConsumerTasks();
+
+            var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
+
+            try
+            {
+                var cnx = _clientCnx;
+                if (null == cnx)
                 {
-                    var cnx = _clientCnx;
-                    if (null == cnx)
-                    {
-                        CleanupAtClose(null);
-                    }
-                    else
-                    {
-                        var cmd = _commands.NewCloseConsumer(_consumerId, requestId.Id);
-                        cnx.Tell(new SendRequestWithId(cmd, requestId.Id));
-                    }
-
+                    CleanupAtClose(null);
                 }
-                catch { }
-                tcs.SetResult(true);
-            });
-           tcs.Task.Wait();
-           base.PostStop();
+                else
+                {
+                    var cmd = _commands.NewCloseConsumer(_consumerId, requestId.Id);
+                    cnx.Tell(new SendRequestWithId(cmd, requestId.Id));
+                }
+
+            }
+            catch { }
+            ReceiveRun.Cancel();
+            BatchRun.Cancel();
+            base.PostStop();
         }
         internal override IConsumerStatsRecorder Stats
         {
