@@ -97,7 +97,7 @@ namespace SharpPulsar.Test
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     continue;
                 }
-                _output.WriteLine("Consumer Received message : " + msg.Data + "; Difference between publish time and receive time = " + (DateTimeHelper.CurrentUnixTimeMillis() - msg.PublishTime) / 1000 + " seconds");
+                _output.WriteLine("Consumer Received message : " + msg.Value + "; Difference between publish time and receive time = " + (DateTimeHelper.CurrentUnixTimeMillis() - msg.PublishTime) / 1000 + " seconds");
                 await consumer.AcknowledgeAsync(msg);
                 ++numReceived;
             }
@@ -137,7 +137,7 @@ namespace SharpPulsar.Test
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     continue;
                 }
-                _output.WriteLine($"Consumer Received message : {msg.Data}; with event time {DateTimeOffset.FromUnixTimeMilliseconds(msg.EventTime)}");
+                _output.WriteLine($"Consumer Received message : {msg.Value}; with event time {DateTimeOffset.FromUnixTimeMilliseconds(msg.EventTime)}");
                 await consumer.AcknowledgeAsync(msg);
                 ++numReceived;
             }

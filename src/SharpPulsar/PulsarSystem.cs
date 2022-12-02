@@ -9,11 +9,17 @@ using SharpPulsar.Builder;
 using SharpPulsar.Events;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Trino;
+using System.Collections.Generic;
 
 namespace SharpPulsar
 {
     public sealed class PulsarSystem : IDisposable
     {
+        static PulsarSystem()
+        {
+            // Unify unhandled exceptions
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        }
         private static PulsarSystem _instance;
         private static readonly Nito.AsyncEx.AsyncLock _lock = new Nito.AsyncEx.AsyncLock();
         private static ActorSystem _actorSystem;
@@ -23,6 +29,7 @@ namespace SharpPulsar
         private readonly IActorRef _tcClient;
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
+        private readonly List<IActorRef> _actorRefs= new List<IActorRef>();
         private readonly Action _logSetup = () => 
         {
             var nlog = new NLog.Config.LoggingConfiguration();
@@ -261,8 +268,11 @@ namespace SharpPulsar
             var clientConf = conf.ClientConfigurationData;
 
             var cnxPool = actorSystem.ActorOf(ConnectionPool.Prop(clientConf)/*, "ConnectionPool"*/);
+            _actorRefs.Add(cnxPool);
             var generator = actorSystem.ActorOf(IdGeneratorActor.Prop()/*, "IdGenerator"*/);
+            _actorRefs.Add(generator);
             var lookup = actorSystem.ActorOf(BinaryProtoLookupService.Prop(cnxPool, generator, clientConf.ServiceUrl, clientConf.ListenerName, clientConf.UseTls, clientConf.MaxLookupRequest, clientConf.OperationTimeout, clientConf.ClientCnx)/*, "BinaryProtoLookupService"*/);
+            _actorRefs.Add(lookup);
             IActorRef tcClient = ActorRefs.Nobody;
             if (clientConf.EnableTransaction)
             {
@@ -273,6 +283,7 @@ namespace SharpPulsar
                     var count = await tcs.Task.ConfigureAwait(false);
                     if ((int)count <= 0)
                         throw new Exception($"Tranaction Coordinator has '{count}' transaction handler");
+                    _actorRefs.Add(tcClient);
                 }
                 catch
                 {
@@ -281,6 +292,7 @@ namespace SharpPulsar
                 }
             }
             var client = _actorSystem.ActorOf(Props.Create(() => new PulsarClientActor(conf.ClientConfigurationData, cnxPool, tcClient, lookup, generator))/*, "PulsarClient"*/);
+            _actorRefs.Add(client);
             lookup.Tell(new SetClient(client));
             var clientS = new PulsarClient(client, lookup, cnxPool, generator, conf.ClientConfigurationData, _actorSystem, tcClient);
             if (conf.ClientConfigurationData.ServiceUrlProvider != null)
@@ -326,8 +338,22 @@ namespace SharpPulsar
         }
         public void Dispose()
         {
+            foreach(var c in _actorRefs) 
+                EnsureStopped(c);
+
             _actorSystem.Dispose();
             _actorSystem.WhenTerminated.Wait();
+        }
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            UtilityActor.Log("UnhandledException", AkkaLogLevel.Fatal, e.ExceptionObject);
+        }
+        public void EnsureStopped(IActorRef actor)
+        {
+            using Inbox inbox = Inbox.Create(_actorSystem);
+            inbox.Watch(actor);
+            _actorSystem.Stop(actor);
+            inbox.Receive(TimeSpan.FromMinutes(5));
         }
     }
 }

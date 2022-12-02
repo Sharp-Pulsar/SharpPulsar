@@ -81,10 +81,13 @@ namespace SharpPulsar.Test
             for (var i = 0; i < messageCount - 5; i++)
             {
                 var m = (Message<byte[]>)await consumer.ReceiveAsync();
-
-                var receivedMessage = Encoding.UTF8.GetString(m.Data);
-                _output.WriteLine($"Received message: [{receivedMessage}]");
-                messageReceived++;
+                if(m != null)
+                {
+                    var receivedMessage = Encoding.UTF8.GetString(m.Data);
+                    _output.WriteLine($"Received message: [{receivedMessage}]");
+                    messageReceived++;
+                }
+               
             }
             await producer.CloseAsync();
             await consumer.CloseAsync();
