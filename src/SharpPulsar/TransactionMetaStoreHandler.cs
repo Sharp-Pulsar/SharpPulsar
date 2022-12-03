@@ -193,6 +193,7 @@ namespace SharpPulsar
                     pendingRequests.TryRemove(requestId, out _);
                 }
             });
+
             return callback.Task;
         }
 
@@ -213,7 +214,7 @@ namespace SharpPulsar
             }
             var requestId = (long)response.RequestId;
             var txnID = new TxnID((long)response.TxnidMostBits, (long)response.TxnidLeastBits);
-            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
             {
                 pendingRequests.TryRemove(requestId, out OpBase<object> opB);
                 var op = (OpForTxnIdCallBack)opB;
@@ -242,7 +243,7 @@ namespace SharpPulsar
                             _log.Debug($"Get a response for the {BaseCommand.Type.EndTxn}  request {requestId} error TransactionCoordinatorNotFound and try it again");
                         }
                         pendingRequests.TryAdd(requestId, op);
-                        _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), () =>
+                        _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), async () =>
                         {
                             Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
                             {
@@ -259,12 +260,85 @@ namespace SharpPulsar
                                     pendingRequests.TryRemove(requestId, out _);
                                 }
                             });
+                            if (!pendingRequests.ContainsKey(requestId))
+                            {
+                                if (_log.IsDebugEnabled)
+                                {
+                                    _log.Debug($"The request {requestId} already timeout");
+                                }
+                                return;
+                            }
+                            if (!await CheckStateAndSendRequest(op))
+                            {
+                                pendingRequests.TryRemove(requestId, out _);
+                            }
                         });
                         return;
                     }
                     _log.Error($"Got {BaseCommand.Type.EndTxn} for request {requestId} error {error}");
                 }
-            });
+            });*/
+            pendingRequests.TryRemove(requestId, out OpBase<object> opB);
+            var op = (OpForTxnIdCallBack)opB;
+            if (op == null)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Got end txn response for timeout {txnID.MostSigBits} - {txnID.LeastSigBits}");
+                }
+                return;
+            }
+            if (!hasError)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Got end txn response success for request {requestId}");
+                }
+                op.Callback.TrySetResult(null);
+            }
+            else
+            {
+                if (CheckIfNeedRetryByError(error.Value, message, op))
+                {
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"Get a response for the {BaseCommand.Type.EndTxn}  request {requestId} error TransactionCoordinatorNotFound and try it again");
+                    }
+                    pendingRequests.TryAdd(requestId, op);
+                    _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), async () =>
+                    {
+                        /*Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+                        {
+                            if (!pendingRequests.ContainsKey(requestId))
+                            {
+                                if (_log.IsDebugEnabled)
+                                {
+                                    _log.Debug($"The request {requestId} already timeout");
+                                }
+                                return;
+                            }
+                            if (!await CheckStateAndSendRequest(op))
+                            {
+                                pendingRequests.TryRemove(requestId, out _);
+                            }
+                        });*/
+                        if (!pendingRequests.ContainsKey(requestId))
+                        {
+                            if (_log.IsDebugEnabled)
+                            {
+                                _log.Debug($"The request {requestId} already timeout");
+                            }
+                            return;
+                        }
+                        if (!await CheckStateAndSendRequest(op))
+                        {
+                            pendingRequests.TryRemove(requestId, out _);
+                        }
+                    });
+                    return;
+                }
+                _log.Error($"Got {BaseCommand.Type.EndTxn} for request {requestId} error {error}");
+            }
         }
         private async ValueTask HandleConnectionOpened(IActorRef cnx)
         {
@@ -373,7 +447,7 @@ namespace SharpPulsar
             }
             var txnID = new TxnID((long)response.TxnidMostBits, (long)response.TxnidLeastBits);
             var requestId = (long)response.RequestId;
-            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
             {
                 pendingRequests.TryRemove(requestId, out OpBase<object> opB);
                 var op = (OpForTxnIdCallBack)opB;
@@ -402,29 +476,72 @@ namespace SharpPulsar
                             _log.Debug($"Get a response for the {BaseCommand.Type.NewTxn.GetType().Name}  request {requestId} error TransactionCoordinatorNotFound and try it again");
                         }
                         pendingRequests.TryAdd(requestId, op);
-                        _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), () =>
+                        _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), async () =>
                         {
-                            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+                            if (!pendingRequests.ContainsKey(requestId))
                             {
-                                if (!pendingRequests.ContainsKey(requestId))
+                                if (_log.IsDebugEnabled)
                                 {
-                                    if (_log.IsDebugEnabled)
-                                    {
-                                        _log.Debug($"The request {requestId} already timeout");
-                                    }
-                                    return;
+                                    _log.Debug($"The request {requestId} already timeout");
                                 }
-                                if (!await CheckStateAndSendRequest(op))
-                                {
-                                    pendingRequests.TryRemove(requestId, out _);
-                                }
-                            });
+                                return;
+                            }
+                            if (!await CheckStateAndSendRequest(op))
+                            {
+                                pendingRequests.TryRemove(requestId, out _);
+                            }
                         });
                         return;
                     }
                     _log.Error($"Got {BaseCommand.Type.NewTxn.GetType().Name} for request {requestId} error {error}");
                 }
-            });
+            });*/
+            pendingRequests.TryRemove(requestId, out OpBase<object> opB);
+            var op = (OpForTxnIdCallBack)opB;
+            if (op == null)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Got new txn response for timeout {txnID.MostSigBits} - {txnID.LeastSigBits}");
+                }
+                return;
+            }
+            if (!hasError)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Got new txn response {txnID} for request {requestId}");
+                }
+                op.Callback.TrySetResult(txnID);
+            }
+            else
+            {
+                if (CheckIfNeedRetryByError(error.Value, message, op))
+                {
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"Get a response for the {BaseCommand.Type.NewTxn.GetType().Name}  request {requestId} error TransactionCoordinatorNotFound and try it again");
+                    }
+                    pendingRequests.TryAdd(requestId, op);
+                    _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), async () =>
+                    {
+                        if (!pendingRequests.ContainsKey(requestId))
+                        {
+                            if (_log.IsDebugEnabled)
+                            {
+                                _log.Debug($"The request {requestId} already timeout");
+                            }
+                            return;
+                        }
+                        if (!await CheckStateAndSendRequest(op))
+                        {
+                            pendingRequests.TryRemove(requestId, out _);
+                        }
+                    });
+                    return;
+                }
+                _log.Error($"Got {BaseCommand.Type.NewTxn.GetType().Name} for request {requestId} error {error}");
+            }
         }
         private bool CheckIfNeedRetryByError<T>(ServerError error, string Message, OpBase<T> op)
         {
@@ -491,61 +608,56 @@ namespace SharpPulsar
             }
             var requestId = (long)response.RequestId;
             var txnID = new TxnID((long)response.TxnidMostBits, (long)response.TxnidLeastBits);
-            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+           
+            pendingRequests.TryRemove(requestId, out OpBase<object> opB);
+            var op = (OpForVoidCallBack)opB;
+            if (op == null)
             {
-                pendingRequests.TryRemove(requestId, out OpBase<object> opB);
-                var op = (OpForVoidCallBack)opB;
-                if (op == null)
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Got add publish partition to txn response for timeout {txnID.MostSigBits} - {txnID.LeastSigBits}");
+                }
+                return;
+            }
+            if (!hasError)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Add publish partition for request {requestId} success.");
+                }
+                op.Callback.TrySetResult(new RegisterProducedTopicResponse(null));
+            }
+            else
+            {
+                if (CheckIfNeedRetryByError(error.Value, message, op))
                 {
                     if (_log.IsDebugEnabled)
                     {
-                        _log.Debug($"Got add publish partition to txn response for timeout {txnID.MostSigBits} - {txnID.LeastSigBits}");
+                        _log.Debug($"Get a response for the {BaseCommand.Type.AddPartitionToTxn} request {requestId} error TransactionCoordinatorNotFound and try it again");
                     }
+                    pendingRequests.TryAdd(requestId, op);
+                    _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), async () =>
+                    {
+                        if (!pendingRequests.ContainsKey(requestId))
+                        {
+                            if (_log.IsDebugEnabled)
+                            {
+                                _log.Debug($"The request {requestId} already timeout");
+                            }
+                            return;
+                        }
+                        if (!await CheckStateAndSendRequest(op))
+                        {
+                            pendingRequests.TryRemove(requestId, out _);
+                        }
+                    });
                     return;
                 }
-                if (!hasError)
-                {
-                    if (_log.IsDebugEnabled)
-                    {
-                        _log.Debug($"Add publish partition for request {requestId} success.");
-                    }
-                    op.Callback.TrySetResult(new RegisterProducedTopicResponse(null));
-                }
                 else
-                {
-                    if (CheckIfNeedRetryByError(error.Value, message, op))
-                    {
-                        if (_log.IsDebugEnabled)
-                        {
-                            _log.Debug($"Get a response for the {BaseCommand.Type.AddPartitionToTxn} request {requestId} error TransactionCoordinatorNotFound and try it again");
-                        }
-                        pendingRequests.TryAdd(requestId, op);
-                        _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), () =>
-                        {
-                            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
-                            {
-                                if (!pendingRequests.ContainsKey(requestId))
-                                {
-                                    if (_log.IsDebugEnabled)
-                                    {
-                                        _log.Debug($"The request {requestId} already timeout");
-                                    }
-                                    return;
-                                }
-                                if (!await CheckStateAndSendRequest(op))
-                                {
-                                    pendingRequests.TryRemove(requestId, out _);
-                                }
-                            });
-                        });
-                        return;
-                    }
-                    else
-                        op.Callback.TrySetResult(new RegisterProducedTopicResponse(error.Value));
+                    op.Callback.TrySetResult(new RegisterProducedTopicResponse(error.Value));
 
-                    _log.Error($"{BaseCommand.Type.AddPartitionToTxn} for request {requestId} error {error} with txnID {txnID}.");
-                }
-            });
+                _log.Error($"{BaseCommand.Type.AddPartitionToTxn} for request {requestId} error {error} with txnID {txnID}.");
+            }
         }
 
         private Task<object> AddSubscriptionToTxn(object[] args)
@@ -592,59 +704,53 @@ namespace SharpPulsar
                 message = null;
             }
             var requestId = (long)response.RequestId;
-            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            pendingRequests.TryRemove(requestId, out OpBase<object> opB);
+            var op = (OpForVoidCallBack)opB;
+            if (op == null)
             {
-                pendingRequests.TryRemove(requestId, out OpBase<object> opB);
-                var op = (OpForVoidCallBack)opB;
-                if (op == null)
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Add subscription to txn timeout for request {requestId}.");
+                }
+                return;
+            }
+            if (!hasError)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Add subscription to txn success for request {requestId}.");
+                }
+                op.Callback.TrySetResult(null);
+            }
+            else
+            {
+                _log.Error($"Add subscription to txn failed for request {requestId} error {error}.");
+                if (CheckIfNeedRetryByError(error.Value, message, op))
                 {
                     if (_log.IsDebugEnabled)
                     {
-                        _log.Debug($"Add subscription to txn timeout for request {requestId}.");
+                        _log.Debug($"Get a response for {BaseCommand.Type.AddSubscriptionToTxn} request {error} error TransactionCoordinatorNotFound and try it again");
                     }
+                    pendingRequests.TryAdd(requestId, op);
+                    _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), async () =>
+                    {
+                        if (!pendingRequests.ContainsKey(requestId))
+                        {
+                            if (_log.IsDebugEnabled)
+                            {
+                                _log.Debug($"The request {requestId} already timeout");
+                            }
+                            return;
+                        }
+                        if (!await CheckStateAndSendRequest(op))
+                        {
+                            pendingRequests.TryRemove(requestId, out _);
+                        }
+                    });
                     return;
                 }
-                if (!hasError)
-                {
-                    if (_log.IsDebugEnabled)
-                    {
-                        _log.Debug($"Add subscription to txn success for request {requestId}.");
-                    }
-                    op.Callback.TrySetResult(null);
-                }
-                else
-                {
-                    _log.Error($"Add subscription to txn failed for request {requestId} error {error}.");
-                    if (CheckIfNeedRetryByError(error.Value, message, op))
-                    {
-                        if (_log.IsDebugEnabled)
-                        {
-                            _log.Debug($"Get a response for {BaseCommand.Type.AddSubscriptionToTxn} request {error} error TransactionCoordinatorNotFound and try it again");
-                        }
-                        pendingRequests.TryAdd(requestId, op);
-                        _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), () =>
-                        {
-                            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
-                            {
-                                if (!pendingRequests.ContainsKey(requestId))
-                                {
-                                    if (_log.IsDebugEnabled)
-                                    {
-                                        _log.Debug($"The request {requestId} already timeout");
-                                    }
-                                    return;
-                                }
-                                if (!await CheckStateAndSendRequest(op))
-                                {
-                                    pendingRequests.TryRemove(requestId, out _);
-                                }
-                            });
-                        });
-                        return;
-                    }
-                    _log.Error($"{BaseCommand.Type.AddSubscriptionToTxn} failed for request {requestId} error {error}.");
-                }
-            });
+                _log.Error($"{BaseCommand.Type.AddSubscriptionToTxn} failed for request {requestId} error {error}.");
+            }
         }
 
         private bool CanSendRequest<T>(TaskCompletionSource<T> callback)
@@ -766,17 +872,14 @@ namespace SharpPulsar
 
         private void FailPendingRequest()
         {
-            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            pendingRequests.Keys.ForEach(k =>
             {
-                pendingRequests.Keys.ForEach(k =>
+                pendingRequests.TryRemove(k, out OpBase<object> op);
+                if (op != null && !op.Callback.Task.IsCompleted)
                 {
-                    pendingRequests.TryRemove(k, out OpBase<object> op);
-                    if (op != null && !op.Callback.Task.IsCompleted)
-                    {
-                        op.Callback.TrySetException(new PulsarClientException.AlreadyClosedException("Could not get response from transaction meta store when " + "the transaction meta store has already close."));
-                        OnResponse(op);
-                    }
-                });
+                    op.Callback.TrySetException(new PulsarClientException.AlreadyClosedException("Could not get response from transaction meta store when " + "the transaction meta store has already close."));
+                    OnResponse(op);
+                }
             });
         }
 

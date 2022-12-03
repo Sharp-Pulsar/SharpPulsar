@@ -1,4 +1,6 @@
 ﻿using Akka.Actor;
+using Akka.Dispatch.SysMsg;
+using Akka.IO;
 using Akka.Util.Internal;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
@@ -66,21 +68,7 @@ namespace SharpPulsar
             if (_subscriptionMode == Mode.Persistent)
             {
                 var tcs = new TaskCompletionSource<IActorRef>();
-                Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=>
-                {
-                    try
-                    {
-                        var watcherId = await idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false);
-                        var watcher = _context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, State, tcs));
-                       
-                    }
-                    catch (Exception ex)
-                    {
-                        _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {ex}");
-                        tcs.SetException(ex);
-                    }
-
-                });
+                Watcher(idGenerator, client, clientConfiguration, topicsHash, tcs);
                 tcs.Task.ConfigureAwait(false).GetAwaiter().GetResult();
             }
             else
@@ -95,6 +83,21 @@ namespace SharpPulsar
             {
                 OnTopicsRemoved(t.RemovedTopics);
             });
+
+        }
+        private async ValueTask Watcher(IActorRef idGenerator, IActorRef client, ClientConfigurationData clientConfiguration, string topicsHash, TaskCompletionSource<IActorRef> tcs)
+        {
+            try
+            {
+                var watcherId = await idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false);
+                var watcher = _context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, State, tcs));
+
+            }
+            catch (Exception ex)
+            {
+                _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {ex}");
+                tcs.SetException(ex);
+            }
 
         }
         public static Props Prop(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)

@@ -20,10 +20,11 @@ namespace SharpPulsar.Table
             _log = Context.GetLogger(); 
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             _messagesRead = new AtomicLong();    
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async() =>
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(async() =>
             {
                await  ReadAllExistingMessages(reader, startTime, _messagesRead);                
-            });
+            });*/
+            ReadAllExistingMessages(reader, startTime, _messagesRead);
         }
         protected override void PostStop()
         {

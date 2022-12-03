@@ -151,7 +151,8 @@ namespace SharpPulsar
                 }
             });
             ReceiveAny(any => _router.Forward(any));
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await Start(indexList));
+            //Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await Start(indexList));
+            Start(indexList);
         }
         public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture, TaskCompletionSource<ConcurrentDictionary<int, IActorRef>> producer)
         {

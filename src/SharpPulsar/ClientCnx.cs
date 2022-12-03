@@ -21,6 +21,7 @@ using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.SocketImpl;
 using System.Threading.Tasks;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace SharpPulsar
 {
@@ -174,6 +175,17 @@ namespace SharpPulsar
                         break;
                     case "SendGetOrCreateSchema":
                         await SendGetOrCreateSchema(p.Bytes, p.RequestId);
+                        break;
+                    case "NewCloseConsumer":
+                        try
+                        {
+                            await _socketClient.SendMessage(p.Bytes);
+                            Sender.Tell(new AskResponse());
+                        }
+                        catch (Exception ex)
+                        {
+                            Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                        }
                         break;
                     case "NewAddSubscriptionToTxn":
                     case "NewAddPartitionToTxn":

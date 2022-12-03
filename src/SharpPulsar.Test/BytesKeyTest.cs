@@ -109,7 +109,7 @@ namespace SharpPulsar.Test
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
-            await producer.CloseAsync();
+            //await producer.CloseAsync();
             await consumer.CloseAsync();
         }
         [Fact]

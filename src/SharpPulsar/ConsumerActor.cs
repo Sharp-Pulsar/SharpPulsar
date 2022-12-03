@@ -563,6 +563,55 @@ namespace SharpPulsar
             Receive<ConnectionClosed>(m => {
                 ConnectionClosed(m.ClientCnx);
             });
+            ReceiveAsync<Close>(async c =>
+            {
+                _replyTo = Sender;
+                if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                {
+                    CloseConsumerTasks();
+                    FailPendingReceive();
+                }
+
+                if (!Connected())
+                {
+                    _log.Info($"[{Topic}] [{Subscription}] Closed Consumer (not connected)");
+                    State.ConnectionState = HandlerState.State.Closed;
+                    CloseConsumerTasks();
+                    DeregisterFromClientCnx();
+                    _client.Tell(new CleanupConsumer(Self));
+                    FailPendingReceive();
+                }
+
+                State.ConnectionState = HandlerState.State.Closing;
+
+                CloseConsumerTasks();
+
+                var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
+
+                try
+                {
+                    
+                    if (null == _clientCnx)
+                    {
+                        CleanupAtClose(null);
+                        _replyTo.Tell(new AskResponse());
+                    }
+                    else
+                    {
+                        var cmd = _commands.NewCloseConsumer(_consumerId, requestId.Id);
+                        var pay = new Payload(cmd, requestId.Id, "NewCloseConsumer");
+                        var ask = await _clientCnx.Ask<AskResponse>(pay).ConfigureAwait(false);
+                        _replyTo.Tell(ask);
+                        _replyTo = null;
+                    }
+
+                }
+                catch(Exception ex) 
+                {
+                    _replyTo.Tell(new AskResponse(ex));
+                    _log.Error(ex.ToString());
+                }
+            });
             Receive<ClearIncomingMessagesAndGetMessageNumber>(_ =>
             {
                 var cleared = ClearIncomingMessagesAndGetMessageNumber();
@@ -983,50 +1032,13 @@ namespace SharpPulsar
         }
         protected override void PostStop()
         {
-            _tokenSource.Cancel();
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-            {
-                CloseConsumerTasks();
-                FailPendingReceive();
-            }
-
-            if (!Connected())
-            {
-                _log.Info($"[{Topic}] [{Subscription}] Closed Consumer (not connected)");
-                State.ConnectionState = HandlerState.State.Closed;
-                CloseConsumerTasks();
-                DeregisterFromClientCnx();
-                _client.Tell(new CleanupConsumer(Self));
-                FailPendingReceive();
-            }
-
             _stats.StatTimeout?.Cancel();
-
-            State.ConnectionState = HandlerState.State.Closing;
-
-            CloseConsumerTasks();
-
-            var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
-
-            try
-            {
-                var cnx = _clientCnx;
-                if (null == cnx)
-                {
-                    CleanupAtClose(null);
-                }
-                else
-                {
-                    var cmd = _commands.NewCloseConsumer(_consumerId, requestId.Id);
-                    cnx.Tell(new SendRequestWithId(cmd, requestId.Id));
-                }
-
-            }
-            catch { }
+            _tokenSource.Cancel();
             ReceiveRun.Cancel();
             BatchRun.Cancel();
             base.PostStop();
         }
+        
         internal override IConsumerStatsRecorder Stats
         {
             get
@@ -1235,7 +1247,8 @@ namespace SharpPulsar
                         messageId
                     };
                     _unAckedMessageTracker.Tell(new Remove(messageId));
-                    Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
+                    //Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
+                    RedeliverUnacknowledgedMessages(messageIds);
                 }
             }
             else
@@ -1247,7 +1260,8 @@ namespace SharpPulsar
                         finalMessageId
                     };
                 _unAckedMessageTracker.Tell(new Remove(finalMessageId));
-                Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
+                //Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
+                RedeliverUnacknowledgedMessages(messageIds);
             }
             return result;
         }
@@ -1719,7 +1733,7 @@ namespace SharpPulsar
             // Enqueue the message so that it can be retrieved when application calls receive()
             // if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
             // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
-            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
             {
                 if (HasNextPendingReceive())
                 {
@@ -1729,7 +1743,15 @@ namespace SharpPulsar
                 {
                     NotifyPendingBatchReceivedCallBack();
                 }
-            });
+            });*/
+            if (HasNextPendingReceive())
+            {
+                NotifyPendingReceivedCallback(message, null);
+            }
+            else if (EnqueueMessageAndCheckBatchReceive(message) && HasPendingBatchReceive())
+            {
+                NotifyPendingBatchReceivedCallBack();
+            }
         }
         private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet, long consumerEpoch)
         {

@@ -48,15 +48,17 @@ namespace SharpPulsar.TransactionImpl
         private readonly IActorRef _cnxPool;
         private IActorRef _replyTo;
         private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
-
+        private IUntypedActorContext _context;
         public TransactionCoordinatorClient(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
         {
+            _context = Context;
             _cnxPool = cnxPool;
             _lookup = lookup;
             _generator = idGenerator;
             _clientConfigurationData = conf;
             _log = Context.GetLogger();
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await StartCoordinator(tcs));
+            //Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await StartCoordinator(tcs));
+            StartCoordinator(tcs);
             Ready();
         }
 
@@ -79,14 +81,14 @@ namespace SharpPulsar.TransactionImpl
             var retryCount = 0;
             _state = TransactionCoordinatorClientState.Starting;
             var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
-            /*while (result.Failed && retryCount < 10)
+            while (result.Failed && retryCount < 10)
             {
                 _log.Error(result.Exception.ToString());
                 _log.Info("Transaction coordinator not started...retrying");
                 result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
                 retryCount++;
             }
-            */
+            
             if (result.Failed)
             {
                 tc.TrySetException(result.Exception);
@@ -108,7 +110,7 @@ namespace SharpPulsar.TransactionImpl
                     {
                         var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
                         connectFutureList.Add(tcs.Task);
-                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData, tcs), $"handler_{i}");
+                        var handler = _context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData, tcs), $"handler_{i}");
                         _handlers.Add(handler);
                         _handlerMap.Add(i, handler);
                     }

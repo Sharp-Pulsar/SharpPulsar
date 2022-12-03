@@ -152,11 +152,12 @@ namespace SharpPulsar
         {
             try
             {
-                await _consumerActor.GracefulStop(_operationTimeout).ConfigureAwait(false);
+               await _consumerActor.Ask<AskResponse>(Messages.Requests.Close.Instance).ConfigureAwait(false);
+               await _consumerActor.GracefulStop(_operationTimeout).ConfigureAwait(false);
             }
             catch
             {
-                
+               throw;
             }
            
         }

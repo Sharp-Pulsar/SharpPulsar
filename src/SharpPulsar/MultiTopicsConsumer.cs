@@ -170,41 +170,71 @@ namespace SharpPulsar
                 return;
             }
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames.ToList()), "Topics is empty or invalid.");
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
                 PulsarClientException lastError = null;
-                foreach (var t in conf.TopicNames)
+            foreach (var t in conf.TopicNames)
+            {
+                try
                 {
-                    try
-                    {
-                        await Subscribe(t, createTopicIfDoesNotExist);
-                    }
-                    catch (PulsarClientException ex)
-                    {
-                        Close();
-                        _log.Warning($"[{Topic}] Failed to subscribe topics: {ex.Message}, closing consumer");
-                        //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
-                        subscribeFuture.TrySetException(ex);
-                        lastError = ex;
-                    }
+                    await Subscribe(t, createTopicIfDoesNotExist);
                 }
-                if (lastError == null)
+                catch (PulsarClientException ex)
                 {
-                    if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
-                    {
-                        MaxReceiverQueueSize = AllTopicPartitionsNumber;
-                    }
-                    State.ConnectionState = HandlerState.State.Ready;
-                    StartReceivingMessages(_consumers.Values.ToList());
-                    _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
-
-                    subscribeFuture.TrySetResult(_self);
+                    Close();
+                    _log.Warning($"[{Topic}] Failed to subscribe topics: {ex.Message}, closing consumer");
+                    //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
+                    subscribeFuture.TrySetException(ex);
+                    lastError = ex;
                 }
-            });
+            }
+            if (lastError == null)
+            {
+                if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
+                {
+                    MaxReceiverQueueSize = AllTopicPartitionsNumber;
+                }
+                State.ConnectionState = HandlerState.State.Ready;
+                StartReceivingMessages(_consumers.Values.ToList());
+                _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
 
+                subscribeFuture.TrySetResult(_self);
+            }
+            });*/
+            MultiTopics(conf, createTopicIfDoesNotExist, subscribeFuture);
             Ready();
         }
+        private async Task MultiTopics(ConsumerConfigurationData<T> conf, bool createTopicIfDoesNotExist, TaskCompletionSource<IActorRef> subscribeFuture)
+        {
+            PulsarClientException lastError = null;
+            foreach (var t in conf.TopicNames)
+            {
+                try
+                {
+                    await Subscribe(t, createTopicIfDoesNotExist);
+                }
+                catch (PulsarClientException ex)
+                {
+                    Close();
+                    _log.Warning($"[{Topic}] Failed to subscribe topics: {ex.Message}, closing consumer");
+                    //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
+                    subscribeFuture.TrySetException(ex);
+                    lastError = ex;
+                }
+            }
+            if (lastError == null)
+            {
+                if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
+                {
+                    MaxReceiverQueueSize = AllTopicPartitionsNumber;
+                }
+                State.ConnectionState = HandlerState.State.Ready;
+                StartReceivingMessages(_consumers.Values.ToList());
+                _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
 
+                subscribeFuture.TrySetResult(_self);
+            }
+        }
 
         public static Props Prop(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
@@ -1173,7 +1203,7 @@ namespace SharpPulsar
 
         protected internal override void RedeliverUnacknowledgedMessages()
         {
-            Akka.Dispatch.ActorTaskScheduler.RunTask(()=>
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(()=>
             {
                 ConsumerEpoch++;
                 _consumers.Values.ForEach(consumer =>
@@ -1183,8 +1213,15 @@ namespace SharpPulsar
                 });
                 ClearIncomingMessages();
                 _unAckedMessageTracker.Tell(Clear.Instance);
+            });*/
+            ConsumerEpoch++;
+            _consumers.Values.ForEach(consumer =>
+            {
+                consumer.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
+                consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
             });
-
+            ClearIncomingMessages();
+            _unAckedMessageTracker.Tell(Clear.Instance);
             ResumeReceivingFromPausedConsumersIfNeeded();
         }
 
