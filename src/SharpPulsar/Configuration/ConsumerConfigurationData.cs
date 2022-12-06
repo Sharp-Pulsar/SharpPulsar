@@ -59,7 +59,7 @@ namespace SharpPulsar.Configuration
 
 		public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
 
-		public TimeSpan AckTimeout { get; set; } = TimeSpan.Zero;
+		public TimeSpan AckTimeout { get; set; } = TimeSpan.FromMilliseconds(100);
 		public bool AckReceiptEnabled { get; set; } = false;
 		public bool StartPaused { get; set; } = false;
 

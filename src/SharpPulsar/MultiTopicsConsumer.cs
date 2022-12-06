@@ -248,11 +248,27 @@ namespace SharpPulsar
             });
             Receive<BatchReceive>(batch =>
             {
-                BatchReceives.Enqueue((Sender, batch));
+                try
+                {
+                    var message = BatchReceive();
+                    Sender.Tell(new AskResponse(message));
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
             });
             Receive<Messages.Consumer.Receive>(receive =>
             {
-                Receives.Enqueue((Sender, receive));
+                try
+                {
+                    var message = receive.Time == TimeSpan.Zero ? Receive() : Receive(receive.Time);
+                    Sender.Tell(new AskResponse(message));
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
             });
             ReceiveAsync<UpdatePartitionSub>(async s =>
             {
@@ -423,6 +439,18 @@ namespace SharpPulsar
                         break;
                 }
 
+            });
+            Receive<Close>(c =>
+            {
+                try
+                {
+                    Close();
+                    Sender.Tell(new AskResponse());
+                }
+                catch(Exception ex) 
+                { 
+                    Sender.Tell(new AskResponse(ex));
+                }
             });
             Receive<ICumulative>(message =>
             {
@@ -617,7 +645,7 @@ namespace SharpPulsar
             var receivedFuture = NextPendingReceive();
             if (receivedFuture != null)
             {
-                _unAckedMessageTracker.Tell(new Add<T>(topicMessage.MessageId, topicMessage.RedeliveryCount));
+                _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId, topicMessage.RedeliveryCount));
                 CompletePendingReceive(receivedFuture, topicMessage);
             }
             else if (EnqueueMessageAndCheckBatchReceive(topicMessage) && HasPendingBatchReceive())
@@ -629,7 +657,7 @@ namespace SharpPulsar
         }
         protected internal override void MessageProcessed(IMessage<T> msg)
         {
-            _unAckedMessageTracker.Tell(new Add<T>(msg.MessageId, msg.RedeliveryCount));
+            _unAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
             DecreaseIncomingMessageSize(msg);
             //ResumeReceivingFromPausedConsumersIfNeeded();
         }
@@ -698,7 +726,7 @@ namespace SharpPulsar
                     message = null;
                     return InternalReceive();
                 }
-                _unAckedMessageTracker.Tell(new Add<T>(message.MessageId, message.RedeliveryCount));
+                _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                 ResumeReceivingFromPausedConsumersIfNeeded();
                 return message;
             }
@@ -738,7 +766,7 @@ namespace SharpPulsar
                             return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime));
                         }
                     }
-                    _unAckedMessageTracker.Tell(new Add<T>(message.MessageId, message.RedeliveryCount));
+                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                 }
                 ResumeReceivingFromPausedConsumersIfNeeded();
                 return message;
@@ -829,7 +857,7 @@ namespace SharpPulsar
                 {
                     DecreaseIncomingMessageSize(message);
                     //CheckState(Message is TopicMessageImpl);
-                    _unAckedMessageTracker.Tell(new Add<T>(message.MessageId, message.RedeliveryCount));
+                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                     ResumeReceivingFromPausedConsumersIfNeeded();
                     result.SetResult(message);
                 }
@@ -1053,11 +1081,7 @@ namespace SharpPulsar
             var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
             consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
         }
-        protected override void PostStop()
-        {
-            Close();
-            base.PostStop();
-        }
+        
         internal override void Unsubscribe()
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
@@ -1161,7 +1185,11 @@ namespace SharpPulsar
 				_partitionsAutoUpdateTimeout.Cancel();
 				_partitionsAutoUpdateTimeout = null;
 			}
-			_consumers.Values.ForEach(c => c.GracefulStop(TimeSpan.FromMilliseconds(100)));
+			_consumers.Values.ForEach(async c =>
+            {
+                _ = await c.Ask<AskResponse>(Messages.Requests.Close.Instance).ConfigureAwait(false);
+                await c.GracefulStop(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            });
 			State.ConnectionState = HandlerState.State.Closed;
 			_unAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(100));
 			_log.Info($"[{Topic}] [{Subscription}] Closed Topics Consumer");

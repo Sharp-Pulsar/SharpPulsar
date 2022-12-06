@@ -77,22 +77,25 @@ namespace SharpPulsar.Tracker
         }
         private void Ready()
         {
-            Receive<Add<T>>(a =>
+            Receive<Add>(a =>
             {
-                if(a.Message != null) 
-                    Add(a.Message);
-
-               else if (a.MessageId != null && a.RedeliveryCount > 0)
+                if (a.MessageId != null && a.RedeliveryCount > 0)
                     Add(a.MessageId);
                 else
                     Add(a.MessageId);
+            });
+            Receive<Add<T>>(a =>
+            {
+                if (a.Message != null)
+                    Add(a.Message);
             });
             ReceiveAsync<Trigger>(async t => 
             {
                await TriggerRedelivery();
             });
         }
-        protected override void PreStart()
+       
+        protected override void PostStop()
         {
             if (_timeout != null)
             {
@@ -105,7 +108,7 @@ namespace SharpPulsar.Tracker
                 _nackedMessages.Clear();
                 _nackedMessages = null;
             }
-            base.PreStart();
+            base.PostStop();
         }
         public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef consumer, IActorRef unack)
         {

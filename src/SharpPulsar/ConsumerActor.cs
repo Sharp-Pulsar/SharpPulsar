@@ -93,9 +93,11 @@ namespace SharpPulsar
         private BatchMessageId _startMessageId;
         private readonly IActorContext _context;
         private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();
+        private Queue<(IActorRef, Messages.Consumer.Receive)> _receives = new Queue<(IActorRef, Messages.Consumer.Receive)>();
+        private Queue<(IActorRef, BatchReceive)> _batchReceives = new Queue<(IActorRef, BatchReceive)>();
 
-
-
+        private readonly ICancelable _receiveRun;
+        private readonly ICancelable _batchRun;
         private readonly IActorRef _lookup;
         private readonly IActorRef _cnxPool;
         private BatchMessageId _seekMessageId;
@@ -331,7 +333,40 @@ namespace SharpPulsar
             }
 
             _topicNameWithoutPartition = _topicName.PartitionedTopicName;
+            _receiveRun = Context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100), () =>
+            {
+                _receives.TryDequeue(out var queue);
+                if (queue.Item1 != null)
+                {
+                    try
+                    {
+                        var message = queue.Item2.Time == TimeSpan.Zero ? Receive() : Receive(queue.Item2.Time);
+                        queue.Item1.Tell(new AskResponse(message));
+                    }
+                    catch (Exception ex)
+                    {
+                        queue.Item1.Tell(new AskResponse(ex));
+                    }
+                }
 
+            });
+            _batchRun = Context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100), () =>
+            {
+                _batchReceives.TryDequeue(out var queue);
+                if (queue.Item1 != null)
+                {
+                    try
+                    {
+                        var message = BatchReceive();
+                        queue.Item1.Tell(new AskResponse(message));
+                    }
+                    catch (Exception ex)
+                    {
+                        queue.Item1.Tell(new AskResponse(ex));
+                    }
+                }
+
+            });
             Ready();
             GrabCnx();
         }
@@ -541,11 +576,11 @@ namespace SharpPulsar
             });
             Receive<BatchReceive>(batch =>
             {
-                BatchReceives.Enqueue((Sender, batch));
+                _batchReceives.Enqueue((Sender, batch));
             });
             Receive<Messages.Consumer.Receive>(receive =>
             {
-                Receives.Enqueue((Sender, receive));   
+                _receives.Enqueue((Sender, receive));   
             });
             Receive<SendState>(_ =>
             {
@@ -1034,8 +1069,8 @@ namespace SharpPulsar
         {
             _stats.StatTimeout?.Cancel();
             _tokenSource.Cancel();
-            ReceiveRun.Cancel();
-            BatchRun.Cancel();
+            _receiveRun.Cancel();
+            _batchRun.Cancel();
             base.PostStop();
         }
         
@@ -1279,7 +1314,7 @@ namespace SharpPulsar
         }
         internal override void NegativeAcknowledge(IMessageId messageId)
 		{
-			_negativeAcksTracker.Tell(new Add<T>(messageId));
+			_negativeAcksTracker.Tell(new Add(messageId));
 
 			// Ensure the message is not redelivered for ack-timeout, since we did receive an "ack"
 			_unAckedMessageTracker.Tell(new Remove(messageId));
@@ -2036,7 +2071,7 @@ namespace SharpPulsar
                 if (!IsValidConsumerEpoch(message))
                 {
                     var executionTime = NanoTime() - callTime;
-                    var timeoutInNanos = timeOut.Ticks;
+                    var timeoutInNanos = timeOut.TotalMilliseconds;
                     if (executionTime >= timeoutInNanos)
                     {
                         return null;
@@ -2265,7 +2300,7 @@ namespace SharpPulsar
 				}
 				else
 				{
-					_unAckedMessageTracker.Tell(new Add<T>(id, redeliveryCount));
+					_unAckedMessageTracker.Tell(new Add(id, redeliveryCount));
 				}
 			}
 		}
@@ -2350,7 +2385,7 @@ namespace SharpPulsar
 					case ConsumerCryptoFailureAction.Fail:
 						var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
 						_log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message");
-						_unAckedMessageTracker.Tell(new Add<T>(m));
+						_unAckedMessageTracker.Tell(new Add(m));
 						return null;
 				}
 			}
@@ -2374,7 +2409,7 @@ namespace SharpPulsar
 				case ConsumerCryptoFailureAction.Fail:
 					var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
 					_log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since unable to decrypt incoming message");
-					_unAckedMessageTracker.Tell(new Add<T>(m));
+					_unAckedMessageTracker.Tell(new Add(m));
 					return null;
 			}
 			return null;

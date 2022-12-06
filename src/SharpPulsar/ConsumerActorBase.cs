@@ -66,9 +66,7 @@ namespace SharpPulsar
 			PARTITIONED,
 			NonPartitioned
 		}
-        internal Queue<(IActorRef, Messages.Consumer.Receive)> Receives = new Queue<(IActorRef, Messages.Consumer.Receive)>();
-        internal Queue<(IActorRef, BatchReceive)> BatchReceives = new Queue<(IActorRef, BatchReceive)>();
-
+       
         internal bool HasParentConsumer = false;
         protected readonly ILoggingAdapter _log;
 		private readonly string _subscription;
@@ -94,8 +92,6 @@ namespace SharpPulsar
         protected internal readonly TaskCompletionSource<IActorRef> SubscribeFuture;
         protected internal long ConsumerEpoch;
         internal readonly IScheduler Scheduler;
-        internal readonly ICancelable ReceiveRun;
-        internal readonly ICancelable BatchRun;
         public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
 		{
             SubscribeFuture = subscribeFuture;
@@ -142,40 +138,7 @@ namespace SharpPulsar
 
 			_stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), Self, SendState.Instance, ActorRefs.NoSender);
             InitReceiverQueueSize();
-            ReceiveRun = Context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100), ()=>
-            {
-                Receives.TryDequeue(out var queue);
-                if(queue.Item1 != null) 
-                {
-                    try
-                    {
-                        var message = queue.Item2.Time == TimeSpan.Zero ? Receive() : Receive(queue.Item2.Time);
-                        queue.Item1.Tell(new AskResponse(message));
-                    }
-                    catch (Exception ex)
-                    {
-                        queue.Item1.Tell(new AskResponse(ex));
-                    }
-                }
-
-            });
-            BatchRun = Context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(100), () =>
-            {
-                BatchReceives.TryDequeue(out var queue);
-                if (queue.Item1 != null)
-                {
-                    try
-                    {
-                        var message = BatchReceive();
-                        queue.Item1.Tell(new AskResponse(message));
-                    }
-                    catch (Exception ex)
-                    {
-                        queue.Item1.Tell(new AskResponse(ex));
-                    }
-                }
-
-            });
+            
         }
         protected internal virtual void TriggerBatchReceiveTimeoutTask()
         {
@@ -675,10 +638,7 @@ namespace SharpPulsar
         }
         internal static long NanoTime()
         {
-            var nano = 10000L * Stopwatch.GetTimestamp();
-            nano /= TimeSpan.TicksPerMillisecond;
-            nano *= 100L;
-            return nano;
+            return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
         protected internal virtual void NotifyPendingBatchReceivedCallBack()
         {

@@ -96,8 +96,13 @@ namespace SharpPulsar.Tracker
             });
             Receive<Add<T>>(c =>
             {
+                var added = Add(c.Message.MessageId);
+                Sender.Tell(added);
+            });
+            Receive<Add>(c =>
+            {
                 bool added;
-                if(c.RedeliveryCount > 0)
+                if (c.RedeliveryCount > 0)
                     added = Add(c.MessageId, c.RedeliveryCount);
                 else
                     added = Add(c.MessageId);
@@ -191,7 +196,7 @@ namespace SharpPulsar.Tracker
                 {
                     MessageIdPartitionMap[messageId] = partition;
                     var added = partition.Add(messageId);
-                     return added;
+                    return added;
                  }
 
                  return false;

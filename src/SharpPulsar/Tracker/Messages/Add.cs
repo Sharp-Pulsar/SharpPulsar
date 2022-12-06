@@ -4,13 +4,17 @@ namespace SharpPulsar.Tracker.Messages
 {
     public sealed class Add<T>
     {
-        public Add(IMessageId messageId)
-        {
-            MessageId = messageId;
-        }
         public Add(IMessage<T> message)
         {
             Message = message;
+        }
+        public IMessage<T> Message { get; }
+    }
+    public sealed class Add
+    {
+        public Add(IMessageId messageId)
+        {
+            MessageId = messageId;
         }
         public Add(IMessageId messageId, int redeliveryCount)
         {
@@ -18,7 +22,6 @@ namespace SharpPulsar.Tracker.Messages
             RedeliveryCount = redeliveryCount;
         }
         public IMessageId MessageId { get; }
-        public IMessage<T> Message { get; }
-        public int RedeliveryCount { get; } 
+        public int RedeliveryCount { get; }
     }
 }
