@@ -123,7 +123,7 @@ namespace SharpPulsar.SocketImpl
                 {
                     while (true)
                     {
-                        _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
+                        //_logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
                         cancellationToken.ThrowIfCancellationRequested();
                         var result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 

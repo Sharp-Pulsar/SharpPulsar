@@ -82,8 +82,8 @@ namespace SharpPulsar.Test
                 Assert.Null(message);
 
                 await abortTxn.AbortAsync();
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 var commitTxn = await Txn().ConfigureAwait(false);
-                //await Task.Delay(TimeSpan.FromSeconds(5));
                 for (var i = 0; i < messageCnt; i++)
                 {
                     message = await consumer.ReceiveAsync();
@@ -651,7 +651,7 @@ namespace SharpPulsar.Test
 
             var producer = await _client.NewProducerAsync(producerBuilder);
 
-            var txn = await Txn();
+            var txn = await Txn().ConfigureAwait(false);
 
             var messageCnt = 10;
             for (var i = 0; i < messageCnt; i++)

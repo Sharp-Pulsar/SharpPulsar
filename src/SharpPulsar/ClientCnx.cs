@@ -191,6 +191,7 @@ namespace SharpPulsar
                     case "NewAddPartitionToTxn":
                     case "NewTxn":
                     case "NewEndTxn":
+                    case "NewPartitionMetadataRequest":
                     default:
                         await SendRequest(p.Bytes, p.RequestId);
                         break;
