@@ -53,7 +53,7 @@ namespace SharpPulsar.ServiceProvider
             interval = builder.Interval;
 
             httpClient = BuildHttpClient();
-            httpClient.BaseAddress = new Uri(builder.urlProvider);
+            httpClient.BaseAddress = new Uri($"{builder.urlProvider}/admin/v2/");
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             if (builder.Header != null && builder.Header.Count > 0)

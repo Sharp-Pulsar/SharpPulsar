@@ -33,6 +33,7 @@ namespace SharpPulsar.Test
 
             _client = fixture.Client;
             _clientConfigurationData = fixture.ClientConfigurationData;
+
         }
         //[Fact(Skip = "Issue with sql-worker on github action")]
         [Fact]
@@ -120,7 +121,8 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(5));
             Assert.True(receivedCount > 0);
         }
-        [Fact(Skip = "skip for now")]
+        //[Fact(Skip = "skip for now")]
+        [Fact]
         public virtual async Task ReaderSourceTest()
         {
             var topic = $"reader-topics-{Guid.NewGuid()}";
@@ -136,7 +138,7 @@ namespace SharpPulsar.Test
                 .CurrentEvents();
 
             //let leave some time to wire everything up
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(120));
             var receivedCount = 0;
             await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(40)))
             {
@@ -145,7 +147,7 @@ namespace SharpPulsar.Test
             }
             Assert.True(receivedCount > 0);
         }
-        [Fact(Skip = "skip for now")]
+        [Fact]
         public virtual async Task ReaderSourceTaggedTest()
         {
             var topic = $"reader-topics-{Guid.NewGuid()}";

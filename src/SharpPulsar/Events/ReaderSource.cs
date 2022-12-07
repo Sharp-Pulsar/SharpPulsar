@@ -22,7 +22,7 @@ namespace SharpPulsar.Events
             _eventSource = sourceActor;
             _httpclient = new HttpClient
             {
-                BaseAddress = new Uri(brokerWebServiceUrl)
+                BaseAddress = new Uri($"{brokerWebServiceUrl}/admin/v2/")
             };
             _admin = new PulsarAdminRESTAPIClient(_httpclient);
         }
@@ -68,7 +68,7 @@ namespace SharpPulsar.Events
                 AskResponse response = null;
                 try
                 {
-                    response = await _eventSource.Ask<AskResponse>(EventSource.Messages.Receive.Instance, timeout);
+                    response = await _eventSource.Ask<AskResponse>(EventSource.Messages.Receive.Instance, timeout).ConfigureAwait(false);
                 }
                 catch { }
                 if (response != null && response.Data != null)

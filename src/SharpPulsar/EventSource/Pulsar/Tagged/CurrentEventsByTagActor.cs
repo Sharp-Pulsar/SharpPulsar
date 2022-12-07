@@ -27,7 +27,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         {
             var http = new HttpClient
             {
-                BaseAddress = new Uri(message.AdminUrl)
+                BaseAddress = new Uri($"{message.AdminUrl}/admin/v2/")
             };
             _admin = new PulsarAdminRESTAPIClient(http);
             _message = message;

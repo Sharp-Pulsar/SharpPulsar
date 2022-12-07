@@ -25,7 +25,7 @@ namespace SharpPulsar.Events
             _eventSource = sourceActor;
             _httpclient = new HttpClient
             {
-                BaseAddress = new Uri(brokerWebServiceUrl)
+                BaseAddress = new Uri($"{brokerWebServiceUrl}/admin/v2/")
             };
             _admin = new PulsarAdminRESTAPIClient(_httpclient);
         }

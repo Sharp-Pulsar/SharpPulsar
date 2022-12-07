@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
+using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
@@ -65,6 +66,21 @@ namespace SharpPulsar.EventSource.Pulsar
             if (readerConfiguration.KeyHashRanges != null)
             {
                 consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
+            }
+           
+            // chunking configuration
+            consumerConfiguration.MaxPendingChuckedMessage = readerConfiguration.MaxPendingChunkedMessage;
+            consumerConfiguration.AutoAckOldestChunkedMessageOnQueueFull = readerConfiguration.AutoAckOldestChunkedMessageOnQueueFull;
+            consumerConfiguration.ExpireTimeOfIncompleteChunkedMessage = TimeSpan.FromMilliseconds(readerConfiguration.ExpireTimeOfIncompleteChunkedMessage);
+
+            if (readerConfiguration.ReaderName != null)
+            {
+                consumerConfiguration.ConsumerName = readerConfiguration.ReaderName;
+            }
+
+            if (readerConfiguration.ResetIncludeHead)
+            {
+                consumerConfiguration.ResetIncludeHead = true;
             }
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);

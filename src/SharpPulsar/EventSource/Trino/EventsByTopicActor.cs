@@ -17,7 +17,7 @@ namespace SharpPulsar.EventSource.Trino
         {
             var client = new HttpClient
             {
-                BaseAddress = new Uri(message.AdminUrl)
+                BaseAddress = new Uri($"{message.AdminUrl}/admin/v2/")
             };
             _admin = new PulsarAdminRESTAPIClient(client);
             _buffer = buffer;
