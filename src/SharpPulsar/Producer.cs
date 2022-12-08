@@ -72,7 +72,11 @@ namespace SharpPulsar
         }
         public async ValueTask CloseAsync()
         {
-            try { await _producerActor.GracefulStop(TimeSpan.FromSeconds(30)).ConfigureAwait(false); }
+            try 
+            {
+                await _producerActor.Ask<AskResponse>(Messages.Requests.Close.Instance).ConfigureAwait(false);
+                await _producerActor.GracefulStop(TimeSpan.FromSeconds(30)).ConfigureAwait(false); 
+            }
             catch { }
         }
         public void Flush()

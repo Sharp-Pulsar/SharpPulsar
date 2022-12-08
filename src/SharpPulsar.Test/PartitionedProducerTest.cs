@@ -41,7 +41,7 @@ namespace SharpPulsar.Test
         {
             var http = new HttpClient
             {
-                BaseAddress = new Uri("http://localhost:8080/")
+                BaseAddress = new Uri("http://localhost:8080/admin/v2/")
             };
             _admin = new PulsarAdminRESTAPIClient(http);
             _output = output;

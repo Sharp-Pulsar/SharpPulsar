@@ -37,9 +37,10 @@ namespace SharpPulsar.Test
         }
         //[Fact(Skip = "Issue with sql-worker on github action")]
         [Fact]
+        
         public virtual async Task SqlSourceTest()
         {
-            var topic = $"presto-topics-{Guid.NewGuid()}";
+            var topic = $"trino-topics-{Guid.NewGuid()}";
             var ids = await PublishMessages(topic, 50);
             var start = MessageIdUtils.GetOffset(ids.First());
             var end = MessageIdUtils.GetOffset(ids.Last());
@@ -82,7 +83,7 @@ namespace SharpPulsar.Test
         [Fact]
         public virtual async Task SqlSourceTaggedTest()
         {
-            var topic = $"presto-topics-{Guid.NewGuid()}";
+            var topic = $"trino-topics-{Guid.NewGuid()}";
             var ids = await PublishMessages(topic, 50);
             var start = MessageIdUtils.GetOffset(ids.First());
             var end = MessageIdUtils.GetOffset(ids.Last());
@@ -138,7 +139,7 @@ namespace SharpPulsar.Test
                 .CurrentEvents();
 
             //let leave some time to wire everything up
-            await Task.Delay(TimeSpan.FromSeconds(120));
+            await Task.Delay(TimeSpan.FromSeconds(60));
             var receivedCount = 0;
             await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(40)))
             {
@@ -189,6 +190,8 @@ namespace SharpPulsar.Test
                     id = await producer.NewMessage().Key(key).Value(new DataOpEx { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).SendAsync();
                 ids.Add(id);
             }
+            await producer.CloseAsync().ConfigureAwait(false);
+
             return ids;
         }
 

@@ -177,6 +177,7 @@ namespace SharpPulsar
                         await SendGetOrCreateSchema(p.Bytes, p.RequestId);
                         break;
                     case "NewCloseConsumer":
+                    case "NewCloseProducer":
                         try
                         {
                             await _socketClient.SendMessage(p.Bytes);

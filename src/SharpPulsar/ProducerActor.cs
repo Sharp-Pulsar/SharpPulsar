@@ -350,6 +350,47 @@ namespace SharpPulsar
                     Terminated(x.ClientCnx);
                 }
             );
+            ReceiveAsync<Close>(async c =>
+            {
+                _replyTo = Sender;
+                try
+                {
+                    var currentState = State.GetAndUpdateState(State.ConnectionState == HandlerState.State.Closed ? HandlerState.State.Closed : HandlerState.State.Closing);
+
+                    if (currentState == HandlerState.State.Closed || currentState == HandlerState.State.Closing)
+                    {
+                        _replyTo.Tell(new AskResponse());
+                        return;
+                    }
+
+                    CloseProducerTasks();
+                    _stats.CancelStatsTimeout();
+
+                    var cnx = Cnx();
+                    if (cnx == null || currentState != HandlerState.State.Ready)
+                    {
+                        _log.Info("[{}] [{}] Closed Producer (not connected)", Topic, _producerName);
+                        CloseAndClearPendingMessages();
+                        _replyTo.Tell(new AskResponse());
+                        return;
+                    }
+                    var resp = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                    var requestId = resp.Id;
+                    var cmd = _commands.NewCloseProducer(_producerId, requestId);
+                    var pay = new Payload(cmd, requestId, "NewCloseProducer");
+                    var ask = await cnx.Ask<AskResponse>(pay).ConfigureAwait(false);
+                    _log.Info($"[{Topic}] [{_producerName}] Closed Producer", Topic, _producerName);
+                    CloseAndClearPendingMessages();
+                    _replyTo.Tell(ask);
+                    
+                }
+                catch (Exception ex)
+                {
+                    _replyTo.Tell(new AskResponse(ex));
+                    _log.Error(ex.ToString());
+                }
+                _replyTo = null;
+            });
             ReceiveAsync<RecoverChecksumError>(async x =>
                 {
                    await RecoverChecksumError(x.ClientCnx, x.SequenceId);
@@ -1309,40 +1350,8 @@ namespace SharpPulsar
             {
                 _keyGeneratorTask.Cancel();
             }
-            Close().ConfigureAwait(false);
+            //Close().ConfigureAwait(false);
             base.PostStop();
-        }
-        private async ValueTask Close()
-        {
-            var currentState = State.GetAndUpdateState(State.ConnectionState == HandlerState.State.Closed ? HandlerState.State.Closed : HandlerState.State.Closing);
-
-            if (currentState == HandlerState.State.Closed || currentState == HandlerState.State.Closing)
-            {
-                return;
-            }
-
-            CloseProducerTasks();
-            _stats.CancelStatsTimeout();
-
-            var cnx = Cnx();
-            if (cnx == null || currentState != HandlerState.State.Ready)
-            {
-                _log.Info("[{}] [{}] Closed Producer (not connected)", Topic, _producerName);
-                CloseAndClearPendingMessages();
-                return;
-            }
-            var resp = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
-            var requestId = resp.Id; 
-            var cmd = _commands.NewCloseProducer(_producerId, requestId);
-            var response = await cnx.Ask(new SendRequestWithId(cmd, requestId));
-            if (!(response is Exception))
-            {
-                _log.Info($"[{Topic}] [{_producerName}] Closed Producer", Topic, _producerName);
-                CloseAndClearPendingMessages();
-                return;
-            }
-            else
-                throw (Exception)response;
         }
         private void CloseAndClearPendingMessages()
         {

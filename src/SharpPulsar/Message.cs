@@ -739,7 +739,7 @@ namespace SharpPulsar
             if (!mtadata.TotalChunkMsgSize.HasValue && metadata.ShouldSerializeTotalChunkMsgSize())
                 mtadata.TotalChunkMsgSize = metadata.TotalChunkMsgSize;
 
-            if (mtadata.Properties == null && metadata.Properties.Count > 0)
+            if (mtadata.Properties != null && metadata.Properties.Count > 0)
             {
                 var properties = new Dictionary<string, string>();
                 foreach (var entry in metadata.Properties)
@@ -850,7 +850,7 @@ namespace SharpPulsar
         public bool? NullValue { get; set; } = null;
         public string PartitionKey { get; set; } = null;
         public bool? NullPartitionKey { get; set; } = null;
-        public IDictionary<string, string> Properties { get; set; } = null;
+        public IDictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
         public int? ChunkId { get; set; } = null;
         public int? MarkerType { get; set; } = null;
         public int? NumChunksFromMsg { get; set; } = null;

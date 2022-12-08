@@ -473,8 +473,8 @@ namespace SharpPulsar
                         return;
                     }
                     ResetBackoff();
-                    var firstTimeConnect = SubscribeFuture.TrySetResult(_self);
-                    if (!(firstTimeConnect && HasParentConsumer) && Conf.ReceiverQueueSize != 0)
+                    SubscribeFuture.TrySetResult(_self);
+                    if (Conf.ReceiverQueueSize != 0)
                     {
                         IncreaseAvailablePermits(Conf.ReceiverQueueSize);
                     }
@@ -637,7 +637,6 @@ namespace SharpPulsar
                         var pay = new Payload(cmd, requestId.Id, "NewCloseConsumer");
                         var ask = await _clientCnx.Ask<AskResponse>(pay).ConfigureAwait(false);
                         _replyTo.Tell(ask);
-                        _replyTo = null;
                     }
 
                 }
@@ -646,6 +645,8 @@ namespace SharpPulsar
                     _replyTo.Tell(new AskResponse(ex));
                     _log.Error(ex.ToString());
                 }
+
+                _replyTo = null;
             });
             Receive<ClearIncomingMessagesAndGetMessageNumber>(_ =>
             {

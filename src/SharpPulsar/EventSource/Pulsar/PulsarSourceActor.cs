@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Batch;
@@ -86,6 +87,7 @@ namespace SharpPulsar.EventSource.Pulsar
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+            //Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, true, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client, tcs));
             Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, true, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client, tcs));
             _child = tcs.Task.GetAwaiter().GetResult();
             if (isLive)
@@ -112,7 +114,7 @@ namespace SharpPulsar.EventSource.Pulsar
                 Self.GracefulStop(TimeSpan.FromSeconds(5)); 
             });
             //to track last sequence id for lagging player
-            Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
+            //Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
         }
         private void LiveConsume()
         {

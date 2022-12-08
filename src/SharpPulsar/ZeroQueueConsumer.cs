@@ -176,29 +176,26 @@ namespace SharpPulsar
 			Condition.CheckNotNull(Listener, "listener can't be null");
 			Condition.CheckNotNull(message, "unqueued message can't be null");
 
-		    Akka.Dispatch.ActorTaskScheduler.RunTask( () =>
-			{
-				var self = _self;
-				var log = _log;
-				Stats.UpdateNumMsgsReceived(message);
-				try
-				{
-					if (log.IsDebugEnabled)
-					{
-						log.Debug($"[{Topic}][{Subscription}] Calling message listener for unqueued message {message.MessageId}");
-					}
-					_waitingOnListenerForZeroQueueSize = true;
-					TrackMessage(message);
-					Listener.Received(_self, message);
-				}
-				catch (Exception t)
-				{
-					log.Error($"[{Topic}][{Subscription}] Message listener error in processing unqueued message: {message.MessageId} => {t}");
-				}
-				IncreaseAvailablePermits(_clientCnx);
-				_waitingOnListenerForZeroQueueSize = false;
-			});
-		}
+            var self = _self;
+            var log = _log;
+            Stats.UpdateNumMsgsReceived(message);
+            try
+            {
+                if (log.IsDebugEnabled)
+                {
+                    log.Debug($"[{Topic}][{Subscription}] Calling message listener for unqueued message {message.MessageId}");
+                }
+                _waitingOnListenerForZeroQueueSize = true;
+                TrackMessage(message);
+                Listener.Received(_self, message);
+            }
+            catch (Exception t)
+            {
+                log.Error($"[{Topic}][{Subscription}] Message listener error in processing unqueued message: {message.MessageId} => {t}");
+            }
+            IncreaseAvailablePermits(_clientCnx);
+            _waitingOnListenerForZeroQueueSize = false;
+        }
 
 		protected internal override void TriggerListener(int numMessages)
 		{
