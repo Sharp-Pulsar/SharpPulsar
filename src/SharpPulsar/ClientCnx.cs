@@ -330,8 +330,8 @@ namespace SharpPulsar
 				_log.Debug("Connection is ready");
 			}
             // set remote protocol version to the correct version before we complete the connection future
-            if(connected.FeatureFlags != null)
-                _supportsTopicWatchers = connected.FeatureFlags.SupportsTopicWatchers;
+            //if(connected.FeatureFlags != null)
+            _supportsTopicWatchers = connected.FeatureFlags.SupportsTopicWatchers;
 
             _protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;

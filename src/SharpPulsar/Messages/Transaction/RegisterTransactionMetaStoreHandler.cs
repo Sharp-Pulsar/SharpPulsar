@@ -30,7 +30,7 @@ namespace SharpPulsar.Messages.Transaction
         public RegisterTopicListWatcher(long watcherid, IActorRef watcher)
         {
             WatcherId = watcherid;
-            WatcherId = WatcherId;
+            Watcher = watcher;
         }
     }
     public sealed class RegisterProducedTopic

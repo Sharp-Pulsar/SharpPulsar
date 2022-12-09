@@ -58,8 +58,9 @@ namespace SharpPulsar.TransactionImpl
             _clientConfigurationData = conf;
             _log = Context.GetLogger();
             //Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await StartCoordinator(tcs));
-            StartCoordinator(tcs);
+           
             Ready();
+            StartCoordinator(tcs);
         }
 
         private void Ready()
@@ -129,7 +130,7 @@ namespace SharpPulsar.TransactionImpl
                 {
                     var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
                     connectFutureList.Add(tcs.Task);
-                    var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData, tcs), $"handler_{0}");
+                    var handler = _context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData, tcs), $"handler_{0}");
                     var ask = tcs.Task;
                     _handlers.Add(handler);
                     _handlerMap.Add(0, handler);

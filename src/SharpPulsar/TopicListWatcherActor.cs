@@ -45,6 +45,7 @@ namespace SharpPulsar
         private readonly Commands _commands = new Commands();
         public TopicListWatcherActor(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
         {
+            _self = Self;
             _lookupDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + conf.LookupTimeout.TotalMilliseconds);
             _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(conf, state, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
             _state = state;
@@ -138,7 +139,7 @@ namespace SharpPulsar
             try
             {
                 var response = await _cnx.Ask<CommandWatchTopicListSuccessResponse>(new Payload(watchRequest, requestId, "NewWatchTopicList"), _conf.OperationTimeout).ConfigureAwait(false);
-                if (!_state.ChangeToReadyState())
+                if (_state.ChangeToReadyState())
                 {
                     _state.ConnectionState = HandlerState.State.Closed;
                     DeregisterFromClientCnx();
@@ -204,7 +205,7 @@ namespace SharpPulsar
                 if (value != null)
                 {
                     _cnx = value;
-                    _cnx.Tell(new RegisterTopicListWatcher(_watcherId, Self));
+                    _cnx.Tell(new RegisterTopicListWatcher(_watcherId, _self));
                 }
                 var previousClientCnx = _clientCnxUsedForWatcherRegistration = value;
                 if (previousClientCnx != null && previousClientCnx != value)

@@ -40,6 +40,7 @@ namespace SharpPulsar
         {
 			ReceiveAsync<GetConnection>(async g =>
 			{
+                var sender = Sender;
                 try
                 {
                     ConnectionOpened connection = null;
@@ -57,11 +58,11 @@ namespace SharpPulsar
                     {
                         connection = await GetConnection(g.LogicalEndPoint, _randomKey);
                     }
-                    Sender.Tell(new AskResponse(connection));
+                    sender.Tell(new AskResponse(connection));
                 }
                 catch (Exception e)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
+                    sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
                 }
             });
 			Receive<CleanupConnection>(c =>
