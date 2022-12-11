@@ -1356,7 +1356,7 @@ namespace SharpPulsar
         private void CloseAndClearPendingMessages()
         {
             State.ConnectionState = HandlerState.State.Closed;
-            Client.Tell(new CleanupProducer(Self));
+            Client.Tell(new CleanupProducer(_self));
             PulsarClientException Ex = new AlreadyClosedException($"The producer {_producerName} of the topic {Topic} was already closed when closing the producers");
             // Use null for cnx to ensure that the pending messages are failed immediately
             FailPendingMessages(null, Ex);
@@ -1606,7 +1606,7 @@ namespace SharpPulsar
                 var msg = $"[{Topic}] [{_producerName}] Got ack for msg. expecting: {op.Msg.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId} - queue-size: {_pendingMessages.MessagesCount()}";
                 _log.Warning(msg);
                 // Force connection closing so that messages can be re-transmitted in a new connection
-                cnx.Tell(Messages.Requests.Close.Instance);
+                cnx.Tell(Close.Instance);
                 return;
             }
             else if (ackReceived.SequenceId < op.SequenceId)

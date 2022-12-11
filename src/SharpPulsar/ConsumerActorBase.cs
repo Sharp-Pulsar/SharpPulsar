@@ -59,6 +59,7 @@ namespace SharpPulsar
 		internal abstract ValueTask Seek(IMessageId messageId);
 		internal abstract IConsumerStatsRecorder Stats { get; }
         internal readonly AtomicBoolean ScaleReceiverQueueHint = new AtomicBoolean(false);
+        private IActorRef _self;
 
         internal int CurrentReceiverQueueSize;
         internal enum ConsumerType
@@ -94,6 +95,7 @@ namespace SharpPulsar
         internal readonly IScheduler Scheduler;
         public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
 		{
+            _self = Self;
             SubscribeFuture = subscribeFuture;
             if (conf.Interceptors != null && conf.Interceptors.Count > 0)
                 Interceptors = new ConsumerInterceptors<T>(Context.GetLogger(), conf.Interceptors);
@@ -362,7 +364,7 @@ namespace SharpPulsar
         {
             if (Interceptors != null)
             {
-                return Interceptors.BeforeConsume(Self, message);
+                return Interceptors.BeforeConsume(_self, message);
             }
             else
             {

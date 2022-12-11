@@ -157,7 +157,7 @@ namespace SharpPulsar
             }
             catch
             {
-               throw;
+               //throw;
             }
            
         }
