@@ -45,7 +45,7 @@ namespace SharpPulsar.Test
             };
             _admin = new PulsarAdminRESTAPIClient(http);
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
@@ -117,6 +117,7 @@ namespace SharpPulsar.Test
             }
 
             Assert.True(producers.Count > 0);
+            _client.Dispose();
         }
         [Fact]
         public virtual async Task TestBinaryProtoToGetTopicsOfNamespacePersistent()
@@ -187,6 +188,7 @@ namespace SharpPulsar.Test
             await producer3.CloseAsync();
             await producer4.CloseAsync();
             Assert.True(messageSet > 0);
+            _client.Dispose();
         }
 
     }

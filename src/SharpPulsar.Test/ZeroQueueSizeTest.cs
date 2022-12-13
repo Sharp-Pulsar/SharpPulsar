@@ -47,8 +47,8 @@ namespace SharpPulsar.Test
         public ZeroQueueSizeTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-			_client = fixture.Client;
-		}
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+        }
 		[Fact]
 		public async Task ZeroQueueSizeNormalConsumer()
 		{
@@ -101,6 +101,7 @@ namespace SharpPulsar.Test
                 }
             }
             Assert.True(receivedMessages.Count > 0);
+            _client.Dispose();
         }
 
 		[Fact]
@@ -149,7 +150,8 @@ namespace SharpPulsar.Test
 
 			await consumer.CloseAsync().ConfigureAwait(false);
 			await producer.CloseAsync().ConfigureAwait(false);
-		}
+            _client.Dispose();
+        }
 		
         [Fact]
 		public async Task TestZeroQueueSizeMessageRedeliveryForListener()
@@ -195,10 +197,11 @@ namespace SharpPulsar.Test
 
             await consumer.CloseAsync().ConfigureAwait(false);
             await producer.CloseAsync().ConfigureAwait(false);
+            _client.Dispose();
         }
 
-        [Fact(Skip = "TestPauseAndResume")]
-        //[Fact]
+        //[Fact(Skip = "TestPauseAndResume")]
+        [Fact]
 		public async Task TestPauseAndResume()
 		{
 			string topicName = $"zero-queue-pause-and-resume{Guid.NewGuid()}";
@@ -245,6 +248,7 @@ namespace SharpPulsar.Test
 
 			//await consumer.UnsubscribeAsync().ConfigureAwait(false);
             await producer.CloseAsync().ConfigureAwait(false);
+            _client.Dispose();
         }
 
 	}

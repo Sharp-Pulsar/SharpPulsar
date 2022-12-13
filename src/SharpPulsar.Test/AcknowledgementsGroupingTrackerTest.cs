@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Builder;
 using SharpPulsar.TestContainer;
+using SharpPulsar.Auth.OAuth2;
 
 namespace SharpPulsar.Test
 {
@@ -40,7 +41,7 @@ namespace SharpPulsar.Test
         public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();  
         }
 
         [Fact]
@@ -123,6 +124,7 @@ namespace SharpPulsar.Test
             //Assert.False(isDuplicate);
 
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
+            _client.Dispose();
         }
 
         [Fact]
@@ -157,6 +159,7 @@ namespace SharpPulsar.Test
             isDuplicate = await tracker.Ask<bool>(new IsDuplicate(msg2));
             Assert.False(isDuplicate);
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
+            _client.Dispose();
         }
 
         [Fact]
@@ -243,6 +246,7 @@ namespace SharpPulsar.Test
             //Assert.False(isDuplicate);
 
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
+            _client.Dispose();
         }
     }
 

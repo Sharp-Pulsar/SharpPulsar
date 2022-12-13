@@ -29,11 +29,10 @@ namespace SharpPulsar.Test
         public EventSourceTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _pulsarSystem = fixture.PulsarSystem;
-
-            _client = fixture.Client;
+            _pulsarSystem = fixture.System;
             _clientConfigurationData = fixture.ClientConfigurationData;
 
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         //[Fact(Skip = "Issue with sql-worker on github action")]
         [Fact]
@@ -46,7 +45,7 @@ namespace SharpPulsar.Test
             var end = MessageIdUtils.GetOffset(ids.Last());
             var cols = new HashSet<string> { "text", "EventTime" };
             var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
-            var source = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
+            var source = _pulsarSystem.EventSource(_client, "public", "default", topic, start, end, "http://127.0.0.1:8080")
                 .Sql(option, cols)
                 .SourceMethod()
                 .CurrentEvents();
@@ -89,7 +88,7 @@ namespace SharpPulsar.Test
             var end = MessageIdUtils.GetOffset(ids.Last());
             var cols = new HashSet<string> { "text", "EventTime" };
             var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
-            var source = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
+            var source = _pulsarSystem.EventSource(_client, "public", "default", topic, start, end, "http://127.0.0.1:8080")
                 .Sql(option, cols)
                 .SourceMethod()
                 .CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
@@ -133,7 +132,7 @@ namespace SharpPulsar.Test
 
             var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-            var reader = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
+            var reader = _pulsarSystem.EventSource(_client, "public", "default", topic, start, end, "http://127.0.0.1:8080")
                 .Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
                 .SourceMethod()
                 .CurrentEvents();
@@ -158,7 +157,7 @@ namespace SharpPulsar.Test
 
             var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-            var reader = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
+            var reader = _pulsarSystem.EventSource(_client, "public", "default", topic, start, end, "http://127.0.0.1:8080")
                 .Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
                 .SourceMethod()
                 .CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));

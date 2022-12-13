@@ -39,8 +39,7 @@ namespace SharpPulsar.Test
         public ByteKeysTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client; 
-            //_topic = "my-topic-batch-bf719df3";
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
 
         [Fact]

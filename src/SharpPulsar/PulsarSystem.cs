@@ -303,9 +303,9 @@ namespace SharpPulsar
 
             return clientS;
         }
-        public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl) 
+        public EventSourceBuilder EventSource(PulsarClient client, string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl) 
         {
-            return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromMessageId, toMessageId, brokerWebServiceUrl);
+            return new EventSourceBuilder(client.ActorSystem, client.Client, client.Lookup, client.CnxPool, client.Generator, tenant, @namespace, topic, fromMessageId, toMessageId, brokerWebServiceUrl);
         }
 
         public static SqlInstance Sql(ClientOptions options) 

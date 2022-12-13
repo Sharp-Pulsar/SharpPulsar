@@ -28,11 +28,11 @@ namespace SharpPulsar.Test
         {
             var http = new HttpClient
             {
-                BaseAddress = new Uri("http://localhost:8080/")
+                BaseAddress = new Uri("http://localhost:8080/admin/v2/")
             };
             _admin = new PulsarAdminRESTAPIClient(http);
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
             _clientConfigurationData = fixture.ClientConfigurationData;
         }
         [Fact]
@@ -62,6 +62,7 @@ namespace SharpPulsar.Test
             Assert.Equal(tv.Size(), count);
             Assert.True(count >= tv.Size());
             tv.KeySet().Should().BeEquivalentTo(keys2);
+            _client.Dispose();
         }
 
         [Fact]
@@ -107,6 +108,7 @@ namespace SharpPulsar.Test
             Assert.Equal(tv.Size(), count);
             Assert.True(count >= tv.Size());
             tv.KeySet().Should().BeEquivalentTo(keys2);
+            _client.Dispose();
         }
 
         private async Task<ISet<string>> PublishMessages(string topic, int count, bool enableBatch)

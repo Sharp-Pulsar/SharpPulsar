@@ -28,7 +28,7 @@ namespace SharpPulsar.Test
         public SqlTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
             _actorSystem = ActorSystem.Create("Sql");
             //fixture.CreateSql();
         }
@@ -71,6 +71,7 @@ namespace SharpPulsar.Test
             }
 
             Assert.True(receivedCount > 1);
+            _client.Dispose();
         }
 
         //[Fact(Skip = "Issue with sql-worker on github action")]

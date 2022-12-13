@@ -57,10 +57,10 @@ namespace SharpPulsar.TransactionImpl
             _generator = idGenerator;
             _clientConfigurationData = conf;
             _log = Context.GetLogger();
-            //Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await StartCoordinator(tcs));
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await StartCoordinator(tcs));
            
             Ready();
-            StartCoordinator(tcs);
+            //StartCoordinator(tcs);
         }
 
         private void Ready()

@@ -43,7 +43,7 @@ namespace SharpPulsar.Test
         public NegativeAcksTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -170,6 +170,7 @@ namespace SharpPulsar.Test
             //Assert.Null(nu);
             await producer.CloseAsync().ConfigureAwait(false);
             await consumer.CloseAsync().ConfigureAwait(false);
+            _client.Dispose();
         }
     }
 

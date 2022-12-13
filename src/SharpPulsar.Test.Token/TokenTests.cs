@@ -17,7 +17,7 @@ namespace SharpPulsar.Test.Token
         public TokenTests(ITestOutputHelper output, PulsarTokenFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarSystem.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
             _topic = $"persistent://public/default/token-{Guid.NewGuid()}";
         }
 
@@ -29,6 +29,7 @@ namespace SharpPulsar.Test.Token
             var stringProducerBuilder = await _client.NewProducerAsync(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
             await stringProducerBuilder.CloseAsync();
+            _client.Dispose();
         }
         [Fact]
         public virtual async Task Token_ConsumerInstantiation()
@@ -39,6 +40,7 @@ namespace SharpPulsar.Test.Token
             var stringConsumerBuilder = await _client.NewConsumerAsync(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
             await stringConsumerBuilder.CloseAsync();
+            _client.Dispose();
         }
         [Fact]
         public virtual async void Token_ReaderInstantiation()
@@ -49,6 +51,7 @@ namespace SharpPulsar.Test.Token
             var stringReaderBuilder = await _client.NewReaderAsync(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
             await stringReaderBuilder.CloseAsync();
+            _client.Dispose();
         }
 
         [Fact]
@@ -90,6 +93,7 @@ namespace SharpPulsar.Test.Token
             Assert.Equal("TestMessage", receivedMessage);
             //producer.Close();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
         [Fact]
         public async Task Token_ProduceAndConsumeBatch()
@@ -141,8 +145,9 @@ namespace SharpPulsar.Test.Token
                 Assert.Equal($"TestMessage-{i}", receivedMessage);
             }
 
-            //await producer.CloseAsync();
-            //await consumer.CloseAsync();
+            await producer.CloseAsync();
+            await consumer.CloseAsync();
+            _client.Dispose();
         }
         
     }

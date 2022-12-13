@@ -42,7 +42,7 @@ namespace SharpPulsar.Test
         public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
 
         private static readonly IList<string> Keys = new List<string> { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -75,6 +75,7 @@ namespace SharpPulsar.Test
             await consumer1.CloseAsync();
             await consumer2.CloseAsync();
             await consumer3.CloseAsync();
+            _client.Dispose();
         }
 
         [Fact]

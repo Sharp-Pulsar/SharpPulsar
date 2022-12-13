@@ -24,7 +24,7 @@ namespace SharpPulsar.Test
         private readonly string _topic;
         private readonly PulsarClient _client;
 
-        public OAuthTest(ITestOutputHelper output, PulsarFixture fixture)
+        public OAuthTest(ITestOutputHelper output)
         {
             var fileUri = new Uri(GetConfigFilePath());
             var issuerUrl = new Uri("https://auth.streamnative.cloud/");

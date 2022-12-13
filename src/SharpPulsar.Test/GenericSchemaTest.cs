@@ -26,7 +26,7 @@ namespace SharpPulsar.Test
         public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         [Fact]
         public async Task TestGenericTopic()
@@ -75,6 +75,7 @@ namespace SharpPulsar.Test
             Assert.Equal(8, messageReceived);
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
         
         private byte[] ToBytes<T>(T obj)

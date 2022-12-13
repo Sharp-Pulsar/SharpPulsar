@@ -35,17 +35,21 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar
 {
-    public class PulsarClient : IPulsarClient
+    public class PulsarClient : IPulsarClient, IDisposable
     {
         private readonly IActorRef _client;
+        internal IActorRef Client { get { return _client; } }   
         private readonly IActorRef _transactionCoordinatorClient;
         private readonly ClientConfigurationData _clientConfigurationData;
         private readonly ActorSystem _actorSystem;
         private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
         private readonly ILoggingAdapter _log;
         private readonly IActorRef _cnxPool;
+        internal IActorRef CnxPool { get { return _cnxPool; } }
         private IActorRef _lookup;
+        internal IActorRef Lookup { get { return _lookup; } }   
         private readonly IActorRef _generator;
+        internal IActorRef Generator { get { return _generator; } }
         private Backoff _backoff;
         public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
         {
@@ -607,7 +611,14 @@ namespace SharpPulsar
         }
         public async Task ShutdownAsync()
         {
-            await _actorSystem.Terminate().ConfigureAwait(false);
+            try
+            {
+                await _client.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+            }
+            catch(Exception ex)
+            {
+
+            }
         }
         public ActorSystem ActorSystem => _actorSystem;
         public ILoggingAdapter Log => _log;
@@ -792,6 +803,19 @@ namespace SharpPulsar
             {
                 return new List<string> { topic };
             }
+        }
+
+        public void Dispose()
+        {
+            _client.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+            try
+            {
+                _transactionCoordinatorClient?.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+            }
+            catch { }
+            _cnxPool.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+            _lookup.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+            _generator.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
         }
         #endregion
     }

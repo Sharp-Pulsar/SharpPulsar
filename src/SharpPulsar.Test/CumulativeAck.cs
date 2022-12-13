@@ -28,10 +28,10 @@ namespace SharpPulsar.Test
         {
 
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
 
-        [Fact(Skip = "Restarting")]
+        [Fact]
         public async Task TxnCumulativeAckTest()
         {
 
@@ -101,6 +101,7 @@ namespace SharpPulsar.Test
                 Assert.Null(message);
 
             Assert.True(receivedMessageCount > 45);
+            _client.Dispose();
         }
         [Fact]
         public async Task TxnCumulativeAckTestBatched()
@@ -183,6 +184,7 @@ namespace SharpPulsar.Test
                     Assert.Null(message);
                 Assert.True(receivedMessageCount > 75);
             }
+            _client.Dispose();
         }
         [Fact]
         public async Task ProduceCommitTest()
@@ -246,6 +248,7 @@ namespace SharpPulsar.Test
             Assert.Null(message);
 
             _output.WriteLine($"message commit test enableBatch {true}");
+            _client.Dispose();
         }
         [Fact]
         public async Task ProduceCommitBatchedTest()
@@ -302,6 +305,7 @@ namespace SharpPulsar.Test
             Assert.Null(message);
 
             _output.WriteLine($"message commit test enableBatch {true}");
+            _client.Dispose();
         }
         [Fact]
         public async Task ProduceAbortTest()
@@ -338,6 +342,7 @@ namespace SharpPulsar.Test
             // Cant't receive transaction messages after abort.
             message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
             Assert.Null(message);
+            _client.Dispose();
         }
 
         [Fact]
@@ -422,6 +427,7 @@ namespace SharpPulsar.Test
                     Assert.Null(message);
             }
             Assert.True(receivedMessageCount > 75);
+            _client.Dispose();
         }
 
         [Fact]
@@ -499,9 +505,10 @@ namespace SharpPulsar.Test
                     Assert.Null(message);
             }
             Assert.True(receivedMessageCount > 75);
+            _client.Dispose();
         }
 
-        [Fact]
+        [Fact(Skip = "TxnAckTestSharedSub")]
         public async Task TxnAckTestSharedSub()
         {
             var normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
@@ -576,6 +583,7 @@ namespace SharpPulsar.Test
                     Assert.Null(message);
             }
             Assert.True(receivedMessageCount > 75);
+            _client.Dispose();
         }
         [Fact]
         public async Task TestUnAckMessageRedeliveryWithReceive()
@@ -632,6 +640,7 @@ namespace SharpPulsar.Test
             await producer.CloseAsync();
             await consumer.CloseAsync();
             Assert.True(messageReceived > 5);
+            _client.Dispose();
         }
         [Fact]
         public async Task TxnMessageAckTest()
@@ -692,7 +701,7 @@ namespace SharpPulsar.Test
 
             await consumer.RedeliverUnacknowledgedMessagesAsync().ConfigureAwait(false);
 
-            /* await Task.Delay(TimeSpan.FromSeconds(10));
+            /*await Task.Delay(TimeSpan.FromSeconds(10));
             receiveCnt = 0;
             for (var i = 0; i < messageCnt; i++)
             {
@@ -708,6 +717,7 @@ namespace SharpPulsar.Test
             message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
             Assert.Null(message);
             _output.WriteLine($"receive transaction messages count: {receiveCnt}");*/
+            _client.Dispose();
         }
 
         private async Task<TransactionImpl.Transaction> Txn() => (TransactionImpl.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();

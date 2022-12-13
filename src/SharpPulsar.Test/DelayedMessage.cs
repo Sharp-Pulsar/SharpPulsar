@@ -19,7 +19,7 @@ namespace SharpPulsar.Test
         public DelayedMessage(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
             _topic = $"persistent://public/default/delayed-{Guid.NewGuid()}";
         }
         [Fact]
@@ -63,6 +63,7 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
 
         [Fact]
@@ -105,6 +106,7 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
 
         [Fact]
@@ -145,6 +147,7 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
     }
 

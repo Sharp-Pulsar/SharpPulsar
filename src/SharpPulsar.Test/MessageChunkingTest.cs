@@ -37,7 +37,7 @@ namespace SharpPulsar.Test
         public MessageChunkingTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace SharpPulsar.Test
 
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            _client.Dispose();
         }
         private void TestMessageOrderAndDuplicates<T>(ISet<T> messagesReceived, T receivedMessage, T expectedMessage)
         {

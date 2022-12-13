@@ -18,9 +18,9 @@ namespace SharpPulsar.TestContainer
         private const string SecretKeyPath = "/pulsar/secret.key";
         private const string UserName = "test-user";
         private const int Port = 6650;
-        public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
+        public PulsarClientConfigBuilder ConfigBuilder;
         public string Token;
         private readonly IConfiguration _configuration;
         private readonly IMessageSink _messageSink;
@@ -78,7 +78,7 @@ namespace SharpPulsar.TestContainer
             _messageSink.OnMessage(new DiagnosticMessage($"Endpoint opened at {endpoint}"));
             ServiceUrl = $"pulsar://localhost:{endpoint.Port}";
             Token = CreateToken(Timeout.InfiniteTimeSpan);
-            await SetupSystem();
+            SetupSystem();
             await Task.CompletedTask;
         }
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
@@ -88,7 +88,7 @@ namespace SharpPulsar.TestContainer
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
         }
-        public virtual async ValueTask SetupSystem()
+        public virtual void SetupSystem()
         {
             var client = new PulsarClientConfigBuilder();
             var clienConfigSetting = _configuration.GetSection("client");
@@ -125,22 +125,14 @@ namespace SharpPulsar.TestContainer
             client.EnableTls(enableTls);
             client.Authentication(AuthenticationFactory.Token(Token));
             //client.Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
-            var system = await PulsarSystem.GetInstanceAsync(client);
-            Client = system.NewClient();
-            PulsarSystem = system;
+            PulsarSystem = PulsarSystem.GetInstance(actorSystemName: "token");
+           
+            ConfigBuilder = client;
             ClientConfigurationData = client.ClientConfigurationData;
         }
         public Task DisposeAsync()
         {
-            try
-            {
-                if (Client != null)
-                    Client.ShutdownAsync().Wait();
-            }
-            catch
-            {
-
-            }
+           
             _cluster.Remove(true);
             _cluster.Stop();
             _cluster.Dispose();

@@ -104,13 +104,13 @@ namespace SharpPulsar
 			_state = State.None;
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
-            /*Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=>
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=>
             {
                 await Connect();
                 _socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
-            });*/
-            Connect();
-            _socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
+            });
+            //Connect();
+            //_socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
             Receives();
         }
         private async ValueTask Connect()

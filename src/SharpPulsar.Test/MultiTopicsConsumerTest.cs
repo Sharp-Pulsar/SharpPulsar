@@ -43,7 +43,7 @@ namespace SharpPulsar.Test
         public MultiTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         [Fact]
         public async Task TestMultiTopicConsumer()
@@ -97,7 +97,7 @@ namespace SharpPulsar.Test
             Assert.True(received > 0);
             
             await consumer.CloseAsync().ConfigureAwait(false);
-            await Task.Delay(10000);
+            _client.Dispose();
         }
 
         private async Task<List<MessageId>> PublishMessages(string topic, int count, string message)
@@ -180,6 +180,7 @@ namespace SharpPulsar.Test
                 await producer.CloseAsync().ConfigureAwait(false);
             }
             await reader.CloseAsync().ConfigureAwait(false);
+            _client.Dispose();
         }
         private async Task TestReadMessages(string topic, bool enableBatch)
         {

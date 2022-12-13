@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.45.0" />
-    <PackageReference Include="Testcontainers" Version="2.2.0" />
+    <PackageReference Include="Testcontainers" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>

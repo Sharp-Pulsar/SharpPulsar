@@ -22,7 +22,7 @@ namespace SharpPulsar.Test
         public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         [Fact]
         public async Task Auto_ProduceAndConsume()

@@ -42,7 +42,7 @@ namespace SharpPulsar.Test
         public ReaderTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         private async Task<ISet<string>> PublishMessages(string topic, int count, bool enableBatch)
         {
@@ -78,6 +78,7 @@ namespace SharpPulsar.Test
         {
             var topic = $"my-reader-topic-{Guid.NewGuid()}";
             await TestReadMessages(topic, false);
+            _client.Dispose();
         }
 
         [Fact]
@@ -85,6 +86,7 @@ namespace SharpPulsar.Test
         {
             var topic = $"my-reader-topic-with-batching-{Guid.NewGuid()}";
             await TestReadMessages(topic, true);
+            _client.Dispose();
         }
         private async Task TestReadMessages(string topic, bool enableBatch)
         {
@@ -133,6 +135,7 @@ namespace SharpPulsar.Test
                 Assert.True(keys.Remove(message.Key));
             }
             Assert.True(keys.Count == 0);
+            _client.Dispose();
         }
 
         [Fact]
@@ -214,7 +217,7 @@ namespace SharpPulsar.Test
                 _output.WriteLine($"Receive message {receivedMessage}");
                 Assert.True(Convert.ToInt32(receivedMessage) <= rangeSize / 2);
             }
-
+            _client.Dispose();
         }
 
     }
