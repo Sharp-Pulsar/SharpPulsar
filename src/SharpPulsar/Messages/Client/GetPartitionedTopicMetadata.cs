@@ -1,31 +1,15 @@
-﻿using SharpPulsar.Common.Naming;
+﻿
+using SharpPulsar.Common.Naming;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Client
 {
-    public sealed class GetPartitionedTopicMetadata
+    public record struct GetPartitionedTopicMetadata(TopicName TopicName);
+    public record struct GetPartitionsForTopic(string TopicName);
+    public record struct PartitionsForTopic(IList<string> topics)
     {
-        public TopicName TopicName { get; }
-        public GetPartitionedTopicMetadata(TopicName topicName)
-        {
-            TopicName = topicName;
-        }
+        public ImmutableList<string> Topics => topics.ToImmutableList();
     }
-    public sealed class GetPartitionsForTopic
-    {
-        public string TopicName { get; }
-        public GetPartitionsForTopic(string topicName)
-        {
-            TopicName = topicName;
-        }
-    }
-    public sealed class PartitionsForTopic
-    {
-        public ImmutableList<string> Topics { get; }
-        public PartitionsForTopic(IList<string> topics)
-        {
-            Topics = topics.ToImmutableList();
-        }
-    }
+      
 }

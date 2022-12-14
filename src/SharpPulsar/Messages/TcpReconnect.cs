@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages
 {
-    public class TcpReconnect
+    public readonly record struct TcpReconnect
     {
     }
 }

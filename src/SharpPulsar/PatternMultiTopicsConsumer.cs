@@ -62,13 +62,28 @@ namespace SharpPulsar
 				_namespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
             Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(_namespaceName.ToString()));
-            _recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await Run(); });
+            _recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await Run(); });
             //_topicsChangeListener = new PatternTopicsChangedListener(this);
             
             if (_subscriptionMode == Mode.Persistent)
             {
+
                 var tcs = new TaskCompletionSource<IActorRef>();
-                Watcher(idGenerator, client, clientConfiguration, topicsHash, tcs);
+                Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+                {
+                    try
+                    {
+                        var watcherId = await idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false);
+                        var watcher = _context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, State, tcs));
+
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {ex}");
+                        tcs.SetException(ex);
+                    }
+
+                });
                 tcs.Task.ConfigureAwait(false).GetAwaiter().GetResult();
             }
             else
@@ -83,23 +98,9 @@ namespace SharpPulsar
             {
                 OnTopicsRemoved(t.RemovedTopics);
             });
-
+            //Ready();
         }
-        private async ValueTask Watcher(IActorRef idGenerator, IActorRef client, ClientConfigurationData clientConfiguration, string topicsHash, TaskCompletionSource<IActorRef> tcs)
-        {
-            try
-            {
-                var watcherId = await idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false);
-                var watcher = _context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, State, tcs));
-
-            }
-            catch (Exception ex)
-            {
-                _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {ex}");
-                tcs.SetException(ex);
-            }
-
-        }
+       
         public static Props Prop(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, topicsHash, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration, subscribeFuture));

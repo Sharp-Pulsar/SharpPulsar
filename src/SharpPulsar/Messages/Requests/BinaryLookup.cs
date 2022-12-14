@@ -8,7 +8,7 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public sealed class GetBroker
+    public readonly record struct GetBroker
     {
         public TopicName TopicName { get; }
         public GetBroker(TopicName topicName)
@@ -16,7 +16,7 @@ namespace SharpPulsar.Messages.Requests
             TopicName = topicName;
         }
     }
-    public sealed class GetSchema
+    public readonly record struct GetSchema
     {
         public TopicName TopicName { get; }
         public byte[] Version { get; }
@@ -26,7 +26,7 @@ namespace SharpPulsar.Messages.Requests
             Version = version;
         }
     }
-    public sealed class GetTopicsUnderNamespace
+    public readonly record struct GetTopicsUnderNamespace
     {
         public NamespaceName Namespace { get; }
         public Mode Mode { get; }
@@ -40,7 +40,7 @@ namespace SharpPulsar.Messages.Requests
             TopicsHash = topicsHash;    
         }
     }
-    public sealed class GetTopicsOfNamespaceRetry
+    public readonly record struct GetTopicsOfNamespaceRetry
     {
         public IActorRef ReplyTo { get; }
         public NamespaceName Namespace { get; }
@@ -56,7 +56,7 @@ namespace SharpPulsar.Messages.Requests
             Backoff = backoff;
         }
     }
-    public sealed class GetTopicsUnderNamespaceResponse
+    public readonly record struct GetTopicsUnderNamespaceResponse
     {
         public ImmutableList<string> Topics { get; }
         public string TopicsHash { get; }
@@ -70,7 +70,7 @@ namespace SharpPulsar.Messages.Requests
             Filtered = filtered;    
         }
     }
-    public sealed class GetSchemaInfoResponse
+    public readonly record struct GetSchemaInfoResponse
     {
         public ISchemaInfo SchemaInfo { get; }
         public GetSchemaInfoResponse(ISchemaInfo schemaInfo)
@@ -78,7 +78,7 @@ namespace SharpPulsar.Messages.Requests
             SchemaInfo = schemaInfo;
         }
     }
-    public sealed class GetBrokerResponse
+    public readonly record struct GetBrokerResponse
     {
         public DnsEndPoint LogicalAddress { get; } 
         public DnsEndPoint PhysicalAddress { get; }

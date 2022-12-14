@@ -3,7 +3,7 @@ using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class StartReplayTopic<T>
+    public readonly record struct StartReplayTopic<T>
     {
         internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData<T> readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged, SourceType source)
         {
@@ -27,7 +27,7 @@ namespace SharpPulsar.Messages.Consumer
         public string AdminUrl { get; }
         public SourceType Source { get; }
     }
-    public sealed class ReplayTopic<T>
+    public readonly record struct ReplayTopic<T>
     {
         public ReplayTopic(ReaderConfigurationData<T> readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged, SourceType source)
         {
@@ -49,7 +49,7 @@ namespace SharpPulsar.Messages.Consumer
         public string AdminUrl { get; }
         public SourceType Source { get; }
     }
-    public sealed class GetNumberOfEntries 
+    public readonly record struct GetNumberOfEntries 
     {
         public GetNumberOfEntries(string topic, string server, SourceType source)
         {
@@ -62,7 +62,7 @@ namespace SharpPulsar.Messages.Consumer
         public SourceType Source { get; }
 
     }
-    public sealed class TopicEntries 
+    public readonly record struct TopicEntries 
     {
         public TopicEntries(string topic, long? max, long? totalEntries, int totalNumberOfTopics)
         {
@@ -76,7 +76,7 @@ namespace SharpPulsar.Messages.Consumer
         public long? TotalEntries { get; }
         public int TotalNumberOfTopics { get; }
     }
-    public sealed class NextPlay 
+    public readonly record struct NextPlay 
     {
         public NextPlay(string topic, long max, long @from, long to, SourceType source, bool tagged = false)
         {
@@ -95,7 +95,7 @@ namespace SharpPulsar.Messages.Consumer
         public SourceType Source { get; }
     }
 
-    public sealed class Tag
+    public readonly record struct Tag
     {
         public Tag(string key, string value)
         {

@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages
 {
-    public sealed class Transactional
+    public readonly record struct Transactional
     {
         public Transactional(ImmutableList<object> messages)
         {

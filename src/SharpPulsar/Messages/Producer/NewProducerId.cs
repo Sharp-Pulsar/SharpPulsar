@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Producer
 {
-    public sealed class NewProducerId
+    public readonly record struct NewProducerId
     {
         public static NewProducerId Instance = new NewProducerId();
     }

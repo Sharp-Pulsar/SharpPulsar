@@ -5,4 +5,5 @@ namespace SharpPulsar.Messages.Client
     {
         public static CloseAllConnections Instance = new CloseAllConnections();
     }
+
 }

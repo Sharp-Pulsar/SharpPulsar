@@ -1,9 +1,13 @@
-﻿using SharpPulsar.Exceptions;
+﻿using Akka.Dispatch.SysMsg;
+using Avro.Util;
+using System;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Admin.v2;
 
 namespace SharpPulsar.Messages.Transaction
 {
-    public sealed class NewTxnResponse
+    public readonly record struct NewTxnResponse
     {
         public CommandNewTxnResponse Response { get; }
         public TransactionCoordinatorClientException Error { get; }
@@ -13,7 +17,7 @@ namespace SharpPulsar.Messages.Transaction
             Error = error;
         }
     }
-    public sealed class NewTxn
+    public readonly record struct NewTxn
     {
         public long TxnRequestTimeoutMs { get; }
         public NewTxn(long txnRequestTimeoutMs)
@@ -21,20 +25,14 @@ namespace SharpPulsar.Messages.Transaction
             TxnRequestTimeoutMs = txnRequestTimeoutMs;
         }
     }
-    public sealed class EndTxnResponse
+    public readonly record struct EndTxnResponse
     {
         public CommandEndTxnResponse Response { get; }
         public TransactionCoordinatorClientException Error{get;}
-        public EndTxnResponse(CommandEndTxnResponse response)
-        {
-            Response = response;
-        }
-        public EndTxnResponse(TransactionCoordinatorClientException error)
-        {
-            Error = error;
-        }
+        public EndTxnResponse(CommandEndTxnResponse response) => (Response, Error) = (response, null);
+        public EndTxnResponse(TransactionCoordinatorClientException error) => (Response, Error) = (null, error);
     }
-    public sealed class AddPublishPartitionToTxnResponse
+    public readonly record struct AddPublishPartitionToTxnResponse
     {
         public CommandAddPartitionToTxnResponse Response { get; }
         public AddPublishPartitionToTxnResponse(CommandAddPartitionToTxnResponse response)
@@ -42,7 +40,7 @@ namespace SharpPulsar.Messages.Transaction
             Response = response;
         }
     }
-    public sealed class AddSubscriptionToTxnResponse
+    public readonly record struct AddSubscriptionToTxnResponse
     {
         public CommandAddSubscriptionToTxnResponse Response { get; }
         public AddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse response)

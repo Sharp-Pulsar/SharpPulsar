@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Requests
 {
-    public sealed class GetStats
+    public readonly record struct GetStats
     {
         /// <summary>
         /// When ConsumerActor receives this message

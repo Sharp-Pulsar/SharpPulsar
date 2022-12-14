@@ -161,7 +161,10 @@ namespace SharpPulsar
 
             if (_internalConfig.AutoUpdatePartitions)
             {
-                _partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), _internalConfig.AutoUpdatePartitionsInterval, Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
+                _partitionsAutoUpdateTimeout = _scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(1000), _internalConfig.AutoUpdatePartitionsInterval, () =>
+                {
+                    SubscribeIncreasedTopicPartitions(Topic);
+                });
             }
             if (conf.TopicNames.Count == 0)
             {
@@ -170,77 +173,44 @@ namespace SharpPulsar
                 return;
             }
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames.ToList()), "Topics is empty or invalid.");
-            /*Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
                 PulsarClientException lastError = null;
-            foreach (var t in conf.TopicNames)
-            {
-                try
+                foreach (var t in conf.TopicNames)
                 {
-                    await Subscribe(t, createTopicIfDoesNotExist);
+                    try
+                    {
+                        await Subscribe(t, createTopicIfDoesNotExist);
+                    }
+                    catch (PulsarClientException ex)
+                    {
+                        Close();
+                        _log.Warning($"[{Topic}] Failed to subscribe topics: {ex.Message}, closing consumer");
+                        //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
+                        subscribeFuture.TrySetException(ex);
+                        lastError = ex;
+                    }
                 }
-                catch (PulsarClientException ex)
+                if (lastError == null)
                 {
-                    Close();
-                    _log.Warning($"[{Topic}] Failed to subscribe topics: {ex.Message}, closing consumer");
-                    //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
-                    subscribeFuture.TrySetException(ex);
-                    lastError = ex;
-                }
-            }
-            if (lastError == null)
-            {
-                if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
-                {
-                    MaxReceiverQueueSize = AllTopicPartitionsNumber;
-                }
-                State.ConnectionState = HandlerState.State.Ready;
-                StartReceivingMessages(_consumers.Values.ToList());
-                _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
+                    if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
+                    {
+                        MaxReceiverQueueSize = AllTopicPartitionsNumber;
+                    }
+                    State.ConnectionState = HandlerState.State.Ready;
+                    StartReceivingMessages(_consumers.Values.ToList());
+                    _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
 
-                subscribeFuture.TrySetResult(_self);
-            }
-            });*/
-            MultiTopics(conf, createTopicIfDoesNotExist, subscribeFuture);
+                    subscribeFuture.TrySetResult(_self);
+                }
+            });
             Ready();
         }
-        private async Task MultiTopics(ConsumerConfigurationData<T> conf, bool createTopicIfDoesNotExist, TaskCompletionSource<IActorRef> subscribeFuture)
-        {
-            PulsarClientException lastError = null;
-            foreach (var t in conf.TopicNames)
-            {
-                try
-                {
-                    await Subscribe(t, createTopicIfDoesNotExist);
-                }
-                catch (PulsarClientException ex)
-                {
-                    Close();
-                    _log.Warning($"[{Topic}] Failed to subscribe topics: {ex.Message}, closing consumer");
-                    //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
-                    subscribeFuture.TrySetException(ex);
-                    lastError = ex;
-                }
-            }
-            if (lastError == null)
-            {
-                if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
-                {
-                    MaxReceiverQueueSize = AllTopicPartitionsNumber;
-                }
-                State.ConnectionState = HandlerState.State.Ready;
-                StartReceivingMessages(_consumers.Values.ToList());
-                _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
-
-                subscribeFuture.TrySetResult(_self);
-            }
-        }
-
         public static Props Prop(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             return Props.Create(() => new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture));
         }
-        private void Ready()
+        internal void Ready()
         {
             Receive<SendState>(_ =>
             {
@@ -270,11 +240,15 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(ex));
                 }
             });
-            ReceiveAsync<UpdatePartitionSub>(async s =>
+            /*Receive<UpdatePartitionSub>( _ =>
             {
-                var tcs = SubscribeIncreasedTopicPartitions(Topic);
-                await tcs.Task;
-            });
+                Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+                {
+                    SubscribeIncreasedTopicPartitions(Topic);
+                    //await tcs.Task;
+                });
+                
+            });*/
             Receive<MessageProcessed<T>>(s =>
             {
                 MessageProcessed(s.Message);
@@ -717,7 +691,11 @@ namespace SharpPulsar
                 {
                     ExpectMoreIncomingMessages();
                 }
-                message = IncomingMessages.Receive();
+                IncomingMessages.TryReceive(out message);
+
+                if (message == null)
+                    return message;
+
                 DecreaseIncomingMessageSize(message);
                 //checkState(Message is TopicMessageImpl);
                 if (!IsValidConsumerEpoch(message))
@@ -1665,9 +1643,8 @@ namespace SharpPulsar
 		}
 
 		// subscribe increased partitions for a given topic
-		private TaskCompletionSource<IActorRef> SubscribeIncreasedTopicPartitions(string topic)
-		{
-            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+		private void SubscribeIncreasedTopicPartitions(string topic)
+		{;
             var oldPartitionNumber = PartitionedTopics.GetValueOrNull(topic);
             var topicName = TopicName.Get(topic);
             _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName))
@@ -1678,7 +1655,7 @@ namespace SharpPulsar
 
                     if ( result.Failed)
                     {
-                        tcs.TrySetException(result.Exception);
+                        //tcs.TrySetException(result.Exception);
                         return;
                     }
 
@@ -1691,7 +1668,7 @@ namespace SharpPulsar
                     }
                     if (oldPartitionNumber == currentPartitionNumber)
                     {
-                        tcs.TrySetResult(null);
+                        //tcs.TrySetResult(null);
                         // topic partition number not changed
                         return;
                     }
@@ -1712,7 +1689,7 @@ namespace SharpPulsar
                                 _consumers.TryRemove(e.Key, out _);
                             }
                         }
-                        await Task.WhenAll(futures.ToArray()).ContinueWith(_=> tcs.TrySetResult(null));
+                        await Task.WhenAll(futures.ToArray());
                     }
                     else if (oldPartitionNumber < currentPartitionNumber)
                     {
@@ -1743,7 +1720,7 @@ namespace SharpPulsar
                             {
                                 _log.Warning($"[{Topic}] Failed to subscribe {topicName} partition: {oldPartitionNumber} - {currentPartitionNumber} : {ex}");
                             }
-                            tcs.TrySetResult(null);
+                            //tcs.TrySetResult(null);
                         }
                         var newConsumerList = newPartitions.Select(partitionTopic => _consumers.GetValueOrNull(partitionTopic)).ToList();
                         StartReceivingMessages(newConsumerList);
@@ -1752,11 +1729,11 @@ namespace SharpPulsar
                     else
                     {
                         _log.Error($"[{topicName}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-                        tcs.TrySetException(new PulsarClientException.NotSupportedException("not support shrink topic partitions"));
+                        //tcs.TrySetException(new PulsarClientException.NotSupportedException("not support shrink topic partitions"));
                     }
 
                 });
-            return tcs;
+            //return tcs;
 		}
 		private async ValueTask<IMessageId> LastMessageId()
 		{

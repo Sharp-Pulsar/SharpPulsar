@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    internal sealed class TopicEntries
+    public readonly record struct TopicEntries
     {
         public TopicEntries(long? entries)
         {

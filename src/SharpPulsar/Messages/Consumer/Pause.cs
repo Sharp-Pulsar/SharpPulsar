@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class Pause
+    public readonly record struct Pause
     {
         public static Pause Instance = new Pause();
     }

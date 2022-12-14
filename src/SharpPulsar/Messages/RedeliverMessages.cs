@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages
 {
-    public sealed class RedeliverMessages
+    public readonly record struct RedeliverMessages
     {
         public RedeliverMessages(ImmutableHashSet<Unacked> messages)
         {
@@ -13,7 +13,7 @@ namespace SharpPulsar.Messages
         public ImmutableHashSet<Unacked> Messages { get; }
     }
 
-    public sealed class Unacked
+    public readonly record struct Unacked
     {
         public Unacked(long ledgerId, long entryId, int partitionIndex)
         {

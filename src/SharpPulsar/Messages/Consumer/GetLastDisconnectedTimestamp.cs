@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class GetLastDisconnectedTimestamp
+    public readonly record struct GetLastDisconnectedTimestamp
     {
         /// <summary>
         /// When ConsumerActor receives this message

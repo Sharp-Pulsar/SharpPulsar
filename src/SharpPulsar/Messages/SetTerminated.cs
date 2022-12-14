@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages
 {
-    public sealed class SetTerminated
+    public readonly record struct SetTerminated
     {
         public static SetTerminated Instance = new SetTerminated();
     }

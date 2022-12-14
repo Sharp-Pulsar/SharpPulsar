@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages
 {
-    public sealed class ClientExceptions
+    public readonly record struct ClientExceptions
     {
         public PulsarClientException Exception { get; }
         public ClientExceptions(PulsarClientException exception)

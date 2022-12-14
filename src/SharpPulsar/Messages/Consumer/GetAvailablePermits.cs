@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class GetAvailablePermits
+    public readonly record struct GetAvailablePermits
     {
         public static GetAvailablePermits Instance = new GetAvailablePermits();
     }

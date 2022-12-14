@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Messages
 {
-    public sealed class NullMessage<T> : IMessage<T>
+    public readonly record struct NullMessage<T> : IMessage<T>
     {
         public Exception Exception { get; }
         public NullMessage(Exception exception)
@@ -98,7 +98,7 @@ namespace SharpPulsar.Messages
         }
     }
 
-    public sealed class NullMessages<T> : IMessages<T>
+    public readonly record struct NullMessages<T> : IMessages<T>
     {
         public Exception Exception { get; }
         public NullMessages(Exception exception)

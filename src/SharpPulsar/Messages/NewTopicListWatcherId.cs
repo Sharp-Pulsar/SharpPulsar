@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public sealed class NewTopicListWatcherId
+    public readonly record struct NewTopicListWatcherId
     {
         public static NewTopicListWatcherId Instance = new NewTopicListWatcherId();
     }

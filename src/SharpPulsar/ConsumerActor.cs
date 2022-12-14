@@ -1283,8 +1283,8 @@ namespace SharpPulsar
                         messageId
                     };
                     _unAckedMessageTracker.Tell(new Remove(messageId));
-                    //Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
-                    RedeliverUnacknowledgedMessages(messageIds);
+                    Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
+                    //RedeliverUnacknowledgedMessages(messageIds);
                 }
             }
             else
@@ -1296,8 +1296,8 @@ namespace SharpPulsar
                         finalMessageId
                     };
                 _unAckedMessageTracker.Tell(new Remove(finalMessageId));
-                //Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
-                RedeliverUnacknowledgedMessages(messageIds);
+                Akka.Dispatch.ActorTaskScheduler.RunTask(() => RedeliverUnacknowledgedMessages(messageIds));
+                //RedeliverUnacknowledgedMessages(messageIds);
             }
             return result;
         }
@@ -1769,7 +1769,7 @@ namespace SharpPulsar
             // Enqueue the message so that it can be retrieved when application calls receive()
             // if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
             // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
-            /*Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
             {
                 if (HasNextPendingReceive())
                 {
@@ -1779,15 +1779,7 @@ namespace SharpPulsar
                 {
                     NotifyPendingBatchReceivedCallBack();
                 }
-            });*/
-            if (HasNextPendingReceive())
-            {
-                NotifyPendingReceivedCallback(message, null);
-            }
-            else if (EnqueueMessageAndCheckBatchReceive(message) && HasPendingBatchReceive())
-            {
-                NotifyPendingBatchReceivedCallBack();
-            }
+            });            
         }
         private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet, long consumerEpoch)
         {

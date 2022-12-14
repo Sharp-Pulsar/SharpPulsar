@@ -50,7 +50,7 @@ namespace SharpPulsar.Test
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
         {
-            var topicName = "partitioned-topic-" + Guid.NewGuid();
+            var topicName = "ebere-partitioned-topic-" + Guid.NewGuid();
             var key = Guid.NewGuid().ToString();
             var subscriptionName = "partitioned-subscription";
             var pattern = new Regex("public/default/partitioned-topic-*");
@@ -73,6 +73,13 @@ namespace SharpPulsar.Test
             var s = partitions.Partitions;
             Assert.Equal(1, s);
 
+            var consumer = await _client.NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
+                .TopicsPattern(pattern)
+                .PatternAutoDiscoveryPeriod(2)
+                .ForceTopicCreation(true)
+                .SubscriptionName(subscriptionName)
+                .SubscriptionType(SubType.Shared)
+                .AckTimeout(TimeSpan.FromMilliseconds(60000)));
             // 2. create producer
             var messagePredicate = "partitioned-producer" + Guid.NewGuid() + "-";
             var partitioProducer = await _client.NewPartitionedProducerAsync(new ProducerConfigBuilder<byte[]>()
@@ -84,18 +91,14 @@ namespace SharpPulsar.Test
             // 5. produce data
             foreach (var producer in producers)
             {
-                await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-"));
+                await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-0"));
+                await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-1"));
+                await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-2"));
             }
             var messageSet = 0;
-            var consumer = await _client.NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
-                .TopicsPattern(pattern)
-                .PatternAutoDiscoveryPeriod(2)
-                .ForceTopicCreation(true)
-                .SubscriptionName(subscriptionName)
-                .SubscriptionType(SubType.Shared)
-                .AckTimeout(TimeSpan.FromMilliseconds(60000)));
+            
             await Task.Delay(TimeSpan.FromSeconds(10));
-            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100));
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100)).ConfigureAwait(false);
             if (message == null)
             {
                 await Task.Delay(TimeSpan.FromSeconds(10));

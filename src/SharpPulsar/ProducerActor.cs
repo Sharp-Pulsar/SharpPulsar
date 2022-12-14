@@ -525,7 +525,7 @@ namespace SharpPulsar
             await _cnx.Ask<AskResponse>(payload).ContinueWith(async response =>
              {
                  var isFaulted = response.IsFaulted;
-                 var request = isFaulted ? null : response.Result;
+                 var request = response.GetAwaiter().GetResult();
                  if (isFaulted || request.Failed)
                  {
                      var ex = request.Exception;

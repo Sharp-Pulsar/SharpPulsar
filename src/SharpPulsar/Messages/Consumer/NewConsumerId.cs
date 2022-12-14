@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class NewConsumerId
+    public readonly record struct NewConsumerId
     {
         public static NewConsumerId Instance = new NewConsumerId();
     }

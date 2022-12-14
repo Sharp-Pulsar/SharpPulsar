@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class GetHandlerState
+    public readonly record struct GetHandlerState
     {
         public static GetHandlerState Instance = new GetHandlerState();
     }

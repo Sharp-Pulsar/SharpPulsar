@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class GetSubscription
+    public readonly record struct GetSubscription
     {
         /// <summary>
         /// When ConsumerActor receives this message

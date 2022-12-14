@@ -6,7 +6,7 @@ using static SharpPulsar.Protocol.Proto.CommandAck;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class ReconsumeLaterWithProperties<T>
+    public readonly record struct ReconsumeLaterWithProperties<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)

@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public class UpdatePatternTopicsSubscription
+    public readonly record struct UpdatePatternTopicsSubscription
     {
         public UpdatePatternTopicsSubscription(ImmutableHashSet<string> topics)
         {

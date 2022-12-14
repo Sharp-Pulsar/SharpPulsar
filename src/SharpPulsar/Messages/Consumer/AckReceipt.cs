@@ -1,11 +1,7 @@
-﻿namespace SharpPulsar.Messages.Consumer
+﻿
+
+namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class AckReceipt
-    {
-       public long RequestId { get; }
-        public AckReceipt(long requestid)
-        {
-            RequestId = requestid;
-        }
-    }
+   
+    public record struct AckReceipt(long RequestId);
 }

@@ -5,7 +5,7 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Producer
 {
-    public sealed class CreateProducerBroadcastGroup<T>
+    public readonly record struct CreateProducerBroadcastGroup<T>
     {
         public CreateProducerBroadcastGroup(ISchema<T> schema, HashSet<ProducerConfigurationData> producerConfigurations, string title)
         {
@@ -20,7 +20,7 @@ namespace SharpPulsar.Messages.Producer
         public ISchema<T> Schema { get; }
         public HashSet<ProducerConfigurationData> ProducerConfigurations { get; }
     }
-    public sealed class NewProducerBroadcastGroup<T>
+    public readonly record struct NewProducerBroadcastGroup<T>
     {
         /// <summary>
     /// Use case: publish single message to multiple topics!

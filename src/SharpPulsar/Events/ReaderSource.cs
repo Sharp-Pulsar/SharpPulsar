@@ -41,13 +41,8 @@ namespace SharpPulsar.Events
         {
             while (!token.IsCancellationRequested)
             {
-                AskResponse response = null;
-                try
-                {
-                    response = await _eventSource.Ask<AskResponse>(EventSource.Messages.Receive.Instance, timeout);
-                }
-                catch { }
-                if (response != null && response.Data != null)
+                var response = await _eventSource.Ask<AskResponse>(EventSource.Messages.Receive.Instance, timeout);
+                if (response.Data != null)
                 {
                     yield return response.ConvertTo<IMessage<T>>().Value;
                 }
@@ -65,13 +60,9 @@ namespace SharpPulsar.Events
             {
                 if (_eventSource.IsNobody())
                     throw new Exception("Source Reader Terminated");
-                AskResponse response = null;
-                try
-                {
-                    response = await _eventSource.Ask<AskResponse>(EventSource.Messages.Receive.Instance, timeout).ConfigureAwait(false);
-                }
-                catch { }
-                if (response != null && response.Data != null)
+                var response = await _eventSource.Ask<AskResponse>(EventSource.Messages.Receive.Instance, timeout).ConfigureAwait(false);
+
+                if (response.Data != null)
                 {
                     yield return response.ConvertTo<IMessage<T>>().Value;
                 }

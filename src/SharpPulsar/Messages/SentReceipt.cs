@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages
 {
-    public class SentReceipt
+    public readonly record struct SentReceipt
     {
         public SentReceipt(long producerId, long sequenceId, long highestSequenceId, long entryId, long ledgerId, int batchIndex, int partition)
         {

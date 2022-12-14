@@ -3,12 +3,5 @@
 
 namespace SharpPulsar.Messages.Client
 {
-    public sealed class AddConsumer
-    {
-        public IActorRef Consumer { get; }
-        public AddConsumer(IActorRef consumer)
-        {
-            Consumer = consumer;
-        }
-    }
+    public record struct AddConsumer(IActorRef Consumer);
 }

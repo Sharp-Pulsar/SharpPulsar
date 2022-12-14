@@ -421,19 +421,9 @@ namespace SharpPulsar
             {
                 while (true)
                 {
-                    AskResponse response = null;
-                    try
-                    {
-                        response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
+                    var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
 
-                    }
-                    catch (AskTimeoutException)
-                    { }
-                    catch
-                    {
-                        throw;
-                    }
-                    if (response != null && response.Data is IMessage<T> message)
+                    if (response.Data is IMessage<T> message)
                         yield return ProcessMessage(message, autoAck, customHander);
                 }
             }
@@ -441,20 +431,10 @@ namespace SharpPulsar
             {
                 for (var i = 0; i < takeCount; i++)
                 {
-                    AskResponse response = null;
-                    try
-                    {
-                        response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
+                    var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
 
-                    }
-                    catch (AskTimeoutException)
-                    { }
-                    catch
-                    {
-                        throw;
-                    }
 
-                    if (response != null && response.Data is IMessage<T> message)
+                    if (response.Data is IMessage<T> message)
                         yield return ProcessMessage(message, autoAck, customHander);
                     else
                     {
@@ -469,20 +449,9 @@ namespace SharpPulsar
                 //drain the current messages                
                 while (true)
                 {
-                    AskResponse response = null;
-                    try
-                    {
-                        response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
-                    }
-                    catch (AskTimeoutException)
-                    {
-                    }
-                    catch
-                    {
-                        throw;
-                    }
+                    var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
 
-                    if (response != null && response.Data is IMessage<T> message)
+                    if (response.Data is IMessage<T> message)
                         yield return ProcessMessage(message, autoAck, customHander);
                     else
                         break;

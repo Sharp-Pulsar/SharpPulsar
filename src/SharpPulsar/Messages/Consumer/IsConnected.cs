@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class IsConnected
+    public readonly record struct IsConnected
     {
         /// <summary>
         /// When ConsumerActor receives this message

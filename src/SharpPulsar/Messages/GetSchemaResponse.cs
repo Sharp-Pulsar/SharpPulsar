@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages
 {
-    public sealed class GetSchemaResponse
+    public readonly record struct GetSchemaResponse
     {
         public CommandGetSchemaResponse Response { get; }
         public GetSchemaResponse(CommandGetSchemaResponse response)
@@ -10,7 +10,7 @@ namespace SharpPulsar.Messages
             Response = response;
         }
     }
-    public sealed class GetOrCreateSchemaResponse
+    public readonly record struct GetOrCreateSchemaResponse
     {
         public CommandGetOrCreateSchemaResponse Response { get; }
         public GetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse response)
@@ -18,5 +18,5 @@ namespace SharpPulsar.Messages
             Response = response;
         }
     }
-    public sealed class NullSchema { }
+    public readonly record struct NullSchema { }
 }

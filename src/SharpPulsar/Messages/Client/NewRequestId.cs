@@ -5,12 +5,5 @@ namespace SharpPulsar.Messages.Client
     {
         public static NewRequestId Instance = new NewRequestId();
     }
-    public sealed class NewRequestIdResponse
-    {
-        public long Id { get; }
-        public NewRequestIdResponse(long requestid)
-        {
-            Id = requestid;
-        }
-    }
+    public record struct NewRequestIdResponse(long Id);
 }

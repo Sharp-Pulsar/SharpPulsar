@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Requests
 {
-    public sealed class GetTopic
+    public readonly record struct GetTopic
     {
         /// <summary>
         /// When ConsumerActor receives this message
@@ -12,7 +12,7 @@
 }
 namespace SharpPulsar.Messages.Requests
 {
-    public sealed class GetTopicNameWithoutPartition
+    public readonly record struct GetTopicNameWithoutPartition
     {
         /// <summary>
         /// When ConsumerActor receives this message

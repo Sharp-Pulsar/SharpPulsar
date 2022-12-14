@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public sealed class ReconnectLater
+    public readonly record struct ReconnectLater
     {
         public Exception Exception { get; }
         public ReconnectLater(Exception exception)
@@ -15,7 +15,7 @@ namespace SharpPulsar.Messages.Requests
         }
     }
     //HandleCommandWatchTopicUpdate 
-    public sealed class HandleWatchTopicUpdate
+    public readonly record struct HandleWatchTopicUpdate
     {
         public CommandWatchTopicUpdate Update { get; }
         public HandleWatchTopicUpdate(CommandWatchTopicUpdate update)
@@ -23,7 +23,7 @@ namespace SharpPulsar.Messages.Requests
             Update = update;
         }
     }
-    public sealed class TopicsRemoved
+    public readonly record struct TopicsRemoved
     {
         public ImmutableList<string> RemovedTopics { get; }
         public TopicsRemoved(ICollection<string> removedTopics) 
@@ -31,7 +31,7 @@ namespace SharpPulsar.Messages.Requests
             RemovedTopics = removedTopics.ToImmutableList();
         }
     }
-    public sealed class TopicsAdded
+    public readonly record struct TopicsAdded
     {
         public ImmutableList<string> AddedTopics { get; }
         public TopicsAdded(ICollection<string> addedTopics)
@@ -39,15 +39,15 @@ namespace SharpPulsar.Messages.Requests
             AddedTopics = addedTopics.ToImmutableList();  
         }
     }
-    public sealed class ResetBackoff
+    public readonly record struct ResetBackoff
     {
         public static ResetBackoff Instance = new ResetBackoff();
     }
-    public sealed class LastConnectionClosedTimestamp
+    public readonly record struct LastConnectionClosedTimestamp
     {
         public static LastConnectionClosedTimestamp Instance = new LastConnectionClosedTimestamp();
     }
-    public sealed class LastConnectionClosedTimestampResponse
+    public readonly record struct LastConnectionClosedTimestampResponse
     {
         public long TimeStamp { get; }
         public LastConnectionClosedTimestampResponse(long timeStamp)
@@ -56,11 +56,11 @@ namespace SharpPulsar.Messages.Requests
         }
     }
 
-    public sealed class GetCnx
+    public readonly record struct GetCnx
     {
         public static GetCnx Instance = new GetCnx();
     }
-    public sealed class SetCnx
+    public readonly record struct SetCnx
     {
         public IActorRef ClientCnx { get; }
         public SetCnx(IActorRef clientCnx)
@@ -68,11 +68,11 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = clientCnx;
         }
     }
-    public sealed class GetEpoch
+    public readonly record struct GetEpoch
     {
         public static GetEpoch Instance = new GetEpoch();
     }
-    public sealed class SwitchClientCnx
+    public readonly record struct SwitchClientCnx
     {
         public IActorRef ClientCnx { get; }
         public SwitchClientCnx(IActorRef clientCnx)
@@ -80,8 +80,8 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = clientCnx;
         }
     }
-    
-    public sealed class GetEpochResponse
+
+    public readonly record struct GetEpochResponse
     {
         public long Epoch { get; }
         public GetEpochResponse(long epoch)
@@ -89,7 +89,7 @@ namespace SharpPulsar.Messages.Requests
             Epoch = epoch;
         }
     }
-    public sealed class GrabCnx
+    public readonly record struct GrabCnx
     {
         public string Message { get; }
         public GrabCnx(string message)
@@ -97,7 +97,7 @@ namespace SharpPulsar.Messages.Requests
             Message = message;
         }
     }
-    public sealed class Grab
+    public readonly record struct Grab
     {
         public static Grab Instance = new Grab();
     }

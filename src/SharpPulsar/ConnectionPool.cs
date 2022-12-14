@@ -43,7 +43,7 @@ namespace SharpPulsar
                 var sender = Sender;
                 try
                 {
-                    ConnectionOpened connection = null;
+                    ConnectionOpened connection;
                     _randomKey = SignSafeMod(Random.Next(), _maxConnectionsPerHosts);
                     _logicalEndpoint = g.LogicalEndPoint;
                     if (g.LogicalEndPoint != null && g.PhusicalEndPoint == null)

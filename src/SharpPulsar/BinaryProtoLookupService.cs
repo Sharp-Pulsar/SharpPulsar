@@ -488,8 +488,13 @@ namespace SharpPulsar
                 _opTime = opTimeout;
                 _self.Tell(new AskResponse(new GetTopicsUnderNamespaceResponse(result, res.TopicsHash, res.Changed, res.Filtered)));
             }
-            catch
+            catch(Exception ex)
             {
+                if(ex.Message == "Unable to write data to the transport connection: An established connection was aborted by the software in your host machine..")
+                {
+                    _self.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    return;
+                }
                 var nextDelay = Math.Min(_getTopicsUnderNamespaceBackOff.Next(), opTimeout.TotalMilliseconds);
                
                 if (nextDelay <= 0)

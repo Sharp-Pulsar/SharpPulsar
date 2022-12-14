@@ -3,12 +3,5 @@
 
 namespace SharpPulsar.Messages.Client
 {
-    public sealed class AddProducer
-    {
-        public IActorRef Producer { get; }
-        public AddProducer(IActorRef producer)
-        {
-            Producer = producer;
-        }
-    }
+     public record struct AddProducer(IActorRef Producer);
 }

@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages
 {
-    public sealed class ConnectedServerInfo
+    public readonly record struct ConnectedServerInfo
     {
         public ConnectedServerInfo(int maxMessageSize, int protocol, string version, string name)
         {

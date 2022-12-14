@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages
 {
-    public class Payload
+    public readonly record struct Payload
     {
         public ReadOnlySequence<byte> Bytes { get; }
         public long RequestId { get; }

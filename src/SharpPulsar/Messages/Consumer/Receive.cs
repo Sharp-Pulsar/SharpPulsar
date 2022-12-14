@@ -21,5 +21,6 @@ namespace SharpPulsar.Messages.Consumer
         {
             Time = time;
         }
+
     } 
 }
