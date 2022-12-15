@@ -3,7 +3,7 @@ using Akka.Actor;
 
 namespace SharpPulsar.Messages.Client
 {
-    public sealed class GetClientState
+    public record struct GetClientState
     {
         public static GetClientState Instance = new GetClientState();
     }

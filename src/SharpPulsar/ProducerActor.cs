@@ -93,7 +93,7 @@ namespace SharpPulsar
             {
                 LastSendFuture.Task.ContinueWith( t =>
                 {
-                    if (t.IsFaulted && ThrowOnceUpdater.CompareAndSet(LastSendFutureWrapper.FALSE, LastSendFutureWrapper.TRUE))
+                    if (t.IsFaulted && ThrowOnceUpdater.CompareAndSet(FALSE, TRUE))
                     {
                         throw t.Exception;
                     }
@@ -1270,11 +1270,16 @@ namespace SharpPulsar
 
         private bool CanAddToCurrentBatch(Message<T> msg)
         {
-            var enoughSpace = _batchMessageContainer.HaveEnoughSpace(msg);
-            var isMulti = !IsMultiSchemaEnabled(false);
-            var sameSchema = _batchMessageContainer.HasSameSchema(msg);
-            var txn = _batchMessageContainer.HasSameTxn(msg);
-            return enoughSpace && (isMulti || sameSchema) && txn;
+            try
+            {
+                var enoughSpace = _batchMessageContainer.HaveEnoughSpace(msg);
+                var isMulti = !IsMultiSchemaEnabled(false);
+                var sameSchema = _batchMessageContainer.HasSameSchema(msg);
+                var txn = _batchMessageContainer.HasSameTxn(msg);
+                return enoughSpace && (isMulti || sameSchema) && txn;
+            }
+            catch { }
+            return false;
         }
 
         private async ValueTask DoBatchSendAndAdd(Message<T> msg, SendCallback<T> callback, byte[] payload)
@@ -1791,7 +1796,6 @@ namespace SharpPulsar
             {
                 _lastSendFutureWrapper = LastSendFutureWrapper.Create(lastSendFuture);
             }
-
             _lastSendFutureWrapper.HandleOnce();
         }
         private void CloseProducerTasks()
@@ -2460,11 +2464,11 @@ namespace SharpPulsar
 
         }
     }
-    internal sealed class RunSendTimeout
+    public record struct RunSendTimeout
     {
         internal static RunSendTimeout Instance = new RunSendTimeout();
     }
-    internal sealed class GetReceivedMessageIdsResponse
+    public record struct GetReceivedMessageIdsResponse
     {
         public readonly List<AckReceived> MessageIds;
         public GetReceivedMessageIdsResponse(HashSet<AckReceived> ids)
@@ -2472,7 +2476,7 @@ namespace SharpPulsar
             MessageIds = new List<AckReceived>(ids.ToArray());
         }
     }
-    internal sealed class BatchTask
+    public record struct BatchTask
     {
         internal static BatchTask Instance = new BatchTask();
     }

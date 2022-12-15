@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Client
 {
-    public sealed class NewRequestId
+    public record struct NewRequestId
     {
         public static NewRequestId Instance = new NewRequestId();
     }

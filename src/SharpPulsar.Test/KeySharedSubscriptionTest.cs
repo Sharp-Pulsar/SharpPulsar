@@ -54,22 +54,23 @@ namespace SharpPulsar.Test
             //this.conf.SubscriptionKeySharedEnable = true;
             var topic = topicType + "://public/default/key_shared_none_key-" + Guid.NewGuid();
 
-            var consumer1 = await CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
-
-            var consumer2 = await CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
-
-            var consumer3 = await CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
-
             var producer = await CreateProducer(topic, enableBatch);
 
-            for (var i = 0; i < 5; i++)
+            for (var i = 0; i < 20; i++)
             {
                 await producer.NewMessage().Key(i.ToString()).Value(i.ToString().GetBytes())
                     .SendAsync();
             }
             producer.Flush();
             await Task.Delay(3000);
-               
+
+            var consumer1 = await CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
+
+            var consumer2 = await CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
+
+            var consumer3 = await CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
+
+                          
             await Receive(new List<Consumer<byte[]>> { consumer1, consumer2, consumer3 });
             await producer.CloseAsync();
             await consumer1.CloseAsync();
