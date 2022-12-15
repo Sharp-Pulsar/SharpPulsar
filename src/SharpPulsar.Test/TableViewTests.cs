@@ -48,7 +48,7 @@ namespace SharpPulsar.Test
                 .CreateAsync();
             _output.WriteLine($"start tv size: {tv.Size()}");
             tv.ForEachAndListen((k, v) => _output.WriteLine($"{k} -> {Encoding.UTF8.GetString(v)}"));
-            await Task.Delay(5000);
+            await Task.Delay(10000);
             _output.WriteLine($"Current tv size: {tv.Size()}");
             Assert.Equal(tv.Size(), count);
             tv.KeySet().Should().BeEquivalentTo(keys);
@@ -87,7 +87,7 @@ namespace SharpPulsar.Test
             _output.WriteLine($"start tv size: {tv.Size}");
 
             tv.ForEachAndListen((k, v) => _output.WriteLine($"{k} -> {Encoding.UTF8.GetString(v)}"));
-            await Task.Delay(6000);
+            await Task.Delay(10000);
             _output.WriteLine($"Current tv size: {tv.Size()}");
             Assert.Equal(tv.Size(), count);
             tv.KeySet().Should().BeEquivalentTo(keys);
