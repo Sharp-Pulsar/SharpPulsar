@@ -53,7 +53,7 @@ namespace SharpPulsar.Test
             var topicName = "ebere-partitioned-topic-" + Guid.NewGuid();
             var key = Guid.NewGuid().ToString();
             var subscriptionName = "partitioned-subscription";
-            var pattern = new Regex("public/default/partitioned-topic-*");
+            var pattern = new Regex("public/default/ebere-partitioned-topic.*");
 
             // create partitioned topic
             try
@@ -126,12 +126,12 @@ namespace SharpPulsar.Test
         public virtual async Task TestBinaryProtoToGetTopicsOfNamespacePersistent()
         {
             var key = Guid.NewGuid().ToString();
-            var subscriptionName = "regex-subscription";
-            var topicName1 = "persistent://public/default/reg-topic-1-" + key;
-            var topicName2 = "persistent://public/default/reg-topic-2-" + key;
-            var topicName3 = "persistent://public/default/reg-topic-3-" + key;
-            var topicName4 = "non-persistent://public/default/reg-topic-4-" + key;
-            var pattern = new Regex("public/default/reg-topic*");
+            var subscriptionName = "ebere-regex-subscription";
+            var topicName1 = "persistent://public/default/ebere-reg-topic-1-" + key;
+            var topicName2 = "persistent://public/default/ebere-reg-topic-2-" + key;
+            var topicName3 = "persistent://public/default/ebere-reg-topic-3-" + key;
+            var topicName4 = "non-persistent://public/default/ebere-reg-topic-4-" + key;
+            var pattern = new Regex("public/default/ebere-reg-topic.*");
 
 
             // 2. create producer

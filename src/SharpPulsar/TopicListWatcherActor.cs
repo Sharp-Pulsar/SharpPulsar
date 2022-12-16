@@ -139,7 +139,7 @@ namespace SharpPulsar
             try
             {
                 var response = await _cnx.Ask<CommandWatchTopicListSuccessResponse>(new Payload(watchRequest, requestId, "NewWatchTopicList"), _conf.OperationTimeout).ConfigureAwait(false);
-                if (_state.ChangeToReadyState())
+                if (!_state.ChangeToReadyState())
                 {
                     _state.ConnectionState = HandlerState.State.Closed;
                     DeregisterFromClientCnx();

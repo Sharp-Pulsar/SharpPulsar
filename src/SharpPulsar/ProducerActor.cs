@@ -1641,7 +1641,7 @@ namespace SharpPulsar
                     var msg = $"[{Topic}] [{_producerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId} - queue-size: {_pendingMessages.MessagesCount()}";
                     _log.Warning(msg);
                     // Force connection closing so that messages can be re-transmitted in a new connection
-                    cnx.Tell(Messages.Requests.Close.Instance);
+                    cnx.Tell(Close.Instance);
                     return;
                 }
             }
@@ -1691,7 +1691,7 @@ namespace SharpPulsar
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
-                cnx.Tell(Messages.Requests.Close.Instance);
+                cnx.Tell(Close.Instance);
                 return;
             }
             var messagesToResend = _pendingMessages.MessagesCount();
@@ -1708,7 +1708,7 @@ namespace SharpPulsar
                     ScheduleBatchFlushTask(0);
                     return;
                 }
-                cnx.Tell(Messages.Requests.Close.Instance);
+                cnx.Tell(Close.Instance);
                 return;
             }
             _log.Info($"[{Topic}] [{_producerName}] Re-Sending {messagesToResend} messages to server");
@@ -2025,7 +2025,7 @@ namespace SharpPulsar
             {
                 // Producer was closed while reconnecting, close the connection to make sure the broker
                 // drops the producer on its side
-                _cnx.Tell(Messages.Requests.Close.Instance);
+                _cnx.Tell(Close.Instance);
                 return;
             }
             // If any messages were enqueued while the producer was not Ready, we would have skipped
