@@ -182,46 +182,37 @@ namespace Tutorials
 
             AnsiConsole.MarkupLine("Press [yellow]CTRL+C[/] to exit");
 
-            Task.Run(async () =>
-            {
-                var table = new Table().Expand().BorderColor(Color.Grey);
-                table.AddColumn("[yellow]Messageid[/]");
-                table.AddColumn("[yellow]Producer Name[/]");
-                table.AddColumn("[yellow]Topic[/]");
-                table.AddColumn("[yellow]Message[/]");
-                await AnsiConsole.Live(table)
-                .AutoClear(true)
-                .Overflow(VerticalOverflow.Ellipsis)
-                .Cropping(VerticalOverflowCropping.Bottom)
-                .StartAsync(async ctx =>
-                {
-
-                    while (true)
-                    {
-                        var message = (Message<byte[]>)await consumer.ReceiveAsync();
-                        if (message != null)
-                        {
-                            if (table.Rows.Count > 45)
-                            {
-                                // Remove the first one
-                                table.Rows.RemoveAt(0);
-                            }
-                            await consumer.AcknowledgeAsync(message);
-                            var res = Encoding.UTF8.GetString(message.Data);
-                            table.AddRow(message.GetMessageId().ToString(), message.ProducerName, message.Topic, res);
-                            ctx.Refresh();
-                            await Task.Delay(100);
-                        }
-                    }
-                });
-            });
-            Task.Run(async () =>
+            var table = new Table().Expand().BorderColor(Color.Grey);
+            table.AddColumn("[yellow]Messageid[/]");
+            table.AddColumn("[yellow]Producer Name[/]");
+            table.AddColumn("[yellow]Topic[/]");
+            table.AddColumn("[yellow]Message[/]");
+            await AnsiConsole.Live(table)
+            .AutoClear(true)
+            .Overflow(VerticalOverflow.Ellipsis)
+            .Cropping(VerticalOverflowCropping.Bottom)
+            .StartAsync(async ctx =>
             {
 
                 while (true)
                 {
                     var data = Encoding.UTF8.GetBytes($"living-{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}");
-                    var id = await producer.NewMessage().Value(data).SendAsync();
+                    await producer.NewMessage().Value(data).SendAsync();
+                    await Task.Delay(500);
+                    var message = (Message<byte[]>)await consumer.ReceiveAsync();
+                    if (message != null)
+                    {
+                        if (table.Rows.Count > 45)
+                        {
+                            // Remove the first one
+                            table.Rows.RemoveAt(0);
+                        }
+                        await consumer.AcknowledgeAsync(message);
+                        var res = Encoding.UTF8.GetString(message.Data);
+                        table.AddRow(message.GetMessageId().ToString(), message.ProducerName, message.Topic, res);
+                        ctx.Refresh();
+                        await Task.Delay(100);
+                    }
                 }
             });
         }
