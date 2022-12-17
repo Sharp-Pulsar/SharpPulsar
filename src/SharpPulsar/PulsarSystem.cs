@@ -198,10 +198,6 @@ namespace SharpPulsar
         }
         public static PulsarSystem GetInstance(Action logSetup = null, Config config = null, string actorSystemName = "apache-pulsar")
         {
-            return GetInstanceAsync(logSetup, config, actorSystemName);
-        }
-        public static PulsarSystem GetInstanceAsync(Action logSetup = null, Config config = null, string actorSystemName = "apache-pulsar")
-        {
             if (_instance == null)
             {
                 using (_lock.Lock())
@@ -215,8 +211,7 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        
-
+       
         private static PulsarSystem CreateActorSystem(Action logSetup, Config config, bool runLogSetup, string actorSystemName, ActorSystem actorsystem = null)
         {
             var confg = config ?? ConfigurationFactory.ParseString(@"
