@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Tracker.Messages
 {
-    public sealed class RemoveTopicMessages
+    public readonly record struct RemoveTopicMessages
     {
         public RemoveTopicMessages(string topicName)
         {

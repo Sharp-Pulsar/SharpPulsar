@@ -4,7 +4,7 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Tracker.Messages
 {
-    public sealed class AddChunkedMessageIdsAndRemoveFromSequnceMap
+    public readonly record struct AddChunkedMessageIdsAndRemoveFromSequnceMap
     {
         public AddChunkedMessageIdsAndRemoveFromSequnceMap(List<IMessageId> messageId)
         {
@@ -13,7 +13,7 @@ namespace SharpPulsar.Tracker.Messages
 
         public ImmutableList<IMessageId> MessageIds { get; } 
     }
-    public sealed class AddChunkedMessageIdsAndRemoveFromSequnceMapResponse
+    public readonly record struct AddChunkedMessageIdsAndRemoveFromSequnceMapResponse
     {
         public AddChunkedMessageIdsAndRemoveFromSequnceMapResponse(IImmutableSet<IMessageId> messageIds)
         {

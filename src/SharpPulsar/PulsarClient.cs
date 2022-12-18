@@ -811,11 +811,12 @@ namespace SharpPulsar
             try
             {
                 _transactionCoordinatorClient?.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+                _cnxPool.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+                _lookup.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+                _generator.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
             }
             catch { }
-            _cnxPool.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
-            _lookup.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
-            _generator.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+            
         }
         #endregion
     }

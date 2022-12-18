@@ -1,8 +1,9 @@
-﻿using SharpPulsar.Interfaces;
+﻿
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Tracker.Messages
 {
-    public sealed class Add<T>
+    public readonly record struct Add<T>
     {
         public Add(IMessage<T> message)
         {
@@ -10,17 +11,10 @@ namespace SharpPulsar.Tracker.Messages
         }
         public IMessage<T> Message { get; }
     }
-    public sealed class Add
+    public readonly record struct Add
     {
-        public Add(IMessageId messageId)
-        {
-            MessageId = messageId;
-        }
-        public Add(IMessageId messageId, int redeliveryCount)
-        {
-            MessageId = messageId;
-            RedeliveryCount = redeliveryCount;
-        }
+        public Add(IMessageId messageId) => (MessageId, RedeliveryCount) = (messageId, 0);
+        public Add(IMessageId messageId, int redeliveryCount) => (MessageId, RedeliveryCount) = (messageId, redeliveryCount);
         public IMessageId MessageId { get; }
         public int RedeliveryCount { get; }
     }

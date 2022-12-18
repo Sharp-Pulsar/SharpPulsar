@@ -5,7 +5,7 @@ using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Tracker.Messages
 {
-    public sealed class AddBatchIndexAcknowledgment
+    public readonly record struct AddBatchIndexAcknowledgment
     {
         public AddBatchIndexAcknowledgment(BatchMessageId messageId, int batchIndex, int batchSize, CommandAck.AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {

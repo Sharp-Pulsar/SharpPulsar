@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SharpPulsar.Admin.v2;
 using SharpPulsar.Builder;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using Xunit;
@@ -50,17 +51,17 @@ namespace SharpPulsar.Test
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
         {
-            var topicName = "ebere-partitioned-topic-" + Guid.NewGuid();
+            var topicName = "pulsar1-partitioned-topic-" + Guid.NewGuid();
             var key = Guid.NewGuid().ToString();
             var subscriptionName = "partitioned-subscription";
-            var pattern = new Regex("public/default/ebere-partitioned-topic.*");
+            var pattern = new Regex("public/default/pulsar1-partitioned-topic.*");
 
             // create partitioned topic
             try
             {
                 var part = new PartitionedTopicMetadata
                 {
-                    Partitions = 1
+                    Partitions = 4
                 };
                 await _admin.CreatePartitionedTopic2Async("public", "default", topicName, part, true);
             }
@@ -71,7 +72,7 @@ namespace SharpPulsar.Test
             }
             var partitions = await _admin.GetPartitionedMetadata2Async("public", "default", topicName, false, false);
             var s = partitions.Partitions;
-            Assert.Equal(1, s);
+            Assert.Equal(4, s);
 
             var consumer = await _client.NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
                 .TopicsPattern(pattern)
@@ -86,15 +87,16 @@ namespace SharpPulsar.Test
                 .Topic(topicName)
                 .EnableLazyStartPartitionedProducers(true));
 
-            var producers = await partitioProducer.Producers();
+           var producers = await partitioProducer.Producers();
 
             // 5. produce data
             foreach (var producer in producers)
             {
                 await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-0"));
-                await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-1"));
-                await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-2"));
+                //await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-1"));
+                //await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-2"));
             }
+
             var messageSet = 0;
             
             await Task.Delay(TimeSpan.FromSeconds(10));
@@ -119,19 +121,91 @@ namespace SharpPulsar.Test
                 await producer.CloseAsync();
             }
 
-            Assert.True(producers.Count > 0);
+           Assert.True(producers.Count > 0);
+            _client.Dispose();
+        }
+        [Fact]
+        public virtual async Task TestRouteGetNumOfPartitions()
+        {
+            var topicName = "abanonu1-partitioned-topic-" + Guid.NewGuid();
+            var key = Guid.NewGuid().ToString();
+            var subscriptionName = "partitioned-subscription";
+            var pattern = new Regex("public/default/abanonu1-partitioned-topic.*");
+
+            // create partitioned topic
+            try
+            {
+                var part = new PartitionedTopicMetadata
+                {
+                    Partitions = 4
+                };
+                await _admin.CreatePartitionedTopic2Async("public", "default", topicName, part, true);
+            }
+            catch (Exception ex)
+            {
+                var ss = ex.Message;
+                //Assert.Equal("Operation returned an invalid status code 'NoContent'", ss);
+            }
+            var partitions = await _admin.GetPartitionedMetadata2Async("public", "default", topicName, false, false);
+            var s = partitions.Partitions;
+            Assert.Equal(4, s);
+
+            var consumer = await _client.NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
+                .TopicsPattern(pattern)
+                .PatternAutoDiscoveryPeriod(2)
+                .ForceTopicCreation(true)
+                .SubscriptionName(subscriptionName)
+                .SubscriptionType(SubType.Shared)
+                .AckTimeout(TimeSpan.FromMilliseconds(60000)));
+            // 2. create producer
+            var messagePredicate = "partitioned-producer" + Guid.NewGuid() + "-";
+            var partitioProducer = await _client.NewPartitionedProducerAsync(new ProducerConfigBuilder<byte[]>()
+                .Topic(topicName)
+                .EnableLazyStartPartitionedProducers(true));
+
+            var a = await partitioProducer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-0"));
+            var b = await partitioProducer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-1"));
+            var c = await partitioProducer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-2"));
+            
+
+            var messageSet = 0;
+
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100)).ConfigureAwait(false);
+            if (message == null)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                message = await consumer.ReceiveAsync();
+            }
+
+            while (message != null)
+            {
+                var m = (TopicMessage<byte[]>)message;
+                messageSet++;
+                await consumer.AcknowledgeAsync(m);
+                _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
+                message = await consumer.ReceiveAsync();
+            }
+            consumer.Unsubscribe();
+            // foreach (var producer in producers)
+            //  {
+            //     await producer.CloseAsync();
+            //}
+
+            // Assert.True(producers.Count > 0);
+            await partitioProducer.CloseAsync();
             _client.Dispose();
         }
         [Fact]
         public virtual async Task TestBinaryProtoToGetTopicsOfNamespacePersistent()
         {
             var key = Guid.NewGuid().ToString();
-            var subscriptionName = "ebere-regex-subscription";
-            var topicName1 = "persistent://public/default/ebere-reg-topic-1-" + key;
-            var topicName2 = "persistent://public/default/ebere-reg-topic-2-" + key;
-            var topicName3 = "persistent://public/default/ebere-reg-topic-3-" + key;
-            var topicName4 = "non-persistent://public/default/ebere-reg-topic-4-" + key;
-            var pattern = new Regex("public/default/ebere-reg-topic.*");
+            var subscriptionName = "ebere1-regex-subscription";
+            var topicName1 = "persistent://public/default/ebere1-reg-topic-1-" + key;
+            var topicName2 = "persistent://public/default/ebere1-reg-topic-2-" + key;
+            var topicName3 = "persistent://public/default/ebere1-reg-topic-3-" + key;
+            var topicName4 = "non-persistent://public/default/ebere1-reg-topic-4-" + key;
+            var pattern = new Regex("public/default/ebere1-reg-topic.*");
 
 
             // 2. create producer
