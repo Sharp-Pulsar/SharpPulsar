@@ -18,7 +18,7 @@ namespace SharpPulsar.Batch
         /// <typeparam name="T">The type of object being copied.</typeparam>
         /// <param name="source">The object instance to copy.</param>
         /// <returns>The copied object.</returns>
-        public static T Clone<T>(T source)
+        /* public static T Clone<T>(T source)
         {
             if (!typeof(T).IsSerializable)
             {
@@ -39,6 +39,6 @@ namespace SharpPulsar.Batch
                 stream.Seek(0, SeekOrigin.Begin);
                 return (T)formatter.Deserialize(stream);
             }
-        }
+        }*/
     }
 }

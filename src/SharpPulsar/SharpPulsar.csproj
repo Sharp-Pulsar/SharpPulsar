@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>    
+    <TargetFramework>net7.0</TargetFramework>    
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
@@ -18,7 +18,7 @@
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.11.1" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
-    <PackageReference Include="AvroSchemaGenerator" Version="2.7.0" />
+    <PackageReference Include="AvroSchemaGenerator" Version="2.8.0" />
     <PackageReference Include="DotNetty.Common" Version="0.7.5" />
     <PackageReference Include="Google.Protobuf" Version="3.21.12" />
     <PackageReference Include="IdentityModel" Version="6.0.0" />
@@ -41,7 +41,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="OpenTelemetry" Version="1.3.1" />
+    <PackageReference Include="OpenTelemetry" Version="1.3.2" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="Pro.NBench.xUnit" Version="2.0.0" />
     <PackageReference Include="protobuf-net" Version="3.1.26" />

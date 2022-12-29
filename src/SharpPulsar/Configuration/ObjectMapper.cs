@@ -40,11 +40,13 @@ namespace SharpPulsar.Configuration
 
         public byte[] WriteValueAsBytes(object @object)
         {
-			using var ms = new MemoryStream();
+            //Debug.WriteLine(Convert.ToBase64String(bytes));
+            return JsonSerializer.SerializeToUtf8Bytes(@object);
+            /* using var ms = new MemoryStream();
 			IFormatter br = new BinaryFormatter();
 			br.Serialize(ms, @object);
 			var bytes = ms.ToArray();
-			return bytes;
+			return bytes;*/
         }
 		public ObjectMapper WithOutAttribute(object @object)
 		{
@@ -64,22 +66,25 @@ namespace SharpPulsar.Configuration
         }
 		public object ReadValue(byte[] param, int position, long length)
         {
-			using var ms = new MemoryStream(param)
+            return JsonSerializer.SerializeToUtf8Bytes<object>(param);
+            /* using var ms = new MemoryStream(param)
 			{
 				Position = position
 			};
 			ms.SetLength(length);
 			IFormatter br = new BinaryFormatter();
-			return br.Deserialize(ms);
+			return br.Deserialize(ms);*/
 		}
         public JToken ReadValue(Stream stream)
         {
-            using (stream)
+            var st = JsonSerializer.SerializeToUtf8Bytes<object>(stream);
+            return JToken.Parse(st.ToString());
+           /* using (stream)
             {
                 IFormatter br = new BinaryFormatter();
                 var st = br.Deserialize(stream).ToString();
 				return JToken.Parse(st);
-            }
+            }*/
         }
 	}
 	
