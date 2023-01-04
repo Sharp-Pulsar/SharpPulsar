@@ -26,8 +26,8 @@ namespace SharpPulsar.Messages.Consumer
             DelayTime = delayTime;
             AckType = ackType;
         }
-    } 
-    public sealed class ReconsumeLaterMessages<T>
+    }
+    public readonly record struct ReconsumeLaterMessages<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
@@ -50,8 +50,8 @@ namespace SharpPulsar.Messages.Consumer
             DelayTime = delayTime;
             Properties = customProperties.ToImmutableDictionary();
         }
-    } 
-    public sealed class ReconsumeLaterMessage<T>
+    }
+    public readonly record struct ReconsumeLaterMessage<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
