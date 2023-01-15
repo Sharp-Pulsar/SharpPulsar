@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Spectre.Console" Version="0.45.0" />
+    <PackageReference Include="Spectre.Console" Version="0.46.0" />
     <PackageReference Include="Testcontainers" Version="2.3.0" />
   </ItemGroup>
 

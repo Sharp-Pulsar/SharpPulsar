@@ -66,14 +66,13 @@ namespace SharpPulsar.Configuration
         }
 		public object ReadValue(byte[] param, int position, long length)
         {
-            return JsonSerializer.SerializeToUtf8Bytes<object>(param);
-            /* using var ms = new MemoryStream(param)
-			{
-				Position = position
-			};
-			ms.SetLength(length);
-			IFormatter br = new BinaryFormatter();
-			return br.Deserialize(ms);*/
+            //return JsonSerializer.Deserialize<object>(param);
+            using (var ms = new MemoryStream(param))
+            {
+                ms.Position = position;
+                ms.SetLength(length);
+                return JsonSerializer.Deserialize<object>(ms);
+            };
 		}
         public JToken ReadValue(Stream stream)
         {

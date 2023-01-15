@@ -1854,7 +1854,7 @@ namespace SharpPulsar
             }
             // If a batch was sent more recently than the BatchingMaxPublishDelayMicros, schedule another flush to run just
             // at BatchingMaxPublishDelayMicros after the last send.
-            var microsSinceLastSend = (long)TimeSpan.FromMilliseconds(NanoTime() - _lastBatchSendNanoTime).TotalMilliseconds;
+            var microsSinceLastSend = (long)TimeSpan.FromMilliseconds(DateTime.Now.Nanosecond - _lastBatchSendNanoTime).TotalMilliseconds;
             if (microsSinceLastSend < Conf.BatchingMaxPublishDelayMs)
             {
                 ScheduleBatchFlushTask((long)(Conf.BatchingMaxPublishDelayMs - microsSinceLastSend));

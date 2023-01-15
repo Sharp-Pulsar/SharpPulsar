@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using SharpPulsar.Configuration;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 using SharpPulsar.Interfaces.Schema;
+using System.Text.Json;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -43,8 +44,8 @@ namespace SharpPulsar.Schemas.Reader
 		{
 			try
 			{
-				return (T)_objectMapper.ReadValue(bytes, offset, length);
-			}
+                return JsonSerializer.Deserialize<T>(bytes);
+            }
 			catch (Exception e)
 			{
 				throw new SchemaSerializationException(e);

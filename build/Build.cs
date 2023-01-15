@@ -50,7 +50,7 @@ partial class Build : NukeBuild
 
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
-    public static int Main () => Execute<Build>(x => x.API);
+    public static int Main () => Execute<Build>(x => x.Test);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -365,7 +365,7 @@ partial class Build : NukeBuild
     {
         return new TestcontainersBuilder<PulsarTestContainer>()
           .WithName("pulsar-tests")
-          .WithPulsar(new PulsarTestContainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6650))
+          .WithPulsar(new PulsarTestContainerConfiguration("apachepulsar/pulsar-all:2.11.0", 6650))
           .WithPortBinding(6650, 6650)
           .WithPortBinding(6651, 6651)
           .WithPortBinding(8080, 8080)
