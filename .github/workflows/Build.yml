@@ -50,8 +50,8 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Compile'
-        run: ./build.cmd Compile
+      - name: Run './build.cmd Compile API'
+        run: ./build.cmd Compile API
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   ubuntu-latest:
@@ -75,7 +75,7 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Compile'
-        run: ./build.cmd Compile
+      - name: Run './build.cmd Compile API'
+        run: ./build.cmd Compile API
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
