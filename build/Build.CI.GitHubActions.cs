@@ -4,7 +4,7 @@ using Nuke.Common.CI.GitHubActions.Configuration;
 using Nuke.Common.Execution;
 using Nuke.Common.Utilities;
 
-[CustomGitHubActions("build",
+[CustomGitHubActions("pr",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.UbuntuLatest,
     //AutoGenerate = false,
@@ -12,10 +12,10 @@ using Nuke.Common.Utilities;
     OnPushBranches = new[] { "main", "dev", "release" },
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Compile), nameof(API) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
+    PublishArtifacts = false,
+    EnableGitHubToken = false)]
 
-[CustomGitHubActions("ubuntu",
+[CustomGitHubActions("pulsar_linux",
     GitHubActionsImage.UbuntuLatest,
     //AutoGenerate = false,
     FetchDepth = 0,
