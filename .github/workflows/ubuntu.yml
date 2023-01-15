@@ -50,5 +50,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Compile API Test Token'
-        run: ./build.cmd Compile API Test Token
+      - name: Run './build.cmd Compile API Test'
+        run: ./build.cmd Compile API Test
