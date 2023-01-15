@@ -3,11 +3,6 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-##################
-## BenchmarkDotNet
-##################
-BenchmarkDotNet.Artifacts/
-
 # User-specific files
 *.rsuser
 *.suo
@@ -31,9 +26,6 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
-
-#DocFx output
-_site/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

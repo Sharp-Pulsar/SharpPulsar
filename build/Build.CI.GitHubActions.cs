@@ -79,14 +79,14 @@ public class CustomGitHubActionsAttribute : GitHubActionsAttribute
                 Version = version
             });
         }
-        /*newSteps.Insert(1, new GitHubActionsSetupChmod
+        newSteps.Insert(1, new GitHubActionsSetupChmod
         {
             File = "build.cmd"
         });
         newSteps.Insert(1, new GitHubActionsSetupChmod
         {
             File = "build.sh"
-        });*/
+        });
         job.Steps = newSteps.ToArray();
         return job;
     }
