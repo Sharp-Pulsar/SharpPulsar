@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,7 +34,7 @@ namespace SharpPulsar.Test
         public TestMessageEncryption(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         //[Fact(Skip = "Encrpted Produce Consume")  ]
         [Fact]
@@ -79,6 +78,7 @@ namespace SharpPulsar.Test
             Assert.True(receivedCount > 6);
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
     }
 }

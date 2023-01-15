@@ -4,6 +4,7 @@ using SharpPulsar.Protocol.Proto;
 using System;
 using System.Collections.Generic;
 using SharpPulsar.Interfaces.Interceptor;
+using SharpPulsar.Common.Compression;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,13 +27,13 @@ using SharpPulsar.Interfaces.Interceptor;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// <seealso cref="ProducerBuilder"/> is used to configure and create instances of <seealso cref="Producer"/>.
-	/// </summary>
-	/// <seealso cref= PulsarClient#newProducer() </seealso>
-	/// <seealso cref= PulsarClient#newProducer(Schema) </seealso>
+    /// <summary>
+    /// <seealso cref="ProducerBuilder"/> is used to configure and create instances of <seealso cref="Producer"/>.
+    /// </summary>
+    /// <seealso cref= PulsarClient#newProducer() </seealso>
+    /// <seealso cref= PulsarClient#newProducer(Schema) </seealso>
 
-	public interface IProducerBuilder<T> : ICloneable
+    public interface IProducerBuilder<T> : ICloneable
 	{
 
 		/// <summary>

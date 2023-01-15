@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Akka.Actor;
+using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
@@ -66,11 +68,27 @@ namespace SharpPulsar.EventSource.Pulsar
             {
                 consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
             }
+           
+            // chunking configuration
+            consumerConfiguration.MaxPendingChuckedMessage = readerConfiguration.MaxPendingChunkedMessage;
+            consumerConfiguration.AutoAckOldestChunkedMessageOnQueueFull = readerConfiguration.AutoAckOldestChunkedMessageOnQueueFull;
+            consumerConfiguration.ExpireTimeOfIncompleteChunkedMessage = TimeSpan.FromMilliseconds(readerConfiguration.ExpireTimeOfIncompleteChunkedMessage);
+
+            if (readerConfiguration.ReaderName != null)
+            {
+                consumerConfiguration.ConsumerName = readerConfiguration.ReaderName;
+            }
+
+            if (readerConfiguration.ResetIncludeHead)
+            {
+                consumerConfiguration.ResetIncludeHead = true;
+            }
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-            Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client, tcs));
+            //Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, true, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client, tcs));
+            Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, true, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client, tcs));
             _child = tcs.Task.GetAwaiter().GetResult();
             if (isLive)
                 LiveConsume();
@@ -96,7 +114,7 @@ namespace SharpPulsar.EventSource.Pulsar
                 Self.GracefulStop(TimeSpan.FromSeconds(5)); 
             });
             //to track last sequence id for lagging player
-            Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
+            //Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
         }
         private void LiveConsume()
         {

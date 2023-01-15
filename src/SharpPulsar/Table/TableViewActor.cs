@@ -9,7 +9,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Table.Messages;
-using SharpPulsar.User;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Akka.Dispatch;
 using SharpPulsar.Common;
 using SharpPulsar.Protocol.Proto;
 using System;
@@ -19,6 +20,13 @@ namespace SharpPulsar.Extension
         {
             //https://stackoverflow.com/questions/17248680/await-works-but-calling-task-result-hangs-deadlocks#answer-32429753
             return await actorRef.Ask(message, TimeSpan.FromSeconds(timeoutInSeconds));
+        }
+        public static ActorTaskScheduler InternalPinnedExecutor(this IActorRef actorRef, ActorTaskScheduler actorTaskScheduler = null)
+        {
+            if (actorTaskScheduler != null)
+                return actorTaskScheduler;
+            
+            return null;
         }
         public static CommandSubscribe.InitialPosition ValueOf(this SubscriptionInitialPosition position)
         {

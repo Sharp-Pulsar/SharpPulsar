@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class GetConsumerName
+    public readonly record struct GetConsumerName
     {
         /// <summary>
         /// When ConsumerActor receives this message

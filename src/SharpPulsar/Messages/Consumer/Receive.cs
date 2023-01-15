@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace SharpPulsar.Messages.Consumer
 {
     public sealed class Receive
@@ -9,6 +11,16 @@ namespace SharpPulsar.Messages.Consumer
         /// to be consumed at the front end
         /// </summary>
         /// 
+        public readonly TimeSpan Time = TimeSpan.Zero;
         public static Receive Instance = new Receive();
+
+        public Receive()
+        {
+        }
+        public Receive(TimeSpan time)
+        {
+            Time = time;
+        }
+
     } 
 }

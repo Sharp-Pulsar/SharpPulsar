@@ -17,25 +17,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
     /// <summary>
 	/// Builder to build schema.
 	/// </summary>
 	public interface ISchemaBuilder
-	{
+    {
 
-		/// <summary>
-		/// Build the schema for a record.
-		/// </summary>
-		/// <param name="name"> name of the record. </param>
-		/// <returns> builder to build the schema for a record. </returns>
-		static IRecordSchemaBuilder Record(string name)
-		{
-			//return DefaultImplementation.newRecordSchemaBuilder(name);
-			throw new NotImplementedException(name);
-		}
-		
-	}
+        /// <summary>
+        /// Build the schema for a record.
+        /// </summary>
+        /// <param name="name"> name of the record. </param>
+        /// <returns> builder to build the schema for a record. </returns>
+        static IRecordSchemaBuilder Record(string name)
+        {
+            //return DefaultImplementation.newRecordSchemaBuilder(name);
+            throw new NotImplementedException(name);
+        }
+
+    }
 
 }

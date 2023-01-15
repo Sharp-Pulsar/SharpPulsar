@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Precondition;
 using SharpPulsar.Shared;
 using System;
@@ -27,10 +27,10 @@ using System.Collections.Generic;
 namespace SharpPulsar.Schemas
 {
 
-	/// <summary>
-	/// Util class for processing key/value schema info.
-	/// </summary>
-	public sealed class KeyValueSchemaInfo
+    /// <summary>
+    /// Util class for processing key/value schema info.
+    /// </summary>
+    public sealed class KeyValueSchemaInfo
 	{
 
 		private static readonly ISchema<ISchemaInfo> _schemaInfoWriter = new SchemaAnonymousInnerClass();

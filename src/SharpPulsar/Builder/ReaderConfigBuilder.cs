@@ -4,6 +4,7 @@ using System.Linq;
 using Akka.Util.Internal;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
+using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;

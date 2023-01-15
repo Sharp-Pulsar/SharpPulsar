@@ -1,7 +1,4 @@
 ﻿using SharpPulsar.Schemas;
-using SharpPulsar.Sql.Client;
-using SharpPulsar.Sql.Message;
-using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -16,6 +13,8 @@ using SharpPulsar.TestContainer;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Builder;
 using Akka.Actor;
+using SharpPulsar.Trino;
+using SharpPulsar.Trino.Message;
 
 namespace SharpPulsar.Test
 {
@@ -29,7 +28,7 @@ namespace SharpPulsar.Test
         public SqlTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
             _actorSystem = ActorSystem.Create("Sql");
             //fixture.CreateSql();
         }
@@ -72,6 +71,7 @@ namespace SharpPulsar.Test
             }
 
             Assert.True(receivedCount > 1);
+            _client.Dispose();
         }
 
         //[Fact(Skip = "Issue with sql-worker on github action")]

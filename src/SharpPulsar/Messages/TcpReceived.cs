@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public class TcpReceived
+    public readonly record struct TcpReceived
     {
         public byte[] Bytes { get; }
 

@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class Resume
+    public readonly record struct Resume
     {
         public static Resume Instance = new Resume();
     }

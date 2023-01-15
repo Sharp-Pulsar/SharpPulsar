@@ -46,6 +46,14 @@ namespace SharpPulsar.Extension
                 return;
             }
         }
+        public static IMessage<T> One<T>(this BufferBlock<IMessage<T>> messages)
+        {
+            if (messages.TryReceiveAll(out var m))
+            {
+               return m.LastOrDefault();  
+            }
+            return null;
+        }
         public static BitArray FromLongArray(this IList<long> ackSets, int numMessagesInBatch)
         {
             var bitArray = new BitArray(numMessagesInBatch);

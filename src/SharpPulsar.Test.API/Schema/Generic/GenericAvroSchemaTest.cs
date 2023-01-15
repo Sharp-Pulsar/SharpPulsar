@@ -1,5 +1,5 @@
 ﻿using Avro.Generic;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 /// <summary>
@@ -22,7 +22,7 @@ using SharpPulsar.Schemas.Generic;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema.Generic
 {
-    
+
     public class GenericAvroSchemaTest
     {
 

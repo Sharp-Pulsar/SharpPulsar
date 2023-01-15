@@ -6,7 +6,7 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Extension
 {
-    public static class ListPartition
+    internal static class ListPartition
     {
         public static IEnumerable<IList<MessageId>> PartitionMessageId(this IList<IMessageId> source, int chunkSize)
         {
@@ -38,6 +38,12 @@ namespace SharpPulsar.Extension
                 .GroupBy(x => x.Value.PartitionIndex)
                 .Select(x => x.Select(v => v.Value).ToList())
                 .ToList();
+        }
+        public static ISet<IMessageId> RemoveMessageId(this LinkedList<HashSet<IMessageId>> source, int chunkSize)
+        {
+            var first = source.First;
+            source.RemoveFirst();
+            return first.Value;
         }
     }
 }

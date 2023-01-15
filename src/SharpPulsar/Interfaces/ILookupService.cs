@@ -3,7 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Protocol.Proto;
 
 /// <summary>

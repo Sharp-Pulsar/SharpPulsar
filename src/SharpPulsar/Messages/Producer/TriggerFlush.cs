@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Producer
 {
-    public sealed class TriggerFlush
+    public readonly record struct TriggerFlush
     {
         public static TriggerFlush Instance = new TriggerFlush();
     }

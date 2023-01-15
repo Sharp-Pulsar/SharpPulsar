@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas.Reader;
 using SharpPulsar.Schemas.Writer;
 using SharpPulsar.Shared;
@@ -25,10 +25,10 @@ using SharpPulsar.Shared;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	/// <summary>
-	/// A schema implementation to deal with json data.
-	/// </summary>
-	public class AvroSchema<T> : AvroBaseStructSchema<T>
+    /// <summary>
+    /// A schema implementation to deal with json data.
+    /// </summary>
+    public class AvroSchema<T> : AvroBaseStructSchema<T>
 	{
 		private readonly object _classInstance = typeof(T).IsClass;
 		private AvroSchema(ISchemaInfo schemaInfo) : base(schemaInfo)

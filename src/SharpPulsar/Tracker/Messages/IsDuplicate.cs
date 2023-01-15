@@ -3,7 +3,7 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Tracker.Messages
 {
-    public sealed class IsDuplicate
+    public readonly record struct IsDuplicate
     {
         public IsDuplicate(IMessageId messageId)
         {

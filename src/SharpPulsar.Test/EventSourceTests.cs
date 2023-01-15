@@ -2,10 +2,9 @@
 using SharpPulsar.Configuration;
 using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Schemas;
-using SharpPulsar.Sql.Client;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
+using SharpPulsar.Trino;
 using SharpPulsar.Utils;
 using System;
 using System.Collections.Generic;
@@ -30,22 +29,23 @@ namespace SharpPulsar.Test
         public EventSourceTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _pulsarSystem = fixture.PulsarSystem;
-
-            _client = fixture.Client;
+            _pulsarSystem = fixture.System;
             _clientConfigurationData = fixture.ClientConfigurationData;
+
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         //[Fact(Skip = "Issue with sql-worker on github action")]
         [Fact]
+        
         public virtual async Task SqlSourceTest()
         {
-            var topic = $"presto-topics-{Guid.NewGuid()}";
+            var topic = $"trino-topics-{Guid.NewGuid()}";
             var ids = await PublishMessages(topic, 50);
             var start = MessageIdUtils.GetOffset(ids.First());
             var end = MessageIdUtils.GetOffset(ids.Last());
             var cols = new HashSet<string> { "text", "EventTime" };
             var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
-            var source = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
+            var source = _pulsarSystem.EventSource(_client, "public", "default", topic, start, end, "http://127.0.0.1:8080")
                 .Sql(option, cols)
                 .SourceMethod()
                 .CurrentEvents();
@@ -82,13 +82,13 @@ namespace SharpPulsar.Test
         [Fact]
         public virtual async Task SqlSourceTaggedTest()
         {
-            var topic = $"presto-topics-{Guid.NewGuid()}";
+            var topic = $"trino-topics-{Guid.NewGuid()}";
             var ids = await PublishMessages(topic, 50);
             var start = MessageIdUtils.GetOffset(ids.First());
             var end = MessageIdUtils.GetOffset(ids.Last());
             var cols = new HashSet<string> { "text", "EventTime" };
             var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
-            var source = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
+            var source = _pulsarSystem.EventSource(_client, "public", "default", topic, start, end, "http://127.0.0.1:8080")
                 .Sql(option, cols)
                 .SourceMethod()
                 .CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
@@ -121,7 +121,8 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(5));
             Assert.True(receivedCount > 0);
         }
-        [Fact(Skip = "skip for now")]
+        //[Fact(Skip = "skip for now")]
+        [Fact]
         public virtual async Task ReaderSourceTest()
         {
             var topic = $"reader-topics-{Guid.NewGuid()}";
@@ -131,13 +132,13 @@ namespace SharpPulsar.Test
 
             var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-            var reader = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
+            var reader = _pulsarSystem.EventSource(_client, "public", "default", topic, start, end, "http://127.0.0.1:8080")
                 .Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
                 .SourceMethod()
                 .CurrentEvents();
 
             //let leave some time to wire everything up
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(60));
             var receivedCount = 0;
             await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(40)))
             {
@@ -146,7 +147,7 @@ namespace SharpPulsar.Test
             }
             Assert.True(receivedCount > 0);
         }
-        [Fact(Skip = "skip for now")]
+        [Fact]
         public virtual async Task ReaderSourceTaggedTest()
         {
             var topic = $"reader-topics-{Guid.NewGuid()}";
@@ -156,7 +157,7 @@ namespace SharpPulsar.Test
 
             var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-            var reader = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
+            var reader = _pulsarSystem.EventSource(_client, "public", "default", topic, start, end, "http://127.0.0.1:8080")
                 .Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
                 .SourceMethod()
                 .CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
@@ -188,6 +189,8 @@ namespace SharpPulsar.Test
                     id = await producer.NewMessage().Key(key).Value(new DataOpEx { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).SendAsync();
                 ids.Add(id);
             }
+            await producer.CloseAsync().ConfigureAwait(false);
+
             return ids;
         }
 

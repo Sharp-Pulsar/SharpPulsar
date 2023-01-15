@@ -5,12 +5,11 @@ using System.Threading.Tasks;
 using Avro.Generic;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -27,7 +26,7 @@ namespace SharpPulsar.Test
         public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         [Fact]
         public async Task TestGenericTopic()
@@ -76,6 +75,7 @@ namespace SharpPulsar.Test
             Assert.Equal(8, messageReceived);
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
         
         private byte[] ToBytes<T>(T obj)

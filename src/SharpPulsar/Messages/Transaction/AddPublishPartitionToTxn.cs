@@ -1,11 +1,11 @@
 ﻿using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Transaction;
+using SharpPulsar.TransactionImpl;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Transaction
 {
-    public sealed class AddPublishPartitionToTxn
+    public readonly record struct AddPublishPartitionToTxn
     {
         public TxnID TxnID { get; }
         public ImmutableList<string> Topics { get; }
@@ -16,7 +16,7 @@ namespace SharpPulsar.Messages.Transaction
             Topics = topics.ToImmutableList();
         }
     }
-    public sealed class SubscriptionToTxn
+    public readonly record struct SubscriptionToTxn
     {
         public TxnID TxnID { get; }
         public string Topic { get; }
@@ -28,7 +28,7 @@ namespace SharpPulsar.Messages.Transaction
             Subscription = subscription;
         }
     }
-    public sealed class AddSubscriptionToTxn
+    public readonly record struct AddSubscriptionToTxn
     {
         public TxnID TxnID { get; }
         public ImmutableList<Subscription> Subscriptions { get; }

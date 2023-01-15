@@ -31,7 +31,7 @@ namespace SharpPulsar.Interfaces
     /// <para>All the operations on the consumer instance are thread safe.
     /// </para>
     /// </summary>
-    public interface IConsumer<T>
+    public interface IConsumer<T> : IDisposable
     {
 
         /// <summary>
@@ -76,6 +76,37 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException"> if the operation fails </exception>
         void Unsubscribe();
 
+
+        /// <summary>
+        /// Unsubscribe the consumer.
+        /// 
+        /// <para>This call blocks until the consumer is unsubscribed.
+        /// 
+        /// </para>
+        /// <para>Unsubscribing will the subscription to be deleted and all the
+        /// data retained can potentially be deleted as well.
+        /// 
+        /// </para>
+        /// <para>The operation will fail when performed on a shared subscription
+        /// where multiple consumers are currently connected.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <exception cref="PulsarClientException"> if the operation fails </exception>
+        ValueTask UnsubscribeAsync();
+
+        /// <summary>
+        /// MultiTopicsConsumer
+        /// </summary>
+        /// <param name="topicName"></param>
+        void Unsubscribe(string topicName);
+        /// <summary>
+        /// MultiTopicsConsumer
+        /// </summary>
+        /// <param name="topicName"></param>
+        /// <returns></returns>
+        ValueTask UnsubscribeAsync(string topicName);
+
         /// <summary>
         /// Receive a single message.
         /// 
@@ -103,6 +134,23 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException.InvalidConfigurationException">if a message listener was defined in the configuration </exception>
         ///          
         ValueTask<IMessage<T>> ReceiveAsync();
+
+        /// <summary>
+        /// Receive a single message.
+        /// 
+        /// <para>Retrieves a message, waiting up to the specified wait time if necessary.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="timeout">
+        ///            0 or less means immediate rather than infinite </param>
+        /// <param name="unit"> </param>
+        /// <returns> the received <seealso cref="Message"/> or null if no message available before timeout </returns>
+        /// <exception cref="PulsarClientException.AlreadyClosedException">
+        ///             if the consumer was already closed </exception>
+        /// <exception cref="PulsarClientException.InvalidConfigurationException">
+        ///             if a message listener was defined in the configuration </exception>
+        IMessage<T> Receive(TimeSpan timeout);
 
         /// <summary>
         /// Batch receiving messages.
@@ -456,6 +504,80 @@ namespace SharpPulsar.Interfaces
         ValueTask ReconsumeLaterAsync(IMessages<T> messages, TimeSpan delayTime);
 
         /// <summary>
+		/// reconsumeLater the consumption of <seealso cref="Messages"/>.
+		/// 
+		/// <para>When a message is "reconsumeLater" it will be marked for redelivery after
+		/// some custom delay.
+		/// 
+		/// </para>
+		/// <para>Example of usage:
+		/// <pre><code>
+		/// while (true) {
+		///     Message&lt;String&gt; msg = consumer.receive();
+		/// 
+		///     try {
+		///          // Process message...
+		/// 
+		///          consumer.acknowledge(msg);
+		///     } catch (Throwable t) {
+		///          log.warn("Failed to process message");
+		///          consumer.reconsumeLater(msg, 1000, TimeUnit.MILLISECONDS);
+		///     }
+		/// }
+		/// </code></pre>
+		/// 
+		/// </para>
+		/// </summary>
+		/// <param name="message">
+		///            the {@code Message} to be reconsumeLater </param>
+		/// <param name="customProperties">
+		///            the custom properties to be reconsumeLater </param>
+		/// <param name="delayTime">
+		///            the amount of delay before the message will be delivered </param>
+		/// <param name="unit">
+		///            the time unit for the delay </param>
+		/// <exception cref="PulsarClientException.AlreadyClosedException">
+		///              if the consumer was already closed </exception>
+		void ReconsumeLater(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime);
+
+        /// <summary>
+		/// reconsumeLater the consumption of <seealso cref="Messages"/>.
+		/// 
+		/// <para>When a message is "reconsumeLater" it will be marked for redelivery after
+		/// some custom delay.
+		/// 
+		/// </para>
+		/// <para>Example of usage:
+		/// <pre><code>
+		/// while (true) {
+		///     Message&lt;String&gt; msg = consumer.receive();
+		/// 
+		///     try {
+		///          // Process message...
+		/// 
+		///          consumer.acknowledge(msg);
+		///     } catch (Throwable t) {
+		///          log.warn("Failed to process message");
+		///          consumer.reconsumeLater(msg, 1000, TimeUnit.MILLISECONDS);
+		///     }
+		/// }
+		/// </code></pre>
+		/// 
+		/// </para>
+		/// </summary>
+		/// <param name="message">
+		///            the {@code Message} to be reconsumeLater </param>
+		/// <param name="customProperties">
+		///            the custom properties to be reconsumeLater </param>
+		/// <param name="delayTime">
+		///            the amount of delay before the message will be delivered </param>
+		/// <param name="unit">
+		///            the time unit for the delay </param>
+		/// <exception cref="PulsarClientException.AlreadyClosedException">
+		///              if the consumer was already closed </exception>
+        ValueTask ReconsumeLaterAsync(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime);
+
+        /// <summary>
         /// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
         /// 
         /// <para>This method will block until the acknowledge has been sent to the broker. After that, the messages will not be
@@ -568,7 +690,7 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException.NotAllowedException">broker don't support transaction </exception>
         /// 
         /// @since 2.7.0 </returns>
-        void AcknowledgeCumulative(IMessageId messageId, User.Transaction txn);
+        void AcknowledgeCumulative(IMessageId messageId, TransactionImpl.Transaction txn);
 
         /// <summary>
         /// Acknowledge the reception of all the messages in the stream up to (and including) the provided message with this
@@ -606,7 +728,7 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException.NotAllowedException">broker don't support transaction </exception>
         /// 
         /// @since 2.7.0 </returns>
-        ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, User.Transaction txn);
+        ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, TransactionImpl.Transaction txn);
 
         /// <summary>
         /// reconsumeLater the reception of all the messages in the stream up to (and including) the provided message.
@@ -629,6 +751,24 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException.AlreadyClosedException"> if the consumer was already closed </exception>
         /// 
         ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, TimeSpan delayTimeInMs);
+
+        /// <summary>
+		/// Asynchronously ReconsumeLater the reception of all the messages in the stream up to (and including) the provided
+		/// message.
+		/// 
+		/// <para>Cumulative reconsumeLater cannot be used when the consumer type is set to ConsumerShared.
+		/// 
+		/// </para>
+		/// </summary>
+		/// <param name="message">
+		///            The {@code message} to be cumulatively reconsumeLater </param>
+		/// <param name="customProperties">
+		///            The custom properties to be cumulatively reconsumeLater </param>
+		/// <param name="delayTime">
+		///            the amount of delay before the message will be delivered </param>
+		/// <returns> a future that can be used to track the completion of the operation </returns>
+		ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime);
+
 
         /// <summary>
         /// Get statistics for the consumer.

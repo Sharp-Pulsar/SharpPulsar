@@ -21,6 +21,7 @@ using SharpPulsar.Builder;
 */
 using SharpPulsar.Extension;
 using SharpPulsar.Configuration;
+using SharpPulsar.Common.Compression;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -70,11 +71,11 @@ namespace SharpPulsar.Builder
 		/// But when we need a smaller size than the size set by the server when chunking
 		/// we can do it here
 		/// </summary>
-        public ProducerConfigBuilder<T> MaxMessageSize(int max)
+        public ProducerConfigBuilder<T> ChunkMaxMessageSize(int max)
         {
             if (max < 1)
                 throw new ArgumentException("max should be > 0");
-            _conf.MaxMessageSize = max;
+            _conf.ChunkMaxMessageSize = max;
             return this;
         }
         public ProducerConfigBuilder<T> Topic(string topicName)

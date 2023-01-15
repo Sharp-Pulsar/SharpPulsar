@@ -3,7 +3,7 @@ using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages
 {
-    public class BrokerLookUp
+    public readonly record struct BrokerLookUp
     {
         public BrokerLookUp(string message, bool authoritative, CommandLookupTopicResponse.LookupType response, string brokerServiceUrl, string brokerServiceUrlTls, long requestId, bool useProxy)
         {

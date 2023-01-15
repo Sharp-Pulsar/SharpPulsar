@@ -6,10 +6,11 @@ using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;
+using static SharpPulsar.Protocol.Commands;
 
 namespace SharpPulsar.Helpers
 {
-    public static class Serializer
+    internal static class Serializer
     {
         public static RecyclableMemoryStreamManager MemoryManager = new RecyclableMemoryStreamManager();
         
@@ -38,8 +39,9 @@ namespace SharpPulsar.Helpers
             return new ReadOnlySequence<byte>(stream.ToArray());
         }
 
-        public static ReadOnlySequence<byte> Serialize(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload)
+        public static ReadOnlySequence<byte> Serialize(BaseCommand command, ChecksumType checksumType, MessageMetadata metadata, byte[] payload)
         {
+            var payld = new ReadOnlySequence<byte>(payload);
             // Wire format
             // [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
             var stream = MemoryManager.GetStream();
@@ -66,7 +68,7 @@ namespace SharpPulsar.Helpers
             var totalMetadataSize = stream2Size - stream1Size - 6;
 
             // write payload
-            stream.Write(payload.ToArray(), 0, (int)payload.Length);
+            stream.Write(payld.ToArray(), 0, (int)payload.Length);
 
             var frameSize = (int)stream.Length;
             var totalSize = frameSize - 4;

@@ -8,13 +8,13 @@ namespace SharpPulsar
     {
         private readonly ProducerActor<T> _outerInstance;
 
-        private readonly TaskCompletionSource<Message<T>> _future;
+        private readonly TaskCompletionSource<IMessageId> _future;
 
         private readonly Message<T> _interceptorMessage;
         private ISendCallback<T> _nextCallback;
         private Message<T> _nextMsg;
         private readonly long _createdAt;
-        public SendCallback(ProducerActor<T> outerInstance, TaskCompletionSource<Message<T>> future, Message<T> interceptorMessage)
+        public SendCallback(ProducerActor<T> outerInstance, TaskCompletionSource<IMessageId> future, Message<T> interceptorMessage)
         {
             _outerInstance = outerInstance;
             _future = future;
@@ -28,7 +28,7 @@ namespace SharpPulsar
 
         public Message<T> NextMessage => _nextMsg;
 
-        public TaskCompletionSource<Message<T>> Future => _future;
+        public TaskCompletionSource<IMessageId> Future => _future;
         public void SendComplete(Exception e)
         {
             try
@@ -42,7 +42,7 @@ namespace SharpPulsar
                 else
                 {
                     _outerInstance.OnSendAcknowledgement(_interceptorMessage, _interceptorMessage.MessageId, null);
-                    _future.TrySetResult(_interceptorMessage);
+                    _future.TrySetResult(_interceptorMessage.MessageId);
                     _outerInstance._stats.IncrementNumAcksReceived(DateTimeOffset.Now.ToUnixTimeMilliseconds() - _createdAt);
                 }
             }
@@ -68,7 +68,7 @@ namespace SharpPulsar
                     else
                     {
                         _outerInstance.OnSendAcknowledgement(msg, msg.MessageId, null);
-                        sendCallback.Future.TrySetResult(msg);
+                        sendCallback.Future.TrySetResult(msg.MessageId);
                         _outerInstance._stats.IncrementNumAcksReceived(DateTimeOffset.Now.ToUnixTimeMilliseconds() - _createdAt);
                     }
                     _nextMsg = _nextCallback.NextMessage;

@@ -32,7 +32,7 @@ namespace SharpPulsar.Interfaces
 
         // / 
         // / <returns> future associated with callback </returns>
-        TaskCompletionSource<Message<T>> Future { get; }
+        TaskCompletionSource<IMessageId> Future { get; }
     }
 
 }

@@ -17,65 +17,65 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
-	public interface IFieldSchemaBuilder<T> where T : IFieldSchemaBuilder<T>
-	{
+    public interface IFieldSchemaBuilder<T> where T : IFieldSchemaBuilder<T>
+    {
 
-		/// <summary>
-		/// Set name-value pair properties for this field.
-		/// </summary>
-		/// <param name="name"> name of the property </param>
-		/// <param name="val"> value of the property </param>
-		/// <returns> field schema builder </returns>
-		T Property(string name, string val);
+        /// <summary>
+        /// Set name-value pair properties for this field.
+        /// </summary>
+        /// <param name="name"> name of the property </param>
+        /// <param name="val"> value of the property </param>
+        /// <returns> field schema builder </returns>
+        T Property(string name, string val);
 
-		/// <summary>
-		/// The documentation of this field.
-		/// </summary>
-		/// <param name="doc"> documentation </param>
-		/// <returns> field schema builder </returns>
-		T Doc(string doc);
+        /// <summary>
+        /// The documentation of this field.
+        /// </summary>
+        /// <param name="doc"> documentation </param>
+        /// <returns> field schema builder </returns>
+        T Doc(string doc);
 
-		/// <summary>
-		/// The optional name aliases of this field.
-		/// </summary>
-		/// <param name="aliases"> the name aliases of this field </param>
-		/// <returns> field schema builder </returns>
-		T Aliases(params string[] aliases);
+        /// <summary>
+        /// The optional name aliases of this field.
+        /// </summary>
+        /// <param name="aliases"> the name aliases of this field </param>
+        /// <returns> field schema builder </returns>
+        T Aliases(params string[] aliases);
 
-		/// <summary>
-		/// The type of this field.
-		/// 
-		/// <para>Currently only primitive types are supported.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="type"> schema type of this field </param>
-		/// <returns> field schema builder </returns>
-		T Type(SchemaType type);
+        /// <summary>
+        /// The type of this field.
+        /// 
+        /// <para>Currently only primitive types are supported.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="type"> schema type of this field </param>
+        /// <returns> field schema builder </returns>
+        T Type(SchemaType type);
 
-		/// <summary>
-		/// Make this field optional.
-		/// </summary>
-		/// <returns> field schema builder </returns>
-		T Optional();
+        /// <summary>
+        /// Make this field optional.
+        /// </summary>
+        /// <returns> field schema builder </returns>
+        T Optional();
 
-		/// <summary>
-		/// Make this field required.
-		/// </summary>
-		/// <returns> field schema builder </returns>
-		T Required();
+        /// <summary>
+        /// Make this field required.
+        /// </summary>
+        /// <returns> field schema builder </returns>
+        T Required();
 
-		/// <summary>
-		/// Set the default value of this field.
-		/// 
-		/// <para>The value is validated against the schema type.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> value </returns>
-		T DefaultValue(object value);
+        /// <summary>
+        /// Set the default value of this field.
+        /// 
+        /// <para>The value is validated against the schema type.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> value </returns>
+        T DefaultValue(object value);
 
-	}
+    }
 }

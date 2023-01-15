@@ -1,5 +1,5 @@
 ﻿using NodaTime;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 /// <summary>
@@ -22,10 +22,10 @@ using System;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	/// <summary>
-	/// A schema for `java.time.Instant`.
-	/// </summary>
-	public class InstantSchema : AbstractSchema<Instant>
+    /// <summary>
+    /// A schema for `java.time.Instant`.
+    /// </summary>
+    public class InstantSchema : AbstractSchema<Instant>
 	{
 
 	   private static readonly InstantSchema _instance;

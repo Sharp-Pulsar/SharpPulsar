@@ -1,36 +1,25 @@
-﻿using SharpPulsar.Exceptions;
+﻿
+using SharpPulsar.Exceptions;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class RedeliverUnacknowledgedMessages
+    public readonly record struct RedeliverUnacknowledgedMessages
     {
         public static RedeliverUnacknowledgedMessages Instance = new RedeliverUnacknowledgedMessages();
-    } 
-
-    public sealed class AskResponse
+    }
+    
+    public readonly record struct AskResponse
     {
-        public bool Failed { get; }
+        public bool Failed { get;  }
         public object Data { get; }
-        public PulsarClientException Exception { get; }
-        public AskResponse()
+        public PulsarClientException Exception { get;  }
+        public AskResponse() : this(null)
         {
-            Failed = false;
+            Failed= false;
         }
-        public AskResponse(object data)
-        {
-            Failed = false;
-            Data = data;
-        }
+        public AskResponse(object data) => (Failed, Data, Exception) = (false, data, null);
 
-        public AskResponse(PulsarClientException exception)
-        {
-            if (exception == null)
-                Failed = false;
-            else
-                Failed = true;
-
-            Exception = exception;
-        }
+        public AskResponse(PulsarClientException exception) => (Failed, Data, Exception) = (true, null, exception);
         public T ConvertTo<T>()
         {
             return (T)Data;

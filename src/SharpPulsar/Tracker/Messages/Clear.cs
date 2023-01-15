@@ -1,11 +1,11 @@
 ﻿
 namespace SharpPulsar.Tracker.Messages
 {
-    public sealed class Clear
+    public readonly record struct Clear
     {
         public static Clear Instance = new Clear();
     }
-    public sealed class TestClear
+    public readonly record struct TestClear
     {
         public static TestClear Instance = new TestClear();
     }

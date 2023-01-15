@@ -1,21 +1,21 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
 using SharpPulsar.Batch;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
+using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
-using SharpPulsar.Messages;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Schema;
+using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
@@ -24,10 +24,14 @@ using SharpPulsar.Tracker.Messages;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
+using InvalidMessageException = SharpPulsar.Exceptions.PulsarClientException.InvalidMessageException;
+using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -51,122 +55,125 @@ namespace SharpPulsar
 {
 
     internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>
-	{
+    {
 
-		internal const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
+        internal const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
 
-		// Map <topic+partition, consumer>, when get do ACK, consumer will by find by topic name
-		private readonly ConcurrentDictionary<string, IActorRef> _consumers;
+        // Map <topic+partition, consumer>, when get do ACK, consumer will by find by topic name
+        private readonly ConcurrentDictionary<string, IActorRef> _consumers;
 
-		// Map <topic, numPartitions>, store partition number for each topic
-		protected internal readonly Dictionary<string, int> PartitionedTopics;
+        // Map <topic, numPartitions>, store partition number for each topic
+        protected internal readonly Dictionary<string, int> PartitionedTopics;
 
-		// Queue of partition consumers on which we have stopped calling receiveAsync() because the
-		// shared incoming queue was full
-		private Queue<IActorRef> _pausedConsumers;
+        // Queue of partition consumers on which we have stopped calling receiveAsync() because the
+        // shared incoming queue was full
+        private Queue<IActorRef> _pausedConsumers;
 
-		// Threshold for the shared queue. When the size of the shared queue goes below the threshold, we are going to
-		// resume receiving from the paused consumer partitions
-		private readonly int _sharedQueueResumeThreshold;
+        // Threshold for the shared queue. When the size of the shared queue goes below the threshold, we are going to
+        // resume receiving from the paused consumer partitions
+        private readonly int _sharedQueueResumeThreshold;
 
-		// sum of topicPartitions, simple topic has 1, partitioned topic equals to partition number.
-		internal int AllTopicPartitionsNumber;
+        // sum of topicPartitions, simple topic has 1, partitioned topic equals to partition number.
+        internal int AllTopicPartitionsNumber;
 
-		private readonly IScheduler _scheduler;
-		private readonly IActorRef _lookup;
-		private readonly IActorRef _cnxPool;
-		private readonly IActorRef _generator;
-		private readonly IActorRef _stateActor;
+        private readonly IScheduler _scheduler;
+        private readonly IActorRef _lookup;
+        private readonly IActorRef _cnxPool;
+        private readonly IActorRef _generator;
+        private readonly IActorRef _stateActor;
 
         private bool _paused = false;
-		// timeout related to auto check and subscribe partition increasement
-		private ICancelable _partitionsAutoUpdateTimeout = null;
+        // timeout related to auto check and subscribe partition increasement
+        private ICancelable _partitionsAutoUpdateTimeout = null;
 
-		private readonly IConsumerStatsRecorder _stats;
-		private readonly IActorRef _unAckedMessageTracker;
-		private readonly ConsumerConfigurationData<T> _internalConfig;
+        private readonly IConsumerStatsRecorder _stats;
+        private readonly IActorRef _unAckedMessageTracker;
+        private readonly ConsumerConfigurationData<T> _internalConfig;
 
-		private readonly BatchMessageId _startMessageId = null;
-		private readonly long _startMessageRollbackDurationInSec;
-		private readonly ClientConfigurationData _clientConfiguration;
-		private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
+        private readonly BatchMessageId _startMessageId = null;
+        private readonly long _startMessageRollbackDurationInSec;
+        private readonly ClientConfigurationData _clientConfiguration;
+        private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
 
-		private readonly IActorRef _client;
+        private readonly IActorRef _client;
 
-		private readonly IActorRef _self;
-		private readonly IActorContext _context;
-		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
-		{
-		}
+        private readonly IActorRef _self;
+        private readonly IActorContext _context;
+        public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
+        {
+        }
         public static Props Prop(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             return Props.Create(() => new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, conf, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
         }
-        public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this (stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture)
-		{
-		}
+        public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture)
+        {
+        }
         public static Props Prop(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             return Props.Create(() => new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture));
         }
-        public MultiTopicsConsumer(IActorRef stateActor,IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, null, 0, clientConfiguration, subscribeFuture)
-		{
-		}
+        public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, null, 0, clientConfiguration, subscribeFuture)
+        {
+        }
         public static Props Prop(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             return Props.Create(() => new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
         }
         public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), schema, subscribeFuture)
-		{
-			_context = Context;
-			_generator = idGenerator;
-			_lookup = lookup;
-			_client = client;
-			_cnxPool = cnxPool;
-			_stateActor = stateActor;
-			Condition.CheckArgument(conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
-			_self = Self;
-			_scheduler = Context.System.Scheduler;
-			_clientConfiguration = clientConfiguration;
-			PartitionedTopics = new Dictionary<string, int>();
+        {
+            _context = Context;
+            _generator = idGenerator;
+            _lookup = lookup;
+            _client = client;
+            _cnxPool = cnxPool;
+            _stateActor = stateActor;
+            Condition.CheckArgument(conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
+            _self = Self;
+            _scheduler = Context.System.Scheduler;
+            _clientConfiguration = clientConfiguration;
+            PartitionedTopics = new Dictionary<string, int>();
             _consumers = new ConcurrentDictionary<string, IActorRef>();
-			_pausedConsumers = new Queue<IActorRef>();
-			_sharedQueueResumeThreshold = MaxReceiverQueueSize / 2;
-			AllTopicPartitionsNumber = 0;
-			_startMessageId = startMessageId != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
-			_startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
+            _pausedConsumers = new Queue<IActorRef>();
+            _sharedQueueResumeThreshold = MaxReceiverQueueSize / 2;
+            AllTopicPartitionsNumber = 0;
+            _startMessageId = startMessageId != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
+            _startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 
-			if (conf.AckTimeout != TimeSpan.Zero)
-			{
-				if (conf.TickDuration > TimeSpan.Zero)
-				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(conf.AckTimeout, conf.TickDuration, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedTopicMessageTracker");
-				}
-				else
-				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf.AckTimeout), "UnAckedTopicMessageTracker");
-				}
-			}
-			else
-			{
-				_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
-			}
+            if (conf.AckTimeout != TimeSpan.Zero)
+            {
+                if (conf.AckTimeoutRedeliveryBackoff != null)
+                {
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageRedeliveryTracker<T>.Prop(Self, UnAckedChunckedMessageIdSequenceMap, conf), "UnAckedTopicMessageRedeliveryTracker");
+                }
+                else
+                {
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker<T>.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf), "UnAckedTopicMessageTracker");
+                }
+            }
+            else
+            {
+                _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled<T>.Prop(), "UnAckedMessageTrackerDisabled");
+            }
 
-			_internalConfig = InternalConsumerConfig;
-			_stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) : ConsumerStatsDisabled.Instance;
+            _internalConfig = InternalConsumerConfig;
+            _stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) : ConsumerStatsDisabled.Instance;
 
             if (_internalConfig.AutoUpdatePartitions)
             {
-                _partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), _internalConfig.AutoUpdatePartitionsInterval, Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
+                _partitionsAutoUpdateTimeout = _scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(1000), _internalConfig.AutoUpdatePartitionsInterval, () =>
+                {
+                    SubscribeIncreasedTopicPartitions(Topic);
+                });
             }
             if (conf.TopicNames.Count == 0)
-			{
-				State.ConnectionState = HandlerState.State.Ready;
+            {
+                State.ConnectionState = HandlerState.State.Ready;
                 subscribeFuture.TrySetResult(Self);
                 return;
             }
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames.ToList()), "Topics is empty or invalid.");
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async() =>
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
                 PulsarClientException lastError = null;
                 foreach (var t in conf.TopicNames)
@@ -175,7 +182,7 @@ namespace SharpPulsar
                     {
                         await Subscribe(t, createTopicIfDoesNotExist);
                     }
-                    catch(PulsarClientException ex)
+                    catch (PulsarClientException ex)
                     {
                         Close();
                         _log.Warning($"[{Topic}] Failed to subscribe topics: {ex.Message}, closing consumer");
@@ -184,7 +191,7 @@ namespace SharpPulsar
                         lastError = ex;
                     }
                 }
-                if(lastError == null)
+                if (lastError == null)
                 {
                     if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
                     {
@@ -197,81 +204,99 @@ namespace SharpPulsar
                     subscribeFuture.TrySetResult(_self);
                 }
             });
-            
             Ready();
         }
-		       
-        
         public static Props Prop(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(()=> new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture));
+            return Props.Create(() => new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture));
         }
-        private void Ready()
-		{
+        internal void Ready()
+        {
             Receive<SendState>(_ =>
-			{
-				StateActor.Tell(new SetConumerState(State.ConnectionState));
-			});
-			Receive<BatchReceive>(_ =>
-			{
-                BatchReceive();
-			});
-            Receive<Messages.Consumer.Receive>(_ =>
             {
-                Receive();
+                StateActor.Tell(new SetConumerState(State.ConnectionState));
             });
-            ReceiveAsync<UpdatePartitionSub>(async s =>
-			{
-				var tcs = SubscribeIncreasedTopicPartitions(Topic);
-                await tcs.Task;
-			});
-			Receive<MessageProcessed<T>>(s =>
-			{
-				MessageProcessed(s.Message);
-			});
-			Receive<GetLastDisconnectedTimestamp>(m =>
-			{
-				var l = LastDisconnectedTimestamp();
+            Receive<BatchReceive>(batch =>
+            {
+                try
+                {
+                    var message = BatchReceive();
+                    Sender.Tell(new AskResponse(message));
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
+            });
+            Receive<Messages.Consumer.Receive>(receive =>
+            {
+                try
+                {
+                    var message = receive.Time == TimeSpan.Zero ? Receive() : Receive(receive.Time);
+                    Sender.Tell(new AskResponse(message));
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
+            });
+            /*Receive<UpdatePartitionSub>( _ =>
+            {
+                Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+                {
+                    SubscribeIncreasedTopicPartitions(Topic);
+                    //await tcs.Task;
+                });
+                
+            });*/
+            Receive<MessageProcessed<T>>(s =>
+            {
+                MessageProcessed(s.Message);
+            });
+            Receive<GetLastDisconnectedTimestamp>(m =>
+            {
+                var l = LastDisconnectedTimestamp();
                 Sender.Tell(l);
-			});
-			Receive<GetConsumerName>(m => {
+            });
+            Receive<GetConsumerName>(m => {
                 Sender.Tell(ConsumerName);
-			});
-			Receive<GetSubscription>(m => {
+            });
+            Receive<GetSubscription>(m => {
                 Sender.Tell(Subscription);
-			});
-			Receive<GetTopic>(m => {
-                Sender.Tell(Topic); 
-			});
+            });
+            Receive<GetTopic>(m => {
+                Sender.Tell(Topic);
+            });
             Receive<GetIncomingMessageCount>(_ =>
             {
                 Sender.Tell(new AskResponse(IncomingMessages.Count));
             });
-            ReceiveAsync<ReceivedMessage<T>>(async m => {
-				await ReceiveMessageFromConsumer(Sender, m.Message);
-			});
-			Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
-				UnAckedChunckedMessageIdSequenceMap.Tell(new Clear());
-			});
-			ReceiveAsync<HasReachedEndOfTopic>(async _ => {
-				var hasReached = await HasReachedEndOfTopic();
+            //ZeroQueueConsumer hasParentConsumer
+            Receive<ReceivedMessage<T>>(m => {
+                ReceiveMessageFromConsumer(Sender, m.Message);
+            });
+            Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
+                UnAckedChunckedMessageIdSequenceMap.Tell(new Clear());
+            });
+            ReceiveAsync<HasReachedEndOfTopic>(async _ => {
+                var hasReached = await HasReachedEndOfTopic();
                 Sender.Tell(new AskResponse(hasReached));
             });
-			Receive<GetAvailablePermits>(_ => {
-				var permits = AvailablePermits();
-				Sender.Tell(permits);
-			});
-			Receive<IsConnected>( _ => {
-				var connected = Connected();
+            Receive<GetAvailablePermits>(_ => {
+                var permits = AvailablePermits();
+                Sender.Tell(permits);
+            });
+            Receive<IsConnected>(_ => {
+                var connected = Connected();
                 Sender.Tell(connected);
             });
-			Receive<Pause>(_ => {
-				Pause();
-			});
-			ReceiveAsync<RemoveTopicConsumer>(async t => {
-				await RemoveConsumer(t.Topic);
-			});
-			ReceiveAsync<HasMessageAvailable>(async _ => {
+            Receive<Pause>(_ => {
+                Pause();
+            });
+            ReceiveAsync<RemoveTopicConsumer>(async t => {
+                await RemoveConsumer(t.Topic);
+            });
+            ReceiveAsync<HasMessageAvailable>(async _ => {
                 try
                 {
                     var has = await HasMessageAvailable();
@@ -283,84 +308,84 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(ex));
                 }
             });
-			Receive<GetNumMessagesInQueue>(_ => {
-				var num = NumMessagesInQueue();
-				Sender.Tell(num);
-			});
-			Receive<Resume>(_ => {
-				Resume();
-			});
-			ReceiveAsync<GetLastMessageId>(async m =>
-			{
-				try
-				{
-					var lmsid = await LastMessageId();
+            Receive<GetNumMessagesInQueue>(_ => {
+                var num = NumMessagesInQueue();
+                Sender.Tell(num);
+            });
+            Receive<Resume>(_ => {
+                Resume();
+            });
+            ReceiveAsync<GetLastMessageId>(async m =>
+            {
+                try
+                {
+                    var lmsid = await LastMessageId();
                     Sender.Tell(lmsid);
-				}
-				catch (Exception ex)
-				{
+                }
+                catch (Exception ex)
+                {
                     Sender.Tell(PulsarClientException.Unwrap(ex));
-				}
-			});
-			Receive<GetStats>(m =>
-			{
-				try
-				{
-					var stats = Stats;
-					Sender.Tell(stats);
-				}
-				catch (Exception ex)
-				{
-					_log.Error(ex.ToString());
+                }
+            });
+            Receive<GetStats>(m =>
+            {
+                try
+                {
+                    var stats = Stats;
+                    Sender.Tell(stats);
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex.ToString());
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-				}
-			});
-			Receive<NegativeAcknowledgeMessage<T>>(m =>
-			{
-				try
-				{
+                }
+            });
+            Receive<NegativeAcknowledgeMessage<T>>(m =>
+            {
+                try
+                {
                     var topicMessageId = (TopicMessageId)m.Message.MessageId;
                     var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
                     consumer.Tell(m, Sender);
-				}
-				catch (Exception ex)
-				{
-					Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-				}
-			});
-			Receive<NegativeAcknowledgeMessages<T>>(m =>
-			{
-				try
-				{
-                    foreach(var message in m.Messages)
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                }
+            });
+            Receive<NegativeAcknowledgeMessages<T>>(m =>
+            {
+                try
+                {
+                    foreach (var message in m.Messages)
                     {
                         var topicMessageId = (TopicMessageId)message.MessageId;
                         var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
                         consumer.Tell(new NegativeAcknowledgeMessage<T>(message), Sender);
                     }
                     Sender.Tell(new AskResponse());
-				}
-				catch (Exception ex)
-				{
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
-				}
-			});
-			Receive<NegativeAcknowledgeMessageId>(m =>
-			{
-				try
-				{
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                }
+            });
+            Receive<NegativeAcknowledgeMessageId>(m =>
+            {
+                try
+                {
                     var topicMessageId = (TopicMessageId)m.MessageId;
                     var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
                     consumer.Tell(m, Sender);
-				}
-				catch (Exception ex)
-				{
-					Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-				}
-			});
-			Receive<IAcknowledge>(m =>
-			{
-                switch(m)
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                }
+            });
+            Receive<IAcknowledge>(m =>
+            {
+                switch (m)
                 {
                     case AcknowledgeMessage<T> ack:
                         DoAcknowledge(ack.Message.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
@@ -387,11 +412,23 @@ namespace SharpPulsar
                         Sender.Tell(new AskResponse());
                         break;
                 }
-                
-			});
-			Receive<ICumulative>(message =>
-			{
-                switch(message)
+
+            });
+            Receive<Close>(c =>
+            {
+                try
+                {
+                    Close();
+                    Sender.Tell(new AskResponse());
+                }
+                catch(Exception ex) 
+                { 
+                    Sender.Tell(new AskResponse(ex));
+                }
+            });
+            Receive<ICumulative>(message =>
+            {
+                switch (message)
                 {
                     case AcknowledgeCumulativeMessage<T> m:
                         DoAcknowledge(m.Message.MessageId, AckType.Cumulative, new Dictionary<string, long>(), null);
@@ -403,21 +440,24 @@ namespace SharpPulsar
                         DoAcknowledge(m.MessageId, AckType.Cumulative, new Dictionary<string, long>(), m.Txn);
                         break;
                     case ReconsumeLaterCumulative<T> ack:
-                        DoReconsumeLater(ack.Message, AckType.Cumulative, new Dictionary<string, long>(), ack.DelayTime);
+                        if (ack.Properties != null)
+                            DoReconsumeLater(ack.Message, AckType.Cumulative, ack.Properties, ack.DelayTime);
+                        else
+                            DoReconsumeLater(ack.Message, AckType.Cumulative, new Dictionary<string, string>(), ack.DelayTime);
                         break;
                     default:
                         Sender.Tell(new AskResponse());
                         break;
                 }
-                
-			});
+
+            });
 
             Receive<ReconsumeLaterMessages<T>>(m =>
             {
                 try
                 {
-                    foreach(var message in m.Messages)
-                        DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), m.DelayTime);
+                    foreach (var message in m.Messages)
+                        DoReconsumeLater(message, AckType.Individual, new Dictionary<string, string>(), m.DelayTime);
 
                     Sender.Tell(new AskResponse());
                 }
@@ -426,86 +466,402 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
                 }
             });
-			Receive<RedeliverUnacknowledgedMessages>(m =>
-			{
-				try
-				{
-					RedeliverUnacknowledged();
-                    Sender.Tell(new AskResponse());
-				}
-				catch (Exception ex)
-				{
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
-				}
-			});
-			ReceiveAsync<RedeliverUnacknowledgedMessageIds>(async m =>
-			{
-				try
-				{
-					await RedeliverUnacknowledged(m.MessageIds);
-                    Sender.Tell(new AskResponse());
-				}
-				catch (Exception ex)
-				{
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
-				}
-			});
-			Receive<UnsubscribeTopic>( u =>
-			{
-				try
-				{
-					Unsubscribe(u.Topic);
-                    Sender.Tell(new AskResponse());
-				}
-				catch (Exception ex)
-				{
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
-				}
-			});
-			ReceiveAsync<SeekMessageId>(async m =>
-			{
-				try
-				{
-					await Seek(m.MessageId);
+            Receive<RedeliverUnacknowledgedMessages>(m =>
+            {
+                try
+                {
+                    RedeliverUnacknowledgedMessages();
                     Sender.Tell(new AskResponse());
                 }
-				catch (Exception ex)
-				{
+                catch (Exception ex)
+                {
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-				}
-			});
-			ReceiveAsync<SeekTimestamp>( async m =>
-			{
-				try
-				{
-					await Seek(m.Timestamp);
+                }
+            });
+            Receive<RedeliverUnacknowledgedMessageIds>(m =>
+            {
+                try
+                {
+                    RedeliverUnacknowledgedMessages(m.MessageIds);
                     Sender.Tell(new AskResponse());
-				}
-				catch (Exception ex)
-				{
+                }
+                catch (Exception ex)
+                {
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-				}
-			});
-		}
-        
+                }
+            });
+            Receive<Unsubscribe>(u =>
+            {
+                try
+                {
+                    Unsubscribe();
+                    Sender.Tell(new AskResponse());
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
+                }
+            });
+            ReceiveAsync<UnsubscribeTopicName>(async u =>
+            {
+                try
+                {
+                    await Unsubscribe(u.TopicName);
+                    Sender.Tell(new AskResponse());
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
+                }
+            });
+            ReceiveAsync<SeekMessageId>(async m =>
+            {
+                try
+                {
+                    await Seek(m.MessageId);
+                    Sender.Tell(new AskResponse());
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                }
+            });
+            ReceiveAsync<SeekTimestamp>(async m =>
+            {
+                try
+                {
+                    await Seek(m.Timestamp);
+                    Sender.Tell(new AskResponse());
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                }
+            });
+        }
+
+        // Check topics are valid.
+        // - each topic is valid,
+        // - topic names are unique.
+        private bool TopicNamesValid(List<string> topics)
+        {
+            if (topics == null && topics.Count == 0)
+                throw new ArgumentException("topics should contain more than 1 topic");
+
+            var result = topics.Where(topic => !TopicName.IsValid(topic)).FirstOrDefault();
+
+            if (result != null && result.Count() > 0)
+            {
+
+                _log.Warning($"Received invalid topic name: {result[0]}");
+                return false;
+            }
+
+            // check topic names are unique
+            var set = new HashSet<string>(topics);
+            if (set.Count == topics.Count)
+            {
+                return true;
+            }
+            else
+            {
+                _log.Warning($"Topic names not unique. unique/all : {set.Count}/{topics.Count}");
+                return false;
+            }
+        }
+
+        private void StartReceivingMessages(IList<IActorRef> newConsumers)
+        {
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}] startReceivingMessages for {newConsumers.Count} new consumers in topics consumer, state: {State.ConnectionState}");
+            }
+            if (State.ConnectionState == HandlerState.State.Ready)
+            {
+                newConsumers.ForEach(consumer =>
+                {
+                    consumer.Tell(new IncreaseAvailablePermits(Conf.ReceiverQueueSize));
+
+                    //Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
+                });
+            }
+        }
+
+        private void ReceiveMessageFromConsumer(IActorRef consumer, IMessage<T> message)
+        {
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer");
+            }
+            MessageReceived(consumer, message);
+            var size = IncomingMessages.Count;
+            if (size >= MaxReceiverQueueSize || (size > _sharedQueueResumeThreshold && _pausedConsumers.Count > 0))
+            {
+                _pausedConsumers.Enqueue(consumer);
+                consumer.Tell(Messages.Consumer.Pause.Instance);
+            }
+        }
+
+        // Must be called from the internalPinnedExecutor thread
+        private void MessageReceived(IActorRef consumer, IMessage<T> message)
+        {
+            var topic = consumer.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
+            var topicNameWithoutPartition = consumer.Ask<string>(GetTopicNameWithoutPartition.Instance).GetAwaiter().GetResult();
+            Condition.CheckArgument(message is Message<T> );
+            var topicMessage = new TopicMessage<T>(topic, topicNameWithoutPartition, message, consumer);
+
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}][{Subscription}] Received message from topics-consumer {message.MessageId}");
+            }
+
+            // if asyncReceive is waiting : return message to callback without adding to incomingMessages queue
+            var receivedFuture = NextPendingReceive();
+            if (receivedFuture != null)
+            {
+                _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId, topicMessage.RedeliveryCount));
+                CompletePendingReceive(receivedFuture, topicMessage);
+            }
+            else if (EnqueueMessageAndCheckBatchReceive(topicMessage) && HasPendingBatchReceive())
+            {
+                NotifyPendingBatchReceivedCallBack();
+            }
+
+            TryTriggerListener();
+        }
+        protected internal override void MessageProcessed(IMessage<T> msg)
+        {
+            _unAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
+            DecreaseIncomingMessageSize(msg);
+            //ResumeReceivingFromPausedConsumersIfNeeded();
+        }
+        private void ResumeReceivingFromPausedConsumersIfNeeded()
+        {
+            if (IncomingMessages.Count <= CurrentReceiverQueueSize / 2 && _pausedConsumers.Count > 0)
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var consumer = _pausedConsumers.Dequeue();
+
+                        if (consumer == null)
+                        {
+                            break;
+                        }
+                        consumer.Tell(Messages.Consumer.Resume.Instance);
+                        //Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await ReceiveMessageFromConsumer(consumer, true));
+                    }
+                    catch
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // If message consumer epoch is smaller than consumer epoch present that
+        // it has been sent to the client before the user calls redeliverUnacknowledgedMessages, this message is invalid.
+        // so we should release this message and receive again
+        private bool IsValidConsumerEpoch(IMessage<T> message)
+        {
+            return base.IsValidConsumerEpoch(((Message<T>)(((TopicMessage<T>)message)).Message));
+        }
+
+        public override int MinReceiverQueueSize()
+        {
+            var size = Math.Min(InitialReceiverQueueSize, MaxReceiverQueueSize);
+            if (BatchReceivePolicy.MaxNumMessages > 0)
+            {
+                size = Math.Max(size, BatchReceivePolicy.MaxNumMessages);
+            }
+            if (AllTopicPartitionsNumber > 0)
+            {
+                size = Math.Max(AllTopicPartitionsNumber, size);
+            }
+            return size;
+        }
+
+        protected internal override IMessage<T> InternalReceive()
+        {
+            IMessage<T> message;
+            try
+            {
+                if (IncomingMessages.Count == 0)
+                {
+                    ExpectMoreIncomingMessages();
+                }
+                IncomingMessages.TryReceive(out message);
+
+                if (message == null)
+                    return message;
+
+                DecreaseIncomingMessageSize(message);
+                //checkState(Message is TopicMessageImpl);
+                if (!IsValidConsumerEpoch(message))
+                {
+                    ResumeReceivingFromPausedConsumersIfNeeded();
+                    message = null;
+                    return InternalReceive();
+                }
+                _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                ResumeReceivingFromPausedConsumersIfNeeded();
+                return message;
+            }
+            catch (Exception e)
+            {
+                throw PulsarClientException.Unwrap(e);
+            }
+        }
+
+        protected internal override IMessage<T> InternalReceive(TimeSpan time)
+        {
+            IMessage<T> message;
+
+            var callTime = NanoTime();
+            try
+            {
+                if (IncomingMessages.Count == 0)
+                {
+                    ExpectMoreIncomingMessages();
+                }
+                IncomingMessages.TryReceive(out message);
+                if (message != null)
+                {
+                    DecreaseIncomingMessageSize(message);
+                    //checkArgument(Message is TopicMessageImpl);
+                    if (!IsValidConsumerEpoch(message))
+                    {
+                        var executionTime = NanoTime() - callTime;
+                        var timeoutInNanos = time.TotalMilliseconds;
+                        if (executionTime >= timeoutInNanos)
+                        {
+                            return null;
+                        }
+                        else
+                        {
+                            ResumeReceivingFromPausedConsumersIfNeeded();
+                            return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime));
+                        }
+                    }
+                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                }
+                ResumeReceivingFromPausedConsumersIfNeeded();
+                return message;
+            }
+            catch (Exception e)
+            {
+                throw PulsarClientException.Unwrap(e);
+            }
+        }
+        protected internal override IMessages<T> InternalBatchReceive()
+        {
+            try
+            {
+                return InternalBatchReceiveAsync().Task.GetAwaiter().GetResult();
+            }
+            catch (Exception e)
+            {
+                if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState.State.Closed)
+                {
+                    Stats.IncrementNumBatchReceiveFailed();
+                    throw Unwrap(e);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        protected internal override TaskCompletionSource<IMessages<T>> InternalBatchReceiveAsync()
+        {
+            var result = new TaskCompletionSource<IMessages<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            {
+                if (HasEnoughMessagesForBatchReceive())
+                {
+                    var messages = NewMessages;
+                    IncomingMessages.TryReceive(out var msg);
+                    while (msg != null && messages.CanAdd(msg))
+                    {
+                        if (msg != null)
+                        {
+                            DecreaseIncomingMessageSize(msg);
+                            if (!IsValidConsumerEpoch(msg))
+                            {
+                                IncomingMessages.TryReceive(out msg);
+                                continue;
+                            }
+                            var interceptMsg = BeforeConsume(msg);
+                            messages.Add(interceptMsg);
+                        }
+                    }
+                    result.SetResult(messages);
+                }
+                else
+                {
+                    ExpectMoreIncomingMessages();
+                    var opBatchReceive = OpBatchReceive.Of(result);
+                    PendingBatchReceives.Enqueue(opBatchReceive);
+                    TriggerBatchReceiveTimeoutTask();
+                    result.Task.ContinueWith(s =>
+                    {
+                        if (s.IsCanceled)
+                            PendingBatchReceives.TakeLast(1);
+                    });
+                }
+                ResumeReceivingFromPausedConsumersIfNeeded();
+            });
+            return result;
+        }
+        protected internal override TaskCompletionSource<IMessage<T>> InternalReceiveAsync()
+        {
+            var result = new TaskCompletionSource<IMessage<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+            {
+                IncomingMessages.TryReceive(out var message);
+                if (message == null)
+                {
+                    ExpectMoreIncomingMessages();
+                    PendingReceives.Enqueue(result);
+                    result.Task.ContinueWith(s =>
+                    {
+                        if (s.IsCanceled)
+                            PendingReceives.TryDequeue(out result);
+                    });
+                }
+                else
+                {
+                    DecreaseIncomingMessageSize(message);
+                    //CheckState(Message is TopicMessageImpl);
+                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                    ResumeReceivingFromPausedConsumersIfNeeded();
+                    result.SetResult(message);
+                }
+            });
+
+            return result;
+        }
+
         // subscribe one more given topic
         protected internal async ValueTask Subscribe(string topicName, bool createTopicIfDoesNotExist)
-		{
+        {
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var topicNameInstance = GetTopicName(topicName);
-			if (topicNameInstance == null)
-			{
+            if (topicNameInstance == null)
+            {
                 var ex = new PulsarClientException.AlreadyClosedException("Topic name not valid");
                 _log.Error($"{ex}");
                 tcs.TrySetException(ex);
                 await tcs.Task;
                 return;
-			}
-			var fullTopicName = topicNameInstance.ToString();
-			if (PartitionedTopics.ContainsKey(fullTopicName) || PartitionedTopics.ContainsKey(topicNameInstance.PartitionedTopicName))
-			{
+            }
+            var fullTopicName = topicNameInstance.ToString();
+            if (PartitionedTopics.ContainsKey(fullTopicName) || PartitionedTopics.ContainsKey(topicNameInstance.PartitionedTopicName))
+            {
                 var ex = new PulsarClientException.AlreadyClosedException("Already subscribed to" + topicName);
-               _log.Error($"{ex}");
+                _log.Error($"{ex}");
                 tcs.TrySetException(ex);
                 await tcs.Task;
                 return;
@@ -521,8 +877,8 @@ namespace SharpPulsar
                 return;
             }
 
-			var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
-            if(result.Failed)
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
+            if (result.Failed)
             {
                 var error = $"[{fullTopicName}] Failed to get partitioned topic metadata: {result.Exception}";
                 _log.Warning(error);
@@ -533,261 +889,266 @@ namespace SharpPulsar
 
             var metadata = result.ConvertTo<PartitionedTopicMetadata>();
             await SubscribeTopicPartitions(tcs, fullTopicName, metadata.Partitions, createTopicIfDoesNotExist);
-            
-		}
-		private async ValueTask<ISchema<T>> PreProcessSchemaBeforeSubscribe(ISchema<T> schema, string topicName)
-		{
-			if (schema != null && schema.SupportSchemaVersioning())
-			{
-				ISchemaInfoProvider schemaInfoProvider;
-				try
-				{
-					schemaInfoProvider = _schemaProviderLoadingCache.Get(topicName);
-					if (schemaInfoProvider == null)
-						_schemaProviderLoadingCache.Put(topicName, NewSchemaProvider(topicName));
-				}
-				catch (Exception e)
-				{
-					_log.Error($"Failed to load schema info provider for topic {topicName}: {e}");
-					throw;
-				}
-				schema = schema.Clone();
-				if (schema.RequireFetchingSchemaInfo())
-				{
-					var finalSchema = schema;
-					var schemaInfo = await schemaInfoProvider.LatestSchema().ConfigureAwait(false);
-					if (null == schemaInfo)
-					{
-						if (!(finalSchema is AutoConsumeSchema))
-						{
-							throw new PulsarClientException.NotFoundException("No latest schema found for topic " + topicName);
-						}
-					}
-					_log.Info($"Configuring schema for topic {topicName} : {schemaInfo}");
-					finalSchema.ConfigureSchemaInfo(topicName, "topic", schemaInfo);
-					finalSchema.SchemaInfoProvider = schemaInfoProvider;
-					return finalSchema;
-				}
-				else
-				{
-					schema.SchemaInfoProvider = schemaInfoProvider;
-				}
-			}
-			return schema;
-		}
-		private ISchemaInfoProvider NewSchemaProvider(string topicName)
-		{
-			return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _log, _lookup);
-		}
-		
 
-		private void StartReceivingMessages(IList<IActorRef> newConsumers)
-		{
-			if(_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}] startReceivingMessages for {newConsumers.Count} new consumers in topics consumer, state: {State.ConnectionState}");
-			}
-			if(State.ConnectionState == HandlerState.State.Ready)
-			{
-				newConsumers.ForEach(consumer =>
-				{
-					consumer.Tell(new IncreaseAvailablePermits(Conf.ReceiverQueueSize));
-				});
-			}
-		}
-		private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, IMessage<T> message)
-		{
-			var c = _consumers.Where(x => x.Value == consumer).FirstOrDefault();
-			var topic = await consumer.Ask<string>(GetTopic.Instance);
-			if (_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
-			}
-			MessageReceived(topic, message);
-			var size = IncomingMessages.Count;
-			if (size >= MaxReceiverQueueSize || (size > _sharedQueueResumeThreshold && _pausedConsumers.Count > 0))
-			{
-				_pausedConsumers.Enqueue(consumer);
-				consumer.Tell(Messages.Consumer.Pause.Instance);
-			}
-		}
+        }
+        private async ValueTask<ISchema<T>> PreProcessSchemaBeforeSubscribe(ISchema<T> schema, string topicName)
+        {
+            if (schema != null && schema.SupportSchemaVersioning())
+            {
+                ISchemaInfoProvider schemaInfoProvider;
+                try
+                {
+                    schemaInfoProvider = _schemaProviderLoadingCache.Get(topicName);
+                    if (schemaInfoProvider == null)
+                        _schemaProviderLoadingCache.Put(topicName, NewSchemaProvider(topicName));
+                }
+                catch (Exception e)
+                {
+                    _log.Error($"Failed to load schema info provider for topic {topicName}: {e}");
+                    throw;
+                }
+                schema = schema.Clone();
+                if (schema.RequireFetchingSchemaInfo())
+                {
+                    var finalSchema = schema;
+                    var schemaInfo = await schemaInfoProvider.LatestSchema().ConfigureAwait(false);
+                    if (null == schemaInfo)
+                    {
+                        if (!(finalSchema is AutoConsumeSchema))
+                        {
+                            throw new PulsarClientException.NotFoundException("No latest schema found for topic " + topicName);
+                        }
+                    }
+                    _log.Info($"Configuring schema for topic {topicName} : {schemaInfo}");
+                    finalSchema.ConfigureSchemaInfo(topicName, "topic", schemaInfo);
+                    finalSchema.SchemaInfoProvider = schemaInfoProvider;
+                    return finalSchema;
+                }
+                else
+                {
+                    schema.SchemaInfoProvider = schemaInfoProvider;
+                }
+            }
+            return schema;
+        }
+        private ISchemaInfoProvider NewSchemaProvider(string topicName)
+        {
+            return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _log, _lookup);
+        }
 
-		private void MessageReceived(string topic, IMessage<T> message)
-		{
-			Condition.CheckArgument(message is Message<T>);
-			var topicMessage = new TopicMessage<T>(topic, TopicName.Get(topic).PartitionedTopicName, message);
+        protected override void Unhandled(object message)
+        {
+            _log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
+        }
 
-			if(_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}][{Subscription}] Received message from topics-consumer {message.MessageId}");
-			}
-			_unAckedMessageTracker.Tell(new Add(topicMessage.MessageId));
-			if (Listener != null)
-			{
-				try
-				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {message.MessageId}");
-					}
-					Listener.Received(_self, message);
-				}
-				catch (Exception t)
-				{
-					_log.Error($"[{Topic}][{Subscription}] Message listener error in processing message: {message}: {t}");
-				}
-			}
+
+        protected internal override void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txnImpl)
+        {
+            Condition.CheckArgument(messageId is TopicMessageId);
+            var topicMessageId = (TopicMessageId)messageId;
+
+            if (State.ConnectionState != HandlerState.State.Ready)
+            {
+                Sender.Tell(new AskResponse(new PulsarClientException("Consumer already closed")));
+            }
+
+            if (ackType == AckType.Cumulative)
+            {
+                var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+                if (consumer != null)
+                {
+                    var innerId = topicMessageId.InnerMessageId;
+                    consumer.Tell(new AcknowledgeCumulativeMessageId(innerId), Sender);
+                }
+                else
+                {
+                    Sender.Tell(new AskResponse(new PulsarClientException.NotConnectedException()));
+                }
+            }
             else
             {
-				IncomingMessages.Post(topicMessage);
+                var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+
+                var innerId = topicMessageId.InnerMessageId;
+                consumer.Tell(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl), Sender);
+                _unAckedMessageTracker.Tell(new Remove(topicMessageId));
             }
-		}
-		protected override void Unhandled(object message)
-		{
-			_log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
-		}
-		private void MessageProcessed(IMessage<T> msg)
-		{
-			_unAckedMessageTracker.Tell(new Add(msg.MessageId));
-			IncomingMessagesSize -= msg.Data.Length;
-			ResumeReceivingFromPausedConsumersIfNeeded();
-		}
+        }
 
-		private void ResumeReceivingFromPausedConsumersIfNeeded()
-		{
-            if(IncomingMessages.Count <= _sharedQueueResumeThreshold && _pausedConsumers.Count > 0)
-			{
-                while (true)
-				{
-                    try
-                    {
-                        var consumer = _pausedConsumers.Dequeue();
-
-                        if (consumer == null)
-                        {
-                            break;
-                        }
-                        consumer.Tell(Messages.Consumer.Resume.Instance);
-                    }
-                    catch
-                    {
-                        break;
-                    }
-				}
-			}
-		}
-
-		private void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txnImpl)
-		{
-			Condition.CheckArgument(messageId is TopicMessageId);
-			var topicMessageId = (TopicMessageId) messageId;
-
-			if(State.ConnectionState != HandlerState.State.Ready)
-			{
-                Sender.Tell(new AskResponse(new PulsarClientException("Consumer already closed")));
-			}
-
-			if(ackType == AckType.Cumulative)
-			{
-				var consumer= _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-				if(consumer != null)
-				{
-					var innerId = topicMessageId.InnerMessageId;
-					consumer.Tell(new AcknowledgeCumulativeMessageId(innerId), Sender);
-				}
-				else
-				{
-					Sender.Tell(new AskResponse(new PulsarClientException.NotConnectedException()));
-				}
-			}
-			else
-			{
-				var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-
-				var innerId = topicMessageId.InnerMessageId;
-				consumer.Tell(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl), Sender);
-				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
-			}
-		}
-
-		private void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
-		{
-			if(ackType == AckType.Cumulative)
-			{
-				messageIdList.ForEach(messageId => DoAcknowledge(messageId, ackType, properties, txn));
-			}
-			else
-			{
-				if(State.ConnectionState != HandlerState.State.Ready)
-				{
-					throw new PulsarClientException("Consumer already closed");
-				}
-				IDictionary<string, IList<IMessageId>> topicToMessageIdMap = new Dictionary<string, IList<IMessageId>>();
-				foreach(var messageId in messageIdList)
-				{
-					if(!(messageId is TopicMessageId))
-					{
-						throw new ArgumentException("messageId is not instance of TopicMessageIdImpl");
-					}
-					var topicMessageId = (TopicMessageId) messageId;
-					if(!topicToMessageIdMap.ContainsKey(topicMessageId.TopicPartitionName)) 
-						topicToMessageIdMap.Add(topicMessageId.TopicPartitionName, new List<IMessageId>());
-
-					topicToMessageIdMap.GetValueOrNull(topicMessageId.TopicPartitionName)
-						.Add(topicMessageId.InnerMessageId);
-				}
-				topicToMessageIdMap.ForEach(t =>
-				{
-					var consumer = _consumers.GetValueOrNull(t.Key);
-					consumer.Tell(new AcknowledgeWithTxnMessages(t.Value, properties, txn));
-					messageIdList.ForEach(x => _unAckedMessageTracker.Tell(new Remove(x)));
-				});
-			}
-		}
-
-		private void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
-		{
-			var messageId = message.MessageId;
-			Condition.CheckArgument(messageId is TopicMessageId);
-			var topicMessageId = (TopicMessageId) messageId;
-			if(State.ConnectionState != HandlerState.State.Ready)
-			{
-				Sender.Tell(new AskResponse(new PulsarClientException("Consumer already closed")));
-                return;
-			}
-
-			if(ackType == AckType.Cumulative)
-			{
-				var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-				if(consumer != null)
-				{
-					consumer.Tell(new ReconsumeLaterCumulative<T>(message, delayTime), Sender);
-				}
-				else
-				{
-                    Sender.Tell(new AskResponse(new PulsarClientException.NotConnectedException()));
-				}
-			}
-			else
-			{
-				var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-				consumer.Tell(new ReconsumeLaterMessage<T>(message, delayTime), Sender);
-				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
-			}
-		}
-
-		internal override void NegativeAcknowledge(IMessageId messageId)
-		{
-			Condition.CheckArgument(messageId is TopicMessageId);
-			var topicMessageId = (TopicMessageId) messageId;
-
-			var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-			consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
-		}
-        protected override void PostStop()
+        protected internal override void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
-			Close();
-            base.PostStop();
+            if (ackType == AckType.Cumulative)
+            {
+                messageIdList.ForEach(messageId => DoAcknowledge(messageId, ackType, properties, txn));
+            }
+            else
+            {
+                if (State.ConnectionState != HandlerState.State.Ready)
+                {
+                    throw new PulsarClientException("Consumer already closed");
+                }
+                IDictionary<string, IList<IMessageId>> topicToMessageIdMap = new Dictionary<string, IList<IMessageId>>();
+                foreach (var messageId in messageIdList)
+                {
+                    if (!(messageId is TopicMessageId))
+                    {
+                        throw new ArgumentException("messageId is not instance of TopicMessageIdImpl");
+                    }
+                    var topicMessageId = (TopicMessageId)messageId;
+                    if (!topicToMessageIdMap.ContainsKey(topicMessageId.TopicPartitionName))
+                        topicToMessageIdMap.Add(topicMessageId.TopicPartitionName, new List<IMessageId>());
+
+                    topicToMessageIdMap.GetValueOrNull(topicMessageId.TopicPartitionName)
+                        .Add(topicMessageId.InnerMessageId);
+                }
+                topicToMessageIdMap.ForEach(t =>
+                {
+                    var consumer = _consumers.GetValueOrNull(t.Key);
+                    consumer.Tell(new AcknowledgeWithTxnMessages(t.Value, properties, txn));
+                    messageIdList.ForEach(x => _unAckedMessageTracker.Tell(new Remove(x)));
+                });
+            }
+        }
+
+        protected internal override TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, string> properties, TimeSpan delayTime)
+        {
+            var messageId = message.MessageId;
+            Condition.CheckArgument(messageId is TopicMessageId);
+            var topicMessageId = (TopicMessageId)messageId;
+            if (State.ConnectionState != HandlerState.State.Ready)
+            {
+                throw new PulsarClientException("Consumer already closed");
+
+            }
+
+            if (ackType == AckType.Cumulative)
+            {
+                var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+                if (consumer != null)
+                {
+                    consumer.Tell(new ReconsumeLaterCumulative<T>(message, delayTime), Sender);
+                }
+                else
+                {
+                    throw new PulsarClientException.NotConnectedException();
+                }
+            }
+            else
+            {
+                var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+                consumer.Tell(new ReconsumeLaterMessage<T>(message, delayTime), Sender);
+                _unAckedMessageTracker.Tell(new Remove(topicMessageId));
+            }
+            return null;
+        }
+
+        internal override void NegativeAcknowledge(IMessageId messageId)
+        {
+            Condition.CheckArgument(messageId is TopicMessageId);
+            var topicMessageId = (TopicMessageId)messageId;
+
+            var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
+        }
+        protected internal new void NegativeAcknowledge(IMessage<T> message)
+        {
+            var messageId = message.MessageId;
+            Condition.CheckArgument(messageId is TopicMessageId);
+            var topicMessageId = (TopicMessageId)messageId;
+
+            var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
+        }
+        
+        internal override void Unsubscribe()
+        {
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            {
+                throw new AlreadyClosedException("AlreadyClosedException: Consumer was already closed");
+            }
+
+            State.ConnectionState = HandlerState.State.Closing;
+            var futureList = _consumers.Values.Select(async consumer => await consumer.Ask<AskResponse>(Messages.Consumer.Unsubscribe.Instance)).ToList();
+            try
+            {
+                // Wait for all the tasks to finish.
+                Task.WaitAll(futureList.ToArray());
+
+                State.ConnectionState = HandlerState.State.Closed;
+                CleanupMultiConsumer();
+                _log.Error($"[{Topic}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer");
+                FailPendingReceive();
+            }
+            catch (Exception e)
+            {
+                State.ConnectionState = HandlerState.State.Failed;
+                _log.Error($"[{Topic}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {e.InnerException}");
+                throw e.InnerException;
+            }
+        }
+        // un-subscribe a given topic
+        private async ValueTask Unsubscribe(string topicName)
+        {
+            Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
+
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            {
+                throw new AlreadyClosedException("Topics Consumer was already closed");
+            }
+
+            if (_partitionsAutoUpdateTimeout != null)
+            {
+                _partitionsAutoUpdateTimeout.Cancel();
+                _partitionsAutoUpdateTimeout = null;
+            }
+
+            var topicPartName = TopicName.Get(topicName).PartitionedTopicName;
+
+            var consumersToUnsub = new List<IActorRef>();
+            foreach (var c in _consumers.Values)
+            {
+                var consumerTopicName = await c.Ask<string>(GetTopic.Instance);
+                if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
+                    consumersToUnsub.Add(c);
+            }
+            var futureList = consumersToUnsub.Select(async consumer => await consumer.Ask<AskResponse>(Messages.Consumer.Unsubscribe.Instance)).ToList();
+            try
+            {
+                Task.WaitAll(futureList.ToArray());
+                foreach (var consumer in consumersToUnsub)
+                {
+                    var response = await consumer.GracefulStop(TimeSpan.FromSeconds(1));
+                    var t = await consumer.Ask<string>(GetTopic.Instance);
+                    _consumers.TryRemove(t, out _);
+                    _pausedConsumers = new Queue<IActorRef>(_pausedConsumers.Where(x => x != consumer));
+                    --AllTopicPartitionsNumber;
+                }
+                RemoveTopic(topicName);
+                if (_unAckedMessageTracker.Path.Name == "UnAckedTopicMessageTracker")
+                    _unAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
+
+                _log.Info($"[{topicName}] [{Subscription}] [{ConsumerName}] Unsubscribed Topics Consumer, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
+            }
+            catch (Exception ex)
+            {
+                State.ConnectionState = HandlerState.State.Failed;
+                _log.Error($"[{topicName}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {ex}");
+                throw;   
+            }
+        }
+    
+        private void CleanupMultiConsumer()
+        {
+            if (_unAckedMessageTracker != null)
+            {
+                _unAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(500));
+            }
+            if (_partitionsAutoUpdateTimeout != null)
+            {
+                _partitionsAutoUpdateTimeout.Cancel();
+                _partitionsAutoUpdateTimeout = null;
+            }
+            _client.Tell(new CleanupConsumer(Context.Self));
         }
         internal void Close()
 		{
@@ -802,7 +1163,11 @@ namespace SharpPulsar
 				_partitionsAutoUpdateTimeout.Cancel();
 				_partitionsAutoUpdateTimeout = null;
 			}
-			_consumers.Values.ForEach(c => c.GracefulStop(TimeSpan.FromMilliseconds(100)));
+			_consumers.Values.ForEach(async c =>
+            {
+                _ = await c.Ask<AskResponse>(Messages.Requests.Close.Instance).ConfigureAwait(false);
+                await c.GracefulStop(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            });
 			State.ConnectionState = HandlerState.State.Closed;
 			_unAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(100));
 			_log.Info($"[{Topic}] [{Subscription}] Closed Topics Consumer");
@@ -842,20 +1207,31 @@ namespace SharpPulsar
 			}
 		}
 
-		private void RedeliverUnacknowledged()
-		{
-			_consumers.Values.ForEach(consumer =>
-			{
-				consumer.Tell(RedeliverUnacknowledgedMessages.Instance);
-				consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
-			});
-			IncomingMessages.Empty();
-			IncomingMessagesSize =  0;
-			_unAckedMessageTracker.Tell(Clear.Instance);
-			ResumeReceivingFromPausedConsumersIfNeeded();
-		}
+        protected internal override void RedeliverUnacknowledgedMessages()
+        {
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(()=>
+            {
+                ConsumerEpoch++;
+                _consumers.Values.ForEach(consumer =>
+                {
+                    consumer.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
+                    consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
+                });
+                ClearIncomingMessages();
+                _unAckedMessageTracker.Tell(Clear.Instance);
+            });*/
+            ConsumerEpoch++;
+            _consumers.Values.ForEach(consumer =>
+            {
+                consumer.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
+                consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
+            });
+            ClearIncomingMessages();
+            _unAckedMessageTracker.Tell(Clear.Instance);
+            ResumeReceivingFromPausedConsumersIfNeeded();
+        }
 
-		protected internal override async Task RedeliverUnacknowledged(ISet<IMessageId> messageIds)
+        protected internal override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
 		{
 			if(messageIds.Count == 0)
 			{
@@ -866,19 +1242,27 @@ namespace SharpPulsar
 
 			if(Conf.SubscriptionType != CommandSubscribe.SubType.Shared)
 			{
-				// We cannot redeliver single messages if subscription type is not Shared
-				RedeliverUnacknowledged();
-				return;
+                // We cannot redeliver single messages if subscription type is not Shared
+                RedeliverUnacknowledgedMessages();
+                return;
 			}
 			RemoveExpiredMessagesFromQueue(messageIds);
 			messageIds.Select(messageId => (TopicMessageId)messageId).Collect()
 				.ForEach(t => _consumers.GetValueOrNull(t.First().TopicPartitionName)
 				.Tell(new RedeliverUnacknowledgedMessageIds(t.Select(mid => mid.InnerMessageId).ToHashSet())));
 			ResumeReceivingFromPausedConsumersIfNeeded();
-            await Task.CompletedTask;
 		}
+        protected internal override void UpdateAutoScaleReceiverQueueHint()
+        {
+            ScaleReceiverQueueHint.GetAndSet(IncomingMessages.Count >= CurrentReceiverQueueSize);
+        }
 
-		internal override async ValueTask Seek(IMessageId messageId)
+        protected internal override void CompleteOpBatchReceive(OpBatchReceive op)
+        {
+            NotifyPendingBatchReceivedCallBack(op);
+            ResumeReceivingFromPausedConsumersIfNeeded();
+        }
+        internal override async ValueTask Seek(IMessageId messageId)
 		{
             var targetMessageId = MessageId.ConvertToMessageId(messageId);
             if (targetMessageId == null || IsIllegalMultiTopicsMessageId(messageId))
@@ -888,8 +1272,7 @@ namespace SharpPulsar
             _consumers.Values.ForEach(c => c.Tell(new SeekMessageId(targetMessageId)));
 
             _unAckedMessageTracker.Tell(Clear.Instance);
-            IncomingMessages.Empty();
-            IncomingMessagesSize = 0;
+            ClearIncomingMessages();
             await Task.CompletedTask;
 		}
 
@@ -923,7 +1306,11 @@ namespace SharpPulsar
 		}
 		private async ValueTask<bool> HasMessageAvailable()
 		{
-			foreach (var c in _consumers.Values)
+            if (NumMessagesInQueue() > 0)
+            {
+                return true;
+            }
+            foreach (var c in _consumers.Values)
 			{
                 try
                 {
@@ -995,7 +1382,7 @@ namespace SharpPulsar
                 {
                     foreach (var m in messageList)
                     {
-                        IncomingMessagesSize -= m.Data.Length;
+                        DecreaseIncomingMessageSize(m);
                         var messageId = m.MessageId;
                         if (!messageIds.Contains(messageId))
                         {
@@ -1046,7 +1433,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Subscribe to topic {topicName} metadata.partitions: {numPartitions}");
 			}
-            List<Task> futureList = new List<Task>();
+            var futureList = new List<Task>();
             PulsarClientException lastError = null;
             if (numPartitions != PartitionedTopicMetadata.NonPartitioned)
 			{
@@ -1071,7 +1458,7 @@ namespace SharpPulsar
                     {
                         var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
                         var partitionName = TopicName.Get(topicName).GetPartition(i).ToString();
-                        var newConsumer = await CreateConsumer(consumerId, partitionName, configurationData, i, schema, createIfDoesNotExist).Task;
+                        var newConsumer = await CreateInternalConsumer(consumerId, partitionName, configurationData, i, schema, createIfDoesNotExist).Task;
                         if (_paused)
                         {
                             newConsumer.Tell(Messages.Consumer.Pause.Instance);
@@ -1098,7 +1485,7 @@ namespace SharpPulsar
                 try
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
-                    var newConsumer = await CreateConsumer(consumerId, topicName, _internalConfig, -1, schema, createIfDoesNotExist).Task;
+                    var newConsumer = await CreateInternalConsumer(consumerId, topicName, _internalConfig, -1, schema, createIfDoesNotExist).Task;
                     _consumers.TryAdd(topicName, newConsumer);
                 }
                 catch (PulsarClientException ex)
@@ -1128,17 +1515,17 @@ namespace SharpPulsar
             subscribeResult.TrySetResult(null);
         }
 
-        private TaskCompletionSource<IActorRef> CreateConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
+        private TaskCompletionSource<IActorRef> CreateInternalConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
         {
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            if (conf.ReceiverQueueSize == 0)
-			{                
-				_context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, _startMessageId, schema, createIfDoesNotExist, _clientConfiguration, tcs)));
-			}
-            else
-			   _context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
+            var internalBatchReceivePolicy = new BatchReceivePolicy.Builder().MaxNumMessages(Math.Max(conf.ReceiverQueueSize / 2, 1)).MaxNumBytes(-1).Timeout((int)TimeSpan.FromSeconds(1).TotalMilliseconds).Build();
+            conf.BatchReceivePolicy = internalBatchReceivePolicy;
             
+            if (conf.ReceiverQueueSize == 0)
+                _context.ActorOf(ZeroQueueConsumer<T>.Prop(_client, consumerId, _stateActor, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
+            else
+                _context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, Listener != null, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
+
             return tcs;
 		}
 		// handling failure during subscribe new topic, unsubscribe success created partitions
@@ -1170,77 +1557,15 @@ namespace SharpPulsar
 				}
 			}
 		}
-
-		// un-subscribe a given topic
-		private void Unsubscribe(string topicName)
-		{
-			Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
-
-			if(State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-			{
-				Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed")));
-			}
-
-			if(_partitionsAutoUpdateTimeout != null)
-			{
-				_partitionsAutoUpdateTimeout.Cancel();
-				_partitionsAutoUpdateTimeout = null;
-			}
-
-			var topicPartName = TopicName.Get(topicName).PartitionedTopicName;
-
-			var recFromTops = new List<IActorRef>();
-			foreach (var c in _consumers.Values)
-			{
-				var consumerTopicName = c.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
-				if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
-				{
-					recFromTops.Add(c);
-				}
-			}
-			var unsubed = true;
-			ClientExceptions except = null;
-			foreach(var co in recFromTops)
-            {
-				var response = co.Ask(Messages.Consumer.Unsubscribe.Instance).GetAwaiter().GetResult();
-				if (response == null)
-				{
-					var t = co.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
-					_consumers.TryRemove(t, out _);
-					_pausedConsumers = new Queue<IActorRef>(_pausedConsumers.Where(x => x != co));
-					--AllTopicPartitionsNumber;
-				}
-				else
-                {
-					unsubed = false;
-					except = response as ClientExceptions;
-				}
-
-				
-			}
-			if(unsubed)
-			{
-				RemoveTopic(topicName);
-				_unAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
-				_log.Info($"[{topicName}] [{Subscription}] [{ConsumerName}] Unsubscribed Topics Consumer, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
-
-			}
-            else
-            {
-				State.ConnectionState = HandlerState.State.Failed;
-				_log.Error($"[{topicName}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {except?.Exception}");
-                
-			}
-		}
-
-		// Remove a consumer for a topic
-		private async ValueTask RemoveConsumer(string topicName)
+        
+        // Remove a consumer for a topic
+        private async ValueTask RemoveConsumer(string topicName)
 		{
 			Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
 
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
-				throw new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed");
+				throw new AlreadyClosedException("Topics Consumer was already closed");
 			}
 
 			var topicPartName = TopicName.Get(topicName).PartitionedTopicName;
@@ -1264,40 +1589,14 @@ namespace SharpPulsar
 				--AllTopicPartitionsNumber;
 			}
 			RemoveTopic(topicName);
-			_unAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
+
+            if(_unAckedMessageTracker.Path.Name == "UnAckedTopicMessageTracker")
+			     _unAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
+
 			_log.Info($"[{topicName}] [{Subscription}] [{ConsumerName}] Removed Topics Consumer, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
 
 		}
-        // Check topics are valid.
-        // - each topic is valid,
-        // - topic names are unique.
-        private bool TopicNamesValid(List<string> topics)
-        {
-            if(topics == null && topics.Count == 0)
-                throw new ArgumentException("topics should contain more than 1 topic");
-
-            var result = topics.Where(topic => !TopicName.IsValid(topic)).FirstOrDefault();
-
-            if (result != null && result.Count() > 0)
-            {
-
-                _log.Warning($"Received invalid topic name: {result[0]}");
-                return false;
-            }
-
-            // check topic names are unique
-            var set = new HashSet<string>(topics);
-            if (set.Count == topics.Count)
-            {
-                return true;
-            }
-            else
-            {
-                _log.Warning($"Topic names not unique. unique/all : {set.Count}/{topics.Count}");
-                return false;
-            }
-        }
-
+        
         // get topics name
         internal virtual IList<string> Topics
 		{
@@ -1344,9 +1643,8 @@ namespace SharpPulsar
 		}
 
 		// subscribe increased partitions for a given topic
-		private TaskCompletionSource<IActorRef> SubscribeIncreasedTopicPartitions(string topic)
-		{
-            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+		private void SubscribeIncreasedTopicPartitions(string topic)
+		{;
             var oldPartitionNumber = PartitionedTopics.GetValueOrNull(topic);
             var topicName = TopicName.Get(topic);
             _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName))
@@ -1357,7 +1655,7 @@ namespace SharpPulsar
 
                     if ( result.Failed)
                     {
-                        tcs.TrySetException(result.Exception);
+                        //tcs.TrySetException(result.Exception);
                         return;
                     }
 
@@ -1370,7 +1668,7 @@ namespace SharpPulsar
                     }
                     if (oldPartitionNumber == currentPartitionNumber)
                     {
-                        tcs.TrySetResult(null);
+                        //tcs.TrySetResult(null);
                         // topic partition number not changed
                         return;
                     }
@@ -1391,7 +1689,7 @@ namespace SharpPulsar
                                 _consumers.TryRemove(e.Key, out _);
                             }
                         }
-                        await Task.WhenAll(futures.ToArray()).ContinueWith(_=> tcs.TrySetResult(null));
+                        await Task.WhenAll(futures.ToArray());
                     }
                     else if (oldPartitionNumber < currentPartitionNumber)
                     {
@@ -1405,7 +1703,7 @@ namespace SharpPulsar
                             var consumerTcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                             try
                             {
-                                _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, partitionIndex, true, null, Schema, true, _clientConfiguration, consumerTcs)));
+                                _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, partitionIndex, true, Listener != null, null, Schema, true, _clientConfiguration, consumerTcs)));
                                 var newConsumer = await consumerTcs.Task;
                                 if (_paused)
                                 {
@@ -1422,7 +1720,7 @@ namespace SharpPulsar
                             {
                                 _log.Warning($"[{Topic}] Failed to subscribe {topicName} partition: {oldPartitionNumber} - {currentPartitionNumber} : {ex}");
                             }
-                            tcs.TrySetResult(null);
+                            //tcs.TrySetResult(null);
                         }
                         var newConsumerList = newPartitions.Select(partitionTopic => _consumers.GetValueOrNull(partitionTopic)).ToList();
                         StartReceivingMessages(newConsumerList);
@@ -1431,11 +1729,11 @@ namespace SharpPulsar
                     else
                     {
                         _log.Error($"[{topicName}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-                        tcs.TrySetException(new PulsarClientException.NotSupportedException("not support shrink topic partitions"));
+                        //tcs.TrySetException(new PulsarClientException.NotSupportedException("not support shrink topic partitions"));
                     }
 
                 });
-            return tcs;
+            //return tcs;
 		}
 		private async ValueTask<IMessageId> LastMessageId()
 		{

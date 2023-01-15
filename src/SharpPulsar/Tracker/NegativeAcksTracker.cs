@@ -29,6 +29,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using System.Threading.Tasks;
 using Akka.Event;
+using System.Threading;
 
 namespace SharpPulsar.Tracker
 {
@@ -42,8 +43,8 @@ namespace SharpPulsar.Tracker
         private readonly IActorRef _consumer;
         private readonly IActorRef _unack;
         private readonly IActorRef _self;
-        private readonly ILoggingAdapter _log;
-
+        private readonly ILoggingAdapter _log; 
+        private readonly IRedeliveryBackoff _negativeAckRedeliveryBackoff;
 
         private ICancelable _timeout;
 
@@ -59,19 +60,55 @@ namespace SharpPulsar.Tracker
             _self = Self;
             _consumer = consumer;
 			_nackDelayMs = conf.NegativeAckRedeliveryDelay > MinNackDelayMs? conf.NegativeAckRedeliveryDelay: MinNackDelayMs;
-			_timerIntervalMs = _nackDelayMs.Divide(3);
+            _negativeAckRedeliveryBackoff = conf.NegativeAckRedeliveryBackoff;
+            if (_negativeAckRedeliveryBackoff != null)
+            {
+                _timerIntervalMs = TimeSpan.FromMilliseconds(Math.Max(TimeSpan.FromMilliseconds(_negativeAckRedeliveryBackoff.Next(0)).TotalMilliseconds, MinNackDelayMs.TotalMilliseconds) / 3);
+            }
+            else
+            {
+                _timerIntervalMs = _nackDelayMs.Divide(3);
+            }            
             _unack = unack;
             Ready();
+
             //_timeout = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), TimeSpan.FromMilliseconds(_timerIntervalMs), _self, Trigger.Instance, ActorRefs.NoSender);
             _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
         }
         private void Ready()
         {
-            Receive<Add>(a => Add(a.MessageId));
+            Receive<Add>(a =>
+            {
+                if (a.MessageId != null && a.RedeliveryCount > 0)
+                    Add(a.MessageId);
+                else
+                    Add(a.MessageId);
+            });
+            Receive<Add<T>>(a =>
+            {
+                if (a.Message != null)
+                    Add(a.Message);
+            });
             ReceiveAsync<Trigger>(async t => 
             {
                await TriggerRedelivery();
             });
+        }
+       
+        protected override void PostStop()
+        {
+            if (_timeout != null)
+            {
+                _timeout.Cancel();
+                _timeout = null;
+            }
+
+            if (_nackedMessages != null)
+            {
+                _nackedMessages.Clear();
+                _nackedMessages = null;
+            }
+            base.PostStop();
         }
         public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef consumer, IActorRef unack)
         {
@@ -108,11 +145,26 @@ namespace SharpPulsar.Tracker
 
             _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
         }
-
         private void Add(IMessageId messageId)
         {
-            if (messageId is BatchMessageId batchMessageId)
+            Add(messageId, 0);
+        }
+
+        private void Add(IMessage<T> message)
+        {
+            Add(message.MessageId, message.RedeliveryCount);
+        }
+        private void Add(IMessageId messageId, int redeliveryCount)
+        {
+            if (messageId is TopicMessageId)
             {
+                var topicMessageId = (TopicMessageId)messageId;
+                messageId = topicMessageId.InnerMessageId;
+            }
+
+            if (messageId is BatchMessageId)
+            {
+                var batchMessageId = (BatchMessageId)messageId;
                 messageId = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
             }
 
@@ -120,7 +172,18 @@ namespace SharpPulsar.Tracker
             {
                 _nackedMessages = new Dictionary<IMessageId, long>();
             }
-            _nackedMessages[messageId] = DateTimeHelper.CurrentUnixTimeMillis() + (long)_nackDelayMs.TotalMilliseconds;
+
+            long backoffNs;
+            if (_negativeAckRedeliveryBackoff != null)
+            {
+                backoffNs = (long)TimeSpan.FromMilliseconds(_negativeAckRedeliveryBackoff.Next(redeliveryCount)).TotalMilliseconds;
+            }
+            else
+            {
+                backoffNs = (long)_nackDelayMs.TotalMilliseconds;
+            }
+
+            _nackedMessages[messageId] = DateTimeHelper.CurrentUnixTimeMillis() + backoffNs;
 
             if (_timeout == null)
             {
@@ -129,6 +192,8 @@ namespace SharpPulsar.Tracker
                 _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
             }
         }
+
+        
 	}
     public sealed class OnNegativeAcksSend
     {

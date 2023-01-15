@@ -14,9 +14,9 @@ using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Sql.Client;
-using SharpPulsar.Sql.Message;
-using SharpPulsar.User;
+using SharpPulsar.TransactionImpl;
+using SharpPulsar.Trino;
+using SharpPulsar.Trino.Message;
 using Spectre.Console;
 
 using Tutorials.PulsarTestContainer;
@@ -29,12 +29,13 @@ namespace Tutorials
     {
         //static string myTopic = $"persistent://public/default/mytopic-2";
         private static TestContainer _container;
-        private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.10.0", 6650);
+        //private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.10.0", 6650);
+        private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.11.0", 6650);
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         private static PulsarClient _client;
         static async Task Main(string[] args)
         {
-            await StartContainer();
+            //await StartContainer();
             var url = "pulsar://127.0.0.1:6650";
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");
@@ -67,9 +68,9 @@ namespace Tutorials
             clientConfig.EnableTransaction(true);
 
             //pulsar actor system
-            var pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
+            var pulsarSystem = PulsarSystem.GetInstance(actorSystemName: "program");
 
-            var pulsarClient = pulsarSystem.NewClient();
+            var pulsarClient = await pulsarSystem.NewClient(clientConfig);
             _client = pulsarClient;
 
             while (cmd.ToLower() != "exit")
@@ -101,6 +102,8 @@ namespace Tutorials
                 await TxnRedeliverUnack(pulsarClient);
             else if (cmd.Equals("sql", StringComparison.OrdinalIgnoreCase))
                 await TestQuerySql();
+            else if (cmd.Equals("live", StringComparison.OrdinalIgnoreCase))
+                await LiveProduceConsumer(pulsarClient);
             else
                 await ProduceConsumer(pulsarClient);
         }
@@ -163,6 +166,55 @@ namespace Tutorials
                 }
             });
             AnsiConsole.MarkupLine("Press [yellow]CTRL+C[/] to exit");
+        }
+        private static async ValueTask LiveProduceConsumer(PulsarClient pulsarClient)
+        {
+            var consumer = await pulsarClient
+                .NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"sub-{Guid.NewGuid()}")
+                .IsAckReceiptEnabled(true));
+
+            var producer = await pulsarClient
+                .NewProducerAsync(new ProducerConfigBuilder<byte[]>()
+                .Topic(myTopic));
+
+            AnsiConsole.MarkupLine("Press [yellow]CTRL+C[/] to exit");
+
+            var table = new Table().Expand().BorderColor(Color.Grey);
+            table.AddColumn("[yellow]Messageid[/]");
+            table.AddColumn("[yellow]Producer Name[/]");
+            table.AddColumn("[yellow]Topic[/]");
+            table.AddColumn("[yellow]Message[/]");
+            await AnsiConsole.Live(table)
+            .AutoClear(true)
+            .Overflow(VerticalOverflow.Ellipsis)
+            .Cropping(VerticalOverflowCropping.Bottom)
+            .StartAsync(async ctx =>
+            {
+
+                while (true)
+                {
+                    var data = Encoding.UTF8.GetBytes($"living-{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}");
+                    await producer.NewMessage().Value(data).SendAsync();
+                    await Task.Delay(500);
+                    var message = (Message<byte[]>)await consumer.ReceiveAsync();
+                    if (message != null)
+                    {
+                        if (table.Rows.Count > 45)
+                        {
+                            // Remove the first one
+                            table.Rows.RemoveAt(0);
+                        }
+                        await consumer.AcknowledgeAsync(message);
+                        var res = Encoding.UTF8.GetString(message.Data);
+                        table.AddRow(message.GetMessageId().ToString(), message.ProducerName, message.Topic, res);
+                        ctx.Refresh();
+                        await Task.Delay(100);
+                    }
+                }
+            });
         }
         private static async ValueTask BatchProduceConsumer(PulsarClient pulsarClient)
         {

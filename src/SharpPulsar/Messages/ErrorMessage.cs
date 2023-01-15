@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages
 {
-    public class ErrorMessage
+    public readonly record struct ErrorMessage
     {
         public ErrorMessage(Exception exception)
         {

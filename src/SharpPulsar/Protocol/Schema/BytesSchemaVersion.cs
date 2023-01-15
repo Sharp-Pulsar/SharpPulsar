@@ -26,7 +26,7 @@ namespace SharpPulsar.Protocol.Schema
 	/// <summary>
 	/// Bytes schema version.
 	/// </summary>
-	public class BytesSchemaVersion : SchemaVersion, IComparable<BytesSchemaVersion>
+	public class BytesSchemaVersion : ISchemaVersion, IComparable<BytesSchemaVersion>
 	{
 
 		private static readonly char[] HexCharsUpper = new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};

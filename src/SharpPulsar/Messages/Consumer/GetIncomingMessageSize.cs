@@ -1,11 +1,11 @@
 ﻿
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class GetIncomingMessageSize
+    public readonly record struct GetIncomingMessageSize
     {
         public static GetIncomingMessageSize Instance = new GetIncomingMessageSize();
     }
-    public sealed class GetIncomingMessageCount
+    public readonly record struct GetIncomingMessageCount
     {
         public static GetIncomingMessageCount Instance = new GetIncomingMessageCount();
     }

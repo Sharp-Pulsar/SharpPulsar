@@ -21,6 +21,7 @@ using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.SocketImpl;
 using System.Threading.Tasks;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace SharpPulsar
 {
@@ -35,17 +36,17 @@ namespace SharpPulsar
 		private readonly Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)>();
 		// LookupRequests that waiting in client side.
 		private readonly LinkedList<KeyValuePair<long, KeyValuePair<ReadOnlySequence<byte>, LookupDataResult>>> _waitingLookupRequests;
-
-		private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
-
-		private readonly Dictionary<long, IActorRef> _consumers = new Dictionary<long, IActorRef>();
+        private readonly Commands _commands = new Commands();
+        private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
+        private readonly ConcurrentDictionary<long, IActorRef> _watcher = new ConcurrentDictionary<long, IActorRef>();
+        private readonly Dictionary<long, IActorRef> _consumers = new Dictionary<long, IActorRef>();
 		private readonly Dictionary<long, IActorRef> _transactionMetaStoreHandlers = new Dictionary<long, IActorRef>();
 
 		private readonly ConcurrentQueue<RequestTime> _requestTimeoutQueue = new ConcurrentQueue<RequestTime>();
+        private readonly Dictionary<long, IActorRef> _topicListWatchers = new Dictionary<long, IActorRef>();
+        private  int _numberOfRejectRequests = 0;
 
-		private volatile int _numberOfRejectRequests = 0;
-
-		private static int _maxMessageSize = Commands.DefaultMaxMessageSize;
+		private int _maxMessageSize;
 
 		private readonly int _maxNumberOfRejectedRequestPerConnection;
 		private readonly int _rejectedRequestResetTimeSec = 60;
@@ -55,10 +56,10 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 
 		private readonly string _proxyToTargetBrokerAddress;
-		private readonly ReadOnlySequence<byte> _pong = Commands.NewPong();
+		private readonly ReadOnlySequence<byte> _pong;
 		private readonly List<byte> _pendingReceive;
-
-		private readonly string _remoteHostName;
+        private bool _supportsTopicWatchers;
+        private readonly string _remoteHostName;
 		private readonly bool _isTlsHostnameVerificationEnable;
 		private readonly ClientConfigurationData _clientConfigurationData;
         private readonly TaskCompletionSource<ConnectionOpened> _connectionFuture;
@@ -69,15 +70,20 @@ namespace SharpPulsar
 
 		private readonly ICancelable _sendPing;
 		private readonly IActorRef _parent;
+        private readonly IScheduler _scheduler;
+        
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker) : this(conf, endPoint, Commands.CurrentProtocolVersion, connectionFuture, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker) : this(conf, endPoint, new Commands().CurrentProtocolVersion, connectionFuture, targetBroker)
 		{
 		}
 
 		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker)
 		{
+            _scheduler = Context.System.Scheduler;
+            _pong = _commands.NewPong();
+            _maxMessageSize = _commands.DefaultMaxMessageSize;
             _connectionFuture = connectionFuture;
 			_parent = Context.Parent;
 			_pendingReceive = new List<byte>();
@@ -102,8 +108,9 @@ namespace SharpPulsar
             {
                 await Connect();
                 _socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
-            });           
-
+            });
+            //Connect();
+            //_socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
             Receives();
         }
         private async ValueTask Connect()
@@ -111,7 +118,7 @@ namespace SharpPulsar
             try
             {
                 await _socketClient.Connect();
-                _timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
+                _timeoutTask = _scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
 
                 //_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
 
@@ -169,10 +176,23 @@ namespace SharpPulsar
                     case "SendGetOrCreateSchema":
                         await SendGetOrCreateSchema(p.Bytes, p.RequestId);
                         break;
+                    case "NewCloseConsumer":
+                    case "NewCloseProducer":
+                        try
+                        {
+                            await _socketClient.SendMessage(p.Bytes);
+                            Sender.Tell(new AskResponse());
+                        }
+                        catch (Exception ex)
+                        {
+                            Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                        }
+                        break;
                     case "NewAddSubscriptionToTxn":
                     case "NewAddPartitionToTxn":
                     case "NewTxn":
                     case "NewEndTxn":
+                    case "NewPartitionMetadataRequest":
                     default:
                         await SendRequest(p.Bytes, p.RequestId);
                         break;
@@ -216,7 +236,9 @@ namespace SharpPulsar
             });
             Receive<RemoteEndpointProtocolVersion>(r => {
                 Sender.Tell(new RemoteEndpointProtocolVersionResponse(_protocolVersion));
-            });
+            });//RemoveTopicListWatcher
+            Receive<RegisterTopicListWatcher>(w => RegisterTopicListWatcher(w.WatcherId, w.Watcher));
+            Receive<RemoveTopicListWatcher>(w => RemoveTopicListWatcher(w.WatcherId));
         }
 		private void OnDisconnected()
 		{
@@ -234,14 +256,14 @@ namespace SharpPulsar
 			_producers.ForEach(p => p.Value.Tell(new ConnectionClosed(_self)));
 			_consumers.ForEach(c => c.Value.Tell(new ConnectionClosed(_self)));
 			_transactionMetaStoreHandlers.ForEach(t => t.Value.Tell(new ConnectionClosed(_self)));
-
-			_pendingRequests.Clear();
+            _topicListWatchers.ForEach(watcher => watcher.Value.Tell(new ConnectionClosed(_self)));
+            _pendingRequests.Clear();
 			_waitingLookupRequests.Clear();
 
 			_producers.Clear();
 			_consumers.Clear();
-
-			_timeoutTask?.Cancel(true);
+            _topicListWatchers.Clear();
+            _timeoutTask?.Cancel(true);
 		}
 
         private async Task NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
@@ -255,7 +277,44 @@ namespace SharpPulsar
             _socketClient.Dispose();
 			base.PostStop();
 		}
-		private void HandleConnected(CommandConnected connected)
+
+
+        private void HandleCommandWatchTopicListSuccess(CommandWatchTopicListSuccess commandWatchTopicListSuccess)
+        {
+            Condition.CheckArgument(_state == State.Ready);
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[ctx] Received watchTopicListSuccess response from server: {commandWatchTopicListSuccess.RequestId}");
+            }
+            var requestId = (long)commandWatchTopicListSuccess.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new CommandWatchTopicListSuccessResponse(commandWatchTopicListSuccess), _self);
+            }
+            else
+            {
+                _log.Warning($"Received unknown request id from server: {commandWatchTopicListSuccess.RequestId}");
+            }
+        }
+
+        private void HandleCommandWatchTopicUpdate(CommandWatchTopicUpdate commandWatchTopicUpdate)
+        {
+            Condition.CheckArgument(_state == State.Ready);
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[ctx] Received watchTopicUpdate command from server: {commandWatchTopicUpdate.WatcherId}");
+            }
+            var watcherId = (long)commandWatchTopicUpdate.WatcherId;
+            if (_watcher.TryGetValue(watcherId, out var watcher))
+                watcher.Tell(new CommandWatchTopicUpdateResponse(commandWatchTopicUpdate));            
+            else
+            {
+                _log.Warning($"[ctx] Received topic list update for unknown watcher from server: {watcherId}");
+            }
+        }
+
+        private void HandleConnected(CommandConnected connected)
 		{
 			Condition.CheckArgument(_state == State.SentConnectFrame || _state == State.Connecting);
 			if (connected.MaxMessageSize > 0)
@@ -270,13 +329,24 @@ namespace SharpPulsar
 			{
 				_log.Debug("Connection is ready");
 			}
-			// set remote protocol version to the correct version before we complete the connection future
-			_protocolVersion = connected.ProtocolVersion;
+            // set remote protocol version to the correct version before we complete the connection future
+            //if(connected.FeatureFlags != null)
+            _supportsTopicWatchers = connected.FeatureFlags.SupportsTopicWatchers;
+
+            _protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
 			_connectionFuture.TrySetResult(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
         }
+        private void RegisterTopicListWatcher(long watcherId, IActorRef watcher)
+        {
+            _topicListWatchers.Add(watcherId, watcher);
 
-		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
+        }
+        private void RemoveTopicListWatcher(long watcherId)
+        {
+            _topicListWatchers.Remove(watcherId);
+        }
+        private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
 		{
             
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
@@ -307,7 +377,7 @@ namespace SharpPulsar
                         return;
                     }
                     var auth = new AuthData { auth_data = (authData.Bytes) };
-                    var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, "2.9.1");
+                    var request = _commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, "2.9.1");
 
                     if (_log.IsDebugEnabled)
                     {
@@ -622,7 +692,7 @@ namespace SharpPulsar
 					break;
 
 				case ServerError.NotAllowedError:
-					_producers[producerId].Tell(new RecoverNotAllowedError(sequenceId));
+					_producers[producerId].Tell(new RecoverNotAllowedError(sequenceId, sendError.Message));
 					break;
 
 				default:
@@ -991,6 +1061,12 @@ namespace SharpPulsar
                 case BaseCommand.Type.AckResponse:
                     HandleAckResponse(cmd.ackResponse);
                     break;
+                case BaseCommand.Type.WatchTopicListSuccess:
+                    HandleCommandWatchTopicListSuccess(cmd.watchTopicListSuccess);
+                    break;
+                case BaseCommand.Type.WatchTopicUpdate:
+                    HandleCommandWatchTopicUpdate(cmd.watchTopicUpdate);
+                    break;
                 default:
                     _log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
                     break;
@@ -1128,7 +1204,7 @@ namespace SharpPulsar
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
 			var authData = _authenticationDataProvider.Authenticate(Auth.AuthData.InitAuthData);
 			var auth = new AuthData { auth_data = (authData.Bytes) };
-			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, "2.10.1", _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return _commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, "2.10.1", _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 		#region privates
 		internal enum State
@@ -1162,8 +1238,9 @@ namespace SharpPulsar
 			public static readonly RequestType GetSchema = new RequestType("GetSchema", InnerEnum.GetSchema);
 			public static readonly RequestType GetOrCreateSchema = new RequestType("GetOrCreateSchema", InnerEnum.GetOrCreateSchema);
 			public static readonly RequestType AckResponse = new RequestType("AckResponse", InnerEnum.AckResponse);
+            public static readonly RequestType Lookup = new RequestType("Lookup", InnerEnum.Lookup);
 
-			private static readonly List<RequestType> valueList = new List<RequestType>();
+            private static readonly List<RequestType> valueList = new List<RequestType>();
 
 			static RequestType()
 			{
@@ -1173,7 +1250,8 @@ namespace SharpPulsar
 				valueList.Add(GetSchema);
 				valueList.Add(GetOrCreateSchema);
 				valueList.Add(AckResponse);
-			}
+                valueList.Add(Lookup);
+            }
 
 			public enum InnerEnum
 			{
@@ -1182,8 +1260,9 @@ namespace SharpPulsar
 				GetTopics,
 				GetSchema,
 				GetOrCreateSchema,
-                AckResponse
-			}
+                AckResponse,
+                Lookup
+            }
 
 			public readonly InnerEnum innerEnumValue;
 			private readonly string nameValue;

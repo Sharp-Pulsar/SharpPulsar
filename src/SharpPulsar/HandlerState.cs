@@ -1,9 +1,10 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Extension;
 
 namespace SharpPulsar
 {
-	
-	public class HandlerState
+
+    public class HandlerState
 	{
 		public enum State
 		{
@@ -28,11 +29,10 @@ namespace SharpPulsar
         }
 		private readonly ActorSystem _system;
 
-		private State _state;
+        private State _state;
 
-		
 
-		public HandlerState(IActorRef lookup, IActorRef connectionPool, string topic, ActorSystem system, string name)
+        public HandlerState(IActorRef lookup, IActorRef connectionPool, string topic, ActorSystem system, string name)
 		{
 			_connectionPool = connectionPool;
 			_lookup = lookup;
@@ -56,8 +56,30 @@ namespace SharpPulsar
 					return false;
             }
 		}
-
-		protected internal bool ChangeToRegisteringSchemaState()
+        protected internal virtual bool ChangeToConnecting()
+        {
+            if (_state == State.Connecting)
+            {
+                return true;
+            }
+            if(_state == State.Connecting)
+            {                
+                InterlockedEx.CompareExchange(ref _state, State.Connecting, State.Uninitialized);
+                return true;
+            }
+            if (_state == State.Ready || _state == State.RegisteringSchema)
+            {
+                InterlockedEx.CompareExchange(ref _state, State.Ready, State.Connecting);
+                return true;
+            }
+            if (_state == State.RegisteringSchema)
+            {
+                InterlockedEx.CompareExchange(ref _state, State.RegisteringSchema, State.Connecting);
+                return true;
+            }
+            return false;
+        }
+        protected internal bool ChangeToRegisteringSchemaState()
 		{
 			if(_state == State.Ready)
             {

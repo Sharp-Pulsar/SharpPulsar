@@ -6,7 +6,6 @@ using NBench;
 using Pro.NBench.xUnit.XunitExtensions;
 using SharpPulsar.Builder;
 using SharpPulsar.Test.NBench.Fixtures;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 

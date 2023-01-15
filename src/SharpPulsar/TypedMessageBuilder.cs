@@ -36,7 +36,7 @@ namespace SharpPulsar
     using System.Threading.Tasks;
 
     [Serializable]
-	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
+	internal class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
 	{
         [NonSerialized]
         private readonly IActorRef _producer;//topic
@@ -47,7 +47,7 @@ namespace SharpPulsar
         [NonSerialized]
         private ReadOnlySequence<byte> _content;
         [NonSerialized]
-        private readonly User.Transaction _txn;
+        private readonly TransactionImpl.Transaction _txn;
         [NonSerialized]
         private readonly ProducerConfigurationData _conf;
 
@@ -55,7 +55,7 @@ namespace SharpPulsar
 		{
 		}
 
-		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, User.Transaction txn, ProducerConfigurationData conf)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, TransactionImpl.Transaction txn, ProducerConfigurationData conf)
 		{
             _metadata = new MessageMetadata();
             _conf = conf;
@@ -89,7 +89,7 @@ namespace SharpPulsar
             try
             {
                 var message = await Message().ConfigureAwait(false);
-                var tcs = new TaskCompletionSource<Message<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tcs = new TaskCompletionSource<IMessageId>(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (_txn != null)
                 {
                     _producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, tcs));
@@ -97,6 +97,7 @@ namespace SharpPulsar
                 else
                 {
                     _producer.Tell(new InternalSend<T>(message, tcs));
+                    
                 }
                 if (_conf.BatchingEnabled)
                     return null;
@@ -104,7 +105,7 @@ namespace SharpPulsar
                 if (response == null)
                     return null;
 
-                return (MessageId)response.MessageId;
+                return (MessageId)response;
             }
             catch
             {

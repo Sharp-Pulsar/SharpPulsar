@@ -4,14 +4,14 @@ using Akka.Actor;
 
 namespace SharpPulsar.Messages
 {
-    public sealed class GetProducers
+    public readonly record struct GetProducers
     {
         
         public static GetProducers Instance = new GetProducers();
     }
-    public sealed class SetProducers
+    public readonly record struct SetProducers
     {
-        public ConcurrentDictionary<int, IActorRef> Producers { get; private set; } 
+        public ConcurrentDictionary<int, IActorRef> Producers { get; } 
        
         public SetProducers(ConcurrentDictionary<int, IActorRef> producers)
         {

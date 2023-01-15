@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages
 {
-    public sealed class Send
+    public readonly record struct Send
     {
         public object Message { get; }
         public ImmutableDictionary<string, object> Config { get; }
@@ -20,7 +20,7 @@ namespace SharpPulsar.Messages
             Config = config ?? ImmutableDictionary<string, object>.Empty;
         }
     }
-    public sealed class BulkSend
+    public readonly record struct BulkSend
     {
         public List<Send> Messages { get; }
         /// <summary>

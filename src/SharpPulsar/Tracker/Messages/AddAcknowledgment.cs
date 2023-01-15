@@ -4,7 +4,7 @@ using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Tracker.Messages
 {
-    public sealed class AddAcknowledgment
+    public readonly record struct AddAcknowledgment
     {
         public AddAcknowledgment(IMessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {

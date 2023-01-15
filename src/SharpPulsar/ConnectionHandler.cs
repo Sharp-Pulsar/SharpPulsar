@@ -53,7 +53,14 @@ namespace SharpPulsar
 			{
 				Sender.Tell(new GetEpochResponse(_epoch));
 			});
-			Receive<ConnectionOpened>(m =>
+
+            Receive<SwitchClientCnx>(c =>
+            {
+                _clientCnx = c.ClientCnx;
+                ++_epoch;
+                Sender.Tell(new GetEpochResponse(_epoch));
+            });
+            Receive<ConnectionOpened>(m =>
 			{
 				_connection.Tell(m);
 			});

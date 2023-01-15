@@ -1,7 +1,7 @@
 ﻿using SharpPulsar.Shared;
 using System.Collections.Generic;
 
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
     public interface ISchemaInfo
     {

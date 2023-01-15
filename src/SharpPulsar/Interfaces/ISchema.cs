@@ -1,6 +1,6 @@
 ﻿using Akka.Util;
 using NodaTime;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
 using System;
@@ -25,11 +25,11 @@ using System.Diagnostics.CodeAnalysis;
 /// under the License.
 /// </summary>
 namespace SharpPulsar.Interfaces
-{ 
-	/// <summary>
-	/// Message schema definition.
-	/// </summary>
-	public interface ISchema<T>:ICloneable
+{
+    /// <summary>
+    /// Message schema definition.
+    /// </summary>
+    public interface ISchema<T>:ICloneable
 	{/// <summary>
 	 /// Check if the message is a valid object for this schema.
 	 /// 

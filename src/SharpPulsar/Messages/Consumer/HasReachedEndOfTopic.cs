@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class HasReachedEndOfTopic
+    public readonly record struct HasReachedEndOfTopic
     {
         /// <summary>
         /// When ConsumerActor receives this message

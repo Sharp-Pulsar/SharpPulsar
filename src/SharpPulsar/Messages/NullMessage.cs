@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Messages
 {
-    public sealed class NullMessage<T> : IMessage<T>
+    public readonly record struct NullMessage<T> : IMessage<T>
     {
         public Exception Exception { get; }
         public NullMessage(Exception exception)
@@ -53,6 +53,10 @@ namespace SharpPulsar.Messages
 
         public string ReplicatedFrom => throw new NotImplementedException();
 
+        public long? BrokerPublishTime => throw new NotImplementedException();
+
+        public long? Index => throw new NotImplementedException();
+
         public string GetProperty(string name)
         {
             throw new NotImplementedException();
@@ -82,9 +86,19 @@ namespace SharpPulsar.Messages
         {
             throw new NotImplementedException();
         }
+
+        public bool HasBrokerPublishTime()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool HasIndex()
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    public sealed class NullMessages<T> : IMessages<T>
+    public readonly record struct NullMessages<T> : IMessages<T>
     {
         public Exception Exception { get; }
         public NullMessages(Exception exception)
@@ -102,6 +116,11 @@ namespace SharpPulsar.Messages
         }
 
         IEnumerator IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IList<IMessage<T>> MessageList()
         {
             throw new NotImplementedException();
         }

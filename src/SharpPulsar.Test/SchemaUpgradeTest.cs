@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using AvroSchemaGenerator.Attributes;
 using SharpPulsar.Schemas;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Test.Fixture;
@@ -20,7 +19,7 @@ namespace SharpPulsar.Test
         {
             _output = output;
 
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         //[Fact(Skip ="A")]
         [Fact]
@@ -86,6 +85,7 @@ namespace SharpPulsar.Test
             await producer2.CloseAsync();
             await consumer.CloseAsync();
             await consumer1.CloseAsync();
+            _client.Dispose();
         }
     }
 

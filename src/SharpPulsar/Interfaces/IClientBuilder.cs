@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Common;
-using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 
@@ -23,12 +22,12 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Interfaces
 {
-	/// <summary>
-	/// Builder interface that is used to configure and construct a <seealso cref="PulsarClient"/> instance.
-	/// 
-	/// @since 2.0.0
-	/// </summary>
-	public interface IClientBuilder : ICloneable
+    /// <summary>
+    /// Builder interface that is used to configure and construct a <seealso cref="PulsarClient"/> instance.
+    /// 
+    /// @since 2.0.0
+    /// </summary>
+    public interface IClientBuilder : ICloneable
 	{
 
 		/// <summary>

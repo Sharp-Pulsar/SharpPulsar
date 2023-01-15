@@ -3,7 +3,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -40,8 +39,7 @@ namespace SharpPulsar.Test
         public ByteKeysTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client; 
-            //_topic = "my-topic-batch-bf719df3";
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -98,8 +96,8 @@ namespace SharpPulsar.Test
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
-            var message = (Message<byte[]>)await consumer.ReceiveAsync();
+            //await Task.Delay(TimeSpan.FromSeconds(5));
+            var message = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromSeconds(5));
 
             if (message != null)
                 _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
@@ -110,8 +108,8 @@ namespace SharpPulsar.Test
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
-            await producer.CloseAsync();
-            await consumer.CloseAsync();
+            await producer.CloseAsync().ConfigureAwait(false);
+            await consumer.CloseAsync().ConfigureAwait(false);
         }
         [Fact]
         public async Task ProduceAndConsumeBatch()

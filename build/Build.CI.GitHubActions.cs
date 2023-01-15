@@ -11,40 +11,19 @@ using Nuke.Common.Utilities;
     FetchDepth = 0,
     OnPushBranches = new[] { "main", "dev", "release" },
     OnPullRequestBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Compile) },
+    InvokedTargets = new[] { nameof(Compile), nameof(API) },
     PublishArtifacts = true,
     EnableGitHubToken = true)]
 
-[CustomGitHubActions("run_tests",
+[CustomGitHubActions("ubuntu",
     GitHubActionsImage.UbuntuLatest,
     //AutoGenerate = false,
     FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Test) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
-[CustomGitHubActions("run_token",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Token) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
-[CustomGitHubActions("run_api",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(API) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
+    InvokedTargets = new[] { nameof(Compile), nameof(API), nameof(Test) },
+    PublishArtifacts = false,
+    EnableGitHubToken = false)]
 
 [CustomGitHubActions("nuget",
     GitHubActionsImage.WindowsLatest,
@@ -72,7 +51,7 @@ public class CustomGitHubActionsAttribute : GitHubActionsAttribute
         var job = base.GetJobs(image, relevantTargets);
         var newSteps = new List<GitHubActionsStep>(job.Steps);
         //newSteps.Insert(1, new GitHubActionsUploadArtifact{ });
-        foreach (var version in new[] { "6.0.*", "5.0.*" })
+        foreach (var version in new[] { "7.0.*"})
         {            
             newSteps.Insert(1, new GitHubActionsSetupDotNetStep
             {

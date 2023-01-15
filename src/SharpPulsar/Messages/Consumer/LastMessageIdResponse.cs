@@ -14,7 +14,7 @@ namespace SharpPulsar.Messages.Consumer
             BatchIndex = batchIndex;
             BatchSize = batchSize;
             AckSets = ackSets;
-            if(deletePosition != null)
+            if (deletePosition != null)
                 MarkDeletePosition = new MarkDeletePosition((long)deletePosition.ledgerId, (long)deletePosition.entryId, deletePosition.Partition, deletePosition.BatchIndex, deletePosition.BatchSize, deletePosition.AckSets);
         }
 
@@ -27,34 +27,9 @@ namespace SharpPulsar.Messages.Consumer
         public MarkDeletePosition MarkDeletePosition { get; }
 
     }
-    public sealed class GetLastMessageIdResponse
-    {
-        public IMessageId LastMessageId { get; }
-        public MessageId MarkDeletePosition { get; }
-        public GetLastMessageIdResponse(IMessageId last, MessageId mark)
-        {
-            LastMessageId = last;
-            MarkDeletePosition = mark;
-        }
-    }
-    public sealed class MarkDeletePosition
-    {
-        public MarkDeletePosition(long ledgerId, long entryId, int partition, int batchIndex, int batchSize, long[] ackSets)
-        {
-            LedgerId = ledgerId;
-            EntryId = entryId;
-            Partition = partition;
-            BatchIndex = batchIndex;
-            BatchSize = batchSize;
-            AckSets = ackSets;
-        }
 
-        public long LedgerId { get; }
-        public long EntryId { get; }
-        public int Partition { get; }
-        public int BatchIndex { get; }
-        public int BatchSize { get; }
-        public long[] AckSets { get; }
-
-    }
+    public record struct GetLastMessageIdResponse(IMessageId LastMessageId, MessageId MarkDeletePosition);
+   
+    public record struct MarkDeletePosition(long LedgerId, long EntryId, int Partition, int BatchIndex, int BatchSize, long[] AckSets);
+    
 }

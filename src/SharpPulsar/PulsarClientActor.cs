@@ -69,7 +69,9 @@ namespace SharpPulsar
 			_state = State.Open;
 			Receive<AddProducer>(m => _producers.Add(m.Producer));
 			Receive<UpdateServiceUrl>(m => UpdateServiceUrl(m.ServiceUrl));
-			Receive<AddConsumer>(m => _consumers.Add(m.Consumer));
+			Receive<AddConsumer>(m => { 
+                _consumers.Add(m.Consumer);
+            });
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));

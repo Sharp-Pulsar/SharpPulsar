@@ -6,7 +6,7 @@ using static SharpPulsar.Protocol.Proto.CommandAck;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class ReconsumeLaterWithProperties<T>
+    public readonly record struct ReconsumeLaterWithProperties<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
@@ -26,8 +26,8 @@ namespace SharpPulsar.Messages.Consumer
             DelayTime = delayTime;
             AckType = ackType;
         }
-    } 
-    public sealed class ReconsumeLaterMessages<T>
+    }
+    public readonly record struct ReconsumeLaterMessages<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
@@ -38,13 +38,20 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         public IMessages<T> Messages { get; }
         public TimeSpan DelayTime { get; }
+        public ImmutableDictionary<string, string> Properties { get; }
         public ReconsumeLaterMessages(IMessages<T> messages, TimeSpan delayTime)
         {
             Messages = messages;
             DelayTime = delayTime;
         }
-    } 
-    public sealed class ReconsumeLaterMessage<T>
+        public ReconsumeLaterMessages(IMessages<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+        {
+            Messages = message;
+            DelayTime = delayTime;
+            Properties = customProperties.ToImmutableDictionary();
+        }
+    }
+    public readonly record struct ReconsumeLaterMessage<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
@@ -55,10 +62,17 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         public IMessage<T> Message { get; }
         public TimeSpan DelayTime { get; }
+        public ImmutableDictionary<string, string> Properties { get; }    
         public ReconsumeLaterMessage(IMessage<T> message, TimeSpan delayTime)
         {
             Message = message;
             DelayTime = delayTime;
+        }
+        public ReconsumeLaterMessage(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
+        {
+            Message = message;
+            DelayTime = delayTime;
+            Properties = customProperties.ToImmutableDictionary();
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using SharpPulsar.User;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using Xunit.Abstractions;
 using System;
@@ -44,7 +43,7 @@ namespace SharpPulsar.Test
         public MultiTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         [Fact]
         public async Task TestMultiTopicConsumer()
@@ -54,49 +53,51 @@ namespace SharpPulsar.Test
             var second = $"two-topic-{Guid.NewGuid()}";
             var third = $"three-topic-{Guid.NewGuid()}";
 
-            await PublishMessages(first, messageCount, "hello Toba");
-            await PublishMessages(third, messageCount, "hello Toba");
-            await PublishMessages(second, messageCount, "hello Toba");
+            await PublishMessages(first, messageCount, "hello Toba").ConfigureAwait(false);
+            await PublishMessages(third, messageCount, "hello Toba").ConfigureAwait(false);
+            await PublishMessages(second, messageCount, "hello Toba").ConfigureAwait(false);
             var builder = new ConsumerConfigBuilder<byte[]>()
                 .Topic(first, second, third)
                 .ForceTopicCreation(true)
                 .SubscriptionName("multi-topic-sub");
 
-            var consumer = await _client.NewConsumerAsync(builder);
-            await Task.Delay(TimeSpan.FromSeconds(30));
+            var consumer = await _client.NewConsumerAsync(builder).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromSeconds(10));
             var received = 0;
             for (var i = 0; i < messageCount; i++)
             {
-                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync();
+                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(1000)).ConfigureAwait(false);
                 if (message != null)
                 {
-                    await consumer.AcknowledgeAsync(message);
+                    await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
                     _output.WriteLine($"message from topic: {message.Topic}");
                     received++;
                 }
             }
             for (var i = 0; i < messageCount; i++)
             {
-                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync();
+                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync().ConfigureAwait(false);
                 if (message != null)
                 {
-                    await consumer.AcknowledgeAsync(message);
+                    await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
                     _output.WriteLine($"message from topic: {message.Topic}");
                     received++;
                 }
             }
             for (var i = 0; i < messageCount; i++)
             {
-                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync();
+                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync().ConfigureAwait(false);
                 if (message != null)
                 {
-                    await consumer.AcknowledgeAsync(message);
+                    await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
                     _output.WriteLine($"message from topic: {message.Topic}");
                     received++;
                 }
             }
             Assert.True(received > 0);
-            await consumer.CloseAsync();
+            
+            await consumer.CloseAsync().ConfigureAwait(false);
+            _client.Dispose();
         }
 
         private async Task<List<MessageId>> PublishMessages(string topic, int count, string message)
@@ -119,13 +120,13 @@ namespace SharpPulsar.Test
         public virtual async Task TestReadMessageWithoutBatching()
         {
             var topic = "ReadMessageWithoutBatching";
-            await TestReadMessages(topic, false);
+            await TestReadMessages(topic, false).ConfigureAwait(false);
         }
         [Fact]
         public virtual async Task TestReadMessageWithBatching()
         {
             var topic = $"ReadMessageWithBatching_{Guid.NewGuid()}";
-            await TestReadMessages(topic, true);
+            await TestReadMessages(topic, true).ConfigureAwait(false);
         }
         [Fact]
         public async Task TestMultiTopic()
@@ -142,12 +143,12 @@ namespace SharpPulsar.Test
 
                 .ReaderName("my-reader");
 
-            var reader = await _client.NewReaderAsync(ISchema<object>.String, builder);
+            var reader = await _client.NewReaderAsync(ISchema<object>.String, builder).ConfigureAwait(false);
             // create producer and send msg
             IList<Producer<string>> producerList = new List<Producer<string>>();
             foreach (var topicName in topics)
             {
-                var producer = await _client.NewProducerAsync(ISchema<object>.String, new ProducerConfigBuilder<string>().Topic(topicName));
+                var producer = await _client.NewProducerAsync(ISchema<object>.String, new ProducerConfigBuilder<string>().Topic(topicName)).ConfigureAwait(false);
 
                 producerList.Add(producer);
             }
@@ -159,26 +160,27 @@ namespace SharpPulsar.Test
                 for (var j = 0; j < msgNum; j++)
                 {
                     var msg = i + "msg" + j;
-                    await producer.SendAsync(msg);
+                    await producer.SendAsync(msg).ConfigureAwait(false);
                     messages.Add(msg);
                 }
             }
             // receive messagesS
-            var message = await reader.ReadNextAsync(TimeSpan.FromSeconds(5));
+            var message = await reader.ReadNextAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             while (message != null)
             {
                 var value = message.Value;
                 _output.WriteLine(value);
                 Assert.True(messages.Remove(value));
-                message = await reader.ReadNextAsync(TimeSpan.FromSeconds(5));
+                message = await reader.ReadNextAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             }
             Assert.True(messages.Count == 0 || messages.Count == 1);
             // clean up
             foreach (var producer in producerList)
             {
-                await producer.CloseAsync();
+                await producer.CloseAsync().ConfigureAwait(false);
             }
-            await reader.CloseAsync();
+            await reader.CloseAsync().ConfigureAwait(false);
+            _client.Dispose();
         }
         private async Task TestReadMessages(string topic, bool enableBatch)
         {
@@ -188,13 +190,13 @@ namespace SharpPulsar.Test
 
                 .StartMessageId(IMessageId.Earliest)
                 .ReaderName(Subscription);
-            var reader = await _client.NewReaderAsync(builder);
+            var reader = await _client.NewReaderAsync(builder).ConfigureAwait(false);
 
             var keys = await PublishMessages(topic, numKeys, enableBatch);
             await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < numKeys; i++)
             {
-                var message = await reader.ReadNextAsync();
+                var message = await reader.ReadNextAsync().ConfigureAwait(false);
                 if (message != null)
                 {
                     _output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data)}");
@@ -226,7 +228,7 @@ namespace SharpPulsar.Test
             {
                 var key = "key" + i;
                 var data = Encoding.UTF8.GetBytes("my-message-" + i);
-                await producer.NewMessage().Key(key).Value(data).SendAsync();
+                await producer.NewMessage().Key(key).Value(data).SendAsync().ConfigureAwait(false);
                 keys.Add(key);
             }
             producer.Flush();

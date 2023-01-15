@@ -28,7 +28,7 @@ namespace SharpPulsar
 {
     internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
-		internal abstract ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> future);
+		internal abstract ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<IMessageId> future);
 		protected internal abstract long LastDisconnectedTimestamp();
 		protected internal abstract bool Connected();
 		protected internal abstract ValueTask<IProducerStats> Stats();
@@ -116,7 +116,10 @@ namespace SharpPulsar
                 Interceptors.OnPartitionsChange(topicName, partitions);
             }
         }
-
+        public override string ToString()
+        {
+            return "ProducerBase{" + "topic='" + Topic + '\'' + '}';
+        }
         protected internal enum MultiSchemaMode
 		{
 			Auto,

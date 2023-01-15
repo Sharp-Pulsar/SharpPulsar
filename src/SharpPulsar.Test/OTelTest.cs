@@ -11,7 +11,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Telemetry.Trace;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,7 +24,7 @@ namespace SharpPulsar.Test
         public OTelTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         [Fact]
         public async Task ProduceAndConsume()
@@ -83,6 +82,7 @@ namespace SharpPulsar.Test
                     _output.WriteLine($"{tag.Key}:{tag.Value}");
                 }
             }
+            _client.Dispose();
         }
     }
 }

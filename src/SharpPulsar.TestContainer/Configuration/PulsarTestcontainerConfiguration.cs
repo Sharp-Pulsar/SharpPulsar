@@ -13,11 +13,12 @@ namespace SharpPulsar.TestContainer.Configuration
           : base(image, pulsarPort)
         {
 
-            Environments.Add("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g");
+            //Environments.Add("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g");
             Environments.Add("PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled", "true");
             Environments.Add("PULSAR_PREFIX_nettyMaxFrameSizeBytes", "5253120");
             Environments.Add("PULSAR_PREFIX_transactionCoordinatorEnabled", "true");
-            Environments.Add("PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled", "false");
+            Environments.Add("PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled", "true");
+            Environments.Add("PULSAR_STANDALONE_USE_ZOOKEEPER", "1");
             Environments.Add("PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled", "true");
             Environments.Add("PULSAR_PREFIX_brokerEntryMetadataInterceptors", "org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor");
 

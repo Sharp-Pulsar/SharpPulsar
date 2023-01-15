@@ -4,7 +4,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
-using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,7 +19,7 @@ namespace SharpPulsar.Test
         public DelayedMessage(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
             _topic = $"persistent://public/default/delayed-{Guid.NewGuid()}";
         }
         [Fact]
@@ -64,6 +63,7 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
 
         [Fact]
@@ -98,7 +98,7 @@ namespace SharpPulsar.Test
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     continue;
                 }
-                _output.WriteLine("Consumer Received message : " + msg.Data + "; Difference between publish time and receive time = " + (DateTimeHelper.CurrentUnixTimeMillis() - msg.PublishTime) / 1000 + " seconds");
+                _output.WriteLine("Consumer Received message : " + msg.Value + "; Difference between publish time and receive time = " + (DateTimeHelper.CurrentUnixTimeMillis() - msg.PublishTime) / 1000 + " seconds");
                 await consumer.AcknowledgeAsync(msg);
                 ++numReceived;
             }
@@ -106,6 +106,7 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
 
         [Fact]
@@ -138,7 +139,7 @@ namespace SharpPulsar.Test
                     await Task.Delay(TimeSpan.FromSeconds(1));
                     continue;
                 }
-                _output.WriteLine($"Consumer Received message : {msg.Data}; with event time {DateTimeOffset.FromUnixTimeMilliseconds(msg.EventTime)}");
+                _output.WriteLine($"Consumer Received message : {msg.Value}; with event time {DateTimeOffset.FromUnixTimeMilliseconds(msg.EventTime)}");
                 await consumer.AcknowledgeAsync(msg);
                 ++numReceived;
             }
@@ -146,6 +147,7 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
+            _client.Dispose();
         }
     }
 

@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages
 {
-    public sealed class GetTopicsOfNamespaceResponse
+    public readonly record struct GetTopicsOfNamespaceResponse
     {
         public CommandGetTopicsOfNamespaceResponse Response { get; }
         public GetTopicsOfNamespaceResponse(CommandGetTopicsOfNamespaceResponse response)

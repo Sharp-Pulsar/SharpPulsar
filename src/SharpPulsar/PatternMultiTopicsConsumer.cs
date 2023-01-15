@@ -1,8 +1,12 @@
 ﻿using Akka.Actor;
+using Akka.Dispatch.SysMsg;
+using Akka.IO;
 using Akka.Util.Internal;
+using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
@@ -37,58 +41,130 @@ namespace SharpPulsar
     internal class PatternMultiTopicsConsumer<T>: MultiTopicsConsumer<T>
 	{
 		private readonly Regex _topicsPattern;
+        private  string _topicsHash;
 		private readonly Mode _subscriptionMode;
 		private readonly IActorRef _lookup;
-		protected internal NamespaceName NamespaceName;
+		private NamespaceName _namespaceName;
 		private ICancelable _recheckPatternTimeout = null;
 		private readonly IActorContext _context;
 		private readonly IActorRef _self;
 
-		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, schema, false, clientConfiguration, subscribeFuture)
+        public PatternMultiTopicsConsumer(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, schema, false, clientConfiguration, subscribeFuture)
 		{
 			_self = Self;
 			_lookup = lookup;
 			_context = Context;
 			_topicsPattern = topicsPattern;
-			_subscriptionMode = subscriptionMode;
-			if(NamespaceName == null)
+            _topicsHash = topicsHash;
+            _subscriptionMode = subscriptionMode;
+			if(_namespaceName == null)
 			{
-				NamespaceName = GetNameSpaceFromPattern(topicsPattern);
+				_namespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
-            Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(NamespaceName.ToString()));
-            _recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReChecker(); });
+            Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(_namespaceName.ToString()));
+            _recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await Run(); });
+            //_topicsChangeListener = new PatternTopicsChangedListener(this);
             
+            if (_subscriptionMode == Mode.Persistent)
+            {
+
+                var tcs = new TaskCompletionSource<IActorRef>();
+                Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+                {
+                    try
+                    {
+                        var watcherId = await idGenerator.Ask<long>(NewTopicListWatcherId.Instance).ConfigureAwait(false);
+                        var watcher = _context.ActorOf(TopicListWatcherActor.Prop(client, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, State, tcs));
+
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Debug($"Unable to create topic list watcher. Falling back to only polling for new topics {ex}");
+                        tcs.SetException(ex);
+                    }
+
+                });
+                tcs.Task.ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            else
+            {
+                _log.Debug($"Not creating topic list watcher for subscription mode {_subscriptionMode}");
+            }
+            ReceiveAsync<TopicsAdded>(async t =>
+            {
+                await OnTopicsAdded(t.AddedTopics);
+            });
+            Receive<TopicsRemoved>(t =>
+            {
+                OnTopicsRemoved(t.RemovedTopics);
+            });
+            //Ready();
         }
-        public static Props Prop(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
+       
+        public static Props Prop(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration, subscribeFuture));
+            return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, topicsHash, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration, subscribeFuture));
         }
-        
-        private async ValueTask TopicReChecker()
+        private void OnTopicsRemoved(ICollection<string> removedTopics)
+        {
+            if (removedTopics.Count == 0)
+            {
+                return;
+            }
+
+            var futures = new List<ValueTask>(PartitionedTopics.Count);
+
+            removedTopics.ForEach(delegate (string topic)
+            {
+                _self.Tell(new RemoveTopicConsumer(topic));
+            });
+        }
+        private async ValueTask OnTopicsAdded(ICollection<string> addedTopics)
+        {
+            if (addedTopics.Count == 0)
+            {
+                return;
+            }
+            foreach (var add in addedTopics)
+            {
+                await Subscribe(add, false);
+            }
+        }
+        private async ValueTask Run()
 		{
+            var topics = _context.GetChildren().ToList();
             try
             {
-				var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode)).ConfigureAwait(false);
+                var topicsPattern = _topicsPattern.ToString();
+
+                var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(_namespaceName, _subscriptionMode, topicsPattern, _topicsHash)).ConfigureAwait(false);
                 var response = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
                 var topicsFound = response.Topics;
-				var topics = _context.GetChildren().ToList();
 				if (_log.IsDebugEnabled)
 				{
-					_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
-					PartitionedTopics.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
+					_log.Debug($"Get topics under namespace {_namespaceName}, topics.size: {topics.Count}, topicsHash: {response.TopicsHash}, filtered: {response.GetHashCode}");
+					PartitionedTopics.ForEach(t => _log.Debug($"Get topics under namespace {_namespaceName}, topic: {t.Key}"));
 				}
-				var newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
-				var oldTopics = Topics;
-				await OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
-				OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
+                IList<string> oldTopics = new List<string>();
+                foreach (string partition in response.Topics)
+                {
+                    var topicName = TopicName.Get(partition);
+
+                    if (!topicName.Partitioned || !oldTopics.Contains(topicName.PartitionedTopicName))
+                    {
+                        oldTopics.Add(partition);
+                    }
+                }
+                await UpdateSubscriptions(_topicsPattern, response, oldTopics);
+               
             }
 			catch(Exception ex)
             {
-				_log.Error(ex.ToString());
+				_log.Error($"[{topics}] Failed to recheck topics change: {ex}");
             }
             finally
             {
-				_recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReChecker(); });
+				_recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await Run(); });
             }
 			if (_recheckPatternTimeout.IsCancellationRequested)
 			{
@@ -96,38 +172,42 @@ namespace SharpPulsar
 			}
 			
 		}
+        private async ValueTask UpdateSubscriptions(Regex topicsPattern, GetTopicsUnderNamespaceResponse result, IList<string> oldTopics)
+        {
+            _topicsHash = result.TopicsHash;
+            if (!result.Changed)
+            {
+                return ;
+            }
 
-		public virtual Regex Pattern
+            IList<string> newTopics;
+            if (result.Filtered)
+            {
+                newTopics = result.Topics;
+            }
+            else
+            {
+                newTopics = TopicList.FilterTopics(result.Topics, topicsPattern);
+            }
+
+            await OnTopicsAdded(TopicList.Minus(newTopics, oldTopics));
+            OnTopicsRemoved(TopicList.Minus(oldTopics, newTopics));
+        }
+        public virtual Regex Pattern
 		{
 			get
 			{
 				return _topicsPattern;
 			}
 		}
-
-		private void OnTopicsRemoved(ICollection<string> removedTopics)
-		{
-			if (removedTopics.Count == 0)
-			{
-				return;
-			}
-			foreach(var t in removedTopics)
+        private string TopicsHash
+        {
+            set
             {
-				_self.Tell(new RemoveTopicConsumer(t));
+                _topicsHash = value;
             }
-		}
-
-		private async ValueTask  OnTopicsAdded(ICollection<string> addedTopics)
-		{
-			if (addedTopics.Count == 0)
-			{				
-				return;
-			}
-			foreach(var t in addedTopics)
-            {
-                await Subscribe(t, false);
-            }
-		}
+        }
+      
 		private NamespaceName GetNameSpaceFromPattern(Regex pattern)
 		{
 			return TopicName.Get(pattern.ToString()).NamespaceObject;
@@ -140,16 +220,7 @@ namespace SharpPulsar
 
 			return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic, @"\:\/\/")[1]).Success).ToList();
 		}
-		// get topics, which are contained in list1, and not in list2
-		internal IList<string> TopicsListsMinus(IList<string> list1, IList<string> list2)
-		{
-			var s1 = new HashSet<string>(list1);
-            foreach (var l in list2)
-            {
-				s1.Remove(l);
-            }
-			return s1.ToList();
-		}
+		
         protected override void PostStop()
         {
 			_recheckPatternTimeout?.Cancel();

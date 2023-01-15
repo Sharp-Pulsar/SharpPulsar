@@ -3,17 +3,15 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
-using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
     public class PulsarFixture : IAsyncLifetime, IDisposable
     {
-        public PulsarClient Client;
-        public PulsarSystem PulsarSystem;
+        public PulsarSystem System;
         private readonly IConfiguration _configuration;
-
+        public PulsarClientConfigBuilder ConfigBuilder;
         public ClientConfigurationData ClientConfigurationData;
         public PulsarFixture()
         {
@@ -23,7 +21,8 @@ namespace SharpPulsar.TestContainer
         
         public virtual async Task InitializeAsync()
         {
-            await SetupSystem();
+            SetupSystem();
+            await Task.CompletedTask;
         }
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
@@ -32,8 +31,9 @@ namespace SharpPulsar.TestContainer
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
         }
-        public virtual async ValueTask SetupSystem(string? service = null, string? web = null)
+        public virtual void SetupSystem(string? service = null, string? web = null)
         {
+            System = PulsarSystem.GetInstance(actorSystemName: "tests");
             var client = new PulsarClientConfigBuilder();
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
@@ -67,29 +67,17 @@ namespace SharpPulsar.TestContainer
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            //client.ClientCnx(TimeSpan.FromSeconds(-1));
-
-            var system = await PulsarSystem.GetInstanceAsync(client);
-            Client = system.NewClient();
-            PulsarSystem = system;
+            ConfigBuilder = client;
             ClientConfigurationData = client.ClientConfigurationData;
         }
         public virtual async Task DisposeAsync()
         {
-            try
-            {
-                if (Client != null)
-                    await Client.ShutdownAsync();
-            }
-            catch
-            {
-
-            }
+            await Task.CompletedTask;
         }
        
         public void Dispose()
         {
-            DisposeAsync().Wait();
+            
         }
     }
 }

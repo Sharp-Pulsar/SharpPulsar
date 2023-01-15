@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,10 +21,10 @@ using SharpPulsar.Shared;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	/// <summary>
-	/// A schema for `Boolean`.
-	/// </summary>
-	public class BooleanSchema : AbstractSchema<bool>
+    /// <summary>
+    /// A schema for `Boolean`.
+    /// </summary>
+    public class BooleanSchema : AbstractSchema<bool>
 	{
 
 		private static readonly BooleanSchema _instance;

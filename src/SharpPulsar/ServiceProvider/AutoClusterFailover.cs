@@ -4,7 +4,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Common;
 using SharpPulsar.Interfaces;
 using SharpPulsar.ServiceProvider.Messages;
-using SharpPulsar.User;
 
 namespace SharpPulsar.ServiceProvider
 {

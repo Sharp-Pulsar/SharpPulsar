@@ -1,6 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Net;
@@ -8,7 +8,7 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public sealed class GetBroker
+    public readonly record struct GetBroker
     {
         public TopicName TopicName { get; }
         public GetBroker(TopicName topicName)
@@ -16,7 +16,7 @@ namespace SharpPulsar.Messages.Requests
             TopicName = topicName;
         }
     }
-    public sealed class GetSchema
+    public readonly record struct GetSchema
     {
         public TopicName TopicName { get; }
         public byte[] Version { get; }
@@ -26,17 +26,21 @@ namespace SharpPulsar.Messages.Requests
             Version = version;
         }
     }
-    public sealed class GetTopicsUnderNamespace
+    public readonly record struct GetTopicsUnderNamespace
     {
         public NamespaceName Namespace { get; }
         public Mode Mode { get; }
-        public GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode)
+        public string TopicsPattern { get; }
+        public string TopicsHash { get; }
+        public GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode, string topicsPattern, string topicsHash)
         {
             Namespace = @namespace;
             Mode = mode;
+            TopicsPattern = topicsPattern;  
+            TopicsHash = topicsHash;    
         }
     }
-    public sealed class GetTopicsOfNamespaceRetry
+    public readonly record struct GetTopicsOfNamespaceRetry
     {
         public IActorRef ReplyTo { get; }
         public NamespaceName Namespace { get; }
@@ -52,15 +56,21 @@ namespace SharpPulsar.Messages.Requests
             Backoff = backoff;
         }
     }
-    public sealed class GetTopicsUnderNamespaceResponse
+    public readonly record struct GetTopicsUnderNamespaceResponse
     {
         public ImmutableList<string> Topics { get; }
-        public GetTopicsUnderNamespaceResponse(IList<string> topics)
+        public string TopicsHash { get; }
+        public bool Changed { get; }
+        public bool Filtered { get; }
+        public GetTopicsUnderNamespaceResponse(IList<string> topics, string topicsHash, bool changed, bool filtered)
         {
             Topics = topics.ToImmutableList();
+            TopicsHash = topicsHash;    
+            Changed = changed;  
+            Filtered = filtered;    
         }
     }
-    public sealed class GetSchemaInfoResponse
+    public readonly record struct GetSchemaInfoResponse
     {
         public ISchemaInfo SchemaInfo { get; }
         public GetSchemaInfoResponse(ISchemaInfo schemaInfo)
@@ -68,7 +78,7 @@ namespace SharpPulsar.Messages.Requests
             SchemaInfo = schemaInfo;
         }
     }
-    public sealed class GetBrokerResponse
+    public readonly record struct GetBrokerResponse
     {
         public DnsEndPoint LogicalAddress { get; } 
         public DnsEndPoint PhysicalAddress { get; }

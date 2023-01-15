@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
-
+//docker run -it --name ebere -e PULSAR_STANDALONE_USE_ZOOKEEPER=1 -e PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true -e PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 -e PULSAR_PREFIX_transactionCoordinatorEnabled=true -e PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=true -e PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true -e PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650  -p 8080:8080 -p 8081:8081 apachepulsar/pulsar-all:2.11.0 sh -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
 namespace Tutorials.PulsarTestContainer
 {
     public class TestcontainerConfiguration : TestcontainerMessageBrokerConfiguration
@@ -16,11 +16,12 @@ namespace Tutorials.PulsarTestContainer
         public TestcontainerConfiguration(string image, int pulsarPort)
           : base(image, pulsarPort)
         {
-            Environments.Add("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g");
+            //Environments.Add("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g");
             Environments.Add("PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled", "true");
             Environments.Add("PULSAR_PREFIX_nettyMaxFrameSizeBytes", "5253120");
             Environments.Add("PULSAR_PREFIX_transactionCoordinatorEnabled", "true");
-            Environments.Add("PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled", "false");
+            Environments.Add("PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled", "true");
+            Environments.Add("PULSAR_STANDALONE_USE_ZOOKEEPER", "1");
             Environments.Add("PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled", "true");
             Environments.Add("PULSAR_PREFIX_brokerEntryMetadataInterceptors", "org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor");
         }

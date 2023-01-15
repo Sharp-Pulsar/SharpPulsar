@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Interfaces.Schema;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -19,7 +18,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.ISchema
+namespace SharpPulsar.Interfaces.Schema
 {
 
     /// <summary>
@@ -28,34 +27,34 @@ namespace SharpPulsar.Interfaces.ISchema
     public interface IGenericRecord : IGenericObject
     {
 
-		/// <summary>
-		/// Return schema version.
-		/// </summary>
-		/// <returns> schema version. </returns>
-		byte[] SchemaVersion {get;}
+        /// <summary>
+        /// Return schema version.
+        /// </summary>
+        /// <returns> schema version. </returns>
+        byte[] SchemaVersion { get; }
 
-		/// <summary>
-		/// Returns the list of fields associated with the record.
-		/// </summary>
-		/// <returns> the list of fields associated with the record. </returns>
-		IList<Field> Fields {get;}
+        /// <summary>
+        /// Returns the list of fields associated with the record.
+        /// </summary>
+        /// <returns> the list of fields associated with the record. </returns>
+        IList<Field> Fields { get; }
 
-		/// <summary>
-		/// Retrieve the value of the provided <tt>field</tt>.
-		/// </summary>
-		/// <param name="field"> the field to retrieve the value </param>
-		/// <returns> the value object </returns>
-		object GetField(Field field)
-		{
-			return GetField(field.Name);
-		}
+        /// <summary>
+        /// Retrieve the value of the provided <tt>field</tt>.
+        /// </summary>
+        /// <param name="field"> the field to retrieve the value </param>
+        /// <returns> the value object </returns>
+        object GetField(Field field)
+        {
+            return GetField(field.Name);
+        }
 
-		/// <summary>
-		/// Retrieve the value of the provided <tt>fieldName</tt>.
-		/// </summary>
-		/// <param name="fieldName"> the field name </param>
-		/// <returns> the value object </returns>
-		object GetField(string fieldName);
+        /// <summary>
+        /// Retrieve the value of the provided <tt>fieldName</tt>.
+        /// </summary>
+        /// <param name="fieldName"> the field name </param>
+        /// <returns> the value object </returns>
+        object GetField(string fieldName);
 
         /// <summary>
 		/// Retrieve the value of the provided <tt>fieldName</tt>.

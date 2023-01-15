@@ -5,7 +5,7 @@ using SharpPulsar.Trino.Trino;
 
 namespace SharpPulsar.Trino
 {
-    internal class Executor
+    public class Executor
     {
         private readonly ClientSession _clientSession;
         private readonly ClientOptions _clientOptions;

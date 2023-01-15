@@ -22,7 +22,7 @@ using System.Collections.Immutable;
 using SharpPulsar.Precondition;
 using SharpPulsar.Common.Util;
 using SharpPulsar.Messages;
-
+using SharpPulsar.Messages.Requests;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -97,27 +97,15 @@ namespace SharpPulsar
                     break;
             }
 
-            IList<int> indexList = new List<int>();
-            if (conf.LazyStartPartitionedProducers && conf.AccessMode == ProducerAccessMode.Shared)
-            {
-                // try to create producer at least one partition
-                
-                indexList.Add(ChoosePartition(new List<string> { numPartitions.ToString() }, _topicMetadata));
-                //indexList = ChoosePartition(((TypedMessageBuilder<T>)NewMessage()).getMessage(), _topicMetadata);
-            }
-            else
-            {
-                // try to create producer for all partitions
-                indexList = Enumerable.Range(0, _topicMetadata.NumPartitions()).Select(x => x * x).ToList();
-            }
-
-            _firstPartitionIndex = indexList[0];
+            
+            _firstPartitionIndex = 0;
             // start track and auto subscribe partition increasement
             if (conf.AutoUpdatePartitions)
             {
                 _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
                 _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
+            
             Receive<GetProducers>( _ => 
             {
                 Sender.Tell(new SetProducers(_producer));
@@ -151,7 +139,7 @@ namespace SharpPulsar
                 }
             });
             ReceiveAny(any => _router.Forward(any));
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await Start(indexList));
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await Start());
         }
         public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture, TaskCompletionSource<ConcurrentDictionary<int, IActorRef>> producer)
         {
@@ -169,12 +157,12 @@ namespace SharpPulsar
 
             return await Task.FromResult(0);
         }
+       
 
-        private async ValueTask Start(IList<int> indexList)
+        private async ValueTask Start()
         {
-            var index = indexList;  
             string overrideProducerName = null;
-            foreach (var partitionIndex in index)
+            for (var partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance);
@@ -200,7 +188,7 @@ namespace SharpPulsar
                 }
 
             }
-           await CloseAsync();
+           //await CloseAsync();
            _producers.TrySetResult(_producer);
         }
         private async Task CloseAsync()
@@ -218,11 +206,11 @@ namespace SharpPulsar
             }
             await Task.CompletedTask;
         }
-        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
+        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<IMessageId> callback)
         {
             await Internal(message);
 
-            ConnectionState(callback);
+            //ConnectionState(callback);
 
             if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
             {
@@ -237,12 +225,12 @@ namespace SharpPulsar
             await Task.CompletedTask;
         }
 
-        private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
+        private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<IMessageId> callback)
         {
 
             await Internal(message);
 
-            ConnectionState(callback);
+            //ConnectionState(callback);
 
             if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
             {
@@ -255,7 +243,7 @@ namespace SharpPulsar
             }
             return;
         }
-        private void ConnectionState(TaskCompletionSource<Message<T>> callback) 
+        private void ConnectionState(TaskCompletionSource<IMessageId> callback) 
         {
             switch (State.ConnectionState)
             {
@@ -333,17 +321,7 @@ namespace SharpPulsar
 
             return _firstPartitionIndex; 
         }
-        private int ChoosePartition(List<string> msg, TopicMetadata metadata)
-        {
-            // If the message has a key, it supersedes the single partition routing policy
-            if (msg.Count() != 0)
-            {
-                return MathUtils.SignSafeMod(msg.GetHashCode(), metadata.NumPartitions());
-            }
-
-            return _firstPartitionIndex;
-        }
-
+      
 		protected internal override bool Connected()
 		{
 			return true;
@@ -522,7 +500,7 @@ namespace SharpPulsar
             return 0;
         }
 
-        internal sealed class ExtendTopics
+        public readonly record struct ExtendTopics
         {
 			public static ExtendTopics Instance = new ExtendTopics();
         }

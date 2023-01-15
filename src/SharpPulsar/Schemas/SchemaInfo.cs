@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Common;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
@@ -29,11 +29,7 @@ namespace SharpPulsar.Schemas
 		/// <summary>
 		/// Additional properties of the schema definition (implementation defined).
 		/// </summary>
-		public IDictionary<string, string> Properties
-        {
-			get;
-			set;
-		}
+		public IDictionary<string, string> Properties {	get; set; } = new Dictionary<string, string>(); 
 		public virtual string SchemaDefinition
 		{
 			get

@@ -4,6 +4,7 @@
 - BREAKING CHANGES: the config builders have been moved to builder folder!
 - Fixed potential `HasMessageAvailable` `deadlock`ing 
 - OpenTelemetry 
+- Obsoletes
 
 ## [2.9.0] / 2022-02-21
 - This release contains new feature and fixes found in Apache Pulsar 2.9.0 official java client/drive

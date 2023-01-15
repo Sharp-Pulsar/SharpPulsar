@@ -118,6 +118,16 @@ namespace SharpPulsar.Interfaces
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageIds"> message to ack, null if acknowledge fail. </param>
 		void OnAckTimeoutSend(IActorRef consumer, ISet<IMessageId> messageIds);
-	}
+
+        /// <summary>
+		/// This method is called when partitions of the topic (partitioned-topic) changes.
+		/// </summary>
+		/// <param name="topicName"> topic name </param>
+		/// <param name="partitions"> new updated number of partitions </param>
+		void OnPartitionsChange(string topicName, int partitions)
+        {
+        }
+
+    }
 
 }

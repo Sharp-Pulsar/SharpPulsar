@@ -1,4 +1,4 @@
-﻿using SharpPulsar.Interfaces.ISchema;
+﻿using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas;
 using System;
 using System.Collections.Generic;
@@ -48,7 +48,7 @@ namespace SharpPulsar.Protocol.Schema
             {
                 Name = schema.Name,
                 Schema = schema.SchemaData,
-                Type = Commands.GetSchemaType(schema.type)
+                Type = new Commands().GetSchemaType(schema.type)
             };
             if (schema.Properties.Count == 0)
 			{

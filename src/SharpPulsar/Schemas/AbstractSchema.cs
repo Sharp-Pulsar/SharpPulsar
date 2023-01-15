@@ -1,7 +1,7 @@
 ﻿using System;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,7 +23,7 @@ using SharpPulsar.Interfaces.ISchema;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	public abstract class AbstractSchema<T> : ISchema<T>
+    public abstract class AbstractSchema<T> : ISchema<T>
 	{
 		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{

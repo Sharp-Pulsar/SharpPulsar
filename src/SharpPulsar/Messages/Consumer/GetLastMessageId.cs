@@ -3,7 +3,7 @@ using System;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class GetLastMessageId
+    public readonly record struct GetLastMessageId
     {
         /// <summary>
         /// When ConsumerActor receives this message
@@ -13,7 +13,7 @@ namespace SharpPulsar.Messages.Consumer
         /// 
         public static GetLastMessageId Instance = new GetLastMessageId();
     }
-    public sealed class NullMessageId: IMessageId
+    public readonly record struct NullMessageId : IMessageId
     {
         public Exception Exception { get; }
         public NullMessageId(Exception exception)

@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
@@ -10,12 +11,14 @@ namespace SharpPulsar
         private long _requestIdGenerator;
         private long _consumerIdGenerator;
         private long _producerIdGenerator;
+        private long _topicListWatcherIdGenerator;
         public IdGeneratorActor()
         {
 			Receive<NewRequestId>(_ => Sender.Tell(new NewRequestIdResponse(NewRequestId())));
 			Receive<NewConsumerId>(_ => Sender.Tell(NewConsumerId()));
 			Receive<NewProducerId>(_ => Sender.Tell(NewProducerId()));
-		}
+            Receive<NewTopicListWatcherId>(_ => Sender.Tell(NewTopicListWatcherId()));
+        }
 		public static Props Prop()
         {
 			return Props.Create(() => new IdGeneratorActor());
@@ -29,8 +32,12 @@ namespace SharpPulsar
 		{
 			return _consumerIdGenerator++;
 		}
-
-		private long NewRequestId()
+        private long NewTopicListWatcherId()
+        {
+            return _topicListWatcherIdGenerator++;
+        }
+       
+        private long NewRequestId()
 		{
 			return _requestIdGenerator++;
 		}

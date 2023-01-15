@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Table.Messages
 {
-    public sealed class StartMessage
+    public readonly record struct StartMessage
     {
         public static StartMessage Instance = new StartMessage();
     }

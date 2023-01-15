@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages
 {
-    public sealed class ServiceReady
+    public readonly record struct ServiceReady
     {
     }
 }

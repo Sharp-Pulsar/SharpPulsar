@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public sealed class PulsarError
+    public readonly record struct PulsarError
     {
         public PulsarError(string message, string error)
         {

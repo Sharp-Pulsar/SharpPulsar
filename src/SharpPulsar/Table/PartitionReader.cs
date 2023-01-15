@@ -4,7 +4,6 @@ using Akka.Actor;
 using Akka.Event;
 using App.Metrics.Concurrency;
 using SharpPulsar.Table.Messages;
-using SharpPulsar.User;
 
 namespace SharpPulsar.Table
 {
@@ -20,7 +19,11 @@ namespace SharpPulsar.Table
             _reader = reader;   
             _log = Context.GetLogger(); 
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            _messagesRead = new AtomicLong();
+            _messagesRead = new AtomicLong();    
+            /*Akka.Dispatch.ActorTaskScheduler.RunTask(async() =>
+            {
+               await  ReadAllExistingMessages(reader, startTime, _messagesRead);                
+            });*/
             ReadAllExistingMessages(reader, startTime, _messagesRead);
         }
         protected override void PostStop()

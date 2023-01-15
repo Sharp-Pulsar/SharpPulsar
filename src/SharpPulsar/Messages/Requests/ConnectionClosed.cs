@@ -1,10 +1,11 @@
 ﻿
 using Akka.Actor;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public sealed class ConnectionClosed
+    public readonly record struct ConnectionClosed
     {
         public IActorRef ClientCnx { get; }
         public ConnectionClosed(IActorRef clientCnx)
@@ -12,11 +13,11 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = clientCnx;
         }
     }
-    public sealed class ClearIncomingMessagesAndGetMessageNumber
+    public readonly record struct ClearIncomingMessagesAndGetMessageNumber
     {
         public static ClearIncomingMessagesAndGetMessageNumber Instance = new ClearIncomingMessagesAndGetMessageNumber();
     }
-    public sealed class IncomingMessagesCleared
+    public readonly record struct IncomingMessagesCleared
     {
         public int Cleared { get; }
         public IncomingMessagesCleared(int cleared)
@@ -24,7 +25,7 @@ namespace SharpPulsar.Messages.Requests
             Cleared = cleared;
         }
     }
-    public sealed class IncreaseAvailablePermits
+    public readonly record struct IncreaseAvailablePermits
     {
         public int Available { get; }
         public IncreaseAvailablePermits(int available)
@@ -32,15 +33,23 @@ namespace SharpPulsar.Messages.Requests
             Available = available;
         }
     }
-    public sealed class ConnectionAlreadySet
+    public readonly record struct IncreaseAvailablePermits<T>
+    {
+        public IMessage<T> Message { get; }
+        public IncreaseAvailablePermits(IMessage<T> message)
+        {
+           Message = message;
+        }
+    }
+    public readonly record struct ConnectionAlreadySet
     {
         public static ConnectionAlreadySet Instance = new ConnectionAlreadySet();
     }
-    public sealed class Connect
+    public readonly record struct Connect
     {
         public static Connect Instance = new Connect();
     }
-    public sealed class ConnectionOpened
+    public readonly record struct ConnectionOpened
     {
         public IActorRef ClientCnx { get; }
         public long MaxMessageSize { get; }
@@ -52,7 +61,7 @@ namespace SharpPulsar.Messages.Requests
             ProtocolVersion = protocolVersion;
         }
     }
-    public sealed class ConnectionFailed
+    public readonly record struct ConnectionFailed
     {
         public PulsarClientException Exception { get; }
         public ConnectionFailed(PulsarClientException exception)

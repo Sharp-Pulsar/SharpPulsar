@@ -11,7 +11,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol;
 using SharpPulsar.ServiceProvider.Messages;
-using SharpPulsar.User;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -38,7 +37,7 @@ namespace SharpPulsar.ServiceProvider
     {
         private const int DefaultConnectTimeoutInSeconds = 10;
         private const int DefaultMaxRedirects = 20;
-
+        private readonly Commands _commands = new Commands();
         private PulsarClient pulsarClient;
         private volatile string _currentPulsarServiceUrl;
         private volatile ControlledConfiguration currentControlledConfiguration;
@@ -54,7 +53,7 @@ namespace SharpPulsar.ServiceProvider
             interval = builder.Interval;
 
             httpClient = BuildHttpClient();
-            httpClient.BaseAddress = new Uri(builder.urlProvider);
+            httpClient.BaseAddress = new Uri($"{builder.urlProvider}/admin/v2/");
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             if (builder.Header != null && builder.Header.Count > 0)
@@ -87,7 +86,7 @@ namespace SharpPulsar.ServiceProvider
                 Timeout = TimeSpan.FromMilliseconds(DefaultConnectTimeoutInSeconds * 1000)
             };
 
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue($"Sharp-Pulsar-v{Commands.CurrentProtocolVersion}")));
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue($"Sharp-Pulsar-v{_commands.CurrentProtocolVersion}")));
             client.DefaultRequestHeaders.Connection.Add("keep-alive");
             return client;
         }

@@ -42,11 +42,14 @@ namespace SharpPulsar.Configuration
 		public int MaxLookupRedirects { get; set; }
 
 		public long MaxBackoffIntervalMs = 60;
-		public string TlsTrustStoreType { get; set; } = "PKCS12";
+        public long LookupTimeoutMs { get; set; } = -1; 
+
+        public string TlsTrustStoreType { get; set; } = "PKCS12";
 		public bool EnableTransaction { get; set; } = false;
 		public string TlsTrustStorePath { get; set; } = null;
 		public string TlsTrustCertsFilePath { get; set; } = null;
 		public string TlsTrustStorePassword { get; set; } = null;
+        public int InitialBackoffIntervalNanos { get; set; }    //.NET 7
         public string SslProvider { get; set; } = null;
 		public bool UseKeyStoreTls { get; set; } = false;
 		public bool TlsAllowInsecureConnection { get; set; } = false;

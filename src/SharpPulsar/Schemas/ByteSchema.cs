@@ -1,13 +1,13 @@
 ﻿using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schemas
 {
-	/// <summary>
-	/// A schema for 'Byte'.
-	/// </summary>
-	public class ByteSchema : AbstractSchema<byte>
+    /// <summary>
+    /// A schema for 'Byte'.
+    /// </summary>
+    public class ByteSchema : AbstractSchema<byte>
 	{
 
 		private static readonly ByteSchema _instance;

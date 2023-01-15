@@ -2,12 +2,5 @@
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class ReceivedMessage<T>
-    {
-        public IMessage<T> Message { get; }
-        public ReceivedMessage(IMessage<T> message)
-        {
-            Message = message;
-        }
-    }
+    public record struct ReceivedMessage<T>(IMessage<T> Message);
 }

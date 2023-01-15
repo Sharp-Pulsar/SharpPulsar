@@ -18,12 +18,12 @@
 /// </summary>
 namespace SharpPulsar.Schemas.Generic
 {
-    using SharpPulsar.Interfaces.ISchema;
     using Avro.Generic;
     using System.IO;
     using Avro.IO;
     using System;
     using SharpPulsar.Exceptions;
+    using SharpPulsar.Interfaces.Schema;
 
     public class GenericAvroWriter : ISchemaWriter<IGenericRecord>
     {

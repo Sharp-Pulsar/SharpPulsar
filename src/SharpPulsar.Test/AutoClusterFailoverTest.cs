@@ -1,5 +1,4 @@
 using SharpPulsar.Builder;
-using SharpPulsar.User;
 using Xunit.Abstractions;
 using System.Text;
 using SharpPulsar.TestContainer;
@@ -23,7 +22,7 @@ namespace SharpPulsar.Test
         public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
         }
         [Fact]
         public async Task Auto_ProduceAndConsume()
@@ -68,12 +67,12 @@ namespace SharpPulsar.Test
                 }
                 await Act(consumer, producer);
 
-                await Task.Delay(TimeSpan.FromSeconds(30));
+                await Task.Delay(TimeSpan.FromSeconds(10));
                 await Act(consumer, producer);
 
                 await producer.CloseAsync();
                 await consumer.CloseAsync();
-
+                await Task.Delay(TimeSpan.FromSeconds(5));
             }
             catch (Exception ex)
             {

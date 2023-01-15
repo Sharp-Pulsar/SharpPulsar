@@ -8,7 +8,6 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Table.Messages;
-using SharpPulsar.User;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +30,7 @@ using SharpPulsar.User;
 
 namespace SharpPulsar.Table
 {
-	public class TableViewBuilder<T> : ITableViewBuilder<T>
+    public class TableViewBuilder<T> : ITableViewBuilder<T>
 	{
 
 		private readonly PulsarClient _client;

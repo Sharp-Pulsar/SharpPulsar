@@ -8,6 +8,7 @@ using SharpPulsar.Common;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Precondition;
 using System;
+using SharpPulsar.Common.Compression;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,19 +32,21 @@ namespace SharpPulsar.Configuration
 {
     public sealed class ConsumerConfigurationData<T>
 	{
-		private TimeSpan _autoUpdatePartitionsInterval = TimeSpan.FromSeconds(5);
 		public void SetAutoUpdatePartitionsInterval(TimeSpan interval)
 		{
 			Condition.CheckArgument(interval.TotalMilliseconds > 0, "interval needs to be > 0");
-			_autoUpdatePartitionsInterval = interval;
+            AutoUpdatePartitionsInterval = interval;
 		}
-		public TimeSpan AutoUpdatePartitionsInterval { get => _autoUpdatePartitionsInterval; }
+        public TimeSpan AutoUpdatePartitionsInterval { get; set; } = TimeSpan.FromSeconds(5);
 		public IMessageCrypto MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor<T>> Interceptors { get; set; }
-		public SubType SubscriptionType { get; set; } = SubType.Exclusive;
+        public bool IsAutoScaledReceiverQueueSizeEnabled { get; set; }
+        public IRedeliveryBackoff NegativeAckRedeliveryBackoff { get; set; }    
+        public IRedeliveryBackoff AckTimeoutRedeliveryBackoff { get; set; } 
+        public SubType SubscriptionType { get; set; } = SubType.Exclusive;
 		internal IMessageListener<T> MessageListener { get; set; }
         public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }
@@ -56,14 +59,14 @@ namespace SharpPulsar.Configuration
 
 		public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
 
-		public TimeSpan AckTimeout { get; set; } = TimeSpan.Zero;
+		public TimeSpan AckTimeout { get; set; } = TimeSpan.FromSeconds(2);
 		public bool AckReceiptEnabled { get; set; } = false;
 		public bool StartPaused { get; set; } = false;
 
         [NonSerialized]
         public IMessagePayloadProcessor PayloadProcessor = null;
 
-        public TimeSpan TickDuration { get; set; } = TimeSpan.FromMilliseconds(1000);
+        public TimeSpan TickDuration { get; set; } = TimeSpan.FromMilliseconds(100);
 
 		public int PriorityLevel { get; set; } = 0;
 

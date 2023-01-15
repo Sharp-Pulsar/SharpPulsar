@@ -37,7 +37,6 @@ namespace SharpPulsar
     using Schemas;
     using Extension;
     using System.Buffers;
-    using Schema;
 
     public sealed class Message<T> : IMessage<T>
 	{
@@ -97,7 +96,7 @@ namespace SharpPulsar
         {
         }
 
-        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0, false, Commands.DefaultConsumerEpoch)
+        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0, false, new Commands().DefaultConsumerEpoch)
         {
         }
         internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
@@ -255,7 +254,7 @@ namespace SharpPulsar
             var msg = new Message<byte[]>
             {
                 _brokerEntryMetadata =
-                    Commands.ParseBrokerEntryMetadataIfExist(headersAndPayloadWithBrokerEntryMetadata)
+                    new Commands().ParseBrokerEntryMetadataIfExist(headersAndPayloadWithBrokerEntryMetadata)
             };
 
 
@@ -740,7 +739,7 @@ namespace SharpPulsar
             if (!mtadata.TotalChunkMsgSize.HasValue && metadata.ShouldSerializeTotalChunkMsgSize())
                 mtadata.TotalChunkMsgSize = metadata.TotalChunkMsgSize;
 
-            if (mtadata.Properties == null && metadata.Properties.Count > 0)
+            if (mtadata.Properties != null && metadata.Properties.Count > 0)
             {
                 var properties = new Dictionary<string, string>();
                 foreach (var entry in metadata.Properties)
@@ -793,6 +792,46 @@ namespace SharpPulsar
         {
             _properties = props;   
         }
+        public bool HasBrokerPublishTime()
+        {
+            return _brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeBrokerTimestamp();
+        }
+
+        public long? BrokerPublishTime
+        {
+            get
+            {
+                if (_brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeBrokerTimestamp())
+                {
+                    return (long)_brokerEntryMetadata.BrokerTimestamp;
+                }
+                return null;
+            }
+        }
+
+        public bool HasIndex()
+        {
+            return _brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeIndex();
+        }
+
+        public  long? Index
+        {
+            get
+            {
+                if (_brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeIndex())
+                {
+                    if (_metadata.NumMessagesInBatch > 0 && _messageId is BatchMessageId)
+                    {
+                        var BatchSize = ((BatchMessageId)_messageId).BatchSize;
+                        var BatchIndex = ((BatchMessageId)_messageId).BatchIndex;
+                        return ((long)_brokerEntryMetadata.Index - BatchSize + BatchIndex + 1);
+                    }
+                    return (long)_brokerEntryMetadata.Index;
+                }
+                return null;
+            }
+        }
+
     }
     public sealed class Metadata
     {
@@ -811,7 +850,7 @@ namespace SharpPulsar
         public bool? NullValue { get; set; } = null;
         public string PartitionKey { get; set; } = null;
         public bool? NullPartitionKey { get; set; } = null;
-        public IDictionary<string, string> Properties { get; set; } = null;
+        public IDictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
         public int? ChunkId { get; set; } = null;
         public int? MarkerType { get; set; } = null;
         public int? NumChunksFromMsg { get; set; } = null;

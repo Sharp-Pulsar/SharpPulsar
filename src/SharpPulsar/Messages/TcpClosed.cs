@@ -1,11 +1,11 @@
 ﻿
 namespace SharpPulsar.Messages
 {
-    public class TcpClosed
+    public readonly record struct TcpClosed
     {
     }
 
-    public sealed class ProducerClosed
+    public readonly record struct ProducerClosed
     {
         public ProducerClosed(long producerId)
         {
@@ -14,7 +14,7 @@ namespace SharpPulsar.Messages
 
         public long ProducerId { get; }
     }
-    public sealed class ConsumerClosed
+    public readonly record struct ConsumerClosed
     {
         public ConsumerClosed(long consumerId)
         {
