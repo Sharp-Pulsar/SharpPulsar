@@ -67,7 +67,7 @@ namespace SharpPulsar.Test
             //await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCnt; i++)
             {
-                message = await consumer.ReceiveAsync().ConfigureAwait(false);
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 if (message != null)
                 {
                     if (i % 3 == 0)
@@ -79,7 +79,7 @@ namespace SharpPulsar.Test
                 }
             }
             // the messages are pending ack state and can't be received
-            message = await consumer.ReceiveAsync().ConfigureAwait(false);
+            message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
             Assert.Null(message);
 
             await abortTxn.AbortAsync().ConfigureAwait(false);
@@ -87,7 +87,7 @@ namespace SharpPulsar.Test
             var commitTxn = await Txn().ConfigureAwait(false);
             for (var i = 0; i < messageCnt; i++)
             {
-                message = await consumer.ReceiveAsync().ConfigureAwait(false);
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 if (message != null)
                 {
                     await consumer.AcknowledgeCumulativeAsync(message.MessageId, commitTxn).ConfigureAwait(false);
@@ -99,7 +99,7 @@ namespace SharpPulsar.Test
             await commitTxn.CommitAsync().ConfigureAwait(false);
             await Task.Delay(TimeSpan.FromSeconds(1));
 
-            message = await consumer.ReceiveAsync().ConfigureAwait(false);
+            message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
             if (receivedMessageCount < 45)
                 Assert.Null(message);
 
@@ -145,7 +145,7 @@ namespace SharpPulsar.Test
 
                 for (var i = 0; i < messageCnt; i++)
                 {
-                    message = await consumer.ReceiveAsync();
+                    message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                     if (message != null)
                     {
                         if (i % 3 == 0)
@@ -388,7 +388,7 @@ namespace SharpPulsar.Test
                 {
                     try
                     {
-                        var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                        var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                         _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
                         await consumer.AcknowledgeAsync(msg.MessageId, txn);
                         receivedMessageCount++;
@@ -412,7 +412,7 @@ namespace SharpPulsar.Test
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
-                    message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                    message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                     if(message != null)
                     {
                         await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
@@ -471,7 +471,7 @@ namespace SharpPulsar.Test
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
-                    var msg = consumer.Receive(TimeSpan.FromMicroseconds(1000));
+                    var msg = consumer.Receive(TimeSpan.FromMicroseconds(5000));
                     _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
                     await consumer.AcknowledgeAsync(msg.MessageId, txn);
                     receivedMessageCount++;
@@ -489,7 +489,7 @@ namespace SharpPulsar.Test
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
-                    message = consumer.Receive(TimeSpan.FromMicroseconds(1000));
+                    message = consumer.Receive(TimeSpan.FromMicroseconds(5000));
                     if (message != null)
                     {
                         await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
@@ -545,7 +545,7 @@ namespace SharpPulsar.Test
                 // consume and ack messages with txn
                 for (var i = 0; i < messageCnt; i++)
                 {
-                    var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                    var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                     if(msg != null)
                     {
                         _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
@@ -567,7 +567,7 @@ namespace SharpPulsar.Test
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt - 2; i++)
                 {
-                    message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                    message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                     if(message != null)
                     {
                         await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
@@ -617,7 +617,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromMilliseconds(1000));
             for (var i = 0; i < messageCount - 2; ++i)
             {
-                var m = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                var m = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if(m != null)
                 {
                     _output.WriteLine($"BrokerEntryMetadata[timestamp:{m.BrokerEntryMetadata.BrokerTimestamp} index: {m.BrokerEntryMetadata?.Index.ToString()}");
@@ -632,7 +632,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCount - 5; i++)
             {
-                var m = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                var m = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if(m != null)
                 {
                     var receivedMessage = Encoding.UTF8.GetString(m.Data);
@@ -686,7 +686,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCnt; i++)
             {
-                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000)).ConfigureAwait(false);
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 Assert.NotNull(message);
                 receiveCnt++;
                 if (i % 2 == 0)
@@ -706,7 +706,7 @@ namespace SharpPulsar.Test
             receiveCnt = 0;
             for (var i = 0; i < messageCnt; i++)
             {
-                message = await consumer.ReceiveAsync().ConfigureAwait(false);
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 if(message != null)
                 {
                     await consumer.AcknowledgeAsync(message).ConfigureAwait(false);

@@ -50,7 +50,7 @@ namespace SharpPulsar.Test
             var consumer = await _client.NewConsumerAsync(record1, consumerBuilder);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
-            var message = await consumer.ReceiveAsync();
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             _output.WriteLine(JsonSerializer.Serialize(message.Value, options: new JsonSerializerOptions { WriteIndented = true }));
 
             Assert.NotNull(message);

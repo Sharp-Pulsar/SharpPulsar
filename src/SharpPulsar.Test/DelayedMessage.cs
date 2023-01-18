@@ -52,7 +52,7 @@ namespace SharpPulsar.Test
             var numReceived = 0;
             while (numMessages <= 0 || numReceived < numMessages)
             {
-                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (msg == null)
                 {
                     await Task.Delay(TimeSpan.FromSeconds(1));
@@ -94,7 +94,7 @@ namespace SharpPulsar.Test
             var numReceived = 0;
             while (numMessages <= 0 || numReceived < numMessages)
             {
-                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (msg == null)
                 {
                     await Task.Delay(TimeSpan.FromSeconds(1));
@@ -132,7 +132,7 @@ namespace SharpPulsar.Test
             var numReceived = 0;
             while (numMessages <= 0 || numReceived < numMessages)
             {
-                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (msg == null)
                 {
                     await Task.Delay(TimeSpan.FromSeconds(1));

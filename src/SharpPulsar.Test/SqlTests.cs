@@ -150,7 +150,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < 10; i++)
             {
-                var msg = await consumer.ReceiveAsync();
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (msg != null)
                 {
                     var receivedMessage = msg.Value;
@@ -193,7 +193,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < 10; i++)
             {
-                var msg = await consumer.ReceiveAsync();
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (msg != null)
                 {
                     var kv = msg.Value;

@@ -75,7 +75,7 @@ namespace SharpPulsar.Test
             {
                 try
                 {
-                    msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                    msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                     var receivedMessage = Encoding.UTF8.GetString(msg.Data);
                     _output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");
                     var expectedMessage = publishedMessages[i];

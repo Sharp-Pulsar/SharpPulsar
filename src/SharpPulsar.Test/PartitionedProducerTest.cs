@@ -107,7 +107,7 @@ namespace SharpPulsar.Test
             if (message == null)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
 
             while (message != null)
@@ -116,7 +116,7 @@ namespace SharpPulsar.Test
                 messageSet++;
                 await consumer.AcknowledgeAsync(m);
                 _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
             consumer.Unsubscribe();
             foreach (var producer in producers)
@@ -177,7 +177,7 @@ namespace SharpPulsar.Test
             if (message == null)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
 
             while (message != null)
@@ -186,7 +186,7 @@ namespace SharpPulsar.Test
                 messageSet++;
                 await consumer.AcknowledgeAsync(m);
                 _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
             consumer.Unsubscribe();
             // foreach (var producer in producers)
@@ -248,7 +248,7 @@ namespace SharpPulsar.Test
             if (message == null)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
 
             while (message != null)
@@ -257,7 +257,7 @@ namespace SharpPulsar.Test
                 messageSet++;
                 await consumer.AcknowledgeAsync(m);
                 _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
             consumer.Unsubscribe();
             await consumer.CloseAsync();

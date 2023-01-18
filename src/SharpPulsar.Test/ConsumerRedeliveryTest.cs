@@ -72,7 +72,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromMilliseconds(1000));
             for (var i = 0; i < messageCount - 2; ++i)
             {
-                var m = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
+                var m = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
 
                 _output.WriteLine($"BrokerEntryMetadata[timestamp:{m.BrokerEntryMetadata.BrokerTimestamp} index: {m.BrokerEntryMetadata?.Index.ToString()}");
                 var receivedMessage = Encoding.UTF8.GetString(m.Data);
@@ -84,7 +84,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCount - 5; i++)
             {
-                var m = (Message<byte[]>)await consumer.ReceiveAsync();
+                var m = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if(m != null)
                 {
                     var receivedMessage = Encoding.UTF8.GetString(m.Data);

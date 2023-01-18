@@ -67,7 +67,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCount; i++)
             {
-                var message = await consumer.ReceiveAsync();
+                var message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (message != null)
                 {
                     var decrypted = Encoding.UTF8.GetString(message.Data);

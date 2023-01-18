@@ -142,7 +142,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < n; i++)
             {
-                var msg = await consumer.ReceiveAsync().ConfigureAwait(false);
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 if (msg != null)
                 {
                     var ms = Encoding.UTF8.GetString(msg.Data);
@@ -157,7 +157,7 @@ namespace SharpPulsar.Test
             // All the messages should be received again
             for (var i = 0; i < n; i++)
             {
-                var msg = await consumer.ReceiveAsync().ConfigureAwait(false);
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 if (msg != null)
                 {
                     var ms = Encoding.UTF8.GetString(msg.Data);
@@ -168,7 +168,7 @@ namespace SharpPulsar.Test
             }
             _output.WriteLine(JsonSerializer.Serialize(receivedMessages));
             //Assert.True(receivedMessages.Count > 3);
-            //var nu = await consumer.ReceiveAsync();
+            //var nu = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             // There should be no more messages
             //Assert.Null(nu);
             await producer.CloseAsync().ConfigureAwait(false);

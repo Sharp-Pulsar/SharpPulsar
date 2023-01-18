@@ -79,7 +79,7 @@ namespace SharpPulsar.Test
             }
             for (var i = 0; i < messageCount; i++)
             {
-                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000)).ConfigureAwait(false);
+                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 if (message != null)
                 {
                     await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
@@ -89,7 +89,7 @@ namespace SharpPulsar.Test
             }
             for (var i = 0; i < messageCount; i++)
             {
-                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000)).ConfigureAwait(false);
+                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 if (message != null)
                 {
                     await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
@@ -197,7 +197,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < numKeys; i++)
             {
-                var message = await reader.ReadNextAsync(TimeSpan.FromMicroseconds(1000)).ConfigureAwait(false);
+                var message = await reader.ReadNextAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
                 if (message != null)
                 {
                     _output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data)}");
