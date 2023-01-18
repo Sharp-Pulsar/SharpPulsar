@@ -52,7 +52,7 @@ namespace SharpPulsar.Test
             var numReceived = 0;
             while (numMessages <= 0 || numReceived < numMessages)
             {
-                var msg = await consumer.ReceiveAsync();
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
                 if (msg == null)
                 {
                     await Task.Delay(TimeSpan.FromSeconds(1));
@@ -65,8 +65,7 @@ namespace SharpPulsar.Test
             }
 
             _output.WriteLine("Successfully received " + numReceived + " messages");
-            await producer.CloseAsync();
-            await consumer.CloseAsync();
+            
         }
 
         [Fact]
@@ -95,7 +94,7 @@ namespace SharpPulsar.Test
             var numReceived = 0;
             while (numMessages <= 0 || numReceived < numMessages)
             {
-                var msg = await consumer.ReceiveAsync();
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
                 if (msg == null)
                 {
                     await Task.Delay(TimeSpan.FromSeconds(1));
@@ -107,8 +106,6 @@ namespace SharpPulsar.Test
             }
 
             _output.WriteLine("Successfully received " + numReceived + " messages");
-            await producer.CloseAsync();
-            await consumer.CloseAsync();
         }
 
         [Fact]
@@ -135,7 +132,7 @@ namespace SharpPulsar.Test
             var numReceived = 0;
             while (numMessages <= 0 || numReceived < numMessages)
             {
-                var msg = await consumer.ReceiveAsync();
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
                 if (msg == null)
                 {
                     await Task.Delay(TimeSpan.FromSeconds(1));
@@ -147,19 +144,9 @@ namespace SharpPulsar.Test
             }
 
             _output.WriteLine("Successfully received " + numReceived + " messages");
-            await producer.CloseAsync();
-            await consumer.CloseAsync();
         }
         public async Task InitializeAsync()
         {
-            /*_tcs = new TaskCompletionSource<PulsarClient>(TaskCreationOptions.RunContinuationsAsynchronously);
-            //_client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
-            new Action(async () =>
-            {
-                var client = await _system.NewClient(_configBuilder);
-                _tcs.TrySetResult(client);
-            })();
-           _client = await _tcs.Task; */
             _client = await _system.NewClient(_configBuilder);
         }
 

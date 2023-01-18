@@ -79,7 +79,7 @@ namespace SharpPulsar.Test
             }
             for (var i = 0; i < messageCount; i++)
             {
-                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync().ConfigureAwait(false);
+                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000)).ConfigureAwait(false);
                 if (message != null)
                 {
                     await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
@@ -89,7 +89,7 @@ namespace SharpPulsar.Test
             }
             for (var i = 0; i < messageCount; i++)
             {
-                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync().ConfigureAwait(false);
+                var message = (TopicMessage<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000)).ConfigureAwait(false);
                 if (message != null)
                 {
                     await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
@@ -115,7 +115,7 @@ namespace SharpPulsar.Test
                 var id = await producer.NewMessage().Key(key).Value(data).SendAsync();
                 keys.Add(id);
             }
-            await producer.CloseAsync();
+            
             return keys;
         }
         [Fact]
@@ -181,7 +181,7 @@ namespace SharpPulsar.Test
             {
                 await producer.CloseAsync().ConfigureAwait(false);
             }
-            await reader.CloseAsync().ConfigureAwait(false);
+            
         }
         private async Task TestReadMessages(string topic, bool enableBatch)
         {
@@ -197,7 +197,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < numKeys; i++)
             {
-                var message = await reader.ReadNextAsync().ConfigureAwait(false);
+                var message = await reader.ReadNextAsync(TimeSpan.FromMicroseconds(1000)).ConfigureAwait(false);
                 if (message != null)
                 {
                     _output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data)}");

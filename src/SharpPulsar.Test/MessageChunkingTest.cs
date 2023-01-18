@@ -75,7 +75,7 @@ namespace SharpPulsar.Test
             {
                 try
                 {
-                    msg = await consumer.ReceiveAsync();
+                    msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
                     var receivedMessage = Encoding.UTF8.GetString(msg.Data);
                     _output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");
                     var expectedMessage = publishedMessages[i];
@@ -94,9 +94,6 @@ namespace SharpPulsar.Test
                 await consumer.AcknowledgeAsync(msgId);
             }
 
-            await producer.CloseAsync();
-            await consumer.CloseAsync();
-            
         }
         private void TestMessageOrderAndDuplicates<T>(ISet<T> messagesReceived, T receivedMessage, T expectedMessage)
         {

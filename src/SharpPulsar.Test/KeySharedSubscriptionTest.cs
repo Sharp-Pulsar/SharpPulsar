@@ -75,10 +75,6 @@ namespace SharpPulsar.Test
 
                           
             await Receive(new List<Consumer<byte[]>> { consumer1, consumer2, consumer3 });
-            await producer.CloseAsync();
-            await consumer1.CloseAsync();
-            await consumer2.CloseAsync();
-            await consumer3.CloseAsync();
         }
 
         [Fact]

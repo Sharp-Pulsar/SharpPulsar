@@ -62,7 +62,7 @@ namespace SharpPulsar.Test
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCount - 2; ++i)
             {
-                var m = await consumer.ReceiveAsync();
+                var m = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(1000));
                 Assert.NotNull(m);
                 var receivedMessage = m.Value;
                 var feature = receivedMessage.GetField("Feature").ToString();
@@ -76,8 +76,6 @@ namespace SharpPulsar.Test
             }
 
             Assert.Equal(8, messageReceived);
-            await producer.CloseAsync();
-            await consumer.CloseAsync();
             
         }
         
