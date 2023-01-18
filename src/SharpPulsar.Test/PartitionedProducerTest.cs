@@ -33,10 +33,12 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class PartitionedProducerTest
+    public class PartitionedProducerTest : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         private readonly PulsarAdminRESTAPIClient _admin;
         public PartitionedProducerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
@@ -46,7 +48,8 @@ namespace SharpPulsar.Test
             };
             _admin = new PulsarAdminRESTAPIClient(http);
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
@@ -99,12 +102,12 @@ namespace SharpPulsar.Test
 
             var messageSet = 0;
             
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100)).ConfigureAwait(false);
             if (message == null)
             {
-                await Task.Delay(TimeSpan.FromSeconds(10));
-                message = await consumer.ReceiveAsync();
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
 
             while (message != null)
@@ -113,7 +116,7 @@ namespace SharpPulsar.Test
                 messageSet++;
                 await consumer.AcknowledgeAsync(m);
                 _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
             consumer.Unsubscribe();
             foreach (var producer in producers)
@@ -122,7 +125,6 @@ namespace SharpPulsar.Test
             }
 
            Assert.True(producers.Count > 0);
-            _client.Dispose();
         }
         [Fact]
         public virtual async Task TestRouteGetNumOfPartitions()
@@ -170,12 +172,12 @@ namespace SharpPulsar.Test
 
             var messageSet = 0;
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100)).ConfigureAwait(false);
             if (message == null)
             {
-                await Task.Delay(TimeSpan.FromSeconds(10));
-                message = await consumer.ReceiveAsync();
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
 
             while (message != null)
@@ -184,7 +186,7 @@ namespace SharpPulsar.Test
                 messageSet++;
                 await consumer.AcknowledgeAsync(m);
                 _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
             consumer.Unsubscribe();
             // foreach (var producer in producers)
@@ -194,7 +196,6 @@ namespace SharpPulsar.Test
 
             // Assert.True(producers.Count > 0);
             await partitioProducer.CloseAsync();
-            _client.Dispose();
         }
         [Fact]
         public virtual async Task TestBinaryProtoToGetTopicsOfNamespacePersistent()
@@ -242,12 +243,12 @@ namespace SharpPulsar.Test
                 .SubscriptionName(subscriptionName)
                 .SubscriptionType(SubType.Shared)
                 .AckTimeout(TimeSpan.FromMilliseconds(60000)));
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(1100));
             if (message == null)
             {
-                await Task.Delay(TimeSpan.FromSeconds(10));
-                message = await consumer.ReceiveAsync();
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
 
             while (message != null)
@@ -256,7 +257,7 @@ namespace SharpPulsar.Test
                 messageSet++;
                 await consumer.AcknowledgeAsync(m);
                 _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
             consumer.Unsubscribe();
             await consumer.CloseAsync();
@@ -265,8 +266,16 @@ namespace SharpPulsar.Test
             await producer3.CloseAsync();
             await producer4.CloseAsync();
             Assert.True(messageSet > 0);
-            _client.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
         }
 
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
+        }
     }
 }

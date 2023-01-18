@@ -17,10 +17,12 @@ using SharpPulsar.Admin.v2;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class TableViewTests
+    public class TableViewTests : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public ClientConfigurationData _clientConfigurationData;
         private PulsarAdminRESTAPIClient _admin;
 
@@ -32,7 +34,8 @@ namespace SharpPulsar.Test
             };
             _admin = new PulsarAdminRESTAPIClient(http);
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
             _clientConfigurationData = fixture.ClientConfigurationData;
         }
         [Fact]
@@ -62,7 +65,6 @@ namespace SharpPulsar.Test
             Assert.Equal(tv.Size(), count);
             Assert.True(count >= tv.Size());
             tv.KeySet().Should().BeEquivalentTo(keys2);
-            _client.Dispose();
         }
 
         [Fact]
@@ -108,7 +110,6 @@ namespace SharpPulsar.Test
             Assert.Equal(tv.Size(), count);
             Assert.True(count >= tv.Size());
             tv.KeySet().Should().BeEquivalentTo(keys2);
-            _client.Dispose();
         }
 
         private async Task<ISet<string>> PublishMessages(string topic, int count, bool enableBatch)
@@ -138,6 +139,15 @@ namespace SharpPulsar.Test
             producer.Flush();
             return keys;
         }
+        public async Task InitializeAsync()
+        {
 
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
+        }
     }
 }

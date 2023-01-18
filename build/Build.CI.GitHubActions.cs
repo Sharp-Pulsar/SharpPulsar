@@ -21,7 +21,7 @@ using Nuke.Common.Utilities;
     FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Compile), nameof(API), nameof(Test) },
+    InvokedTargets = new[] { nameof(Test) },
     PublishArtifacts = false,
     EnableGitHubToken = false)]
 

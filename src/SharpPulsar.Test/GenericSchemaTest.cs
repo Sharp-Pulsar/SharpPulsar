@@ -17,16 +17,19 @@ namespace SharpPulsar.Test
 {
 
     [Collection(nameof(PulsarCollection))]
-    public class GenericSchemaTest
+    public class GenericSchemaTest : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         private readonly string _topic = $"generic-topic-{Guid.NewGuid()}";
-
-        private readonly PulsarClient _client;
+        
         public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
         [Fact]
         public async Task TestGenericTopic()
@@ -56,10 +59,10 @@ namespace SharpPulsar.Test
             .ForceTopicCreation(true)
             .SubscriptionName($"generic_sub");
             var consumer = await _client.NewConsumerAsync(ISchema<object>.AutoConsume(), builder);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCount - 2; ++i)
             {
-                var m = await consumer.ReceiveAsync();
+                var m = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 Assert.NotNull(m);
                 var receivedMessage = m.Value;
                 var feature = receivedMessage.GetField("Feature").ToString();
@@ -73,9 +76,7 @@ namespace SharpPulsar.Test
             }
 
             Assert.Equal(8, messageReceived);
-            await producer.CloseAsync();
-            await consumer.CloseAsync();
-            _client.Dispose();
+            
         }
         
         private byte[] ToBytes<T>(T obj)
@@ -91,6 +92,16 @@ namespace SharpPulsar.Test
         private T FromBytes<T>(byte[] array)
         {
             return JsonSerializer.Deserialize<T>(new ReadOnlySpan<byte>(array));
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
     public class ComplexGenericData

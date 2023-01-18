@@ -17,13 +17,13 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class EventSourceTests
+    public class EventSourceTests : IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
 
         public ClientConfigurationData _clientConfigurationData;
-
-        private readonly PulsarClient _client;
+        private PulsarClientConfigBuilder _configBuilder;
+        private PulsarClient _client;
         private PulsarSystem _pulsarSystem;
 
         public EventSourceTests(ITestOutputHelper output, PulsarFixture fixture)
@@ -31,8 +31,7 @@ namespace SharpPulsar.Test
             _output = output;
             _pulsarSystem = fixture.System;
             _clientConfigurationData = fixture.ClientConfigurationData;
-
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
         }
         //[Fact(Skip = "Issue with sql-worker on github action")]
         [Fact]
@@ -73,9 +72,9 @@ namespace SharpPulsar.Test
 
                 }
                 if (receivedCount == 0)
-                    await Task.Delay(TimeSpan.FromSeconds(10));
+                    await Task.Delay(TimeSpan.FromSeconds(5));
             }
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             Assert.True(receivedCount > 0);
         }
         //[Fact(Skip = "Issue with sql-worker on github action")]
@@ -116,9 +115,9 @@ namespace SharpPulsar.Test
 
                 }
                 if (receivedCount == 0)
-                    await Task.Delay(TimeSpan.FromSeconds(10));
+                    await Task.Delay(TimeSpan.FromSeconds(5));
             }
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             Assert.True(receivedCount > 0);
         }
         //[Fact(Skip = "skip for now")]
@@ -138,7 +137,7 @@ namespace SharpPulsar.Test
                 .CurrentEvents();
 
             //let leave some time to wire everything up
-            await Task.Delay(TimeSpan.FromSeconds(60));
+            await Task.Delay(TimeSpan.FromSeconds(20));
             var receivedCount = 0;
             await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(40)))
             {
@@ -163,7 +162,7 @@ namespace SharpPulsar.Test
                 .CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
 
             //let leave some time to wire everything up
-            await Task.Delay(TimeSpan.FromSeconds(20));
+            await Task.Delay(TimeSpan.FromSeconds(10));
             var receivedCount = 0;
             await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(40)))
             {
@@ -193,7 +192,16 @@ namespace SharpPulsar.Test
 
             return ids;
         }
+        public async Task InitializeAsync()
+        {
+            
+            _client = await _pulsarSystem.NewClient(_configBuilder);
+        }
 
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
+        }
     }
     public class DataOpEx
     {

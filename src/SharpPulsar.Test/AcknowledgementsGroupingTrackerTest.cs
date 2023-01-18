@@ -29,19 +29,22 @@ using System.Threading.Tasks;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Builder;
 using SharpPulsar.TestContainer;
-using SharpPulsar.Auth.OAuth2;
 
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class AcknowledgementsGroupingTrackerTest
+    public class AcknowledgementsGroupingTrackerTest : IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
-        private  PulsarClient _client;
+        private TaskCompletionSource<PulsarClient> _tcs;
+        private PulsarClient _client;
+        private PulsarSystem _system;   
+        private PulsarClientConfigBuilder _configBuilder;   
         public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();  
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;   
         }
 
         [Fact]
@@ -124,12 +127,13 @@ namespace SharpPulsar.Test
             //Assert.False(isDuplicate);
 
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
-            _client.Dispose();
+          
         }
 
         [Fact]
         public async Task TestImmediateAckingTracker()
         {
+            
             var builder = new ConsumerConfigBuilder<byte[]>();
             builder.AcknowledgmentGroupTime(TimeSpan.Zero);
             builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
@@ -159,7 +163,7 @@ namespace SharpPulsar.Test
             isDuplicate = await tracker.Ask<bool>(new IsDuplicate(msg2));
             Assert.False(isDuplicate);
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
-            _client.Dispose();
+            
         }
 
         [Fact]
@@ -246,7 +250,25 @@ namespace SharpPulsar.Test
             //Assert.False(isDuplicate);
 
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
-            _client.Dispose();
+           
+        }
+
+        public async Task InitializeAsync()
+        {
+            /*_tcs = new TaskCompletionSource<PulsarClient>(TaskCreationOptions.RunContinuationsAsynchronously);
+            //_client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            new Action(async () =>
+            {
+                var client = await _system.NewClient(_configBuilder);
+                _tcs.TrySetResult(client);
+            })();
+           _client = await _tcs.Task; */   
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+           await _client.ShutdownAsync();
         }
     }
 

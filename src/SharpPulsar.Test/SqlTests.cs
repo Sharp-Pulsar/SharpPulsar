@@ -19,16 +19,19 @@ using SharpPulsar.Trino.Message;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class SqlTests
+    public class SqlTests : IAsyncLifetime
     {
-        private readonly ITestOutputHelper _output; 
-        private readonly PulsarClient _client;
+        private PulsarClient _client;
+        private readonly ITestOutputHelper _output;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         private ActorSystem _actorSystem;
 
         public SqlTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
             _actorSystem = ActorSystem.Create("Sql");
             //fixture.CreateSql();
         }
@@ -71,7 +74,6 @@ namespace SharpPulsar.Test
             }
 
             Assert.True(receivedCount > 1);
-            _client.Dispose();
         }
 
         //[Fact(Skip = "Issue with sql-worker on github action")]
@@ -145,10 +147,10 @@ namespace SharpPulsar.Test
 
                 .AcknowledgmentGroupTime(TimeSpan.Zero);
             var consumer = await _client.NewConsumerAsync(jsonSchem, builder);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < 10; i++)
             {
-                var msg = await consumer.ReceiveAsync();
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (msg != null)
                 {
                     var receivedMessage = msg.Value;
@@ -188,10 +190,10 @@ namespace SharpPulsar.Test
                 .ForceTopicCreation(true)
                 .AcknowledgmentGroupTime(TimeSpan.Zero);
             var consumer = await _client.NewConsumerAsync(jsonSchem, builder);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < 10; i++)
             {
-                var msg = await consumer.ReceiveAsync();
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (msg != null)
                 {
                     var kv = msg.Value;
@@ -200,6 +202,16 @@ namespace SharpPulsar.Test
 
             }
 
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
     public class Students
