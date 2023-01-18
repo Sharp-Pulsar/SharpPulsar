@@ -30,14 +30,17 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class MessageChunkingTest
+    public class MessageChunkingTest : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public MessageChunkingTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
 
         [Fact]
@@ -67,7 +70,7 @@ namespace SharpPulsar.Test
             IMessage<byte[]> msg = null;
             ISet<string> messageSet = new HashSet<string>();
             IList<IMessage<byte[]>> msgIds = new List<IMessage<byte[]>>();
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < totalMessages - 1; i++)
             {
                 try
@@ -93,7 +96,7 @@ namespace SharpPulsar.Test
 
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            _client.Dispose();
+            
         }
         private void TestMessageOrderAndDuplicates<T>(ISet<T> messagesReceived, T receivedMessage, T expectedMessage)
         {
@@ -112,6 +115,16 @@ namespace SharpPulsar.Test
                 str.Append(rand.Next(10));
             }
             return str.ToString();
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 

@@ -27,14 +27,17 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class TestMessageEncryption
+    public class TestMessageEncryption : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public TestMessageEncryption(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
         //[Fact(Skip = "Encrpted Produce Consume")  ]
         [Fact]
@@ -61,7 +64,7 @@ namespace SharpPulsar.Test
                 .CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
                 .SubscriptionName("encrypted-sub")
                 .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCount; i++)
             {
                 var message = await consumer.ReceiveAsync();
@@ -78,7 +81,16 @@ namespace SharpPulsar.Test
             Assert.True(receivedCount > 6);
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            _client.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 }

@@ -11,18 +11,20 @@ using Xunit;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class AutoClusterFailoverTest
+    public class AutoClusterFailoverTest : IAsyncLifetime
     {
-        private readonly ITestOutputHelper _output;
-
         private readonly string _topic = $"auto-failover-topic-{Guid.NewGuid()}";
 
-        private readonly PulsarClient _client;
-
+        private PulsarClient _client;
+        private readonly ITestOutputHelper _output;
+        private TaskCompletionSource<PulsarClient> _tcs;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
         [Fact]
         public async Task Auto_ProduceAndConsume()
@@ -52,7 +54,7 @@ namespace SharpPulsar.Test
                    .Value(Encoding.UTF8.GetBytes("AutoMessage"))
                    .SendAsync();
 
-                    await Task.Delay(TimeSpan.FromSeconds(10));
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                     var message = (Message<byte[]>)await consumer.ReceiveAsync();
 
                     if (message != null)
@@ -67,12 +69,11 @@ namespace SharpPulsar.Test
                 }
                 await Act(consumer, producer);
 
-                await Task.Delay(TimeSpan.FromSeconds(10));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 await Act(consumer, producer);
 
                 await producer.CloseAsync();
                 await consumer.CloseAsync();
-                await Task.Delay(TimeSpan.FromSeconds(5));
             }
             catch (Exception ex)
             {
@@ -80,6 +81,22 @@ namespace SharpPulsar.Test
             }
 
         }
+        public async Task InitializeAsync()
+        {
+            /*_tcs = new TaskCompletionSource<PulsarClient>(TaskCreationOptions.RunContinuationsAsynchronously);
+            //_client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            new Action(async () =>
+            {
+                var client = await _system.NewClient(_configBuilder);
+                _tcs.TrySetResult(client);
+            })();
+           _client = await _tcs.Task; */
+            _client = await _system.NewClient(_configBuilder);
+        }
 
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
+        }
     }
 }

@@ -13,7 +13,7 @@ namespace SharpPulsar.TestContainer.Configuration
           : base(image, pulsarPort)
         {
 
-            //Environments.Add("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g");
+            Environments.Add("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g");
             Environments.Add("PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled", "true");
             Environments.Add("PULSAR_PREFIX_nettyMaxFrameSizeBytes", "5253120");
             Environments.Add("PULSAR_PREFIX_transactionCoordinatorEnabled", "true");

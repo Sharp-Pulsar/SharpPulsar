@@ -35,15 +35,18 @@ namespace SharpPulsar.Test
     /// Unit Tests of <seealso cref="MultiTopicsConsumer{T}"/>.
     /// </summary>
     [Collection(nameof(PulsarCollection))]
-    public class MultiTopicsConsumerTest
+    public class MultiTopicsConsumerTest : IAsyncLifetime
     {
         private const string Subscription = "reader-multi-topics-sub";
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public MultiTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
         [Fact]
         public async Task TestMultiTopicConsumer()
@@ -62,7 +65,7 @@ namespace SharpPulsar.Test
                 .SubscriptionName("multi-topic-sub");
 
             var consumer = await _client.NewConsumerAsync(builder).ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             var received = 0;
             for (var i = 0; i < messageCount; i++)
             {
@@ -97,7 +100,6 @@ namespace SharpPulsar.Test
             Assert.True(received > 0);
             
             await consumer.CloseAsync().ConfigureAwait(false);
-            _client.Dispose();
         }
 
         private async Task<List<MessageId>> PublishMessages(string topic, int count, string message)
@@ -180,7 +182,6 @@ namespace SharpPulsar.Test
                 await producer.CloseAsync().ConfigureAwait(false);
             }
             await reader.CloseAsync().ConfigureAwait(false);
-            _client.Dispose();
         }
         private async Task TestReadMessages(string topic, bool enableBatch)
         {
@@ -193,7 +194,7 @@ namespace SharpPulsar.Test
             var reader = await _client.NewReaderAsync(builder).ConfigureAwait(false);
 
             var keys = await PublishMessages(topic, numKeys, enableBatch);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < numKeys; i++)
             {
                 var message = await reader.ReadNextAsync().ConfigureAwait(false);
@@ -234,7 +235,16 @@ namespace SharpPulsar.Test
             producer.Flush();
             return keys;
         }
+        public async Task InitializeAsync()
+        {
 
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
+        }
     }
 
 }

@@ -10,16 +10,20 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class DelayedMessage
+    public class DelayedMessage : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        //private TaskCompletionSource<PulsarClient> _tcs;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         private readonly string _topic;
 
         public DelayedMessage(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
             _topic = $"persistent://public/default/delayed-{Guid.NewGuid()}";
         }
         [Fact]
@@ -63,7 +67,6 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            _client.Dispose();
         }
 
         [Fact]
@@ -106,7 +109,6 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            _client.Dispose();
         }
 
         [Fact]
@@ -147,7 +149,23 @@ namespace SharpPulsar.Test
             _output.WriteLine("Successfully received " + numReceived + " messages");
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            _client.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+            /*_tcs = new TaskCompletionSource<PulsarClient>(TaskCreationOptions.RunContinuationsAsynchronously);
+            //_client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            new Action(async () =>
+            {
+                var client = await _system.NewClient(_configBuilder);
+                _tcs.TrySetResult(client);
+            })();
+           _client = await _tcs.Task; */
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 

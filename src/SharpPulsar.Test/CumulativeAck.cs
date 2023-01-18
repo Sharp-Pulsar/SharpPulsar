@@ -14,21 +14,24 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class CumulativeAck
+    public class CumulativeAck : IAsyncLifetime
     {
         private const string TENANT = "public";
         private static readonly string _nAMESPACE1 = TENANT + "/default";
         private static readonly string _topicOutput = _nAMESPACE1 + $"/output-{Guid.NewGuid()}";
         private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
 
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        //private TaskCompletionSource<PulsarClient> _tcs;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
 
         public CumulativeAck(ITestOutputHelper output, PulsarFixture fixture)
         {
-
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
 
         [Fact]
@@ -80,7 +83,7 @@ namespace SharpPulsar.Test
             Assert.Null(message);
 
             await abortTxn.AbortAsync().ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             var commitTxn = await Txn().ConfigureAwait(false);
             for (var i = 0; i < messageCnt; i++)
             {
@@ -94,14 +97,14 @@ namespace SharpPulsar.Test
             }
 
             await commitTxn.CommitAsync().ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
 
             message = await consumer.ReceiveAsync().ConfigureAwait(false);
             if (receivedMessageCount < 45)
                 Assert.Null(message);
 
             Assert.True(receivedMessageCount > 45);
-            _client.Dispose();
+            
         }
         [Fact]
         public async Task TxnCumulativeAckTestBatched()
@@ -138,7 +141,7 @@ namespace SharpPulsar.Test
                     await producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).SendAsync();
                 }
                 IMessage<byte[]> message = null;
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
 
                 for (var i = 0; i < messageCnt; i++)
                 {
@@ -162,7 +165,7 @@ namespace SharpPulsar.Test
 
                 await abortTxn.AbortAsync();
                 var commitTxn = await Txn().ConfigureAwait(false);
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
                     message = await consumer.ReceiveAsync(TimeSpan.FromSeconds(1));
@@ -178,13 +181,13 @@ namespace SharpPulsar.Test
                 }
 
                 await commitTxn.CommitAsync();
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
                 if (receivedMessageCount < 75)
                     Assert.Null(message);
                 Assert.True(receivedMessageCount > 75);
             }
-            _client.Dispose();
+            
         }
         [Fact]
         public async Task ProduceCommitTest()
@@ -227,7 +230,7 @@ namespace SharpPulsar.Test
             _output.WriteLine($"Committed 2");
             // txn1 messages could be received after txn1 committed
             var receiveCnt = 0;
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < txnMessageCnt; i++)
             {
                 message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
@@ -248,7 +251,7 @@ namespace SharpPulsar.Test
             Assert.Null(message);
 
             _output.WriteLine($"message commit test enableBatch {true}");
-            _client.Dispose();
+            //_client.Dispose();
         }
         [Fact]
         public async Task ProduceCommitBatchedTest()
@@ -291,7 +294,7 @@ namespace SharpPulsar.Test
 
             // txn1 messages could be received after txn1 committed
             var receiveCnt = 0;
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < txnMessageCnt; i++)
             {
                 message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
@@ -305,7 +308,7 @@ namespace SharpPulsar.Test
             Assert.Null(message);
 
             _output.WriteLine($"message commit test enableBatch {true}");
-            _client.Dispose();
+            
         }
         [Fact]
         public async Task ProduceAbortTest()
@@ -342,7 +345,7 @@ namespace SharpPulsar.Test
             // Cant't receive transaction messages after abort.
             message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
             Assert.Null(message);
-            _client.Dispose();
+            //_client.Dispose();
         }
 
         [Fact]
@@ -380,7 +383,7 @@ namespace SharpPulsar.Test
                 }
 
                 // consume and ack messages with txn
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
                     try
@@ -406,7 +409,7 @@ namespace SharpPulsar.Test
 
                 // after transaction abort, the messages could be received
                 var commitTxn = await Txn().ConfigureAwait(false);
-                await Task.Delay(TimeSpan.FromSeconds(10));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
                     message = await consumer.ReceiveAsync();
@@ -427,7 +430,7 @@ namespace SharpPulsar.Test
                     Assert.Null(message);
             }
             Assert.True(receivedMessageCount > 75);
-            _client.Dispose();
+            //_client.Dispose();
         }
 
         [Fact]
@@ -465,7 +468,7 @@ namespace SharpPulsar.Test
                 }
 
                 // consume and ack messages with txn
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
                     var msg = consumer.Receive();
@@ -483,7 +486,7 @@ namespace SharpPulsar.Test
 
                 // after transaction abort, the messages could be received
                 var commitTxn = await Txn().ConfigureAwait(false);
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
                     message = consumer.Receive();
@@ -497,7 +500,7 @@ namespace SharpPulsar.Test
 
                 // 2) ack committed by a new txn
                 await commitTxn.CommitAsync();
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
 
                 // after transaction commit, the messages can't be received
                 message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
@@ -505,7 +508,7 @@ namespace SharpPulsar.Test
                     Assert.Null(message);
             }
             Assert.True(receivedMessageCount > 75);
-            _client.Dispose();
+            //_client.Dispose();
         }
 
         [Fact(Skip = "TxnAckTestSharedSub")]
@@ -561,7 +564,7 @@ namespace SharpPulsar.Test
 
                 // after transaction abort, the messages could be received
                 var commitTxn = await Txn().ConfigureAwait(false);
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt - 2; i++)
                 {
                     message = await consumer.ReceiveAsync();
@@ -583,7 +586,7 @@ namespace SharpPulsar.Test
                     Assert.Null(message);
             }
             Assert.True(receivedMessageCount > 75);
-            _client.Dispose();
+            
         }
         [Fact]
         public async Task TestUnAckMessageRedeliveryWithReceive()
@@ -626,7 +629,7 @@ namespace SharpPulsar.Test
             }
 
             Assert.True(messageReceived > 0);
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCount - 5; i++)
             {
                 var m = (Message<byte[]>)await consumer.ReceiveAsync();
@@ -640,7 +643,6 @@ namespace SharpPulsar.Test
             await producer.CloseAsync();
             await consumer.CloseAsync();
             Assert.True(messageReceived > 5);
-            _client.Dispose();
         }
         [Fact]
         public async Task TxnMessageAckTest()
@@ -682,7 +684,7 @@ namespace SharpPulsar.Test
 
             var ackedMessageCount = 0;
             var receiveCnt = 0;
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCnt; i++)
             {
                 message = await consumer.ReceiveAsync().ConfigureAwait(false);
@@ -717,7 +719,24 @@ namespace SharpPulsar.Test
             message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
             Assert.Null(message);
             _output.WriteLine($"receive transaction messages count: {receiveCnt}");*/
-            _client.Dispose();
+            //lient.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+            /*_tcs = new TaskCompletionSource<PulsarClient>(TaskCreationOptions.RunContinuationsAsynchronously);
+            //_client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            new Action(async () =>
+            {
+                var client = await _system.NewClient(_configBuilder);
+                _tcs.TrySetResult(client);
+            })();
+           _client = await _tcs.Task; */
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
 
         private async Task<TransactionImpl.Transaction> Txn() => (TransactionImpl.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();

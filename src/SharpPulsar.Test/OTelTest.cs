@@ -17,14 +17,17 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class OTelTest
+    public class OTelTest : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public OTelTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
         [Fact]
         public async Task ProduceAndConsume()
@@ -50,7 +53,7 @@ namespace SharpPulsar.Test
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
                .SendAsync();
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
                 .Intercept(new ConsumerOTelInterceptor<byte[]>("consumer", _client.Log))
                 .Topic(topic)
@@ -82,7 +85,16 @@ namespace SharpPulsar.Test
                     _output.WriteLine($"{tag.Key}:{tag.Value}");
                 }
             }
-            _client.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 }

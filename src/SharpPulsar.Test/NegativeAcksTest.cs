@@ -35,15 +35,18 @@ using System.Text.Json;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class NegativeAcksTest
+    public class NegativeAcksTest : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
 
         public NegativeAcksTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
 
         [Fact]
@@ -136,7 +139,7 @@ namespace SharpPulsar.Test
                 await producer.SendAsync(Encoding.UTF8.GetBytes(value)).ConfigureAwait(false);
                 sentMessages.Add(value);
             }
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < n; i++)
             {
                 var msg = await consumer.ReceiveAsync().ConfigureAwait(false);
@@ -150,7 +153,7 @@ namespace SharpPulsar.Test
 
             ISet<string> receivedMessages = new HashSet<string>();
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             // All the messages should be received again
             for (var i = 0; i < n; i++)
             {
@@ -170,7 +173,16 @@ namespace SharpPulsar.Test
             //Assert.Null(nu);
             await producer.CloseAsync().ConfigureAwait(false);
             await consumer.CloseAsync().ConfigureAwait(false);
-            _client.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 

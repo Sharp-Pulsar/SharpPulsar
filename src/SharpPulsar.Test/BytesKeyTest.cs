@@ -31,17 +31,19 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class ByteKeysTest
-    {
+    public class ByteKeysTest : IAsyncLifetime
+    {        
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-
-        private readonly PulsarClient _client;
+        //private TaskCompletionSource<PulsarClient> _tcs;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public ByteKeysTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
-
         [Fact]
         public async Task ProducerInstantiation()
         {
@@ -147,7 +149,7 @@ namespace SharpPulsar.Test
                 .SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < 4; i++)
             {
                 var message = (Message<byte[]>)await consumer.ReceiveAsync();
@@ -163,6 +165,23 @@ namespace SharpPulsar.Test
 
             await producer.CloseAsync();
             await consumer.CloseAsync();
+        }
+        public async Task InitializeAsync()
+        {
+            /*_tcs = new TaskCompletionSource<PulsarClient>(TaskCreationOptions.RunContinuationsAsynchronously);
+            //_client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            new Action(async () =>
+            {
+                var client = await _system.NewClient(_configBuilder);
+                _tcs.TrySetResult(client);
+            })();
+           _client = await _tcs.Task; */
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 
