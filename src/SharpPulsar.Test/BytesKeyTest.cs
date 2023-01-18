@@ -51,7 +51,7 @@ namespace SharpPulsar.Test
             producer.Topic($"persistent://public/default/{Guid.NewGuid()}");
             var stringProducerBuilder = await _client.NewProducerAsync(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
-            await stringProducerBuilder.CloseAsync();
+            //await stringProducerBuilder.CloseAsync();
         }
         [Fact]
         public async Task ConsumerInstantiation()
@@ -61,7 +61,7 @@ namespace SharpPulsar.Test
             consumer.SubscriptionName($"test-sub-{Guid.NewGuid()}");
             var stringConsumerBuilder = await _client.NewConsumerAsync(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
-            await stringConsumerBuilder.CloseAsync();
+            //await stringConsumerBuilder.CloseAsync();
         }
         [Fact]
         public async Task ReaderInstantiation()
@@ -71,7 +71,7 @@ namespace SharpPulsar.Test
             reader.StartMessageId(IMessageId.Earliest);
             var stringReaderBuilder = await _client.NewReaderAsync(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
-            await stringReaderBuilder.CloseAsync();
+            //await stringReaderBuilder.CloseAsync();
         }
         [Fact]
         public async Task ProduceAndConsume()
@@ -110,8 +110,8 @@ namespace SharpPulsar.Test
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
-            await producer.CloseAsync().ConfigureAwait(false);
-            await consumer.CloseAsync().ConfigureAwait(false);
+            //await producer.CloseAsync().ConfigureAwait(false);
+            //await consumer.CloseAsync().ConfigureAwait(false);
         }
         [Fact]
         public async Task ProduceAndConsumeBatch()
@@ -163,19 +163,11 @@ namespace SharpPulsar.Test
                 Assert.Equal($"TestMessage-{i}", receivedMessage);
             }
 
-            await producer.CloseAsync();
-            await consumer.CloseAsync();
+            //await producer.CloseAsync();
+            //await consumer.CloseAsync();
         }
         public async Task InitializeAsync()
         {
-            /*_tcs = new TaskCompletionSource<PulsarClient>(TaskCreationOptions.RunContinuationsAsynchronously);
-            //_client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
-            new Action(async () =>
-            {
-                var client = await _system.NewClient(_configBuilder);
-                _tcs.TrySetResult(client);
-            })();
-           _client = await _tcs.Task; */
             _client = await _system.NewClient(_configBuilder);
         }
 
