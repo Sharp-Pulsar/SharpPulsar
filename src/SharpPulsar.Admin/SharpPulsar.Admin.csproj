@@ -11,39 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="v2\Admin.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Admin.json</DependentUpon>
-    </Compile>
-    <Compile Update="v2\Lookup.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Lookup.json</DependentUpon>
-    </Compile>
-    <Compile Update="v3\Functions.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Functions.json</DependentUpon>
-    </Compile>
-    <Compile Update="v3\Sinks.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Sinks.json</DependentUpon>
-    </Compile>
-    <Compile Update="v3\Sources.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Sources.json</DependentUpon>
-    </Compile>
-    <Compile Update="v3\Transactions.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Transactions.json</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update=".ruleset">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
