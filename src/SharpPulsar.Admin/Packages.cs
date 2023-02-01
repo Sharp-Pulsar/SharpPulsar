@@ -13,52 +13,127 @@
 #pragma warning disable 3016 // Disable "CS3016 Arrays as attribute arguments is not CLS-compliant"
 #pragma warning disable 8603 // Disable "CS8603 Possible null reference return"
 
-namespace SharpPulsar.Admin.v2.Lookup
+namespace SharpPulsar.Admin.v3.Packages
 {
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
-    public partial interface IPulsarLookupRESTAPIClient
+    public partial interface IPulsarPackagesRESTAPIClient
     {
         /// <summary>
-        /// Get the owner broker of the given topic.
+        /// Get all the specified type packages in a namespace.
         /// </summary>
-        /// <returns>successful operation</returns>
+        /// <returns>Return all the specified type package names in the specified namespace.</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<LookupData> LookupTopicAsync(string topic_domain, string tenant, string @namespace, string topic, bool? authoritative, string listenerName, string x_Pulsar_ListenerName);
+        System.Threading.Tasks.Task<PackageMetadata> ListPackagesAsync(string type, string tenant, string @namespace);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Get the owner broker of the given topic.
+        /// Get all the specified type packages in a namespace.
         /// </summary>
-        /// <returns>successful operation</returns>
+        /// <returns>Return all the specified type package names in the specified namespace.</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<LookupData> LookupTopicAsync(string topic_domain, string tenant, string @namespace, string topic, bool? authoritative, string listenerName, string x_Pulsar_ListenerName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<PackageMetadata> ListPackagesAsync(string type, string tenant, string @namespace, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
-        /// Get the namespace bundle which the given topic belongs to.
+        /// Get all the versions of a package.
         /// </summary>
-        /// <returns>successful operation</returns>
+        /// <returns>Return the package versions of the specified package.</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<string> GetNamespaceBundleAsync(string topic_domain, string tenant, string @namespace, string topic);
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> ListPackageVersionAsync(string type, string tenant, string @namespace, string packageName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Get the namespace bundle which the given topic belongs to.
+        /// Get all the versions of a package.
         /// </summary>
-        /// <returns>successful operation</returns>
+        /// <returns>Return the package versions of the specified package.</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<string> GetNamespaceBundleAsync(string topic_domain, string tenant, string @namespace, string topic, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> ListPackageVersionAsync(string type, string tenant, string @namespace, string packageName, System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delete a package with the package name.
+        /// </summary>
+        /// <returns>Delete the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task DeleteAsync(string type, string tenant, string @namespace, string packageName, string version);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Delete a package with the package name.
+        /// </summary>
+        /// <returns>Delete the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task DeleteAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Download a package with the package name.
+        /// </summary>
+        /// <returns>Download the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<StreamingOutput> DownloadAsync(string type, string tenant, string @namespace, string packageName, string version);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Download a package with the package name.
+        /// </summary>
+        /// <returns>Download the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<StreamingOutput> DownloadAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Upload a package.
+        /// </summary>
+        /// <returns>Upload the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task UploadAsync(string type, string tenant, string @namespace, string packageName, string version);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Upload a package.
+        /// </summary>
+        /// <returns>Upload the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task UploadAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Get the metadata of a package.
+        /// </summary>
+        /// <returns>Return the metadata of the specified package.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<PackageMetadata> GetMetaAsync(string type, string tenant, string @namespace, string packageName, string version);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Get the metadata of a package.
+        /// </summary>
+        /// <returns>Return the metadata of the specified package.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<PackageMetadata> GetMetaAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Update the metadata of a package.
+        /// </summary>
+        /// <returns>Update the metadata of the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task UpdateMetaAsync(string type, string tenant, string @namespace, string packageName, string version);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Update the metadata of a package.
+        /// </summary>
+        /// <returns>Update the metadata of the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task UpdateMetaAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken);
 
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
-    public partial class PulsarLookupRESTAPIClient : IPulsarLookupRESTAPIClient
+    public partial class PulsarPackagesRESTAPIClient : IPulsarPackagesRESTAPIClient
     {
         private System.Net.Http.HttpClient _httpClient;
         private System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings;
 
-        public PulsarLookupRESTAPIClient(System.Net.Http.HttpClient httpClient)
+        public PulsarPackagesRESTAPIClient(System.Net.Http.HttpClient httpClient)
         {
             _httpClient = httpClient;
             _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(CreateSerializerSettings);
@@ -80,25 +155,25 @@ namespace SharpPulsar.Admin.v2.Lookup
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
 
         /// <summary>
-        /// Get the owner broker of the given topic.
+        /// Get all the specified type packages in a namespace.
         /// </summary>
-        /// <returns>successful operation</returns>
+        /// <returns>Return all the specified type package names in the specified namespace.</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<LookupData> LookupTopicAsync(string topic_domain, string tenant, string @namespace, string topic, bool? authoritative, string listenerName, string x_Pulsar_ListenerName)
+        public virtual System.Threading.Tasks.Task<PackageMetadata> ListPackagesAsync(string type, string tenant, string @namespace)
         {
-            return LookupTopicAsync(topic_domain, tenant, @namespace, topic, authoritative, listenerName, x_Pulsar_ListenerName, System.Threading.CancellationToken.None);
+            return ListPackagesAsync(type, tenant, @namespace, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Get the owner broker of the given topic.
+        /// Get all the specified type packages in a namespace.
         /// </summary>
-        /// <returns>successful operation</returns>
+        /// <returns>Return all the specified type package names in the specified namespace.</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<LookupData> LookupTopicAsync(string topic_domain, string tenant, string @namespace, string topic, bool? authoritative, string listenerName, string x_Pulsar_ListenerName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<PackageMetadata> ListPackagesAsync(string type, string tenant, string @namespace, System.Threading.CancellationToken cancellationToken)
         {
-            if (topic_domain == null)
-                throw new System.ArgumentNullException("topic_domain");
+            if (type == null)
+                throw new System.ArgumentNullException("type");
 
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -106,24 +181,11 @@ namespace SharpPulsar.Admin.v2.Lookup
             if (@namespace == null)
                 throw new System.ArgumentNullException("@namespace");
 
-            if (topic == null)
-                throw new System.ArgumentNullException("topic");
-
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append("v2/topic/{topic-domain}/{tenant}/{namespace}/{topic}?");
-            urlBuilder_.Replace("{topic-domain}", System.Uri.EscapeDataString(ConvertToString(topic_domain, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Append("packages/{type}/{tenant}/{namespace}");
+            urlBuilder_.Replace("{type}", System.Uri.EscapeDataString(ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{topic}", System.Uri.EscapeDataString(ConvertToString(topic, System.Globalization.CultureInfo.InvariantCulture)));
-            if (authoritative != null)
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("authoritative") + "=").Append(System.Uri.EscapeDataString(ConvertToString(authoritative, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (listenerName != null)
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("listenerName") + "=").Append(System.Uri.EscapeDataString(ConvertToString(listenerName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            urlBuilder_.Length--;
 
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -131,9 +193,6 @@ namespace SharpPulsar.Admin.v2.Lookup
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-
-                    if (x_Pulsar_ListenerName != null)
-                        request_.Headers.TryAddWithoutValidation("X-Pulsar-ListenerName", ConvertToString(x_Pulsar_ListenerName, System.Globalization.CultureInfo.InvariantCulture));
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
@@ -160,7 +219,7 @@ namespace SharpPulsar.Admin.v2.Lookup
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<LookupData>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<PackageMetadata>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -168,10 +227,22 @@ namespace SharpPulsar.Admin.v2.Lookup
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 307)
+                        if (status_ == 412)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Current broker doesn\'t serve the namespace of this topic", status_, responseText_, headers_, null);
+                            throw new ApiException("The package type is illegal.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Internal server error.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 503)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Package Management Service is not enabled in the broker.", status_, responseText_, headers_, null);
                         }
                         else
                         {
@@ -194,25 +265,25 @@ namespace SharpPulsar.Admin.v2.Lookup
         }
 
         /// <summary>
-        /// Get the namespace bundle which the given topic belongs to.
+        /// Get all the versions of a package.
         /// </summary>
-        /// <returns>successful operation</returns>
+        /// <returns>Return the package versions of the specified package.</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<string> GetNamespaceBundleAsync(string topic_domain, string tenant, string @namespace, string topic)
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> ListPackageVersionAsync(string type, string tenant, string @namespace, string packageName)
         {
-            return GetNamespaceBundleAsync(topic_domain, tenant, @namespace, topic, System.Threading.CancellationToken.None);
+            return ListPackageVersionAsync(type, tenant, @namespace, packageName, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Get the namespace bundle which the given topic belongs to.
+        /// Get all the versions of a package.
         /// </summary>
-        /// <returns>successful operation</returns>
+        /// <returns>Return the package versions of the specified package.</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<string> GetNamespaceBundleAsync(string topic_domain, string tenant, string @namespace, string topic, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> ListPackageVersionAsync(string type, string tenant, string @namespace, string packageName, System.Threading.CancellationToken cancellationToken)
         {
-            if (topic_domain == null)
-                throw new System.ArgumentNullException("topic_domain");
+            if (type == null)
+                throw new System.ArgumentNullException("type");
 
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -220,15 +291,15 @@ namespace SharpPulsar.Admin.v2.Lookup
             if (@namespace == null)
                 throw new System.ArgumentNullException("@namespace");
 
-            if (topic == null)
-                throw new System.ArgumentNullException("topic");
+            if (packageName == null)
+                throw new System.ArgumentNullException("packageName");
 
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append("v2/topic/{topic-domain}/{tenant}/{namespace}/{topic}/bundle");
-            urlBuilder_.Replace("{topic-domain}", System.Uri.EscapeDataString(ConvertToString(topic_domain, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Append("packages/{type}/{tenant}/{namespace}/{packageName}");
+            urlBuilder_.Replace("{type}", System.Uri.EscapeDataString(ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{topic}", System.Uri.EscapeDataString(ConvertToString(topic, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{packageName}", System.Uri.EscapeDataString(ConvertToString(packageName, System.Globalization.CultureInfo.InvariantCulture)));
 
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -262,7 +333,7 @@ namespace SharpPulsar.Admin.v2.Lookup
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<string>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<string>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -270,16 +341,626 @@ namespace SharpPulsar.Admin.v2.Lookup
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 403)
+                        if (status_ == 404)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Don\'t have admin permission", status_, responseText_, headers_, null);
+                            throw new ApiException("The specified package is not existent.", status_, responseText_, headers_, null);
                         }
                         else
-                        if (status_ == 405)
+                        if (status_ == 412)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("Invalid topic domain type", status_, responseText_, headers_, null);
+                            throw new ApiException("The package name is illegal.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Internal server error.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 503)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Package Management Service is not enabled in the broker.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Delete a package with the package name.
+        /// </summary>
+        /// <returns>Delete the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task DeleteAsync(string type, string tenant, string @namespace, string packageName, string version)
+        {
+            return DeleteAsync(type, tenant, @namespace, packageName, version, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Delete a package with the package name.
+        /// </summary>
+        /// <returns>Delete the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task DeleteAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken)
+        {
+            if (type == null)
+                throw new System.ArgumentNullException("type");
+
+            if (tenant == null)
+                throw new System.ArgumentNullException("tenant");
+
+            if (@namespace == null)
+                throw new System.ArgumentNullException("@namespace");
+
+            if (packageName == null)
+                throw new System.ArgumentNullException("packageName");
+
+            if (version == null)
+                throw new System.ArgumentNullException("version");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append("packages/{type}/{tenant}/{namespace}/{packageName}/{version}");
+            urlBuilder_.Replace("{type}", System.Uri.EscapeDataString(ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{packageName}", System.Uri.EscapeDataString(ConvertToString(packageName, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{version}", System.Uri.EscapeDataString(ConvertToString(version, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("DELETE");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            return;
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The specified package is not existent.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 412)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The package name is illegal.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Internal server error.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 503)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Package Management Service is not enabled in the broker.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Download a package with the package name.
+        /// </summary>
+        /// <returns>Download the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<StreamingOutput> DownloadAsync(string type, string tenant, string @namespace, string packageName, string version)
+        {
+            return DownloadAsync(type, tenant, @namespace, packageName, version, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Download a package with the package name.
+        /// </summary>
+        /// <returns>Download the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<StreamingOutput> DownloadAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken)
+        {
+            if (type == null)
+                throw new System.ArgumentNullException("type");
+
+            if (tenant == null)
+                throw new System.ArgumentNullException("tenant");
+
+            if (@namespace == null)
+                throw new System.ArgumentNullException("@namespace");
+
+            if (packageName == null)
+                throw new System.ArgumentNullException("packageName");
+
+            if (version == null)
+                throw new System.ArgumentNullException("version");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append("packages/{type}/{tenant}/{namespace}/{packageName}/{version}");
+            urlBuilder_.Replace("{type}", System.Uri.EscapeDataString(ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{packageName}", System.Uri.EscapeDataString(ConvertToString(packageName, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{version}", System.Uri.EscapeDataString(ConvertToString(version, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<StreamingOutput>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The specified package is not existent.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 412)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The package name is illegal.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Internal server error.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 503)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Package Management Service is not enabled in the broker.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Upload a package.
+        /// </summary>
+        /// <returns>Upload the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task UploadAsync(string type, string tenant, string @namespace, string packageName, string version)
+        {
+            return UploadAsync(type, tenant, @namespace, packageName, version, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Upload a package.
+        /// </summary>
+        /// <returns>Upload the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task UploadAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken)
+        {
+            if (type == null)
+                throw new System.ArgumentNullException("type");
+
+            if (tenant == null)
+                throw new System.ArgumentNullException("tenant");
+
+            if (@namespace == null)
+                throw new System.ArgumentNullException("@namespace");
+
+            if (packageName == null)
+                throw new System.ArgumentNullException("packageName");
+
+            if (version == null)
+                throw new System.ArgumentNullException("version");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append("packages/{type}/{tenant}/{namespace}/{packageName}/{version}");
+            urlBuilder_.Replace("{type}", System.Uri.EscapeDataString(ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{packageName}", System.Uri.EscapeDataString(ConvertToString(packageName, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{version}", System.Uri.EscapeDataString(ConvertToString(version, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Content = new System.Net.Http.StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json");
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            return;
+                        }
+                        else
+                        if (status_ == 412)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The package name is illegal.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Internal server error.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 503)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Package Management Service is not enabled in the broker.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Get the metadata of a package.
+        /// </summary>
+        /// <returns>Return the metadata of the specified package.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<PackageMetadata> GetMetaAsync(string type, string tenant, string @namespace, string packageName, string version)
+        {
+            return GetMetaAsync(type, tenant, @namespace, packageName, version, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Get the metadata of a package.
+        /// </summary>
+        /// <returns>Return the metadata of the specified package.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<PackageMetadata> GetMetaAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken)
+        {
+            if (type == null)
+                throw new System.ArgumentNullException("type");
+
+            if (tenant == null)
+                throw new System.ArgumentNullException("tenant");
+
+            if (@namespace == null)
+                throw new System.ArgumentNullException("@namespace");
+
+            if (packageName == null)
+                throw new System.ArgumentNullException("packageName");
+
+            if (version == null)
+                throw new System.ArgumentNullException("version");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append("packages/{type}/{tenant}/{namespace}/{packageName}/{version}/metadata");
+            urlBuilder_.Replace("{type}", System.Uri.EscapeDataString(ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{packageName}", System.Uri.EscapeDataString(ConvertToString(packageName, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{version}", System.Uri.EscapeDataString(ConvertToString(version, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<PackageMetadata>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The specified package is not existent.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 412)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The package name is illegal.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Internal server error.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 503)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Package Management Service is not enabled in the broker.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Update the metadata of a package.
+        /// </summary>
+        /// <returns>Update the metadata of the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task UpdateMetaAsync(string type, string tenant, string @namespace, string packageName, string version)
+        {
+            return UpdateMetaAsync(type, tenant, @namespace, packageName, version, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Update the metadata of a package.
+        /// </summary>
+        /// <returns>Update the metadata of the specified package successfully.</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task UpdateMetaAsync(string type, string tenant, string @namespace, string packageName, string version, System.Threading.CancellationToken cancellationToken)
+        {
+            if (type == null)
+                throw new System.ArgumentNullException("type");
+
+            if (tenant == null)
+                throw new System.ArgumentNullException("tenant");
+
+            if (@namespace == null)
+                throw new System.ArgumentNullException("@namespace");
+
+            if (packageName == null)
+                throw new System.ArgumentNullException("packageName");
+
+            if (version == null)
+                throw new System.ArgumentNullException("version");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append("packages/{type}/{tenant}/{namespace}/{packageName}/{version}/metadata");
+            urlBuilder_.Replace("{type}", System.Uri.EscapeDataString(ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{tenant}", System.Uri.EscapeDataString(ConvertToString(tenant, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{namespace}", System.Uri.EscapeDataString(ConvertToString(@namespace, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{packageName}", System.Uri.EscapeDataString(ConvertToString(packageName, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Replace("{version}", System.Uri.EscapeDataString(ConvertToString(version, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Content = new System.Net.Http.StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json");
+                    request_.Method = new System.Net.Http.HttpMethod("PUT");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            return;
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The specified package is not existent.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 412)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The package name is illegal.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Internal server error.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 503)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Package Management Service is not enabled in the broker.", status_, responseText_, headers_, null);
                         }
                         else
                         {
@@ -541,23 +1222,6 @@ namespace SharpPulsar.Admin.v2.Lookup
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
     public partial class CompletableFuture
-    {
-        [Newtonsoft.Json.JsonProperty("cancelled", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? Cancelled { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("completedExceptionally", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? CompletedExceptionally { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("done", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? Done { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("numberOfDependents", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public int? NumberOfDependents { get; set; }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
-    public partial class CompletableFutureByteBuf
     {
         [Newtonsoft.Json.JsonProperty("cancelled", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? Cancelled { get; set; }
@@ -1221,29 +1885,6 @@ namespace SharpPulsar.Admin.v2.Lookup
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
-    public partial class LookupData
-    {
-        [Newtonsoft.Json.JsonProperty("brokerUrl", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string BrokerUrl { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("brokerUrlSsl", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string BrokerUrlSsl { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("brokerUrlTls", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string BrokerUrlTls { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("httpUrl", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string HttpUrl { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("httpUrlTls", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string HttpUrlTls { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("nativeUrl", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string NativeUrl { get; set; }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
     public partial class Module
     {
         [Newtonsoft.Json.JsonProperty("annotations", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
@@ -1428,6 +2069,26 @@ namespace SharpPulsar.Admin.v2.Lookup
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
+    public partial class PackageMetadata
+    {
+        [Newtonsoft.Json.JsonProperty("contact", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Contact { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("createTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public long? CreateTime { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("description", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Description { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("modificationTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public long? ModificationTime { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("properties", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.IDictionary<string, string> Properties { get; set; }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
     public partial class PrettyPrinter
     {
 
@@ -1579,6 +2240,12 @@ namespace SharpPulsar.Admin.v2.Lookup
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
     public partial class SocketAddress
+    {
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.18.2.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.1.0))")]
+    public partial class StreamingOutput
     {
 
     }

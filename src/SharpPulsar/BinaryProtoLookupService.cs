@@ -19,8 +19,6 @@ using SharpPulsar.Messages.Client;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.ServiceName;
-using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
-using SharpPulsar.Admin.v2;
 using Mode = SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Mode;
 using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
 using ZstdNet;
