@@ -35,14 +35,17 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class KeySharedSubscriptionTest
+    public class KeySharedSubscriptionTest : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
 
         private static readonly IList<string> Keys = new List<string> { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -62,7 +65,7 @@ namespace SharpPulsar.Test
                     .SendAsync();
             }
             producer.Flush();
-            await Task.Delay(3000);
+            await Task.Delay(1000);
 
             var consumer1 = await CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
 
@@ -72,11 +75,6 @@ namespace SharpPulsar.Test
 
                           
             await Receive(new List<Consumer<byte[]>> { consumer1, consumer2, consumer3 });
-            await producer.CloseAsync();
-            await consumer1.CloseAsync();
-            await consumer2.CloseAsync();
-            await consumer3.CloseAsync();
-            _client.Dispose();
         }
 
         [Fact]
@@ -238,6 +236,16 @@ namespace SharpPulsar.Test
                     Assert.True(allKeys.Add(key), "Key " + key + "is distributed to multiple consumers.");
                 });
             });
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 

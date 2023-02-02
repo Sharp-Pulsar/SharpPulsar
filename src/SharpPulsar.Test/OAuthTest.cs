@@ -17,12 +17,14 @@ namespace SharpPulsar.Test
 {
 
     [Collection(nameof(PulsarCollection))]
-    public class OAuthTest
+    public class OAuthTest : IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
 
         private readonly string _topic;
-        private readonly PulsarClient _client;
+        private PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
 
         public OAuthTest(ITestOutputHelper output)
         {
@@ -37,11 +39,9 @@ namespace SharpPulsar.Test
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
             client.Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
-
-            var system = PulsarSystem.GetInstance(actorSystemName:"oauth");
-            _client = system.NewClient(client).AsTask().Result;
+            _configBuilder = client;
+            _system = PulsarSystem.GetInstance(actorSystemName:"oauth");
             _topic = $"persistent://public/default/oauth-{Guid.NewGuid()}";
-            Task.Delay(TimeSpan.FromSeconds(20));
         }
         [Fact]
         public virtual async Task OAuth_ProducerInstantiation()
@@ -98,8 +98,8 @@ namespace SharpPulsar.Test
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
-            var message = (Message<byte[]>)await consumer.ReceiveAsync();
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            var message = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
 
             if (message != null)
                 _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
@@ -149,10 +149,10 @@ namespace SharpPulsar.Test
                     _output.WriteLine($"Id: {id}");
             }
             producer.Flush();
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < 5; i++)
             {
-                var message = (Message<byte[]>)await consumer.ReceiveAsync();
+                var message = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (message != null)
                     _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
 
@@ -178,6 +178,16 @@ namespace SharpPulsar.Test
             var ret = Path.Combine(configFolder, privateKeyFileName);
             if (!File.Exists(ret)) throw new FileNotFoundException("can't find credentials file");
             return ret;
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 }

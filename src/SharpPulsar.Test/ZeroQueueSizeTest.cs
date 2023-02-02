@@ -38,16 +38,19 @@ using System.Text.Json;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-	public class ZeroQueueSizeTest
-	{		
-		private readonly int _totalMessages = 10;
-		private readonly ITestOutputHelper _output;
-		private readonly PulsarClient _client;
+	public class ZeroQueueSizeTest : IAsyncLifetime
+    {
+        private PulsarClient _client;
+        private readonly ITestOutputHelper _output;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
+        private readonly int _totalMessages = 10;
 
         public ZeroQueueSizeTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
-			_output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _output = output;
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
 		[Fact]
 		public async Task ZeroQueueSizeNormalConsumer()
@@ -81,7 +84,7 @@ namespace SharpPulsar.Test
 				_output.WriteLine("Producer produced: " + msg);
 				producer.Send(Encoding.UTF8.GetBytes(msg));
 			}
-            await Task.Delay(10000);
+            await Task.Delay(1000);
             // 4. Receiver receives the message
             IMessage<byte[]> message;
             ISet<int> receivedMessages = new HashSet<int>();
@@ -101,7 +104,6 @@ namespace SharpPulsar.Test
                 }
             }
             Assert.True(receivedMessages.Count > 0);
-            _client.Dispose();
         }
 
 		[Fact]
@@ -130,7 +132,7 @@ namespace SharpPulsar.Test
 			}
             ISet<int> receivedMessages = new HashSet<int>();
             
-            await Task.Delay(10000);
+            await Task.Delay(1000);
             for (var i = 0; i < messages - 1; i++)
 			{
                 try
@@ -150,7 +152,6 @@ namespace SharpPulsar.Test
 
 			await consumer.CloseAsync().ConfigureAwait(false);
 			await producer.CloseAsync().ConfigureAwait(false);
-            _client.Dispose();
         }
 		
         [Fact]
@@ -180,7 +181,7 @@ namespace SharpPulsar.Test
 					}
 
 				}, null));
-            await Task.Delay(5000);
+            await Task.Delay(1000);
             var consumer = _client.NewConsumer(ISchema<object>.Int32, config);
 			var pBuilder = new ProducerConfigBuilder<int>()
 				.Topic(topic)
@@ -197,7 +198,6 @@ namespace SharpPulsar.Test
 
             await consumer.CloseAsync().ConfigureAwait(false);
             await producer.CloseAsync().ConfigureAwait(false);
-            _client.Dispose();
         }
 
         //[Fact(Skip = "TestPauseAndResume")]
@@ -221,7 +221,7 @@ namespace SharpPulsar.Test
 					//latch.Value.AddCount();
 				}, null));
 
-            await Task.Delay(5000);
+            await Task.Delay(1000);
 
             var consumer = _client.NewConsumer(config);
 			//consumer.Pause();
@@ -229,7 +229,7 @@ namespace SharpPulsar.Test
 			var pBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topicName)
 				.EnableBatching(false);
-			Producer<byte[]> producer = _client.NewProducer(pBuilder);
+			var producer = _client.NewProducer(pBuilder);
 
 			for(int i = 0; i < 2; i++)
 			{
@@ -248,9 +248,17 @@ namespace SharpPulsar.Test
 
 			//await consumer.UnsubscribeAsync().ConfigureAwait(false);
             await producer.CloseAsync().ConfigureAwait(false);
-            _client.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
         }
 
-	}
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
+        }
+    }
 
 }

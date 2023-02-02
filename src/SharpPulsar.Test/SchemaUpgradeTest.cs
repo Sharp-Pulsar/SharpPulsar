@@ -7,19 +7,22 @@ using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Builder;
+using System.Text.Json;
 
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class SchemaUpgradeTest
+    public class SchemaUpgradeTest : IAsyncLifetime
     {
+        private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public SchemaUpgradeTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
         //[Fact(Skip ="A")]
         [Fact]
@@ -46,8 +49,9 @@ namespace SharpPulsar.Test
                .SubscriptionName("test-sub");
             var consumer = await _client.NewConsumerAsync(record1, consumerBuilder);
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
-            var message = await consumer.ReceiveAsync();
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
+            _output.WriteLine(JsonSerializer.Serialize(message.Value, options: new JsonSerializerOptions { WriteIndented = true }));
 
             Assert.NotNull(message);
             await consumer.AcknowledgeAsync(message);
@@ -74,9 +78,9 @@ namespace SharpPulsar.Test
                 .SubscriptionName("test-sub");
             var consumer1 = await _client.NewConsumerAsync(record2, consumerBuilder2);
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             var msg = await consumer1.ReceiveAsync();
-
+            _output.WriteLine(JsonSerializer.Serialize(msg.Value, options: new JsonSerializerOptions { WriteIndented = true}));
             Assert.NotNull(msg);
             await consumer1.AcknowledgeAsync(msg);
             consumer1.Unsubscribe();
@@ -85,7 +89,16 @@ namespace SharpPulsar.Test
             await producer2.CloseAsync();
             await consumer.CloseAsync();
             await consumer1.CloseAsync();
-            _client.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
         }
     }
 

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
-    public class PulsarFixture : IAsyncLifetime, IDisposable
+    public class PulsarFixture //: IAsyncLifetime
     {
         public PulsarSystem System;
         private readonly IConfiguration _configuration;
@@ -17,13 +17,10 @@ namespace SharpPulsar.TestContainer
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
+            SetupSystem();
         }
         
-        public virtual async Task InitializeAsync()
-        {
-            SetupSystem();
-            await Task.CompletedTask;
-        }
+       
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -70,14 +67,6 @@ namespace SharpPulsar.TestContainer
             ConfigBuilder = client;
             ClientConfigurationData = client.ClientConfigurationData;
         }
-        public virtual async Task DisposeAsync()
-        {
-            await Task.CompletedTask;
-        }
-       
-        public void Dispose()
-        {
-            
-        }
+        
     }
 }

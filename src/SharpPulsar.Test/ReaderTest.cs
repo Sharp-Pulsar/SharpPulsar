@@ -31,18 +31,21 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class ReaderTest
+    public class ReaderTest : IAsyncLifetime
     {
 
         private const string Subscription = "reader-sub";
         private readonly ITestOutputHelper _output;
 
-        private readonly PulsarClient _client;
+        private PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
 
         public ReaderTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.System.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _configBuilder = fixture.ConfigBuilder;
+            _system = fixture.System;
         }
         private async Task<ISet<string>> PublishMessages(string topic, int count, bool enableBatch)
         {
@@ -86,7 +89,6 @@ namespace SharpPulsar.Test
         {
             var topic = $"my-reader-topic-with-batching-{Guid.NewGuid()}";
             await TestReadMessages(topic, true);
-            _client.Dispose();
         }
         private async Task TestReadMessages(string topic, bool enableBatch)
         {
@@ -99,7 +101,7 @@ namespace SharpPulsar.Test
             var reader = await _client.NewReaderAsync(builder);
 
             var keys = await PublishMessages(topic, numKeys, enableBatch);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < numKeys-2; i++)
             {
                 var message = (Message<byte[]>)await reader.ReadNextAsync();
@@ -128,14 +130,14 @@ namespace SharpPulsar.Test
                 .ReaderName(Subscription);
             var reader = await _client.NewReaderAsync(builder);
 
-            await Task.Delay(TimeSpan.FromSeconds(20));
+            await Task.Delay(TimeSpan.FromSeconds(2));
             for (var i = 0; i < numKeys; i++)
             {
                 var message = await reader.ReadNextAsync();
                 Assert.True(keys.Remove(message.Key));
+                _output.WriteLine($"{message.Key}");
             }
             Assert.True(keys.Count == 0);
-            _client.Dispose();
         }
 
         [Fact]
@@ -204,7 +206,7 @@ namespace SharpPulsar.Test
             IList<string> receivedMessages = new List<string>();
 
             IMessage<string> msg;
-            await Task.Delay(TimeSpan.FromSeconds(30));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < 3; i++)
             {
                 msg = await reader.ReadNextAsync(TimeSpan.FromSeconds(1)); 
@@ -217,9 +219,17 @@ namespace SharpPulsar.Test
                 _output.WriteLine($"Receive message {receivedMessage}");
                 Assert.True(Convert.ToInt32(receivedMessage) <= rangeSize / 2);
             }
-            _client.Dispose();
+        }
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
         }
 
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
+        }
     }
 
 }
