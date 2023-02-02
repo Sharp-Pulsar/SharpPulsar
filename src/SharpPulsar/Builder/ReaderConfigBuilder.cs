@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Util.Internal;
+using DotNetty.Common.Utilities;
+using Org.BouncyCastle.Utilities;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using Range = SharpPulsar.Common.Range;
 
 /// <summary>
@@ -166,6 +169,59 @@ namespace SharpPulsar.Builder
             if (schema == null)
                 throw new ArgumentException("Schema is null");
             _conf.Schema = schema;
+            return this;
+        }
+        
+        public ReaderConfigBuilder<T> PoolMessages(bool poolMessages)
+        {
+            _conf.PoolMessages = (poolMessages);
+            return this;
+        }
+
+       
+        public ReaderConfigBuilder<T> AutoUpdatePartitions(bool autoUpdate)
+        {
+            _conf.AutoUpdatePartitions = autoUpdate;
+            return this;
+        }
+
+       
+        public ReaderConfigBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval)
+        {
+            if (interval.TotalSeconds < 1)
+                throw new ArgumentException("Auto update partition interval needs to be >= 1 second");
+
+            _conf.AutoUpdatePartitionsInterval = interval;
+            return this;
+        }
+
+        public ReaderConfigBuilder<T> Intercept(IReaderInterceptor<T> interceptors)
+        {
+            if (interceptors != null)
+            {
+                _conf.ReaderInterceptorList = new List<IReaderInterceptor<T>> { interceptors };
+            }
+            return this;
+        }
+
+        
+        public ReaderConfigBuilder<T> MaxPendingChunkedMessage(int maxPendingChunkedMessage)
+        {
+            _conf.MaxPendingChunkedMessage = maxPendingChunkedMessage;
+            return this;
+        }
+
+        
+        public ReaderConfigBuilder<T> AutoAckOldestChunkedMessageOnQueueFull(bool autoAckOldestChunkedMessageOnQueueFull)
+        {
+            _conf.AutoAckOldestChunkedMessageOnQueueFull = autoAckOldestChunkedMessageOnQueueFull;
+            return this;
+        }
+
+       
+        public ReaderConfigBuilder<T> ExpireTimeOfIncompleteChunkedMessage(TimeSpan duration)
+        {
+            _conf.ExpireTimeOfIncompleteChunkedMessage = (long)duration.TotalMilliseconds;
             return this;
         }
     }

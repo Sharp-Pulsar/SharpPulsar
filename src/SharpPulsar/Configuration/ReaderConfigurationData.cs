@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Interfaces;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,6 +32,7 @@ namespace SharpPulsar.Configuration
 		public IConsumerEventListener EventListener { get; set; }
         public bool AutoUpdatePartitions { get; set; } = true;
         public TimeSpan AutoUpdatePartitionsInterval = TimeSpan.FromSeconds(60);
+        public bool PoolMessages { get; set; } = false;
         public long StartMessageFromRollbackDurationInSec { get; set; }
         public ISchema<T> Schema { get; set; }
 		public int ReceiverQueueSize { get; set; } = 1000;
