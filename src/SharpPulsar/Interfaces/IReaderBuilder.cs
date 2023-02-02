@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DotNetty.Common.Utilities;
 using SharpPulsar.Common.Compression;
 
 /// <summary>
@@ -248,6 +249,87 @@ namespace SharpPulsar.Interfaces
         ///            key hash ranges for a reader </param>
         /// <returns> the reader builder instance </returns>
         IReaderBuilder<T> KeyHashRange(params Range[] ranges);
+        /// <summary>
+		/// Enable pooling of messages and the underlying data buffers.
+		/// <p/>
+		/// When pooling is enabled, the application is responsible for calling Message.release() after the handling of every
+		/// received message. If "release()” is not called on a received message, there will be a memory leak. If an
+		/// application attempts to use and already "released” message, it might experience undefined behavior (for example,
+		/// memory corruption, deserialization error, etc.).
+		/// </summary>
+		IReaderBuilder<T> PoolMessages(bool poolMessages);
+
+        /// <summary>
+        /// If enabled, the reader will auto subscribe for partitions increasement.
+        /// This is only for partitioned reader.
+        /// </summary>
+        /// <param name="autoUpdate">
+        ///            whether to auto update partition increasement </param>
+        /// <returns> the reader builder instance </returns>
+        IReaderBuilder<T> AutoUpdatePartitions(bool autoUpdate);
+
+        /// <summary>
+        /// Set the interval of updating partitions <i>(default: 1 minute)</i>. This only works if autoUpdatePartitions is
+        /// enabled.
+        /// </summary>
+        /// <param name="interval">
+        ///            the interval of updating partitions </param>
+        /// <param name="unit">
+        ///            the time unit of the interval. </param>
+        /// <returns> the reader builder instance </returns>
+        IReaderBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval);
+
+        /// <summary>
+        /// Intercept <seealso cref="Reader"/>.
+        /// </summary>
+        /// <param name="interceptors"> the list of interceptors to intercept the reader created by this builder. </param>
+        /// <returns> the reader builder instance </returns>
+        IReaderBuilder<T> Intercept(params IReaderInterceptor<T>[] interceptors);
+
+        /// <summary>
+        /// Consumer buffers chunk messages into memory until it receives all the chunks of the original message. While
+        /// consuming chunk-messages, chunks from same message might not be contiguous in the stream and they might be mixed
+        /// with other messages' chunks. so, consumer has to maintain multiple buffers to manage chunks coming from different
+        /// messages. This mainly happens when multiple publishers are publishing messages on the topic concurrently or
+        /// publisher failed to publish all chunks of the messages.
+        /// 
+        /// <pre>
+        /// eg: M1-C1, M2-C1, M1-C2, M2-C2
+        /// Here, Messages M1-C1 and M1-C2 belong to original message M1, M2-C1 and M2-C2 messages belong to M2 message.
+        /// </pre>
+        /// Buffering large number of outstanding uncompleted chunked messages can create memory pressure and it can be
+        /// guarded by providing this @maxPendingChunkedMessage threshold. Once, consumer reaches this threshold, it drops
+        /// the outstanding unchunked-messages by silently acking or asking broker to redeliver later by marking it unacked.
+        /// This behavior can be controlled by configuration: @autoAckOldestChunkedMessageOnQueueFull
+        /// 
+        /// The default value is 10.
+        /// </summary>
+        /// <param name="maxPendingChunkedMessage">
+        /// @return </param>
+        IReaderBuilder<T> MaxPendingChunkedMessage(int maxPendingChunkedMessage);
+
+        /// <summary>
+        /// Buffering large number of outstanding uncompleted chunked messages can create memory pressure and it can be
+        /// guarded by providing this @maxPendingChunkedMessage threshold. Once, consumer reaches this threshold, it drops
+        /// the outstanding unchunked-messages by silently acking if autoAckOldestChunkedMessageOnQueueFull is true else it
+        /// marks them for redelivery.
+        /// 
+        /// @default false
+        /// </summary>
+        /// <param name="autoAckOldestChunkedMessageOnQueueFull">
+        /// @return </param>
+        IReaderBuilder<T> AutoAckOldestChunkedMessageOnQueueFull(bool autoAckOldestChunkedMessageOnQueueFull);
+
+        /// <summary>
+        /// If producer fails to publish all the chunks of a message then consumer can expire incomplete chunks if consumer
+        /// won't be able to receive all chunks in expire times (default 1 minute).
+        /// </summary>
+        /// <param name="duration"> </param>
+        /// <param name="unit">
+        /// @return </param>
+        IReaderBuilder<T> ExpireTimeOfIncompleteChunkedMessage(TimeSpan duration);
+
+
     }
 
 }

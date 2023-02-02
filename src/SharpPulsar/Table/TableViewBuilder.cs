@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Akka.Actor;
+using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
@@ -94,6 +95,46 @@ namespace SharpPulsar.Table
 		   _conf.AutoUpdatePartitionsSeconds = interval;
 		   return this;
 		}
-	}
+
+        public ITableViewBuilder<T> SubscriptionName(string subscriptionName)
+        {
+            if (string.IsNullOrWhiteSpace(subscriptionName))
+            {
+                throw new ArgumentNullException("subscription name cannot be blank");
+            }
+            _conf.SubscriptionName = subscriptionName.Trim();
+            return this;
+        }
+
+        public ITableViewBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+        {
+            _conf.CryptoKeyReader = cryptoKeyReader;
+            return this;
+        }
+
+        public ITableViewBuilder<T> DefaultCryptoKeyReader(string privateKey)
+        {
+            if (string.IsNullOrWhiteSpace(privateKey))
+            {
+                throw new ArgumentNullException("privateKey cannot be blank");
+            }
+            return CryptoKeyReader(Crypto.DefaultCryptoKeyReader.Builder().DefaultPrivateKey(privateKey).Build());
+        }
+
+        public ITableViewBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> privateKeys)
+        {
+            if (privateKeys.Count == 0)
+            {
+                throw new ArgumentNullException("privateKeys cannot be blank");
+            }
+            return CryptoKeyReader(Crypto.DefaultCryptoKeyReader.Builder().PrivateKeys(privateKeys).Build());
+        }
+
+        public ITableViewBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
+        {
+            _conf.CryptoFailureAction = action;
+            return this;
+        }
+    }
 
 }
