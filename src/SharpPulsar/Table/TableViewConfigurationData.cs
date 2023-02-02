@@ -1,4 +1,6 @@
 ﻿using System;
+using SharpPulsar.Common.Compression;
+using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,6 +29,10 @@ namespace SharpPulsar.Table
 	{
 		public string TopicName { get; set; } = null;
 		public TimeSpan AutoUpdatePartitionsSeconds { get; set; } = TimeSpan.FromSeconds(60);
-	}
+        public ICryptoKeyReader CryptoKeyReader { get; set; }
+        public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
+        public string SubscriptionName { get; set; }
+        public string TopicCompactionStrategyClassName { get; set; }
+    }
 
 }

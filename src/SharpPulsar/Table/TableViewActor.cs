@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
+using DotNetty.Common.Utilities;
 using SharpPulsar.Builder;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Table.Messages;
@@ -48,6 +50,7 @@ namespace SharpPulsar.Table
         private ICancelable _partitionChecker;
         private readonly IActorRef _self;
         private IActorRef _replyTo;
+        private bool _isPersistentTopic;
 
         public TableViewActor(PulsarClient client, ISchema<T> schema, TableViewConfigurationData conf, ConcurrentDictionary<string, T> data)
 		{
@@ -60,6 +63,7 @@ namespace SharpPulsar.Table
 			_data = data;
 			_readers = new ConcurrentDictionary<string, IActorRef>();
 			_listeners = new List<Action<string, T>>();
+            _isPersistentTopic = conf.TopicName.StartsWith(TopicDomain.Persistent.ToString());
             Receive<HandleMessage<T>>(hm =>
             {
                 try
@@ -199,10 +203,27 @@ namespace SharpPulsar.Table
 		private async ValueTask<IActorRef> NewReader(string partition)
 		{
             var readerBuilder = new ReaderConfigBuilder<T>()
-                .Topic(partition)
+                .Topic(_conf.TopicName)
                 .StartMessageId(IMessageId.Earliest)
+                .AutoUpdatePartitions(true)
+                .AutoUpdatePartitionsInterval(_conf.AutoUpdatePartitionsSeconds)
+                .PoolMessages(true)
+                .ReaderName(_conf.SubscriptionName)
                 .ReadCompacted(true);
-			var reader = await _client.NewReaderAsync(_schema, readerBuilder);
+
+            if (_isPersistentTopic)
+            {
+                readerBuilder.ReadCompacted(true);
+            }
+            var cryptoKeyReader = _conf.CryptoKeyReader;
+            if (cryptoKeyReader != null)
+            {
+                readerBuilder.CryptoKeyReader(cryptoKeyReader);
+            }
+
+            readerBuilder.CryptoFailureAction(_conf.CryptoFailureAction);
+
+            var reader = await _client.NewReaderAsync(_schema, readerBuilder);
             return _context.ActorOf(PartitionReader<T>.Prop(reader));
 		}
 

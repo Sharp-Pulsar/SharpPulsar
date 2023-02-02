@@ -407,10 +407,7 @@ namespace SharpPulsar
         }
         private static long NanoTime()
         {
-            var nano = 10000L * Stopwatch.GetTimestamp();
-            nano /= TimeSpan.TicksPerMillisecond;
-            nano *= 100L;
-            return nano;
+            return DateTime.Now.Nanosecond;
         }
         /// <summary>
         /// Create a producer builder that can be used to configure

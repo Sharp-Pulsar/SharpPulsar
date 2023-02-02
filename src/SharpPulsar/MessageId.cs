@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Google.Protobuf;
 
 using SharpPulsar.Batch;
@@ -140,7 +141,7 @@ namespace SharpPulsar
 
 		public static MessageId ConvertToMessageId(IMessageId messageId)
 		{
-			if (messageId is BatchMessageId batch)
+			/*if (messageId is BatchMessageId batch)
 			{
 				return batch;
 			}
@@ -152,8 +153,28 @@ namespace SharpPulsar
 			{
 				return ConvertToMessageId(topic.InnerMessageId);
 			}
-			return null;
-		}
+			return null;*/
+            if (messageId is TopicMessageId) 
+            {
+                if (messageId is TopicMessageId topic) 
+                {
+                    return (MessageId)topic.InnerMessageId;
+                } 
+                else
+                {
+                    try
+                    {
+                        return (MessageId)IMessageId.FromByteArray(messageId.ToByteArray());
+                    }
+                    catch (IOException e)
+                    {
+                        throw e;
+                    }
+                }
+            }
+            
+            return (MessageId)messageId;
+        }
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
 		public virtual byte[] ToByteArray(int batchIndex, int batchSize)
 		{
