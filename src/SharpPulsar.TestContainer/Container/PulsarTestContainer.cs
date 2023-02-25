@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace SharpPulsar.TestContainer.Container
 {
-    public sealed class PulsarTestContainer : TestcontainerMessageBroker
+    public sealed class PulsarTestContainer : ContainerConfiguration
     {
 
         /// <summary>
@@ -13,7 +13,7 @@ namespace SharpPulsar.TestContainer.Container
         /// </summary>
         /// <param name="configuration">The Testcontainers configuration.</param>
         /// <param name="logger">The logger.</param>
-        internal PulsarTestContainer(ITestcontainersConfiguration configuration, ILogger logger)
+        internal PulsarTestContainer(IContainerConfiguration configuration, ILogger logger)
           : base(configuration, logger)
         {
 

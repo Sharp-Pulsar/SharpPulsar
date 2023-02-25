@@ -31,7 +31,7 @@ namespace Tutorials.PulsarTestContainer
         /// <summary>
         /// Gets the startup callback.
         /// </summary>
-        public virtual Func<IRunningDockerContainer, CancellationToken, Task> StartupCallback
+        public virtual Func<IContainer, CancellationToken, Task> StartupCallback
           => (container, ct) =>
           {
               return Task.CompletedTask;

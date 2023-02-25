@@ -8,7 +8,7 @@ namespace SharpPulsar.TestContainer
 {
     public static class TestcontainersBuilderPulsarExtension
     {
-        public static ITestcontainersBuilder<PulsarTestContainer> WithPulsar(this ITestcontainersBuilder<PulsarTestContainer> builder, PulsarTestContainerConfiguration configuration)
+        public static ContainerBuilder<PulsarTestContainer> WithPulsar(this ContainerBuilder<PulsarTestContainer> builder, PulsarTestContainerConfiguration configuration)
         {
             builder = configuration.Environments.Aggregate(builder, (current, environment)
               => current.WithEnvironment(environment.Key, environment.Value));
