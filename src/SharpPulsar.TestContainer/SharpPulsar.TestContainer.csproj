@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
+    <ProjectReference Include="..\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -141,6 +142,10 @@
     <None Update="ssl\user1.key-pk8.pem">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Configuration\" />
   </ItemGroup>
 
 </Project>

@@ -1,12 +1,10 @@
 ﻿using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
-using SharpPulsar.TestContainer.Configuration;
-using SharpPulsar.TestContainer.Container;
+using Testcontainers.Pulsar;
 using Xunit;
 
 namespace SharpPulsar.TestContainer
@@ -18,29 +16,23 @@ namespace SharpPulsar.TestContainer
         private readonly IConfiguration _configuration;
 
         public ClientConfigurationData ClientConfigurationData;
-        public virtual PulsarTestOAuthContainerConfiguration Configuration { get; }
         public PulsarOAuthFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
-            Configuration = new PulsarTestOAuthContainerConfiguration("apachepulsar/pulsar-all:2.11.0", 6655);
-            Container = BuildContainer()
-                .WithCleanUp(true)
-                .Build();
+            Container = BuildContainer();
         }
-        public virtual TestcontainersBuilder<PulsarTestOAuthContainer> BuildContainer()
+        public virtual PulsarContainer BuildContainer()
         {
-            return (TestcontainersBuilder<PulsarTestOAuthContainer>)new TestcontainersBuilder<PulsarTestOAuthContainer>()
-              .WithName("oauth-tests")
-              .WithPulsar(Configuration)
-              .WithPortBinding(6655, 6650)
-              .WithPortBinding(8085, 8080)
-              .WithPortBinding(8085, 8081)
-              .WithExposedPort(6655)
-              .WithExposedPort(8085)
-              .WithExposedPort(8085);
+            var build = new PulsarBuilder
+            {
+                PulsarPort = 6655,
+                PulsarAdminPort = 8085,
+                PulsarSQLPort = 8086
+            };
+            return build.Build();
         }
-        public PulsarTestOAuthContainer Container { get; }
+        public PulsarContainer Container { get; }
         public virtual async Task InitializeAsync()
         {
             await Container.StartAsync();//;.GetAwaiter().GetResult();

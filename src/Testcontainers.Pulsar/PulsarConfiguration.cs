@@ -1,8 +1,4 @@
 ﻿
-using Docker.DotNet.Models;
-using DotNet.Testcontainers.Configurations;
-using JetBrains.Annotations;
-
 namespace Testcontainers.Pulsar
 {
     /// <inheritdoc cref="ContainerConfiguration" />
@@ -40,13 +36,10 @@ namespace Testcontainers.Pulsar
         /// </summary>
         /// <param name="resourceConfiguration">The Docker resource configuration.</param>
         public PulsarConfiguration(PulsarConfiguration resourceConfiguration)
-            : this(new PulsarConfiguration(), resourceConfiguration)
+            
         {
             // Passes the configuration upwards to the base implementations to create an updated immutable copy.
         }
-        public PulsarConfiguration(PulsarConfiguration oldValue, PulsarConfiguration newValue)
-       : base(oldValue, newValue)
-        {
-        }
+        
     }
 }

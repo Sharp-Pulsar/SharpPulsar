@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -18,19 +19,20 @@ using SharpPulsar.TransactionImpl;
 using SharpPulsar.Trino;
 using SharpPulsar.Trino.Message;
 using Spectre.Console;
-
-using Tutorials.PulsarTestContainer;
+using Testcontainers.Pulsar;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace Tutorials
 {
     //https://helm.kafkaesque.io/#accessing-the-pulsar-cluster-on-localhost
+    //docker run -it --name ebere -e PULSAR_STANDALONE_USE_ZOOKEEPER=1 -e PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true -e PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 -e PULSAR_PREFIX_transactionCoordinatorEnabled=true -e PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=true -e PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true -e PULSAR_PREFIX_webSocketServiceEnabled=true -e PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650  -p 8080:8080 -p 8081:8081 apachepulsar/pulsar-all:2.11.0 sh -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
+
     class Program
     {
         //static string myTopic = $"persistent://public/default/mytopic-2";
-        private static TestContainer _container;
+        private static PulsarContainer _container;
         //private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.10.0", 6650);
-        private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.11.0", 6650);
+        
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         private static PulsarClient _client;
         static async Task Main(string[] args)
@@ -113,12 +115,12 @@ namespace Tutorials
               .WithCleanUp(true)
               .Build();
 
-            await _container
-                .StartAsync()
-                .PulsarWait("http://127.0.0.1:8080/metrics/");
-
-            await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" })
-                .PulsarWait("http://127.0.0.1:8081/"); 
+            await _container.StartAsync();
+            Console.WriteLine("Start Test Container");
+            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
+            await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
+            await AwaitPortReadiness($"http://127.0.0.1:8081/");
+            Console.WriteLine("AwaitPortReadiness Test Container");
         }
         private static async ValueTask ProduceConsumer(PulsarClient pulsarClient)
         {
@@ -822,17 +824,9 @@ namespace Tutorials
             }
             return keys;
         }
-        private static TestcontainersBuilder<TestContainer> BuildContainer()
+        private static PulsarBuilder BuildContainer()
         {
-            return (TestcontainersBuilder<TestContainer>)new TestcontainersBuilder<TestContainer>()
-              .WithName("pulsar-console")
-              .WithPulsar(_configuration)
-              .WithPortBinding(6650, 6650)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
+            return new PulsarBuilder();
         }
         internal static async Task RunOauth()
         {
@@ -880,6 +874,33 @@ namespace Tutorials
             var ret = Path.Combine(configFolder, privateKeyFileName);
             if (!File.Exists(ret)) throw new FileNotFoundException("can't find credentials file");
             return ret;
+        }
+        private static async ValueTask AwaitPortReadiness(string address)
+        {
+            var waitTries = 20;
+
+            using var handler = new HttpClientHandler
+            {
+                AllowAutoRedirect = true
+            };
+
+            using var client = new HttpClient(handler);
+
+            while (waitTries > 0)
+            {
+                try
+                {
+                    await client.GetAsync(address).ConfigureAwait(false);
+                    return;
+                }
+                catch
+                {
+                    waitTries--;
+                    await Task.Delay(5000).ConfigureAwait(false);
+                }
+            }
+
+            throw new Exception("Unable to confirm Pulsar has initialized");
         }
     }
     public class Students

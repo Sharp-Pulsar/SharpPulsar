@@ -1,15 +1,16 @@
-﻿using Docker.DotNet.Models;
-using System.Text;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using JetBrains.Annotations;
-
+﻿
 namespace Testcontainers.Pulsar
 {
     /// <inheritdoc cref="ContainerBuilder{TBuilderEntity, TContainerEntity, TConfigurationEntity}" />
     [PublicAPI]
     public sealed class PulsarBuilder : ContainerBuilder<PulsarBuilder, PulsarContainer, PulsarConfiguration>
     {
+        public const string PulsarImage = "apachepulsar/pulsar-all:2.11.0";
+        
+        public ushort PulsarPort = 6650;
+        public ushort PulsarAdminPort = 8080;
+        public ushort PulsarSQLPort = 8081;
+
         public const string StartupScriptFilePath = "/testcontainers.sh";
 
         /// <summary>
@@ -44,43 +45,33 @@ namespace Testcontainers.Pulsar
         protected override PulsarBuilder Init()
         {
             return base.Init()
-                .WithImage(KafkaImage)
-                .WithPortBinding(KafkaPort, true)
-                .WithPortBinding(BrokerPort, true)
-                .WithPortBinding(ZookeeperPort, true)
-                .WithEnvironment("KAFKA_LISTENERS", "PLAINTEXT://0.0.0.0:" + KafkaPort + ",BROKER://0.0.0.0:" + BrokerPort)
-                .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT")
-                .WithEnvironment("KAFKA_INTER_BROKER_LISTENER_NAME", "BROKER")
-                .WithEnvironment("KAFKA_BROKER_ID", "1")
-                .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")
-                .WithEnvironment("KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS", "1")
-                .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
-                .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1")
-                .WithEnvironment("KAFKA_LOG_FLUSH_INTERVAL_MESSAGES", long.MaxValue.ToString())
-                .WithEnvironment("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0")
-                .WithEnvironment("KAFKA_ZOOKEEPER_CONNECT", "localhost:" + ZookeeperPort)
+                .WithImage(PulsarImage)
+                .WithPortBinding(PulsarPort, true)
+                .WithPortBinding(PulsarAdminPort, true)
+                .WithPortBinding(PulsarSQLPort, true)
+                .WithEnvironment("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g")
+                .WithEnvironment("PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_nettyMaxFrameSizeBytes", "5253120")
+                .WithEnvironment("PULSAR_PREFIX_transactionCoordinatorEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled", "true")
+                .WithEnvironment("PULSAR_STANDALONE_USE_ZOOKEEPER", "1")
+                .WithEnvironment("PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_brokerEntryMetadataInterceptors", "org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
+
                 .WithEntrypoint("/bin/sh", "-c")
                 .WithCommand("while [ ! -f " + StartupScriptFilePath + " ]; do sleep 0.1; done; " + StartupScriptFilePath)
-                .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("\\[KafkaServer id=\\d+\\] started"))
+                
+                .WithWaitStrategy(Wait.ForUnixContainer())
                 .WithStartupCallback((container, ct) =>
                 {
                     const char lf = '\n';
                     var startupScript = new StringBuilder();
                     startupScript.Append("#!/bin/bash");
                     startupScript.Append(lf);
-                    startupScript.Append("echo 'clientPort=" + ZookeeperPort + "' > zookeeper.properties");
-                    startupScript.Append(lf);
-                    startupScript.Append("echo 'dataDir=/var/lib/zookeeper/data' >> zookeeper.properties");
-                    startupScript.Append(lf);
-                    startupScript.Append("echo 'dataLogDir=/var/lib/zookeeper/log' >> zookeeper.properties");
-                    startupScript.Append(lf);
-                    startupScript.Append("zookeeper-server-start zookeeper.properties &");
-                    startupScript.Append(lf);
-                    startupScript.Append("export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://" + container.Hostname + ":" + container.GetMappedPublicPort(KafkaPort) + ",BROKER://" + container.Hostname + ":" + BrokerPort);
-                    startupScript.Append(lf);
-                    startupScript.Append("echo '' > /etc/confluent/docker/ensure");
-                    startupScript.Append(lf);
-                    startupScript.Append("/etc/confluent/docker/run");
+                    startupScript.Append("bin/apply-config-from-env.py conf/standalone.conf ");
+                    startupScript.Append("&& bin/pulsar standalone --no-functions-worker ");
+                    startupScript.Append("&& bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2");
+                    
                     return container.CopyFileAsync(StartupScriptFilePath, Encoding.Default.GetBytes(startupScript.ToString()), 493, ct: ct);
                 });
         }
@@ -91,10 +82,14 @@ namespace Testcontainers.Pulsar
             return Merge(DockerResourceConfiguration, new PulsarConfiguration(resourceConfiguration));
         }
 
-        /// <inheritdoc />
         protected override PulsarBuilder Clone(IContainerConfiguration resourceConfiguration)
         {
-            return Merge(DockerResourceConfiguration, new PulsarConfiguration(resourceConfiguration));
+            throw new NotImplementedException();
+        }
+
+        protected override PulsarBuilder Merge(PulsarConfiguration oldValue, PulsarConfiguration newValue)
+        {
+            throw new NotImplementedException();
         }
     }
 }

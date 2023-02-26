@@ -1,8 +1,4 @@
 ﻿
-using DotNet.Testcontainers.Containers;
-using JetBrains.Annotations;
-using Microsoft.Extensions.Logging;
-
 namespace Testcontainers.Pulsar
 {
     /// <inheritdoc cref="DockerContainer" />
