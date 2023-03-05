@@ -2,13 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.Testcontainers" Version="1.6.0-beta.2118" />
-    <PackageReference Include="SharpPulsar" Version="2.9.0-rc.975" />
-    <PackageReference Include="Spectre.Console" Version="0.43.1-preview.0.31" />
+    <PackageReference Include="Spectre.Console" Version="0.46.0" />
+    <PackageReference Include="Testcontainers" Version="2.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\SharpPulsar\SharpPulsar.csproj" />
+    <ProjectReference Include="..\src\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,6 +53,15 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="certs\user1.pfx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Oauth2Files\credentials_file.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Oauth2Files\o-r7y4o-eabanonu.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Oauth2Files\standalone.conf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net7.0</TargetFrameworks>  
+    <PackageIcon>SharpPulsar.Admin.jpg</PackageIcon>
+	<PackageIconUrl />
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update=".ruleset">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+	<None Include="SharpPulsar.Admin.jpg">
+          <Pack>True</Pack>
+          <PackagePath></PackagePath>
+    </None>
+    <None Update="SharpPulsar.Admin.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

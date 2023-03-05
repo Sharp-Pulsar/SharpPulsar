@@ -1,32 +1,38 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using crypto;
 using DotNet.Testcontainers.Builders;
 using SharpPulsar;
-using SharpPulsar.Configuration;
+using SharpPulsar.Auth.OAuth2;
+using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Sql.Client;
-using SharpPulsar.Sql.Message;
-using SharpPulsar.User;
+using SharpPulsar.TransactionImpl;
+using SharpPulsar.Trino;
+using SharpPulsar.Trino.Message;
 using Spectre.Console;
-using Tutorials.PulsarTestContainer;
+using Testcontainers.Pulsar;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace Tutorials
 {
     //https://helm.kafkaesque.io/#accessing-the-pulsar-cluster-on-localhost
+    //docker run -it --name ebere -e PULSAR_STANDALONE_USE_ZOOKEEPER=1 -e PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true -e PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 -e PULSAR_PREFIX_transactionCoordinatorEnabled=true -e PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=true -e PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true -e PULSAR_PREFIX_webSocketServiceEnabled=true -e PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650  -p 8080:8080 -p 8081:8081 apachepulsar/pulsar-all:2.11.0 sh -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
+
     class Program
     {
         //static string myTopic = $"persistent://public/default/mytopic-2";
-        private static TestContainer _container;
-        private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.9.1", 6650);
+        private static PulsarContainer _container;
+        //private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.10.0", 6650);
+        
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         private static PulsarClient _client;
         static async Task Main(string[] args)
@@ -36,7 +42,7 @@ namespace Tutorials
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");
             Console.WriteLine("Select 0(none-tls) 1(tls)");
-            var selections = new List<string> {"0","1" };
+            var selections = new List<string> { "0", "1" };
             var selection = Console.ReadLine();
             var selected = selections.Contains(selection);
             while (!selected)
@@ -45,10 +51,10 @@ namespace Tutorials
                 selection = Console.ReadLine();
                 selected = selection != "0";
             }
-            if(selection.Equals("1"))
+            if (selection.Equals("1"))
                 url = "pulsar+ssl://127.0.0.1:6651";
 
-            
+
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl(url);
 
@@ -64,15 +70,15 @@ namespace Tutorials
             clientConfig.EnableTransaction(true);
 
             //pulsar actor system
-            var pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
+            var pulsarSystem = PulsarSystem.GetInstance(actorSystemName: "program");
 
-            var pulsarClient = pulsarSystem.NewClient();
+            var pulsarClient = await pulsarSystem.NewClient(clientConfig);
             _client = pulsarClient;
 
             while (cmd.ToLower() != "exit")
             {
                 await HandleCmd(cmd, pulsarClient);
-                Console.WriteLine(".....waiting");    
+                Console.WriteLine(".....waiting");
                 cmd = Console.ReadLine();
             }
             Console.ReadKey();
@@ -98,6 +104,8 @@ namespace Tutorials
                 await TxnRedeliverUnack(pulsarClient);
             else if (cmd.Equals("sql", StringComparison.OrdinalIgnoreCase))
                 await TestQuerySql();
+            else if (cmd.Equals("live", StringComparison.OrdinalIgnoreCase))
+                await LiveProduceConsumer(pulsarClient);
             else
                 await ProduceConsumer(pulsarClient);
         }
@@ -107,12 +115,12 @@ namespace Tutorials
               .WithCleanUp(true)
               .Build();
 
-            await _container
-                .StartAsync()
-                .PulsarWait("http://127.0.0.1:8080/metrics/");
-
-            await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" })
-                .PulsarWait("http://127.0.0.1:8081/"); 
+            await _container.StartAsync();
+            Console.WriteLine("Start Test Container");
+            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
+            await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
+            await AwaitPortReadiness($"http://127.0.0.1:8081/");
+            Console.WriteLine("AwaitPortReadiness Test Container");
         }
         private static async ValueTask ProduceConsumer(PulsarClient pulsarClient)
         {
@@ -160,6 +168,55 @@ namespace Tutorials
                 }
             });
             AnsiConsole.MarkupLine("Press [yellow]CTRL+C[/] to exit");
+        }
+        private static async ValueTask LiveProduceConsumer(PulsarClient pulsarClient)
+        {
+            var consumer = await pulsarClient
+                .NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"sub-{Guid.NewGuid()}")
+                .IsAckReceiptEnabled(true));
+
+            var producer = await pulsarClient
+                .NewProducerAsync(new ProducerConfigBuilder<byte[]>()
+                .Topic(myTopic));
+
+            AnsiConsole.MarkupLine("Press [yellow]CTRL+C[/] to exit");
+
+            var table = new Table().Expand().BorderColor(Color.Grey);
+            table.AddColumn("[yellow]Messageid[/]");
+            table.AddColumn("[yellow]Producer Name[/]");
+            table.AddColumn("[yellow]Topic[/]");
+            table.AddColumn("[yellow]Message[/]");
+            await AnsiConsole.Live(table)
+            .AutoClear(true)
+            .Overflow(VerticalOverflow.Ellipsis)
+            .Cropping(VerticalOverflowCropping.Bottom)
+            .StartAsync(async ctx =>
+            {
+
+                while (true)
+                {
+                    var data = Encoding.UTF8.GetBytes($"living-{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}");
+                    await producer.NewMessage().Value(data).SendAsync();
+                    await Task.Delay(500);
+                    var message = (Message<byte[]>)await consumer.ReceiveAsync();
+                    if (message != null)
+                    {
+                        if (table.Rows.Count > 45)
+                        {
+                            // Remove the first one
+                            table.Rows.RemoveAt(0);
+                        }
+                        await consumer.AcknowledgeAsync(message);
+                        var res = Encoding.UTF8.GetString(message.Data);
+                        table.AddRow(message.GetMessageId().ToString(), message.ProducerName, message.Topic, res);
+                        ctx.Refresh();
+                        await Task.Delay(100);
+                    }
+                }
+            });
         }
         private static async ValueTask BatchProduceConsumer(PulsarClient pulsarClient)
         {
@@ -767,17 +824,83 @@ namespace Tutorials
             }
             return keys;
         }
-        private static TestcontainersBuilder<TestContainer> BuildContainer()
+        private static PulsarBuilder BuildContainer()
         {
-            return (TestcontainersBuilder<TestContainer>)new TestcontainersBuilder<TestContainer>()
-              .WithName("pulsar-console")
-              .WithPulsar(_configuration)
-              .WithPortBinding(6650, 6650)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
+            return new PulsarBuilder();
+        }
+        internal static async Task RunOauth()
+        {
+            var fileUri = new Uri(GetConfigFilePath());
+            var issuerUrl = new Uri("https://auth.streamnative.cloud/");
+            var audience = "urn:sn:pulsar:o-r7y4o:sharp";
+
+            var serviceUrl = "pulsar://localhost:6650";
+            var subscriptionName = "my-subscription";
+            var topicName = $"my-topic-%{DateTime.Now.Ticks}";
+
+            var clientConfig = new PulsarClientConfigBuilder()
+                .ServiceUrl(serviceUrl)
+                //.AddTlsCerts()
+                .Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
+
+            //pulsar actor system
+            var pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
+            var pulsarClient = pulsarSystem.NewClient();
+
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .Topic(topicName));
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(topicName)
+                .SubscriptionName(subscriptionName)
+                .SubscriptionType(SubType.Exclusive));
+
+            var messageId = await producer.SendAsync(Encoding.UTF8.GetBytes($"Sent from C# at '{DateTime.Now}'"));
+            Console.WriteLine($"MessageId is: '{messageId}'");
+
+            var message = await consumer.ReceiveAsync();
+            Console.WriteLine($"Received: {Encoding.UTF8.GetString(message.Data)}");
+
+            await consumer.AcknowledgeAsync(message.MessageId);
+        }
+        static string GetConfigFilePath()
+        {
+            var configFolderName = "Oauth2Files";
+            var privateKeyFileName = "o-r7y4o-eabanonu.json";
+            var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var indexOfConfigDir = startup.IndexOf(startup, StringComparison.Ordinal);
+            var examplesFolder = startup.Substring(0, startup.Length - indexOfConfigDir);
+            var configFolder = Path.Combine(examplesFolder, configFolderName);
+            var ret = Path.Combine(configFolder, privateKeyFileName);
+            if (!File.Exists(ret)) throw new FileNotFoundException("can't find credentials file");
+            return ret;
+        }
+        private static async ValueTask AwaitPortReadiness(string address)
+        {
+            var waitTries = 20;
+
+            using var handler = new HttpClientHandler
+            {
+                AllowAutoRedirect = true
+            };
+
+            using var client = new HttpClient(handler);
+
+            while (waitTries > 0)
+            {
+                try
+                {
+                    await client.GetAsync(address).ConfigureAwait(false);
+                    return;
+                }
+                catch
+                {
+                    waitTries--;
+                    await Task.Delay(5000).ConfigureAwait(false);
+                }
+            }
+
+            throw new Exception("Unable to confirm Pulsar has initialized");
         }
     }
     public class Students

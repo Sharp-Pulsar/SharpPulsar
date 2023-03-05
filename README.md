@@ -21,7 +21,8 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 - [x] Proxy
 - [x] SNI Routing	
 - [x] Transactions	
-- [x] Subscription(Durable, Non-durable)	
+- [x] Subscription(Durable, Non-durable)
+- [x] Cluster-level Auto Failover
 
 # Producer
 - [x] Exclusive Producer
@@ -68,15 +69,21 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 - [x] End-to-end Encryption	
 - [x] Interceptors
 
+# TableView
+- [x] Compacted Topics
+- [x] Schema (All supported schema types)
+- [x] Register Listener
+
 # Extras
 - [x] Pulsar SQL
 - [x] Pulsar Admin REST API
 - [x] Function REST API
 - [x] EventSource(Reader/SQL)
+- [x] OpenTelemetry (`ProducerOTelInterceptor`, `ConsumerOTelInterceptor`)
 
 
 
-### Getting Started
+## Getting Started
 Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar) and follow the [Tutorials](https://github.com/eaba/SharpPulsar/tree/dev/Tutorials).
 
 ````csharp
@@ -176,11 +183,67 @@ Avro Logical Types are supported. Message object MUST implement `ISpecificRecord
 
 Because I have become lazy and a lover of "peace of mind":
 - For schema type of **KEYVALUESCHEMA**:
-  - ```csharp producer.NewMessage().Value<TK, TV>(data).Send();` or `csharp producer.Send<TK, TV>(data)```
-
+  ```csharp 
+  producer.NewMessage().Value<TK, TV>(data).Send();  
+  ```
+  OR
+  ```csharp
+  producer.Send<TK, TV>(data);
+  ```
 `TK, TV` represents the key and value types of the `KEYVALUESCHEMA` respectively. 
 
-## Running SharpPulsar Tests in docker container
+## TableView
+
+```csharp
+var topic = $"persistent://public/default/tableview-{DateTime.Now.Ticks}";
+var count = 20;
+var keys = await PublishMessages(topic, count, false);
+
+var tv = await _client.NewTableViewBuilder(ISchema<string>.Bytes)
+.Topic(topic)
+.AutoUpdatePartitionsInterval(TimeSpan.FromSeconds(60))
+.CreateAsync();
+ 
+ Console.WriteLine($"start tv size: {tv.Size()}");
+ tv.ForEachAndListen((k, v) => Console.WriteLine($"{k} -> {Encoding.UTF8.GetString(v)}"));
+ await Task.Delay(5000);
+ Console.WriteLine($"Current tv size: {tv.Size()}");
+
+ tv.ForEachAndListen((k, v) => Console.WriteLine($"checkpoint {k} -> {Encoding.UTF8.GetString(v)}"));
+```
+
+## OpenTelemetry
+
+```csharp
+var exportedItems = new List<Activity>();
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+.AddSource("producer", "consumer")
+.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("inmemory-test"))
+.AddInMemoryExporter(exportedItems)
+.Build();
+
+ var producerBuilder = new ProducerConfigBuilder<byte[]>()
+ .Intercept(new ProducerOTelInterceptor<byte[]>("producer", _client.Log))
+ .Topic(topic);
+
+ var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+ .Intercept(new ConsumerOTelInterceptor<byte[]>("consumer", _client.Log))
+ .Topic(topic);
+```
+
+## Cluster-level Auto Failover
+
+```csharp
+var config = new PulsarClientConfigBuilder();
+var builder = AutoClusterFailover.Builder().Primary(serviceUrl)
+.Secondary(new List<string> { secondary })
+.FailoverDelay(TimeSpan.FromSeconds(failoverDelay))
+.SwitchBackDelay(TimeSpan.FromSeconds(switchBackDelay))
+.CheckInterval(TimeSpan.FromSeconds(checkInterval));
+config.ServiceUrlProvider(new AutoClusterFailover((AutoClusterFailoverBuilder)builder));
+```
+
+## [Experimental]Running SharpPulsar Tests in docker container (the issue I have faced is how to create container from within a container)
 
 You can run `SharpPulsar` tests in docker container. A `Dockerfile` and `docker-compose` file is provided at the root folder to help you run these tests in a docker container.
 `docker-compose.yml`:

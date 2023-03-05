@@ -17,7 +17,7 @@
 # under the License.
 #
 
-version: '2.1'
+version: '3.4'
 networks:
   pulsar:
     driver: bridge
@@ -25,7 +25,7 @@ networks:
 services:
   zk:
     hostname: zk
-    image: localhost:5000/pulsar-secured:2.9.1
+    image: localhost:5000/pulsar-secured:2.10.0
     command: bin/run-local-zk.sh
     environment:
       ZOOKEEPER_SERVERS: zk
@@ -33,7 +33,7 @@ services:
       pulsar:
 
   init:
-    image: localhost:5000/pulsar-secured:2.9.1
+    image: localhost:5000/pulsar-secured:2.10.0
     command: bin/init-cluster.sh
     environment:
       clusterName: test
@@ -45,7 +45,7 @@ services:
 
   bk1:
     hostname: bk1
-    image: localhost:5000/pulsar-secured:2.9.1
+    image: localhost:5000/pulsar-secured:2.10.0
     command: bin/run-bookie.sh
     environment:
       clusterName: test
@@ -55,7 +55,7 @@ services:
 
   bk2:
     hostname: bk2
-    image: localhost:5000/pulsar-secured:2.9.1
+    image: localhost:5000/pulsar-secured:2.10.0
     command: bin/run-bookie.sh
     environment:
       clusterName: test
@@ -65,7 +65,7 @@ services:
 
   bk3:
     hostname: bk3
-    image: localhost:5000/pulsar-secured:2.9.1
+    image: localhost:5000/pulsar-secured:2.10.0
     command: bin/run-bookie.sh
     environment:
       clusterName: test
@@ -75,7 +75,7 @@ services:
 
   pulsar1:
     hostname: pulsar1
-    image: localhost:5000/pulsar-secured:2.9.1
+    image: localhost:5000/pulsar-secured:2.10.0
     ports:
       - "6650:6650"
       - "8080:8080"

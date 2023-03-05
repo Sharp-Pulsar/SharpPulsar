@@ -1,14 +1,8 @@
 using System;
 using System.Linq;
-using System.Net.Http;
-using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Nuke.Common;
 using Nuke.Common.ChangeLog;
 using Nuke.Common.CI;
-using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Execution;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
@@ -29,13 +23,20 @@ using static Nuke.Common.Tools.DocFX.DocFXTasks;
 using Nuke.Common.Tools.DocFX;
 using System.IO;
 using System.Collections.Generic;
-using SharpPulsar.TestContainer.TestUtils;
-using Docker.DotNet;
+using Octokit;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Nuke.Common.Tools.MSBuild;
+using Nuke.Common.CI.GitHubActions;
+using DotNet.Testcontainers.Builders;
+using Testcontainers.Pulsar;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
-[CheckBuildProjectConfigurations]
-[ShutdownDotNetAfterServerBuild]
 
+
+[ShutdownDotNetAfterServerBuild]
+[DotNetVerbosityMapping]
+[UnsetVisualStudioEnvironmentVariables]
 partial class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -47,30 +48,20 @@ partial class Build : NukeBuild
 
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
-    //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main() => Execute<Build>(x => x.Compile);
+    public static int Main () => Execute<Build>(x => x.Test);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Solution] readonly Solution Solution;
-    [GitRepository] readonly GitRepository GitRepository;
-
-    [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
-
+    [Required][Solution] public readonly Solution Solution;
+    [Required][GitRepository] public readonly GitRepository GitRepository;
+    [Required][GitVersion(Framework = "net6.0")] public readonly GitVersion GitVersion = default!;
+    [CI] public readonly GitHubActions GitHubActions;
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
-    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json";
 
-    [Parameter] bool Container = false;
-
-    readonly static DIContainer DIContainer = DIContainer.Default;
-
-    [Parameter] [Secret] string NugetApiKey;
-
-    [Parameter] [Secret] string GitHubToken;
-
-    [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
+    [Parameter][Secret] string NugetApiKey;
+    public string GitHubPackageSource => $"https://nuget.pkg.github.com/{GitHubActions.RepositoryOwner}/index.json";
 
     AbsolutePath Output => RootDirectory / "bin";
     AbsolutePath OutputContainer => RootDirectory / "container";
@@ -82,15 +73,11 @@ partial class Build : NukeBuild
     public AbsolutePath DocFxDir => RootDirectory / "docs";
     public AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
 
-    static readonly JsonElement? _githubContext = string.IsNullOrWhiteSpace(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT")) ?
-        null
-        : JsonSerializer.Deserialize<JsonElement>(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT"));
-
-    public ChangeLog Changelog => ReadChangelog(ChangelogFile);
+    GitHubClient GitHubClient;
+    public ChangeLog Changelog => MdHelper.ReadChangelog(ChangelogFile);
 
     public ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
     public string ReleaseVersion => LatestVersion.Version?.ToString() ?? throw new ArgumentException("Bad Changelog File. Define at least one version");
-
 
     Target Clean => _ => _
         .Before(Restore)
@@ -114,82 +101,124 @@ partial class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            var vers = GitVersion.MajorMinorPatch;
+            //var vers = GitVersion.MajorMinorPatch;
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
-                .SetAssemblyVersion(vers)
-                .SetFileVersion(vers)
-                .SetVersion(GitVersion.SemVer));
+                //.SetAssemblyVersion(vers)
+                //.SetFileVersion(vers)
+                .SetAssemblyVersion(GitVersion.AssemblySemVer)
+                .SetFileVersion(GitVersion.AssemblySemFileVer)
+                .SetInformationalVersion(GitVersion.InformationalVersion)
+                .SetVersion(GitVersion.NuGetVersionV2));
         });
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
     Target RunChangelog => _ => _
-        .OnlyWhenDynamic(()=> GitVersion.BranchName.Equals("main", StringComparison.OrdinalIgnoreCase))
+        .Requires(() => IsLocalBuild)
+        .OnlyWhenDynamic(() => GitRepository.Branch.Equals("main", StringComparison.OrdinalIgnoreCase))
         .Executes(() =>
         {
-            FinalizeChangelog(ChangelogFile, GitVersion.SemVer, GitRepository);
-
-            Git($"add {ChangelogFile}");
-
-            Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.SemVer}.\"");
-
-            Git($"tag -f {GitVersion.SemVer}");
-        });
-    Target TlsTest => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        { 
-            var project = Solution.GetProject("SharpPulsar.Test.Tls");
-            Information($"Running tests from {project.Name}");
-            foreach (var fw in project.GetTargetFrameworks())
+            FinalizeChangelog(ChangelogFile, GitVersion.MajorMinorPatch, GitRepository);
+            Information($"Please review CHANGELOG.md ({ChangelogFile}) and press 'Y' to validate (any other key will cancel changes)...");
+            ConsoleKeyInfo keyInfo = Console.ReadKey();
+            if (keyInfo.Key == ConsoleKey.Y)
             {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "tls")
-                    .SetLoggers("trx", "console")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
+                Git($"add {ChangelogFile}");
+
+                Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
+
+                Git($"tag -f {GitVersion.MajorMinorPatch}");
             }
         });
-    Target IntegrationTest => _ => _
+
+    Target Test => _ => _
+        .DependsOn(TestContainer)
+        .DependsOn(Compile)
+        .Executes(async() =>
+        {
+            var projects = new List<string> 
+            {
+                "SharpPulsar.Test",
+                "SharpPulsar.Trino.Test"
+            };
+
+            foreach (var projectName in projects)
+            {
+                   var project = Solution.GetProject(projectName).NotNull("project != null");
+                   Information($"Running tests from {project}");
+                    foreach (var fw in project.GetTargetFrameworks())
+                    {
+                        try
+                        {
+                            DotNetTest(c => c
+                            .SetProjectFile(project)
+                            .SetConfiguration(Configuration)
+                            .SetFramework(fw)
+                            .EnableNoBuild()
+                            .EnableNoRestore()
+                            .When(true, _ => _
+                                 .SetLoggers("console;verbosity=detailed")
+                                .SetResultsDirectory(OutputTests)));
+                        }
+                        catch (Exception ex)
+                        {
+                            Information(ex.Message);
+                        }
+                    }
+            }
+            await Container.StopAsync();
+            await Container.DisposeAsync();
+        });
+    Target Token => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         {
-            var project = Solution.GetProject("SharpPulsar.Test");
-            Information($"Running tests from {project.Name}");
-            foreach (var fw in project.GetTargetFrameworks())
-            {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "tests")
-                    .SetLoggers("GitHubActions")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
-            }
-            //if(Container)
-               // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
+            CoreTest("SharpPulsar.Test.Token");
         });
-    //--------------------------------------------------------------------------------
+    Target API => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            CoreTest("SharpPulsar.Test.API");
+        });
+    void CoreTest(string projectName)
+    {
+
+        var project = Solution.GetProject(projectName).NotNull("project != null");
+        Information($"Running tests from {projectName}");
+        foreach (var fw in project.GetTargetFrameworks())
+        {
+            Information($"Running for {projectName} ({fw}) .....");
+            try
+            {
+                 DotNetTest(c => c
+                 .SetProjectFile(project)
+                 .SetConfiguration(Configuration)
+                 .SetFramework(fw)
+                 .EnableNoBuild()
+                 .EnableNoRestore()
+                 .When(true, _ => _
+                      .SetLoggers("console;verbosity=detailed")
+                     .SetResultsDirectory(OutputTests)));
+            }
+            catch (Exception ex)
+            {
+                Information(ex.Message);
+            }
+        }
+    }
+    //---------------------
+    //-----------------------------------------------------------
     // Documentation 
     //--------------------------------------------------------------------------------
     Target DocsInit => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            DocFXInit(s => s.SetOutputFolder(DocFxDir).SetQuiet(true));
-        });
+    .DependsOn(Compile)
+    .Executes(() =>
+    {
+        DocFXInit(s => s.SetOutputFolder(DocFxDir).SetQuiet(true));
+    });
     Target DocsMetadata => _ => _
         .DependsOn(Compile)
         .Executes(() =>
@@ -214,11 +243,11 @@ partial class Build : NukeBuild
 
     Target CreateNuget => _ => _
       .DependsOn(Compile)
-      //.DependsOn(IntegrationTest)
+      //.DependsOn(Test)
+      //.DependsOn(Token)
       .Executes(() =>
       {
-          var version = GitVersion.SemVer;
-          var branchName = GitVersion.BranchName;
+          var branchName = GitRepository.Branch;
 
           if (branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
           && !GitVersion.MajorMinorPatch.Equals(LatestVersion.Version.ToString()))
@@ -229,63 +258,141 @@ partial class Build : NukeBuild
           var releaseNotes = branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
                              ? GetNuGetReleaseNotes(ChangelogFile, GitRepository)
                              : ParseReleaseNote();
-          var project = Solution.GetProject("SharpPulsar");
-          DotNetPack(s => s
+          var projects = new List<string>
+            {
+                "SharpPulsar",
+                "SharpPulsar.Trino",
+                "SharpPulsar.Admin"
+            };
+          foreach (var projectName in projects)
+          {
+              var project = Solution.GetProject(projectName).NotNull("project != null");
+              DotNetPack(s => s
               .SetProject(project)
               .SetConfiguration(Configuration)
-              .EnableNoBuild()
+              //.EnableNoBuild()
               .EnableNoRestore()
               //.SetIncludeSymbols(true)
-              .SetAssemblyVersion(version)
-              .SetFileVersion(version)
-              .SetVersion(version)
+              .SetAssemblyVersion(GitVersion.AssemblySemVer)
+              .SetFileVersion(GitVersion.AssemblySemFileVer)
+              .SetInformationalVersion(GitVersion.InformationalVersion)
+              .SetVersion(GitVersion.NuGetVersionV2)
               .SetPackageReleaseNotes(releaseNotes)
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
-              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven","Event Sourcing", "Distributed System", "Microservice")
+              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven", "Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
               .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
-              .SetOutputDirectory(OutputNuget)); 
-
+              .SetOutputDirectory(OutputNuget));
+          }
       });
     Target PublishNuget => _ => _
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Requires(() => !GitHubToken.IsNullOrEmpty())
-      .Requires(() => Configuration.Equals(Configuration.Release))
-      .Executes(() =>
+      .Executes(async() =>
       {
-          OutputNuget.GlobFiles("*.nupkg")
-              .Where(x => !x.Name.EndsWith("symbols.nupkg"))
-              .ForEach(x =>
-              {
-                  DotNetNuGetPush(s => s
-                      .SetTargetPath(x)
-                      .SetSource(NugetApiUrl)
-                      .SetApiKey(NugetApiKey)
-                  );
-                  
-                  DotNetNuGetPush(s => s
-                      .SetApiKey(GitHubToken)
-                      .SetSymbolApiKey(GitHubToken)
-                      .SetTargetPath(x)
-                      .SetSource(GithubSource)
-                      .SetSymbolSource(GithubSource));
-              });
+          var packages = OutputNuget.GlobFiles("*.nupkg", "*.symbols.nupkg").NotNull();
+          foreach (var package in packages)
+          {
+              DotNetNuGetPush(s => s
+                  .SetTimeout(TimeSpan.FromMinutes(10).Minutes)
+                  .SetTargetPath(package)
+                  .SetSource(NugetApiUrl)
+                  .SetApiKey(NugetApiKey));
+          }
+          await GitHubRelease();
       });
-    protected override void OnBuildCreated()
-    {
-        if (Container)
-            DIContainer.RegisterDockerClient();
+   async Task GitHubRelease ()
+        {
+            GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
+            {
+                Credentials = new Credentials(GitHubActions.Token, AuthenticationType.Bearer)
+            };
+            var version = GitVersion.NuGetVersionV2;
+            var releaseNotes = GetNuGetReleaseNotes(ChangelogFile);
+            Release release;
 
-        base.OnBuildCreated();
-    }
-    static async Task SaveFile(string containerName, string sourcePath, string outputPath)
+
+            var identifier = GitRepository.Identifier.Split("/");
+            var (gitHubOwner, repoName) = (identifier[0], identifier[1]);
+            try
+            {
+                release = await GitHubClient.Repository.Release.Get(gitHubOwner, repoName, version);
+            }
+            catch (NotFoundException)
+            {
+                var newRelease = new NewRelease(version)
+                {
+                    Body = releaseNotes,
+                    Name = version,
+                    Draft = false,
+                    Prerelease = GitRepository.IsOnReleaseBranch()
+                };
+                release = await GitHubClient.Repository.Release.Create(gitHubOwner, repoName, newRelease);
+            }
+
+            foreach (var existingAsset in release.Assets)
+            {
+                await GitHubClient.Repository.Release.DeleteAsset(gitHubOwner, repoName, existingAsset.Id);
+            }
+
+            Information($"GitHub Release {version}");
+            var packages = OutputNuget.GlobFiles("*.nupkg", "*.symbols.nupkg").NotNull();
+            foreach (var artifact in packages)
+            {
+                var releaseAssetUpload = new ReleaseAssetUpload(artifact.Name, "application/zip", File.OpenRead(artifact), null);
+                var releaseAsset = await GitHubClient.Repository.Release.UploadAsset(release, releaseAssetUpload);
+                Information($"  {releaseAsset.BrowserDownloadUrl}");
+            }
+        }
+    Target TestContainer => _ => _
+    .Executes(async () =>
     {
-        var client = DIContainer.Get<DockerClient>();
-        var file = await client.Containers.GetArchiveFromContainerByNameAsync(sourcePath, containerName);
-        ArchiveHelper.Extract(file.Stream, outputPath);
+        Information("Test Container");
+        Container = BuildContainer();
+        await Container.StartAsync();//;.GetAwaiter().GetResult();]
+        Information("Start Test Container");
+        await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
+        Information("ExecAsync Test Container");
+        await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
+
+        await AwaitPortReadiness($"http://127.0.0.1:8081/");
+        Information("AwaitPortReadiness Test Container");
+    });
+    private PulsarContainer BuildContainer()
+    {
+        return new PulsarBuilder().Build();
     }
+    private async ValueTask AwaitPortReadiness(string address)
+    {
+        var waitTries = 20;
+
+        using var handler = new HttpClientHandler
+        {
+            AllowAutoRedirect = true
+        };
+
+        using var client = new HttpClient(handler);
+
+        while (waitTries > 0)
+        {
+            try
+            {
+                await client.GetAsync(address).ConfigureAwait(false);
+                return;
+            }
+            catch
+            {
+                waitTries--;
+                await Task.Delay(5000).ConfigureAwait(false);
+            }
+        }
+
+        throw new Exception("Unable to confirm Pulsar has initialized");
+    }
+    public PulsarContainer Container { get; set; }
+    private string MajorMinorPatchVersion => GitVersion.MajorMinorPatch;
+
     string ParseReleaseNote()
     {
         return XmlTasks.XmlPeek(RootDirectory / "Directory.Build.props", "//Project/PropertyGroup/PackageReleaseNotes").FirstOrDefault();

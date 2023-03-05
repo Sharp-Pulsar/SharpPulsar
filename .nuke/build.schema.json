@@ -14,19 +14,9 @@
             "Release"
           ]
         },
-        "Container": {
-          "type": "boolean"
-        },
         "Continue": {
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
-        },
-        "GithubSource": {
-          "type": "string"
-        },
-        "GitHubToken": {
-          "type": "string",
-          "default": "Secrets must be entered via 'nuke :secret [profile]'"
         },
         "Help": {
           "type": "boolean",
@@ -39,6 +29,7 @@
             "AppVeyor",
             "AzurePipelines",
             "Bamboo",
+            "Bitbucket",
             "Bitrise",
             "GitHubActions",
             "GitLab",
@@ -58,7 +49,7 @@
         },
         "NugetApiKey": {
           "type": "string",
-          "default": "Secrets must be entered via 'nuke :secret [profile]'"
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "NugetApiUrl": {
           "type": "string"
@@ -88,18 +79,20 @@
           "items": {
             "type": "string",
             "enum": [
+              "API",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
-              "IntegrationTest",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "TlsTest"
+              "Test",
+              "TestContainer",
+              "Token"
             ]
           }
         },
@@ -113,18 +106,20 @@
           "items": {
             "type": "string",
             "enum": [
+              "API",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
-              "IntegrationTest",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "TlsTest"
+              "Test",
+              "TestContainer",
+              "Token"
             ]
           }
         },
