@@ -46,9 +46,9 @@ namespace Testcontainers.Pulsar
         {
             return base.Init()
                 .WithImage(PulsarImage)
-                .WithPortBinding(PulsarPort, true)
-                .WithPortBinding(PulsarAdminPort, true)
-                .WithPortBinding(PulsarSQLPort, true)
+                .WithPortBinding(PulsarPort, PulsarPort)
+                .WithPortBinding(PulsarAdminPort, PulsarAdminPort)
+                .WithPortBinding(PulsarSQLPort, PulsarSQLPort)
                 .WithEnvironment("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g")
                 .WithEnvironment("PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled", "true")
                 .WithEnvironment("PULSAR_PREFIX_nettyMaxFrameSizeBytes", "5253120")
@@ -84,12 +84,12 @@ namespace Testcontainers.Pulsar
 
         protected override PulsarBuilder Clone(IContainerConfiguration resourceConfiguration)
         {
-            throw new NotImplementedException();
+            return Merge(DockerResourceConfiguration, new PulsarConfiguration(resourceConfiguration));
         }
 
         protected override PulsarBuilder Merge(PulsarConfiguration oldValue, PulsarConfiguration newValue)
         {
-            throw new NotImplementedException();
+            return new PulsarBuilder(new PulsarConfiguration(oldValue, newValue));
         }
     }
 }

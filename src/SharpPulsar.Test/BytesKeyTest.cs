@@ -86,7 +86,7 @@ namespace SharpPulsar.Test
             producerBuilder.Topic(topic);
             var producer = await _client.NewProducerAsync(producerBuilder);
 
-            await producer.NewMessage().KeyBytes(byteKey)
+            var p = await producer.NewMessage().KeyBytes(byteKey)
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
                .SendAsync();

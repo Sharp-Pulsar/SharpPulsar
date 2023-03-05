@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using SharpPulsar.Auth.OAuth2.Protocol;
 using SharpPulsar.Exceptions;
+using Debug = System.Diagnostics.Debug;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

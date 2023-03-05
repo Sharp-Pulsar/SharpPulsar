@@ -625,7 +625,7 @@ namespace SharpPulsar
                              _log.Info($"[{Topic}] [{_producerName}] Producer epoch is {res.TopicEpoch}");
                          }
                          _topicEpoch = res.TopicEpoch;
-                         _schemaVersion = new Option<byte[]>(res.SchemaVersion);
+                         _schemaVersion = Option<byte[]>.Create(res.SchemaVersion);
 
                          if (_schemaVersion.HasValue)
                              SchemaCache.Add(SchemaHash.Of(Schema), _schemaVersion.Value);

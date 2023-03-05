@@ -37,7 +37,7 @@ namespace Tutorials
         private static PulsarClient _client;
         static async Task Main(string[] args)
         {
-            //await StartContainer();
+            await StartContainer();
             var url = "pulsar://127.0.0.1:6650";
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");
