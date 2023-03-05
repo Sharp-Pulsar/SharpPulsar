@@ -560,11 +560,11 @@ namespace SharpPulsar
             else if (_schema is AbstractSchema<T> schema) 
             {
                var schemaVersion = SchemaVersion;
-                return new Option<ISchema<T>>(schema.AtSchemaVersion(schemaVersion));
+                return Option<ISchema<T>>.Create(schema.AtSchemaVersion(schemaVersion));
             } 
             else
             {
-                return new Option<ISchema<T>>(_schema); 
+                return Option<ISchema<T>>.Create(_schema); 
             }
         }
         private void EnsureSchemaIsLoaded()

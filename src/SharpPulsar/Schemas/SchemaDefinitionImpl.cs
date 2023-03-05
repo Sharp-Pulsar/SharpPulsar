@@ -125,7 +125,7 @@ namespace SharpPulsar.Schemas
 		{
 			get
 			{
-				return new Option<ISchemaReader<T>>(_reader);
+				return Option<ISchemaReader<T>>.Create(_reader);
 			}
 		}
 
@@ -133,7 +133,7 @@ namespace SharpPulsar.Schemas
 		{
 			get
 			{
-				return new Option<ISchemaWriter<T>>(_writer);
+				return Option<ISchemaWriter<T>>.Create(_writer);
 			}
 		}
 

@@ -28,10 +28,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Nuke.Common.Tools.MSBuild;
 using Nuke.Common.CI.GitHubActions;
-using SharpPulsar.TestContainer.Container;
-using SharpPulsar.TestContainer.Configuration;
 using DotNet.Testcontainers.Builders;
-using SharpPulsar.TestContainer;
+using Testcontainers.Pulsar;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 
@@ -361,21 +359,9 @@ partial class Build : NukeBuild
         await AwaitPortReadiness($"http://127.0.0.1:8081/");
         Information("AwaitPortReadiness Test Container");
     });
-    private PulsarTestContainer BuildContainer()
+    private PulsarContainer BuildContainer()
     {
-        return new TestcontainersBuilder<PulsarTestContainer>()
-          .WithName("pulsar-tests")
-          .WithPulsar(new PulsarTestContainerConfiguration("apachepulsar/pulsar-all:2.11.0", 6650))
-          .WithPortBinding(6650, 6650)
-          .WithPortBinding(6651, 6651)
-          .WithPortBinding(8080, 8080)
-          .WithPortBinding(8081, 8081)
-          .WithExposedPort(6650)
-          .WithExposedPort(6651)
-          .WithExposedPort(8080)
-          .WithExposedPort(8081)
-          .WithCleanUp(true)
-          .Build();
+        return new PulsarBuilder().Build();
     }
     private async ValueTask AwaitPortReadiness(string address)
     {
@@ -404,7 +390,7 @@ partial class Build : NukeBuild
 
         throw new Exception("Unable to confirm Pulsar has initialized");
     }
-    public PulsarTestContainer Container { get; set; }
+    public PulsarContainer Container { get; set; }
     private string MajorMinorPatchVersion => GitVersion.MajorMinorPatch;
 
     string ParseReleaseNote()

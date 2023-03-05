@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
+    <ProjectReference Include="..\src\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />
   </ItemGroup>
 
     

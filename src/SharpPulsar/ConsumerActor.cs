@@ -3043,7 +3043,7 @@ namespace SharpPulsar
 				encryptionCtx.UncompressedMessageSize = (int)msgMetadata.UncompressedSize;
 				encryptionCtx.BatchSize = batchSize;
 			}
-			return new Option<EncryptionContext>(encryptionCtx);
+			return Option<EncryptionContext>.Create(encryptionCtx);
 		}
         private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{

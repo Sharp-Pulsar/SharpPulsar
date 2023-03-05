@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.Configuration;
-using NLog;
+using Akka.Logger.Serilog;
+using Serilog;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Client;
 using System;
@@ -32,17 +33,10 @@ namespace SharpPulsar
         private readonly List<IActorRef> _actorRefs= new List<IActorRef>();
         private readonly Action _logSetup = () => 
         {
-            var nlog = new NLog.Config.LoggingConfiguration();
-            var logfile = new NLog.Targets
-                .FileTarget("logFile")
-            {
-                FileName = "logs.log",
-                Layout = "[${longdate}] [${logger}] ${level:uppercase=true}] : ${event-properties:actorPath} ${message} ${exception:format=tostring}",
-                ArchiveEvery = NLog.Targets.FileArchivePeriod.Hour,
-                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.DateAndSequence
-            };
-            nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
-            LogManager.Configuration = nlog;
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.File("logs.log", rollingInterval: RollingInterval.Hour)
+                .MinimumLevel.Information()
+                .CreateLogger();
         };
         [Obsolete("PulsarSystem")]
         public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf, string actorSystemName = "apache-pulsar")
@@ -95,7 +89,7 @@ namespace SharpPulsar
             {
                 loglevel = DEBUG
 			    log-config-on-start = on 
-                loggers=[""Akka.Logger.NLog.NLogLogger, Akka.Logger.NLog""]
+                loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
 			    actor 
                 {              
 				      debug 
@@ -219,7 +213,7 @@ namespace SharpPulsar
             {
                 loglevel = DEBUG
 			    log-config-on-start = on 
-                loggers=[""Akka.Logger.NLog.NLogLogger, Akka.Logger.NLog""]
+                loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
 			    actor 
                 {              
 				      debug 
