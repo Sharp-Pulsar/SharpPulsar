@@ -98,7 +98,7 @@ namespace SharpPulsar.Test
                     receivedMessages.Add(1);
                     _output.WriteLine($"Consumer received : {receivedMessages.Count}, {r}");
                 }
-                catch
+                catch(Exception ex)
                 {
                     _output.WriteLine("Consumer received : " + ex.ToString());
                 }

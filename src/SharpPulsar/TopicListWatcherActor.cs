@@ -23,6 +23,7 @@ namespace SharpPulsar
         private readonly IActorRef _connectionHandler;
         private readonly IActorRef _self;
         private IActorRef _cnx;
+        private readonly TimeSpan _lookupDeadline;
         private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();
         private readonly string _name;
         private readonly string _topicsPattern;
