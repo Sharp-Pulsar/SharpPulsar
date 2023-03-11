@@ -444,10 +444,10 @@ namespace SharpPulsar
                         throw new PulsarClientException.NotSupportedException("not support shrink topic partitions");
                     }
                 }
-                catch(Exception ex) 
+                catch 
                 {
                     _outerInstance._log.Error($"[{_outerInstance.Topic}] Auto getting partitions failed { ex}");
-                    throw ex;
+                    throw;
                 }    
                 
                 

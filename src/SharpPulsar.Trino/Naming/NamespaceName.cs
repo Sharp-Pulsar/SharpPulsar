@@ -69,7 +69,7 @@ namespace SharpPulsar.Trino.Naming
             {
                 return Cache[@namespace];
             }
-            catch (Exception e)
+            catch
             {
                 throw;
             }

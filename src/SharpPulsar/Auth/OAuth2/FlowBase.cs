@@ -54,7 +54,7 @@ namespace SharpPulsar.Auth.OAuth2
                 var result = resolve.Resolve().Result;
                 Metadata = result;
 			}
-			catch (IOException E)
+			catch
 			{
 				//log.error("Unable to retrieve OAuth 2.0 server metadata", E);
 				throw new PulsarClientException.AuthenticationException("Unable to retrieve OAuth 2.0 server metadata");

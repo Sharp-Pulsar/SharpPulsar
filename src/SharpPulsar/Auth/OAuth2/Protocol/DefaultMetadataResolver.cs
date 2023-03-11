@@ -105,9 +105,9 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
                 return new Uri(issuerUrl.AbsoluteUri + ".well-known/openid-configuration");
 
             }
-			catch (Exception e)
+			catch
 			{
-				throw e;
+				throw;
 			}
 		}
 	}

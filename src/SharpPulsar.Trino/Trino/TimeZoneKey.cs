@@ -28,9 +28,7 @@ namespace SharpPulsar.Trino.Trino
         public static readonly TimeZoneKey UtcKey = new TimeZoneKey("UTC", 0);
         public static readonly short MaxTimeZoneKey;
         public static readonly IDictionary<string, TimeZoneKey> ZoneIdToKey;
-
-        private static readonly TimeZoneKey[] _timeZoneKeys;
-
+       
         private const short OffsetTimeZoneMin = -14 * 60;
         private const short OffsetTimeZoneMax = 14 * 60;
         private static readonly TimeZoneKey[] OffsetTimeZoneKeys = new TimeZoneKey[OffsetTimeZoneMax - OffsetTimeZoneMin + 1];
@@ -84,7 +82,7 @@ namespace SharpPulsar.Trino.Trino
                 }
 
             }
-            catch (IOException e)
+            catch
             {
                 //Log.LogError("Error loading time zone index file ");
                 throw;

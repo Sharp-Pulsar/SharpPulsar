@@ -355,7 +355,7 @@ namespace SharpPulsar
                 VerifyConsumerState();
                 return InternalBatchReceiveAsync();
             }
-            catch (PulsarClientException e)
+            catch
             {
                 throw;
             }

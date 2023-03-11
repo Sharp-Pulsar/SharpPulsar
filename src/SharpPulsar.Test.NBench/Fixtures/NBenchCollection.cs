@@ -34,8 +34,8 @@ namespace SharpPulsar.Test.NBench.Fixtures
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
             var client = SetupSystem();
-            var system = PulsarSystem.GetInstanceAsync(client).Result;
-            Client = system.NewClient();
+            var system = PulsarSystem.GetInstance();
+            Client = system.NewClient(client).GetAwaiter().GetResult();
             PulsarSystem = system; ;
         }
         private PulsarClientConfigBuilder SetupSystem(string? service = null, string? web = null)

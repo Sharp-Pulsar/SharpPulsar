@@ -46,7 +46,7 @@ namespace SharpPulsar.Trino.Trino
         private readonly AtomicBoolean _clearTransactionId = new AtomicBoolean();
 
         private readonly string _clientCapabilities;
-        private readonly bool _compressionDisabled;
+        private readonly bool _compressionDisabled = false;
 
         public StatementClientV1(HttpClient httpClient, ClientSession session, string query)
         {

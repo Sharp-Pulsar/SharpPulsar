@@ -50,7 +50,6 @@ namespace SharpPulsar
         internal IActorRef Lookup { get { return _lookup; } }   
         private readonly IActorRef _generator;
         internal IActorRef Generator { get { return _generator; } }
-        private Backoff _backoff;
         public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
         {
             _generator = idGenerator;
@@ -612,7 +611,7 @@ namespace SharpPulsar
             {
                 await _client.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
             }
-            catch(Exception ex)
+            catch   
             {
 
             }

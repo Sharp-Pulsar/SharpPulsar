@@ -157,6 +157,9 @@ partial class Build : NukeBuild
                             .SetConfiguration(Configuration)
                             .SetFramework(fw)
                             .EnableNoBuild()
+                            .SetBlameCrash(true)
+                            .SetBlameHang(true)
+                            .SetBlameHangTimeout("10m")
                             .EnableNoRestore()
                             .When(true, _ => _
                                  .SetLoggers("console;verbosity=detailed")

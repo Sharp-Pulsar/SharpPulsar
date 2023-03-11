@@ -84,7 +84,7 @@ namespace SharpPulsar.Trino.Naming
                     Cache[topic] = new TopicName(topic);
                 return Cache[topic];
             }
-            catch (Exception e)
+            catch
             {
                 throw;
             }

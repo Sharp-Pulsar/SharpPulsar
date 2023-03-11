@@ -31,7 +31,6 @@ namespace SharpPulsar.Configuration
 		{
 			var jsonObject = new JsonSerializerOptions
 			{
-				IgnoreNullValues = true,
 				WriteIndented = true,
                 MaxDepth = 256
 			};

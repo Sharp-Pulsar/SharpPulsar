@@ -4,8 +4,7 @@ namespace SharpPulsar
 {
 	public class BackoffBuilder
 	{
-		private readonly long _backoffIntervalNanos;
-		private readonly long _maxBackoffIntervalNanos;
+		private readonly long _backoffIntervalNanos;zzzz
 		private TimeSpan _initial;
 		private TimeSpan _max;
 		private readonly DateTimeOffset _clock;

@@ -58,7 +58,6 @@ namespace SharpPulsar.TransactionImpl
         private IActorRef _tcClient; //TransactionCoordinatorClientImpl
         private IDictionary<IActorRef, int> _cumulativeAckConsumers;
         private readonly List<IMessageId> _sendList;
-        private readonly List<object> ackFutureList;
         private ICancelable _timeout = null;
         public IStash Stash { get; set; }
 

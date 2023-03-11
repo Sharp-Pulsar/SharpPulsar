@@ -2459,7 +2459,7 @@ namespace SharpPulsar
         {
 
             var resultBytes = JsonSerializer.SerializeToUtf8Bytes(o,
-                    new JsonSerializerOptions { WriteIndented = false, IgnoreNullValues = true });
+                    new JsonSerializerOptions { WriteIndented = false });
             return resultBytes.Length;
 
         }

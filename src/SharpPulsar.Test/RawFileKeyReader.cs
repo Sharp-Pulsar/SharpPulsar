@@ -25,7 +25,7 @@ namespace SharpPulsar.Test
                 keyInfo.Key = (byte[])(object)File.ReadAllBytes(Path.GetFullPath(_publicKeyFile));
                 keyInfo.Metadata = metadata;
             }
-            catch (IOException e)
+            catch
             {
                 Console.WriteLine($"ERROR: Failed to read public key from file {_publicKeyFile}");
             }
@@ -40,7 +40,7 @@ namespace SharpPulsar.Test
                 keyInfo.Key = (byte[])(object)File.ReadAllBytes(Path.GetFullPath(_privateKeyFile));
                 keyInfo.Metadata = metadata;
             }
-            catch (IOException e)
+            catch
             {
                 Console.WriteLine($"ERROR: Failed to read public key from file {_publicKeyFile}");
             }

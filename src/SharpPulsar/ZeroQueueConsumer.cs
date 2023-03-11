@@ -36,7 +36,7 @@ namespace SharpPulsar
 	{
 		private volatile bool _waitingOnReceiveForZeroQueueSize = false;
 		private volatile bool _waitingOnListenerForZeroQueueSize = false;
-        private IActorRef _replyTo;
+        
         public ZeroQueueConsumer(IActorRef client, long consumerId, IActorRef stateActor, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : 
             base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
 		{
@@ -209,7 +209,7 @@ namespace SharpPulsar
             NotifyPendingReceivedCallback(null, new PulsarClientException.InvalidMessageException($"Unsupported Batch message with 0 size receiver queue for [{Subscription}]-[{ConsumerName}] "));
         }
 
-        private new int CuentReceiverQueueSize
+        private int CuentReceiverQueueSize
         {
             set
             {

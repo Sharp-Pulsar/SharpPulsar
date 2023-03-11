@@ -94,9 +94,9 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
                 {
                     return Encoding.UTF8.GetString(Encoding.Default.GetBytes(e.Key)) + '=' + Encoding.UTF8.GetString(Encoding.Default.GetBytes(e.Value));
                 }
-                catch (Exception es)
+                catch
                 {
-                    throw es;
+                    throw;
                 }
             });//.Collect(Collectors.joining("&"));
             return bodyMap;// string.Join("&", map);
@@ -149,9 +149,9 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 
 
 			}
-			catch (Exception e) 
+			catch  
 			{
-				throw e;
+				throw;
 			}
 		}
 	}
