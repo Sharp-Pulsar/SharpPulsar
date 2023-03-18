@@ -1,5 +1,8 @@
 ## vNext
 
+## [2.11.1] / 2023-03-18
+- Update Akka.NET to 1.5.1
+
 ## [2.11.0] / 2023-03-05
 - Automatic failure recovery between primary and backup clusters. [PIP#13315]
 - Topic map support added with new TableView type using key values in received messages. [PIP#12838]
@@ -21,7 +24,8 @@
 ## [0.1.0] / 14 January 2022
 - First release
 
-[vNext]: https://github.com/eaba/SharpPulsar/compare/2.11.0...HEAD
+[vNext]: https://github.com/eaba/SharpPulsar/compare/2.11.1...HEAD
+[2.11.1]: https://github.com/eaba/SharpPulsar/compare/2.11.0...2.11.1
 [2.11.0]: https://github.com/eaba/SharpPulsar/compare/2.9.0...2.11.0
 [2.9.0]: https://github.com/eaba/SharpPulsar/compare/0.1.0...2.9.0
 [0.1.0]: https://github.com/eaba/SharpPulsar/tree/0.1.0
