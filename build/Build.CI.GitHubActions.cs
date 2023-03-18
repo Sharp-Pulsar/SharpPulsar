@@ -29,7 +29,7 @@ using Nuke.Common.Utilities;
     GitHubActionsImage.WindowsLatest,
     //AutoGenerate = false,
     FetchDepth = 0,
-    OnPushTags = new[] { "*" },
+    OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(PublishNuget) },
     ImportSecrets = new[] { "NUGET_API_KEY"},
     PublishArtifacts = true,
