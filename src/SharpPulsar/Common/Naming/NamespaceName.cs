@@ -38,7 +38,7 @@ namespace SharpPulsar.Common.Naming
 		private static readonly ConcurrentDictionary<string, NamespaceName> Cache = new ConcurrentDictionary<string, NamespaceName>();
 		
 
-		public static readonly NamespaceName SystemNamespace = NamespaceName.Get("pulsar/system");
+		public static readonly NamespaceName SystemNamespace = Get("pulsar/system");
 
 		public static NamespaceName Get(string tenant, string @namespace)
 		{
@@ -71,7 +71,7 @@ namespace SharpPulsar.Common.Naming
 
 		private NamespaceName(string @namespace)
 		{
-			if (string.ReferenceEquals(@namespace, null) || @namespace.Length == 0)
+			if (ReferenceEquals(@namespace, null) || @namespace.Length == 0)
 			{
 				throw new ArgumentException("Invalid null namespace: " + @namespace);
 			}
@@ -121,7 +121,7 @@ namespace SharpPulsar.Common.Naming
 
         public string LocalName => _localName;
 
-        public bool Global => string.ReferenceEquals(_cluster, null) || Constants.GlobalCluster.Equals(_cluster, StringComparison.OrdinalIgnoreCase);
+        public bool Global => ReferenceEquals(_cluster, null) || Constants.GlobalCluster.Equals(_cluster, StringComparison.OrdinalIgnoreCase);
 
         public string GetPersistentTopicName(string localTopic)
 		{
@@ -158,7 +158,7 @@ namespace SharpPulsar.Common.Naming
 			if (obj is NamespaceName)
 			{
 				NamespaceName other = (NamespaceName) obj;
-				return object.Equals(_namespace, other._namespace);
+				return Equals(_namespace, other._namespace);
 			}
 
 			return false;
@@ -219,7 +219,7 @@ namespace SharpPulsar.Common.Naming
 		/// <summary>
 		/// Returns true if this is a V2 namespace prop/namespace-name. </summary>
 		/// <returns> true if v2 </returns>
-		public bool V2 => string.ReferenceEquals(_cluster, null);
+		public bool V2 => ReferenceEquals(_cluster, null);
     }
 
 }

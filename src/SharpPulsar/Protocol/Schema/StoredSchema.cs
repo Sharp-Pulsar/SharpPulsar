@@ -48,7 +48,7 @@ namespace SharpPulsar.Protocol.Schema
                 return false;
             }
             StoredSchema That = (StoredSchema)o;
-            return Data.SequenceEqual(That.Data) && object.Equals(Version, That.Version);
+            return Data.SequenceEqual(That.Data) && Equals(Version, That.Version);
         }
 
         public bool Equals(StoredSchema other)

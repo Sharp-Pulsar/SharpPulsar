@@ -37,7 +37,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetKey(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}
@@ -52,7 +52,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetValue(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}

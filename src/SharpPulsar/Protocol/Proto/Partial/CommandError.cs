@@ -47,7 +47,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetMessage(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}

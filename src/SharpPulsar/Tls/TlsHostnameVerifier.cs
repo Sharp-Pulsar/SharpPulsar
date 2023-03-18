@@ -66,7 +66,7 @@ namespace SharpPulsar.Tls
 
 			public static HostNameType valueOf(string name)
 			{
-				foreach (HostNameType enumInstance in HostNameType.valueList)
+				foreach (HostNameType enumInstance in valueList)
 				{
 					if (enumInstance.nameValue == name)
 					{

@@ -60,7 +60,7 @@ namespace SharpPulsar.Protocol.Proto
 			
 			public Builder SetSubscription(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}

@@ -51,7 +51,7 @@ namespace SharpPulsar.Common
 			int end = range.End < this.End ? range.End : this.End;
 			if (end >= start)
 			{
-				return Range.Of(start, end);
+				return Of(start, end);
 			}
 			else
 			{

@@ -42,7 +42,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetTopic(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}
@@ -70,7 +70,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetProducerName(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}

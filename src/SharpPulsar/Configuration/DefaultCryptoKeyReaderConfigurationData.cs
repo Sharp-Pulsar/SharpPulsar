@@ -49,12 +49,12 @@ namespace SharpPulsar.Configuration
 		{
 			DefaultCryptoKeyReaderConfigurationData clone = new DefaultCryptoKeyReaderConfigurationData();
 
-			if (!string.ReferenceEquals(DefaultPublicKey, null))
+			if (!ReferenceEquals(DefaultPublicKey, null))
 			{
 				clone.DefaultPublicKey = DefaultPublicKey;
 			}
 
-			if (!string.ReferenceEquals(DefaultPrivateKey, null))
+			if (!ReferenceEquals(DefaultPrivateKey, null))
 			{
 				clone.DefaultPrivateKey = DefaultPrivateKey;
 			}
@@ -99,7 +99,7 @@ namespace SharpPulsar.Configuration
 
 		private static string MaskKeyData(string key)
 		{
-			if (string.ReferenceEquals(key, null))
+			if (ReferenceEquals(key, null))
 			{
 				return "null";
 			}
