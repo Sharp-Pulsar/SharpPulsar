@@ -95,7 +95,7 @@ namespace SharpPulsar.Common.Entity
 
 		public static SubscriptionInitialPosition ValueOf(string name)
 		{
-			foreach (SubscriptionInitialPosition enumInstance in SubscriptionInitialPosition.valueList)
+			foreach (SubscriptionInitialPosition enumInstance in valueList)
 			{
 				if (enumInstance.nameValue == name)
 				{

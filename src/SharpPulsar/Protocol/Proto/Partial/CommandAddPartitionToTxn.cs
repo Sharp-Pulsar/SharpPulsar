@@ -54,7 +54,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder SetPartitions(int index, string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}
@@ -64,7 +64,7 @@ namespace SharpPulsar.Protocol.Proto
 			}
 			public Builder AddPartitions(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}

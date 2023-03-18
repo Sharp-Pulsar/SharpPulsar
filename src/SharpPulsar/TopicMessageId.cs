@@ -67,7 +67,7 @@ namespace SharpPulsar
 				return false;
 			}
 			var other = (TopicMessageId) obj;
-			return object.Equals(TopicPartitionName, other.TopicPartitionName) && object.Equals(InnerMessageId, other.InnerMessageId);
+			return Equals(TopicPartitionName, other.TopicPartitionName) && Equals(InnerMessageId, other.InnerMessageId);
 		}
 
 		public int CompareTo(IMessageId o)

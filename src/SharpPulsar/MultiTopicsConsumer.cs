@@ -323,7 +323,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(PulsarClientException.Unwrap(ex));
+                    Sender.Tell(Unwrap(ex));
                 }
             });
             Receive<GetStats>(m =>
@@ -336,7 +336,7 @@ namespace SharpPulsar
                 catch (Exception ex)
                 {
                     _log.Error(ex.ToString());
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
             Receive<NegativeAcknowledgeMessage<T>>(m =>
@@ -349,7 +349,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
             Receive<NegativeAcknowledgeMessages<T>>(m =>
@@ -366,7 +366,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
             Receive<NegativeAcknowledgeMessageId>(m =>
@@ -379,7 +379,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
             Receive<IAcknowledge>(m =>
@@ -462,7 +462,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
             Receive<RedeliverUnacknowledgedMessages>(m =>
@@ -474,7 +474,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
             Receive<RedeliverUnacknowledgedMessageIds>(m =>
@@ -486,7 +486,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
             Receive<Unsubscribe>(u =>
@@ -522,7 +522,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
             ReceiveAsync<SeekTimestamp>(async m =>
@@ -534,7 +534,7 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
         }
@@ -709,7 +709,7 @@ namespace SharpPulsar
             }
             catch (Exception e)
             {
-                throw PulsarClientException.Unwrap(e);
+                throw Unwrap(e);
             }
         }
 
@@ -750,7 +750,7 @@ namespace SharpPulsar
             }
             catch (Exception e)
             {
-                throw PulsarClientException.Unwrap(e);
+                throw Unwrap(e);
             }
         }
         protected internal override IMessages<T> InternalBatchReceive()

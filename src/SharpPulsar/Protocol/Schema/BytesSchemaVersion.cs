@@ -104,7 +104,7 @@ namespace SharpPulsar.Protocol.Schema
 
 		public override string ToString()
 		{
-			return BytesSchemaVersion.toString(_bytes, 0, _bytes.Length);
+			return toString(_bytes, 0, _bytes.Length);
 		}
 
 		/// <summary>

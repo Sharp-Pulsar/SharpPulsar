@@ -25,11 +25,11 @@ namespace SharpPulsar.Schemas.Generic
         public GenericAvroSchema(ISchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
         {
             _schemaInfo = schemaInfo;
-            var schema = Avro.Schema.Parse(schemaInfo.SchemaDefinition);
+            var schema = Schema.Parse(schemaInfo.SchemaDefinition);
             Reader = new MultiVersionGenericAvroReader(useProvidedSchemaAsReaderSchema, schema);
             Writer = new GenericAvroWriter((RecordSchema)schema);
 
-            if (schemaInfo.Properties.ContainsKey(GenericAvroSchema.OFFSET_PROP))
+            if (schemaInfo.Properties.ContainsKey(OFFSET_PROP))
             {
                 //this.schema.addProp(GenericAvroSchema.OFFSET_PROP, schemaInfo.getProperties().get(GenericAvroSchema.OFFSET_PROP));
             }

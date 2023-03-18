@@ -79,12 +79,12 @@ namespace SharpPulsar.Schemas
 
 		public static JSONSchema<T> Of(Type Pojo)
 		{
-			return JSONSchema<T>.Of(ISchemaDefinition<T>.Builder().WithPojo(Pojo).Build());
+			return Of(ISchemaDefinition<T>.Builder().WithPojo(Pojo).Build());
 		}
 
 		public static JSONSchema<T> Of(Type Pojo, IDictionary<string, string> Properties)
 		{
-			return JSONSchema<T>.Of(ISchemaDefinition<T>.Builder().WithPojo(Pojo).WithProperties(Properties).Build());
+			return Of(ISchemaDefinition<T>.Builder().WithPojo(Pojo).WithProperties(Properties).Build());
 		}
 
 	}

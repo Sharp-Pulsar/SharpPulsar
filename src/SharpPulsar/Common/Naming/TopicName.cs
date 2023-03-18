@@ -91,10 +91,10 @@ namespace SharpPulsar.Common.Naming
         }
         public static TopicName GetPartitionedTopicName(string topic)
         {
-            TopicName topicName = TopicName.Get(topic);
+            TopicName topicName = Get(topic);
             if (topicName.Partitioned)
             {
-                return TopicName.Get(topicName.PartitionedTopicName);
+                return Get(topicName.PartitionedTopicName);
             }
             return topicName;
         }

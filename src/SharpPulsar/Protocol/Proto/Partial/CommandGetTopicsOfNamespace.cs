@@ -43,7 +43,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetNamespace(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}

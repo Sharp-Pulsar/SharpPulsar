@@ -36,7 +36,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetTopic(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}
@@ -57,7 +57,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetOriginalPrincipal(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}
@@ -72,7 +72,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetOriginalAuthData(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}
@@ -87,7 +87,7 @@ namespace SharpPulsar.Protocol.Proto
             }
 			public Builder SetOriginalAuthMethod(string value)
 			{
-				if (string.ReferenceEquals(value, null))
+				if (ReferenceEquals(value, null))
 				{
 					throw new NullReferenceException();
 				}

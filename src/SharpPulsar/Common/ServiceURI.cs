@@ -134,7 +134,7 @@ namespace SharpPulsar.Common
 				throw new ArgumentException("Invalid hostname : " + hostname);
 			}
 			var host = uri.Host;
-			if (string.ReferenceEquals(host, null))
+			if (ReferenceEquals(host, null))
 			{
 				throw new ArgumentException("Invalid hostname : " + hostname);
 			}

@@ -1003,7 +1003,7 @@ namespace SharpPulsar.Batch
 				TrimToSize();
 			}
 
-			var result = (BitSet)base.MemberwiseClone();
+			var result = (BitSet)MemberwiseClone();
 			result._words = (long[])_words.Clone();
 			result.CheckInvariants();
 			return result;

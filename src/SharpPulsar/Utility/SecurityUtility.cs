@@ -76,7 +76,7 @@ namespace SharpPulsar.Utility
                 }
 
                 // Stop (and skip) at the last line that has, say, -----END [RSA] PRIVATE KEY-----
-                while (!string.ReferenceEquals((currentLine = reader.ReadLine()), null) && !currentLine.StartsWith("-----END", StringComparison.Ordinal))
+                while (!ReferenceEquals((currentLine = reader.ReadLine()), null) && !currentLine.StartsWith("-----END", StringComparison.Ordinal))
                 {
                     sb.Append(currentLine);
                 }
@@ -115,7 +115,7 @@ namespace SharpPulsar.Utility
         }
         public static AsymmetricAlgorithm LoadPrivateKeyFromPemFile(string keyFilePath)
 		{
-			if (string.ReferenceEquals(keyFilePath, null) || keyFilePath.Length == 0)
+			if (ReferenceEquals(keyFilePath, null) || keyFilePath.Length == 0)
 			{
 				throw new Exception("File path cannot be empty");
 			}
@@ -133,7 +133,7 @@ namespace SharpPulsar.Utility
 		}
         public static AsymmetricAlgorithm LoadPrivateKeyFromFile(string keyFilePath)
 		{
-			if (string.ReferenceEquals(keyFilePath, null) || keyFilePath.Length == 0)
+			if (ReferenceEquals(keyFilePath, null) || keyFilePath.Length == 0)
 			{
 				throw new Exception("File path cannot be empty");
 			}

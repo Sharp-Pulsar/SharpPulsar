@@ -44,7 +44,7 @@ namespace SharpPulsar.Common.Naming
 
         public static bool IsTopicPoliciesSystemTopic(string topic)
         {
-            if (string.ReferenceEquals(topic, null))
+            if (ReferenceEquals(topic, null))
             {
                 return false;
             }

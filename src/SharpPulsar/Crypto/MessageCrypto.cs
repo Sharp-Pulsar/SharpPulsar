@@ -118,7 +118,7 @@ namespace SharpPulsar.Crypto
 		private void AddPublicKeyCipher(string keyName, ICryptoKeyReader keyReader)
 		{
 
-			if (string.ReferenceEquals(keyName, null) || keyReader == null)
+			if (ReferenceEquals(keyName, null) || keyReader == null)
 			{
 				throw new PulsarClientException.CryptoException("Keyname or KeyReader is null");
 			}
@@ -141,7 +141,7 @@ namespace SharpPulsar.Crypto
 		public virtual bool RemoveKeyCipher(string keyName)
 		{
 
-			if (string.ReferenceEquals(keyName, null))
+			if (ReferenceEquals(keyName, null))
 			{
 				return false;
 			}

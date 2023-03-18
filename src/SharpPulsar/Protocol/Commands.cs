@@ -738,7 +738,7 @@ namespace SharpPulsar.Protocol
             var ackBuilder = new CommandAck
             {
                 ConsumerId = (ulong)consumerId,
-                ack_type = CommandAck.AckType.Individual,
+                ack_type = AckType.Individual,
                 TxnidLeastBits = (ulong)txnID.LeastSigBits,
                 TxnidMostBits = (ulong)txnID.MostSigBits
             };
@@ -775,7 +775,7 @@ namespace SharpPulsar.Protocol
             var ackBuilder = new CommandAck
             {
                 ConsumerId = (ulong)consumerId,
-                ack_type = CommandAck.AckType.Individual
+                ack_type = AckType.Individual
             };
             if (requestId >= 0)
             {
@@ -785,7 +785,7 @@ namespace SharpPulsar.Protocol
         }
         public ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
         {
-            var ackCmd = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = CommandAck.AckType.Individual};
+            var ackCmd = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = AckType.Individual};
 
             var entriesCount = entries.Count;
             for (var i = 0; i < entriesCount; i++)
@@ -805,7 +805,7 @@ namespace SharpPulsar.Protocol
         }
         public ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, long[] Sets)> entries)
         {
-            var ackCmd = new CommandAck { ConsumerId = (ulong)consumerId, ack_type = CommandAck.AckType.Individual };
+            var ackCmd = new CommandAck { ConsumerId = (ulong)consumerId, ack_type = AckType.Individual };
 
             var entriesCount = entries.Count;
             for (var i = 0; i < entriesCount; i++)
