@@ -19,9 +19,7 @@ name: nuget
 on:
   push:
     tags:
-      - main
-      - dev
-      - release
+      - '*'
 
 jobs:
   windows-latest:
