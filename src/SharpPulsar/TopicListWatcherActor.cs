@@ -10,7 +10,6 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol;
-using Akka.Event;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;

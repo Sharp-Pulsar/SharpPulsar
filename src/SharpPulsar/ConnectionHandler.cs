@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using SharpPulsar.Exceptions;
 using System;
 using System.Threading.Tasks;

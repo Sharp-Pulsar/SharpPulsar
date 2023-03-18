@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using SharpPulsar.Auth.OAuth2.Protocol;

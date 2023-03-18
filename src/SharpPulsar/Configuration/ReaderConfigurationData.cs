@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Interfaces;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

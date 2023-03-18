@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Util;
-using App.Metrics.Concurrency;
 using SharpPulsar.Messages.Consumer;
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
-using System.Text.Json;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -3,12 +3,10 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 

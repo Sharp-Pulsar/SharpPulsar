@@ -9,7 +9,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNet.Testcontainers.Builders;
 using SharpPulsar;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;

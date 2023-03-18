@@ -1,7 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Dispatch.SysMsg;
-using Avro.Util;
-using System;
 using System.Net;
 
 namespace SharpPulsar.Messages.Requests

@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;

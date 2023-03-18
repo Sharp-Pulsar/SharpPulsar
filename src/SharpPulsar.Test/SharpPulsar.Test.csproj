@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Akka.TestKit.Xunit2" Version="1.5.0" />
-    <Using Include="Akka.Event"/>
+    <PackageReference Include="Akka.TestKit.Xunit2" Version="1.5.1" />
+    <Using Include="Akka.Event" />
     <PackageReference Include="Castle.Core" Version="5.1.1" />
     <PackageReference Include="FluentAssertions" Version="6.10.0" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.0.1">

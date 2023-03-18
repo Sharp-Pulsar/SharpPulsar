@@ -1,5 +1,4 @@
-﻿using Akka.Event;
-using Nager.PublicSuffix;
+﻿using Nager.PublicSuffix;
 using SharpPulsar.Common;
 using System;
 using System.Collections.Generic;

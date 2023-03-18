@@ -1,5 +1,4 @@
-﻿using Akka.Event;
-using SharpPulsar.Common;
+﻿using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;

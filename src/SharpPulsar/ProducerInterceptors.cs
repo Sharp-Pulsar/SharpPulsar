@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Interceptor;
 using System;
@@ -27,11 +26,11 @@ namespace SharpPulsar
 {
 
 
-	/// <summary>
-	/// A container that holds the list<seealso cref="IProducerInterceptor"/>
-	/// and wraps calls to the chain of custom interceptors.
-	/// </summary>
-	public class ProducerInterceptors<T> : IDisposable
+    /// <summary>
+    /// A container that holds the list<seealso cref="IProducerInterceptor"/>
+    /// and wraps calls to the chain of custom interceptors.
+    /// </summary>
+    public class ProducerInterceptors<T> : IDisposable
 	{
 
 		private readonly ILoggingAdapter _log;

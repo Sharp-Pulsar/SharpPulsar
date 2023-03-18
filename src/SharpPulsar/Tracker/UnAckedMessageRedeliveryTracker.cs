@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;

@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using Akka.Util;
 using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;

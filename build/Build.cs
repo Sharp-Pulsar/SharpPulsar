@@ -28,7 +28,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Nuke.Common.Tools.MSBuild;
 using Nuke.Common.CI.GitHubActions;
-using DotNet.Testcontainers.Builders;
 using Testcontainers.Pulsar;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
@@ -153,7 +152,7 @@ partial class Build : NukeBuild
                             .EnableNoBuild()
                             .SetBlameCrash(true)
                             .SetBlameHang(true)
-                            .SetBlameHangTimeout("10m")
+                            .SetBlameHangTimeout("30m")
                             .EnableNoRestore()
                             .When(true, _ => _
                                  .SetLoggers("console;verbosity=detailed")

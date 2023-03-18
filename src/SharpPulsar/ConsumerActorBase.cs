@@ -1,11 +1,9 @@
 ﻿using Akka.Actor;
 using Akka.Dispatch;
-using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Configuration;
-using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
@@ -17,8 +15,6 @@ using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -924,15 +920,15 @@ namespace SharpPulsar
             {
                 //IncomingMessages.Post(o);
                 Context.Parent.Tell(new ReceivedMessage<T>(o));
-                _log.Info($"Pushed message with sequnceid {o.SequenceId} (topic:{Topic}) to consumer parent");
+                _log.Info($"Pushed message with SequenceId {o.SequenceId} (topic:{Topic}) to consumer parent");
 
             }
             else
             {
                 if (IncomingMessages.Post(o))
-                    _log.Info($"Added message with sequnceid {o.SequenceId} (key:{o.Key}) to IncomingMessages. Message Count: {IncomingMessages.Count}");
+                    _log.Info($"Added message with SequenceId {o.SequenceId} (key:{o.Key}) to IncomingMessages. Message Count: {IncomingMessages.Count}");
                 else
-                    _log.Info($"Failed to add message with sequnceid {o.SequenceId} to IncomingMessages");
+                    _log.Info($"Failed to add message with SequenceId {o.SequenceId} to IncomingMessages");
             }
         }
     }

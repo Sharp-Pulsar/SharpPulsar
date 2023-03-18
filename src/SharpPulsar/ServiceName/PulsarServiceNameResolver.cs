@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using DotNetty.Common.Internal;
-using Akka.Event;
 using System.Net;
 
 /// <summary>

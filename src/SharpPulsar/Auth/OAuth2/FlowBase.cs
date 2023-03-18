@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using SharpPulsar.Auth.OAuth2.Protocol;
 using SharpPulsar.Exceptions;
 
@@ -24,14 +23,14 @@ using SharpPulsar.Exceptions;
 /// </summary>
 namespace SharpPulsar.Auth.OAuth2
 {
-	
 
-	/// <summary>
-	/// An abstract OAuth 2.0 authorization flow.
-	/// </summary>
+
+    /// <summary>
+    /// An abstract OAuth 2.0 authorization flow.
+    /// </summary>
     /// 
 
-	[Serializable]
+    [Serializable]
 	internal abstract class FlowBase : IFlow
 	{
 		public abstract void Close();

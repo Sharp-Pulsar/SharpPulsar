@@ -100,34 +100,34 @@ namespace SharpPulsar
             consumerConfiguration.Interceptors = consumerInterceptors;
 			_consumer = Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, false, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, clientConfigurationData, subscribeFuture));
             Receive<HasReachedEndOfTopic>(m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<AcknowledgeCumulativeMessage<T>> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<Messages.Consumer.Receive> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<Connect> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<MessageProcessed<T>> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<HasMessageAvailable> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<GetTopic> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<IsConnected> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<SeekMessageId> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 			Receive<SeekTimestamp> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Forward(m);
 			});
 		}
 		
