@@ -2,12 +2,9 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Akka.Event;
 using Akka.Util;
 using SharpPulsar.Builder;
 using SharpPulsar.Cache;
@@ -19,7 +16,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Schema;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
@@ -28,7 +24,6 @@ using SharpPulsar.Precondition;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
-using SharpPulsar.Table.Messages;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Utils;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
@@ -50,7 +45,6 @@ namespace SharpPulsar
         internal IActorRef Lookup { get { return _lookup; } }   
         private readonly IActorRef _generator;
         internal IActorRef Generator { get { return _generator; } }
-        private Backoff _backoff;
         public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
         {
             _generator = idGenerator;
@@ -612,7 +606,7 @@ namespace SharpPulsar
             {
                 await _client.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
             }
-            catch(Exception ex)
+            catch   
             {
 
             }

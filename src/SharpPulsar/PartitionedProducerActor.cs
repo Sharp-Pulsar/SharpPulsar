@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using Akka.Routing;
 using Akka.Util.Internal;
 using SharpPulsar.Common;
@@ -22,7 +21,6 @@ using System.Collections.Immutable;
 using SharpPulsar.Precondition;
 using SharpPulsar.Common.Util;
 using SharpPulsar.Messages;
-using SharpPulsar.Messages.Requests;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -444,10 +442,10 @@ namespace SharpPulsar
                         throw new PulsarClientException.NotSupportedException("not support shrink topic partitions");
                     }
                 }
-                catch(Exception ex) 
+                catch (Exception ex)
                 {
                     _outerInstance._log.Error($"[{_outerInstance.Topic}] Auto getting partitions failed { ex}");
-                    throw ex;
+                    throw;
                 }    
                 
                 

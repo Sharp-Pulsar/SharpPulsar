@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using Akka.Util;
 using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;
@@ -2459,7 +2458,7 @@ namespace SharpPulsar
         {
 
             var resultBytes = JsonSerializer.SerializeToUtf8Bytes(o,
-                    new JsonSerializerOptions { WriteIndented = false, IgnoreNullValues = true });
+                    new JsonSerializerOptions { WriteIndented = false });
             return resultBytes.Length;
 
         }

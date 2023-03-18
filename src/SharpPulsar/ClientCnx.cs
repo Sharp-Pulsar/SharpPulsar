@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Model;
@@ -21,7 +20,6 @@ using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.SocketImpl;
 using System.Threading.Tasks;
-using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace SharpPulsar
 {

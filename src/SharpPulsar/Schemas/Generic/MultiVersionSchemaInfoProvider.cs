@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol.Schema;
-using Akka.Event;
 using Akka.Actor;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Cache;

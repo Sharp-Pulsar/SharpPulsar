@@ -22,8 +22,6 @@ namespace SharpPulsar
         private readonly ISchema<T> _schema;
         private readonly ProducerConfigurationData _conf;
         private readonly TimeSpan _operationTimeout;
-        private readonly string _topic;
-
         public Producer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout)
         {
             _producerActor = producer;

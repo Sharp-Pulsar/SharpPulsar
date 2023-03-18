@@ -10,7 +10,6 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol;
-using Akka.Event;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;
@@ -22,11 +21,6 @@ namespace SharpPulsar
     {
         private readonly IActorRef _connectionHandler;
         private readonly IActorRef _self;
-        private IActorRef _sender;
-
-        private readonly IScheduler _scheduler;
-        private IActorRef _replyTo;
-        private long _requestId = -1;
         private IActorRef _cnx;
         private readonly TimeSpan _lookupDeadline;
         private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();

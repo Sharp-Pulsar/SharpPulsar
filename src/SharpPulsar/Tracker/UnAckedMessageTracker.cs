@@ -24,7 +24,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;

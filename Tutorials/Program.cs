@@ -9,7 +9,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNet.Testcontainers.Builders;
 using SharpPulsar;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
@@ -844,8 +843,8 @@ namespace Tutorials
                 .Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
 
             //pulsar actor system
-            var pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
-            var pulsarClient = pulsarSystem.NewClient();
+            var pulsarSystem = PulsarSystem.GetInstance();
+            var pulsarClient = await pulsarSystem.NewClient(clientConfig);
 
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
                 .Topic(topicName));

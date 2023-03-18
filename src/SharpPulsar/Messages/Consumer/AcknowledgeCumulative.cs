@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Akka.Actor;
-using Akka.Dispatch.SysMsg;
-using Avro.Util;
 using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Consumer

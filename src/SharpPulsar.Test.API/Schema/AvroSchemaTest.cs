@@ -52,8 +52,7 @@ namespace SharpPulsar.Test.API.Schema
             public long TimestampMillis { get; set; }
             public long TimeMillis { get; set; }
             public long TimestampMicros { get; set; }
-            public long TimeMicros { get; set; }
-
+            public long TimeMicros { get; set; }            
             public bool Equals(SchemaLogicalType other)
             {
                 if (Decimal == other.Decimal && Date == other.Date && TimestampMillis == other.TimestampMillis

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Akka.Actor;
-using Akka.Event;
 using Akka.Util.Internal;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;

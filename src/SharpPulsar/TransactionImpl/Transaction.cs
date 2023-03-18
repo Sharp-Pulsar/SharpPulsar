@@ -12,7 +12,6 @@ namespace SharpPulsar.TransactionImpl
         private readonly IActorRef _txn;
         private readonly long _mostSigBits;
         private readonly long _leastSigBits;
-        private volatile TransactionState _state;
         public Transaction(long leastBits, long mostBits, IActorRef txn)
         {
             _mostSigBits = mostBits;

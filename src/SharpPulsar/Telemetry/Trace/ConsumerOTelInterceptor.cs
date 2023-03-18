@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Akka.Actor;
-using Akka.Event;
 using Akka.Util.Internal;
 using OpenTelemetry.Context.Propagation;
 using SharpPulsar.Common.Naming;

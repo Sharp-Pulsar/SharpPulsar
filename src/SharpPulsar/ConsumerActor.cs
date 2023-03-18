@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Util;
-using OpenTelemetry;
 using ProtoBuf;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
@@ -18,7 +17,6 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Precondition;
-using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Stats.Consumer;

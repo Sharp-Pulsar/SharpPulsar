@@ -87,8 +87,8 @@ namespace SharpPulsar.TestContainer
             client.EnableTls(enableTls);
             client.Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
             
-            var system = await PulsarSystem.GetInstanceAsync(client);
-            Client = system.NewClient();
+            var system = PulsarSystem.GetInstance();
+            Client = await system.NewClient(client);
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;
         }

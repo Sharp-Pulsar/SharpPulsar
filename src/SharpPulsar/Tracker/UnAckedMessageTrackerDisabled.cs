@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker

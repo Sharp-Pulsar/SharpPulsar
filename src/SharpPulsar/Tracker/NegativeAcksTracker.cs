@@ -28,8 +28,6 @@ using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using System.Threading.Tasks;
-using Akka.Event;
-using System.Threading;
 
 namespace SharpPulsar.Tracker
 {

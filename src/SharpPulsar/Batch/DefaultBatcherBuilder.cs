@@ -19,7 +19,6 @@
 /// under the License.
 /// </summary>
 
-using Akka.Event;
 using SharpPulsar.Batch.Api;
 
 namespace SharpPulsar.Batch

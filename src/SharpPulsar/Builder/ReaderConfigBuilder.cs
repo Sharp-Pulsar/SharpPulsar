@@ -2,15 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Util.Internal;
-using DotNetty.Common.Utilities;
-using Org.BouncyCastle.Utilities;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using Range = SharpPulsar.Common.Range;
 
 /// <summary>

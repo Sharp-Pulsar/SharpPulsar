@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Akka.Actor;
-using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;

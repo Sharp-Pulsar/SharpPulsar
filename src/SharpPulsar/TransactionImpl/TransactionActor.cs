@@ -1,12 +1,10 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
-using System;
 using System.Collections.Generic;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
@@ -58,7 +56,6 @@ namespace SharpPulsar.TransactionImpl
         private IActorRef _tcClient; //TransactionCoordinatorClientImpl
         private IDictionary<IActorRef, int> _cumulativeAckConsumers;
         private readonly List<IMessageId> _sendList;
-        private readonly List<object> ackFutureList;
         private ICancelable _timeout = null;
         public IStash Stash { get; set; }
 

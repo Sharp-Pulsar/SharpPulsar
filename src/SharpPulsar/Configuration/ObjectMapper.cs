@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
 using Newtonsoft.Json.Linq;
 
@@ -31,7 +29,6 @@ namespace SharpPulsar.Configuration
 		{
 			var jsonObject = new JsonSerializerOptions
 			{
-				IgnoreNullValues = true,
 				WriteIndented = true,
                 MaxDepth = 256
 			};

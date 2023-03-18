@@ -5,7 +5,6 @@ using SharpPulsar.Batch.Api;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
-using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;

@@ -3,7 +3,6 @@ using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using Akka.Actor;
-using Akka.Event;
 using App.Metrics.Concurrency;
 using SharpPulsar.Configuration;
 using SharpPulsar.Stats.Consumer.Api;

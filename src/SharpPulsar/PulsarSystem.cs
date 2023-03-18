@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Configuration;
-using Akka.Logger.Serilog;
 using Serilog;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Client;

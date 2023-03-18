@@ -1,5 +1,4 @@
-﻿using Akka.Event;
-using System;
+﻿using System;
 using System.Net.Sockets;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;

@@ -110,34 +110,34 @@ namespace SharpPulsar
                 await SubscribeToTopic(sub);
             });
             Receive<HasReachedEndOfTopic>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             Receive<AcknowledgeCumulativeMessage<T>>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             Receive<MessageProcessed<T>>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             Receive<Messages.Consumer.Receive>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             Receive<HasMessageAvailable>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             Receive<GetTopic>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             Receive<IsConnected>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             Receive<SeekMessageId>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             Receive<SeekTimestamp>(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
             ReceiveAny(m => {
-                _consumer.Tell(m, Sender);
+                _consumer.Forward(m);
             });
         }
         public static Props Prop(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)

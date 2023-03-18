@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Akka.Actor;
-using Akka.Event;
 using App.Metrics.Concurrency;
 
 using SharpPulsar.Configuration;
@@ -31,7 +30,7 @@ using SharpPulsar.Interfaces;
 /// </summary>
 namespace SharpPulsar.Stats.Producer
 {
-    
+
     public sealed class ProducerStatsRecorder : IProducerStatsRecorder
     {
         internal ICancelable StatTimeout { get; set; }

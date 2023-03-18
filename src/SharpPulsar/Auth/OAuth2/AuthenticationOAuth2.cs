@@ -116,9 +116,9 @@ namespace SharpPulsar.Auth.OAuth2
 			{
 				Flow.Close();
 			}
-			catch (Exception e)
+			catch
 			{
-				throw e;
+				throw;
 			}
 		}
 

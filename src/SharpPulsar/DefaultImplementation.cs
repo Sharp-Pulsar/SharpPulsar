@@ -9,7 +9,6 @@ using System.Text;
 using NodaTime;
 using SharpPulsar.Shared;
 using SharpPulsar.Schemas.Generic;
-using Akka.Event;
 using SharpPulsar.Interfaces.Schema;
 
 /// <summary>

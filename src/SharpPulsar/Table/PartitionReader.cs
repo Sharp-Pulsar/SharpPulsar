@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Akka.Event;
 using App.Metrics.Concurrency;
 using SharpPulsar.Table.Messages;
 

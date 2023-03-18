@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Util;
-using App.Metrics.Concurrency;
 using SharpPulsar.Messages.Consumer;
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
-using System.Text.Json;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -98,9 +96,9 @@ namespace SharpPulsar.Test
                     receivedMessages.Add(1);
                     _output.WriteLine($"Consumer received : {receivedMessages.Count}, {r}");
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
-                    //_output.WriteLine("Consumer received : " + ex.ToString());
+                    _output.WriteLine("Consumer received : " + ex.ToString());
                 }
             }
             Assert.True(receivedMessages.Count > 0);
@@ -207,7 +205,6 @@ namespace SharpPulsar.Test
 			string topicName = $"zero-queue-pause-and-resume{Guid.NewGuid()}";
 			const string subName = "sub";
 			AtomicReference<CountdownEvent> latch = new AtomicReference<CountdownEvent>(new CountdownEvent(1));
-			AtomicInteger received = new AtomicInteger();
 			var config = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topicName)
 				.SubscriptionName(subName)

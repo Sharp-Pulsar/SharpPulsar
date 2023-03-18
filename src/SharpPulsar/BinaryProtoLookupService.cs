@@ -1,7 +1,5 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Common.Partition;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Model;
@@ -21,7 +19,6 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.ServiceName;
 using Mode = SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Mode;
 using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
-using ZstdNet;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

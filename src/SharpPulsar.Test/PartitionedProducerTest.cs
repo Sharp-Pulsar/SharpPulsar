@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SharpPulsar.Admin.v2;
 using SharpPulsar.Builder;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using Xunit;

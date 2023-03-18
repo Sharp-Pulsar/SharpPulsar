@@ -4,7 +4,6 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Annotations;
-using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Auth;
 using SharpPulsar.Builder;

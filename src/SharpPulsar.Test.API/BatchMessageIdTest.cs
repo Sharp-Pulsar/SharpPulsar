@@ -82,7 +82,7 @@ namespace SharpPulsar.Test.API
                 var d = JsonSerializer.Serialize(batchMsgId, new JsonSerializerOptions { IgnoreNullValues = false });
                 //Assert.fail("Shouldn't be deserialized");
             }
-            catch (Exception e)
+            catch
             {
                 // expected
                 Assert.False(false);
@@ -96,7 +96,7 @@ namespace SharpPulsar.Test.API
                 var d = JsonSerializer.Serialize(batchMsgIdToDeserialize, new JsonSerializerOptions { IgnoreNullValues = false });
 
             }
-            catch (Exception ex)
+            catch
             {
                 Assert.False(false);
             }

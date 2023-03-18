@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
@@ -15,7 +14,7 @@ using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar
 {
-	public class ConnectionPool : ReceiveActor, IWithUnboundedStash
+    public class ConnectionPool : ReceiveActor, IWithUnboundedStash
 	{
 		private readonly Dictionary<EndPoint, Dictionary<int, ConnectionOpened>> _pool;
 
