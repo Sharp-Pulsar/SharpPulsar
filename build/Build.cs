@@ -143,7 +143,8 @@ partial class Build : NukeBuild
                 Git($"tag -f {GitVersion.MajorMinorPatch}");
                 //git push --atomic origin <branch name> <tag>
                 //https://gist.github.com/danielestevez/2044589
-                //https://www.atlassian.com/git/tutorials/merging-vs-rebasing
+                //https://www.atlassian.com/git/tutorials/merging-vs-rebasing./build.cmd createnuget
+                //https://git-scm.com/docs/git-push
             }
         });
 
