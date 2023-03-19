@@ -34,8 +34,6 @@ using Testcontainers.Pulsar;
 
 
 [ShutdownDotNetAfterServerBuild]
-[DotNetVerbosityMapping]
-[UnsetVisualStudioEnvironmentVariables]
 partial class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -47,7 +45,7 @@ partial class Build : NukeBuild
 
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
-    public static int Main () => Execute<Build>(x => x.Test);
+    public static int Main () => Execute<Build>(x => x.CreateNuget);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -74,7 +72,27 @@ partial class Build : NukeBuild
 
     GitHubClient GitHubClient;
     public ChangeLog Changelog => MdHelper.ReadChangelog(ChangelogFile);
+    string TagVersion => GitRepository.Tags.SingleOrDefault()?[1..];
 
+    bool IsTaggedBuild => !string.IsNullOrWhiteSpace(TagVersion);
+
+    string VersionSuffix;
+    protected override void OnBuildInitialized()
+    {
+        VersionSuffix = !IsTaggedBuild
+            ? $"dev-{DateTime.UtcNow:yyyyMMdd-HHmm}"
+            : "";
+
+        if (IsLocalBuild)
+        {
+            VersionSuffix = $"dev-{DateTime.UtcNow:yyyyMMdd-HHmm}";
+        }
+
+        Information("BUILD SETUP");
+        Information($"Configuration:\t{Configuration}");
+        Information($"Version suffix:\t{VersionSuffix}");
+        Information($"Tagged build:\t{IsTaggedBuild}");
+    }
     public ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
     public string ReleaseVersion => LatestVersion.Version?.ToString() ?? throw new ArgumentException("Bad Changelog File. Define at least one version");
 
@@ -248,15 +266,7 @@ partial class Build : NukeBuild
       {
           var branchName = GitRepository.Branch;
 
-          if (branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
-          && !GitVersion.MajorMinorPatch.Equals(LatestVersion.Version.ToString()))
-          {
-              // Force CHANGELOG.md in case it skipped the mind
-              Assert.Fail($"CHANGELOG.md needs to be update for final release. Current version: '{LatestVersion.Version}'. Next version: {GitVersion.MajorMinorPatch}");
-          }
-          var releaseNotes = branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
-                             ? GetNuGetReleaseNotes(ChangelogFile, GitRepository)
-                             : ParseReleaseNote();
+          var releaseNotes = GetNuGetReleaseNotes(ChangelogFile, GitRepository);
           var projects = new List<string>
             {
                 "SharpPulsar",
@@ -272,10 +282,10 @@ partial class Build : NukeBuild
               //.EnableNoBuild()
               .EnableNoRestore()
               //.SetIncludeSymbols(true)
-              .SetAssemblyVersion(GitVersion.AssemblySemVer)
-              .SetFileVersion(GitVersion.AssemblySemFileVer)
-              .SetInformationalVersion(GitVersion.InformationalVersion)
-              .SetVersion(GitVersion.NuGetVersionV2)
+              .SetAssemblyVersion(TagVersion)
+              .SetFileVersion(TagVersion)
+              .SetInformationalVersion(TagVersion)
+              .SetVersionSuffix(VersionSuffix)
               .SetPackageReleaseNotes(releaseNotes)
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven", "Event Sourcing", "Distributed System", "Microservice")
@@ -307,7 +317,7 @@ partial class Build : NukeBuild
             {
                 Credentials = new Credentials(GitHubActions.Token, AuthenticationType.Bearer)
             };
-            var version = GitVersion.NuGetVersionV2;
+            var version = TagVersion;
             var releaseNotes = GetNuGetReleaseNotes(ChangelogFile);
             Release release;
 
