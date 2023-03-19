@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net7.0</TargetFrameworks>  
     <PackageIcon>SharpPulsar.Admin.jpg</PackageIcon>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>  
 	<PackageIconUrl />
   </PropertyGroup>
   

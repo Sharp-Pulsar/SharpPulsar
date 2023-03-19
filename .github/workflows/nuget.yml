@@ -18,10 +18,8 @@ name: nuget
 
 on:
   push:
-    branches:
-      - main
-      - dev
-      - release
+    tags:
+      - '*'
 
 jobs:
   windows-latest:

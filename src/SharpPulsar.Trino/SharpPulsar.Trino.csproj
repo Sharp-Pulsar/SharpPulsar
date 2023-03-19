@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <PackageIcon>SharpPulsar.Trino.jpg</PackageIcon>
-    <PackageReadmeFile>readme.md</PackageReadmeFile>  
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>  
     <PackageIconUrl />
     <ImplicitUsings>enable</ImplicitUsings>   
   </PropertyGroup>

@@ -123,6 +123,9 @@ partial class Build : NukeBuild
                 Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
 
                 Git($"tag -f {GitVersion.MajorMinorPatch}");
+                //git push --atomic origin <branch name> <tag>
+                //https://gist.github.com/danielestevez/2044589
+                //https://www.atlassian.com/git/tutorials/merging-vs-rebasing
             }
         });
 

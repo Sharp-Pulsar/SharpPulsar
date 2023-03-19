@@ -1,7 +1,7 @@
 assembly-versioning-scheme: MajorMinorPatch
 mode: ContinuousDelivery
 continuous-delivery-fallback-tag: ''
-next-version: 2.11.0
+next-version: 2.11.2
 branches: # https://gitversion.net/docs/learn/branching-strategies/gitflow/examples
   main:
     regex: ^master$|^main$

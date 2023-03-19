@@ -1,4 +1,5 @@
 ## vNext
+- Package License
 
 ## [2.11.1] / 2023-03-18
 - Update Akka.NET to 1.5.1
