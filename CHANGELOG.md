@@ -1,4 +1,6 @@
 ## vNext
+
+## [2.11.2] / 2023-03-19
 - Package License
 
 ## [2.11.1] / 2023-03-18
@@ -25,7 +27,8 @@
 ## [0.1.0] / 14 January 2022
 - First release
 
-[vNext]: https://github.com/eaba/SharpPulsar/compare/2.11.1...HEAD
+[vNext]: https://github.com/eaba/SharpPulsar/compare/2.11.2...HEAD
+[2.11.2]: https://github.com/eaba/SharpPulsar/compare/2.11.1...2.11.2
 [2.11.1]: https://github.com/eaba/SharpPulsar/compare/2.11.0...2.11.1
 [2.11.0]: https://github.com/eaba/SharpPulsar/compare/2.9.0...2.11.0
 [2.9.0]: https://github.com/eaba/SharpPulsar/compare/0.1.0...2.9.0
