@@ -12,13 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Akka" Version="1.5.1" />
+    <PackageReference Include="Akka" Version="1.5.2" />
     <PackageReference Include="Akka.Logger.Serilog" Version="1.5.0.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <Using Include="Akka.Event" />
     <PackageReference Include="Apache.Avro" Version="1.11.1" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
-    <PackageReference Include="AvroSchemaGenerator" Version="2.9.0" />
+    <PackageReference Include="AvroSchemaGenerator" Version="2.9.1" />
     <PackageReference Include="DotNetty.Common" Version="0.7.5" />
     <PackageReference Include="Google.Protobuf" Version="3.22.1" />
     <PackageReference Include="IdentityModel" Version="6.0.0" />
@@ -36,7 +36,7 @@
     <PackageReference Include="Nager.PublicSuffix" Version="2.4.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
-    <PackageReference Include="NodaTime" Version="3.1.6" />
+    <PackageReference Include="NodaTime" Version="3.1.9" />
     <PackageReference Include="NSwag.ApiDescription.Client" Version="13.18.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
