@@ -45,8 +45,8 @@ namespace SharpPulsar.Test
                 .ForceTopicCreation(true)
                 //.SubscriptionType(SubType.Failover)
                 .EnableBatchIndexAcknowledgment(true)
-                .AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(1000))
-                .AckTimeout(TimeSpan.FromMilliseconds(1000));
+                .AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(3000))
+                .AckTimeout(TimeSpan.FromMilliseconds(10000));
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
                 .Topic(normalTopic);
@@ -117,8 +117,8 @@ namespace SharpPulsar.Test
                 .SubscriptionName($"test-{Guid.NewGuid()}")
                 .EnableBatchIndexAcknowledgment(true)
                 .SubscriptionType(SubType.Failover)
-                .AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(1000)
-                /*.AckTimeout(TimeSpan.FromMilliseconds(1000)*/);
+                .AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(3000))
+                .AckTimeout(TimeSpan.FromMilliseconds(10000));
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
                 .Topic(normalTopic)
