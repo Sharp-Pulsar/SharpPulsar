@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Akka" Version="1.5.2" />
+    <PackageReference Include="Akka" Version="1.5.3" />
     <PackageReference Include="Akka.Logger.Serilog" Version="1.5.0.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <Using Include="Akka.Event" />
@@ -20,12 +20,12 @@
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
     <PackageReference Include="AvroSchemaGenerator" Version="2.9.1" />
     <PackageReference Include="DotNetty.Common" Version="0.7.5" />
-    <PackageReference Include="Google.Protobuf" Version="3.22.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.22.3" />
     <PackageReference Include="IdentityModel" Version="6.0.0" />
     <PackageReference Include="JsonSubTypes" Version="2.0.1" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.3.5" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="7.0.4">
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="7.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
