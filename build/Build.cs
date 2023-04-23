@@ -173,7 +173,7 @@ partial class Build : NukeBuild
                             .EnableNoBuild()
                             .SetBlameCrash(true)
                             .SetBlameHang(true)
-                            .SetBlameHangTimeout("30m")
+                            .SetBlameHangTimeout("10m")
                             .EnableNoRestore()
                             .When(true, _ => _
                                  .SetLoggers("console;verbosity=detailed")

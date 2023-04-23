@@ -1,0 +1,80 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <!-- App dependencies -->
+  <ItemGroup>
+    <PackageVersion Include="Akka" Version="$(AkkaVersion)" />
+    <PackageVersion Include="Akka.Logger.Serilog" Version="$(AkkaLoggerSerilogVersion)" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="$(SerilogSinksFileVersion)" />
+    <PackageVersion Include="Apache.Avro" Version="$(ApacheAvroVersion)" />
+    <PackageVersion Include="App.Metrics.Concurrency" Version="$(AppMetricsConcurrencyVersion)" />
+    <PackageVersion Include="AvroSchemaGenerator" Version="$(AvroSchemaGeneratorVersion)" />
+    <PackageVersion Include="DotNetty.Common" Version="$(DotNettyCommonVersion)" />
+    <PackageVersion Include="Google.Protobuf" Version="$(GoogleProtobufVersion)" />
+    <PackageVersion Include="IdentityModel" Version="$(IdentityModelVersion)" />
+    <PackageVersion Include="JsonSubTypes" Version="$(JsonSubTypesVersion)" />
+    <PackageVersion Include="K4os.Compression.LZ4" Version="$(K4osCompressionLZ4Version)" />
+    <PackageVersion Include="Microsoft.Extensions.ApiDescription.Client" Version="$(MicrosoftExtensionsApiDescriptionClientVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MicrosoftExtensionsLoggingVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftExtensionsLoggingVersion)" />
+    <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="$(MicrosoftIORecyclableMemoryStreamVersion)" />
+    <PackageVersion Include="Microsoft.Rest.ClientRuntime" Version="$(MicrosoftRestClientRuntimeVersion)" />
+    <PackageVersion Include="Nager.PublicSuffix" Version="$(NagerPublicSuffixVersion)" />
+    <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <PackageVersion Include="Nito.AsyncEx" Version="$(NitoAsyncExVersion)" />
+    <PackageVersion Include="NodaTime" Version="$(NodaTimeVersion)" />
+    <PackageVersion Include="NSwag.ApiDescription.Client" Version="$(NSwagApiDescriptionClientVersion)"/>
+    <PackageVersion Include="OpenTelemetry" Version="$(OpenTelemetryVersion)" />
+    <PackageVersion Include="Portable.BouncyCastle" Version="$(PortableBouncyCastleVersion)" />
+    <PackageVersion Include="Pro.NBench.xUnit" Version="$(ProNBenchxUnitVersion)" />
+    <PackageVersion Include="Microsoft.CSharp" Version="$(MicrosoftCSharpVersion)" />
+    <PackageVersion Include="protobuf-net" Version="$(protobufnetVersion)" />
+    <PackageVersion Include="SharpZipLib" Version="$(SharpZipLibVersion)" />
+    <PackageVersion Include="Snappy.Standard" Version="$(SnappyStandardVersion)" />
+    <PackageVersion Include="System.Diagnostics.Contracts" Version="$(SystemDiagnosticsContractsVersion)" />
+    <PackageVersion Include="System.IO.Pipelines" Version="$(SystemIOPipelinesVersion)" />
+    <PackageVersion Include="System.Net.NetworkInformation" Version="$(SystemNetNetworkInformationVersion)" />
+    <PackageVersion Include="System.Reactive" Version="$(SystemReactiveVersion)" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
+    <PackageVersion Include="System.Runtime.Serialization.Primitives" Version="$(SystemRuntimeSerializationPrimitivesVersion)" />
+    <PackageVersion Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
+    <PackageVersion Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="$(SystemThreadingTasksDataflowVersion)" />
+    <PackageVersion Include="zlib.net-mutliplatform" Version="$(zlibnetmutliplatformVersion)" />
+    <PackageVersion Include="ZstdNet" Version="$(ZstdNetVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.json" Version="7.0.0" />
+    <PackageVersion Include="HttpToSocks5Proxy" Version="1.4.0" />
+    <PackageVersion Include="Spectre.Console" Version="0.46.0" />
+    <PackageVersion Include="JetBrains.Annotations" Version="2022.3.1" />
+    <PackageVersion Include="Testcontainers" Version="3.0.0" />
+    <PackageVersion Include="Akka.TestKit.Xunit2" Version="$(AkkaVersion)" />
+    <PackageVersion Include="Castle.Core" Version="5.1.1" />
+    <PackageVersion Include="FluentAssertions" Version="6.11.0" />
+    <PackageVersion Include="GitHubActionsTestLogger" Version="2.0.1"/>
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+    <PackageVersion Include="OpenTelemetry"  Version="$(OpenTelemetryVersion)" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Console"  Version="$(OpenTelemetryVersion)" />
+    <PackageVersion Include="OpenTelemetry.Exporter.InMemory"  Version="$(OpenTelemetryVersion)" />
+    <PackageVersion Include="System.Security.Permissions" Version="7.0.0" />
+    <PackageVersion Include="xunit" Version="2.4.2" />
+    <PackageVersion Include="xunit.assert" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5"/>
+    <PackageVersion Include="coverlet.collector" Version="3.2.0"/>
+    <PackageVersion Include="Ductus.FluentDocker" Version="2.10.59" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
+    <PackageVersion Include="polly" Version="7.2.3" />
+    <PackageVersion Include="SharpCompress" Version="0.33.0" />
+    <PackageVersion Include="GitHubActionsTestLogger" Version="2.0.1"/>
+    <PackageVersion Include="Microsoft.Azure.Management.AppService.Fluent" Version="1.38.1" />
+    <PackageVersion Include="Nuke.Common" Version="6.3.0" />
+    <PackageVersion Include="docfx.console" Version="2.59.4" ExcludeAssets="build" />
+    <PackageVersion Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
+    <PackageVersion Include="xunit.runner.console" Version="2.4.2"/>
+  </ItemGroup>
+  <!-- Test dependencies -->
+  
+  <ItemGroup>
+    
+  </ItemGroup>
+</Project>

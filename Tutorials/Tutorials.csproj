@@ -6,11 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Spectre.Console" Version="0.46.0" />
-    <PackageReference Include="Testcontainers" Version="3.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Spectre.Console" />
     <ProjectReference Include="..\src\SharpPulsar\SharpPulsar.csproj" />
     <ProjectReference Include="..\src\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />
   </ItemGroup>
