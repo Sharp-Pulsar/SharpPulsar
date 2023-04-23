@@ -535,7 +535,10 @@ namespace SharpPulsar
         
         public void Dispose()
         {
-            throw new NotImplementedException();
+            _consumerActor.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
+            // Notify the garbage collector
+            // about the cleaning event
+            GC.SuppressFinalize(this);
         }
     }
 }
