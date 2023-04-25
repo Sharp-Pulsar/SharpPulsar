@@ -60,7 +60,7 @@ namespace SharpPulsar.TestContainer
 
             _cluster = new Ductus.FluentDocker.Builders.Builder()
                 .UseContainer()
-                .UseImage("apachepulsar/pulsar-all:2.11.0")
+                .UseImage("apachepulsar/pulsar-all:2.11.1")
                 .WithEnvironment(environmentVariables)
                 .ExposePort(Port)
                 .Command("/bin/bash -c", arguments)

@@ -1,7 +1,7 @@
 
 <Project>
   <PropertyGroup>
-    <AkkaVersion>1.5.3</AkkaVersion>
+    <AkkaVersion>1.5.4</AkkaVersion>
     <AkkaLoggerSerilogVersion>1.5.0.1</AkkaLoggerSerilogVersion>
     <SerilogSinksFileVersion>5.0.0</SerilogSinksFileVersion>
     <ApacheAvroVersion>1.11.1</ApacheAvroVersion>
