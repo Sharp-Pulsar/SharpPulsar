@@ -69,7 +69,7 @@ namespace SharpPulsar
 		private readonly ICancelable _sendPing;
 		private readonly IActorRef _parent;
         private readonly IScheduler _scheduler;
-        
+        private IDisposable _subscriber;
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
@@ -104,7 +104,7 @@ namespace SharpPulsar
 			_protocolVersion = protocolVersion;
             
             Connect().GetAwaiter().GetResult();
-            _socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
+            _subscriber = _socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
             Receives();
         }
         private async ValueTask Connect()
@@ -268,6 +268,7 @@ namespace SharpPulsar
 		{
 			_timeoutTask?.Cancel();
 			_sendPing?.Cancel();
+            _subscriber.Dispose();
             _socketClient.Dispose();
 			base.PostStop();
 		}
