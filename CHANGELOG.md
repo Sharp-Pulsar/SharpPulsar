@@ -5,7 +5,7 @@
 ## [2.11.1] / 2023-03-18
 - Update Akka.NET to 1.5.1
 
-## [2.11.1] / 2023-03-05
+## [2.11.0] / 2023-03-05
 - Automatic failure recovery between primary and backup clusters. [PIP#13315]
 - Topic map support added with new TableView type using key values in received messages. [PIP#12838]
 - BREAKING CHANGES: the config builders have been moved to builder folder!
@@ -13,7 +13,7 @@
 - OpenTelemetry 
 - Obsoletes
 - Update Akka.NET to 1.5.0
-- Update Apache Pulsar 2.11.1
+- Update Apache Pulsar 2.11.0
 
 ## [2.9.0] / 2022-02-21
 - This release contains new feature and fixes found in Apache Pulsar 2.9.0 official java client/drive
@@ -27,8 +27,8 @@
 - First release
 
 [vNext]: https://github.com/eaba/SharpPulsar/compare/2.11.1...HEAD
-[2.11.1]: https://github.com/eaba/SharpPulsar/compare/2.11.1...2.11.1
-[2.11.1]: https://github.com/eaba/SharpPulsar/compare/2.9.0...2.11.1
+[2.11.0]: https://github.com/eaba/SharpPulsar/compare/2.11.1...2.11.1
+[2.11.0]: https://github.com/eaba/SharpPulsar/compare/2.9.0...2.11.1
 [2.9.0]: https://github.com/eaba/SharpPulsar/compare/0.1.0...2.9.0
 [0.1.0]: https://github.com/eaba/SharpPulsar/tree/0.1.0
 
