@@ -1,6 +1,6 @@
 ## vNext
 
-## [2.12.0] / 2023-04-30
+## [2.12.0] / 2023-05-01
 - Update Akka.NET to 1.5.4
 - Update Apache Pulsar 2.11.1
 - Improve `ClientCnx`
