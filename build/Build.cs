@@ -164,25 +164,19 @@ partial class Build : NukeBuild
                    Information($"Running tests from {project}");
                     foreach (var fw in project.GetTargetFrameworks())
                     {
-                        try
-                        {
-                            DotNetTest(c => c
-                            .SetProjectFile(project)
-                            .SetConfiguration(Configuration)
-                            .SetFramework(fw)
-                            .EnableNoBuild()
-                            .SetBlameCrash(true)
-                            .SetBlameHang(true)
-                            .SetBlameHangTimeout("10m")
-                            .EnableNoRestore()
-                            .When(true, _ => _
-                                 .SetLoggers("console;verbosity=detailed")
-                                .SetResultsDirectory(OutputTests)));
-                        }
-                        catch (Exception ex)
-                        {
-                            Information(ex.Message);
-                        }
+                    
+                         DotNetTest(c => c
+                        .SetProjectFile(project)
+                        .SetConfiguration(Configuration)
+                        .SetFramework(fw)
+                        .EnableNoBuild()
+                        .SetBlameCrash(true)
+                        .SetBlameHang(true)
+                        .SetBlameHangTimeout("30m")
+                        .EnableNoRestore()
+                        .When(true, _ => _
+                            .SetLoggers("console;verbosity=detailed")
+                            .SetResultsDirectory(OutputTests)));
                     }
             }
             await Container.StopAsync();
@@ -208,9 +202,7 @@ partial class Build : NukeBuild
         foreach (var fw in project.GetTargetFrameworks())
         {
             Information($"Running for {projectName} ({fw}) .....");
-            try
-            {
-                 DotNetTest(c => c
+            DotNetTest(c => c
                  .SetProjectFile(project)
                  .SetConfiguration(Configuration)
                  .SetFramework(fw)
@@ -218,12 +210,7 @@ partial class Build : NukeBuild
                  .EnableNoRestore()
                  .When(true, _ => _
                       .SetLoggers("console;verbosity=detailed")
-                     .SetResultsDirectory(OutputTests)));
-            }
-            catch (Exception ex)
-            {
-                Information(ex.Message);
-            }
+                      .SetResultsDirectory(OutputTests)));
         }
     }
     //---------------------
