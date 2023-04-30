@@ -1,5 +1,10 @@
 ## vNext
 
+## [2.12.0] / 2023-04-30
+- Update Akka.NET to 1.5.4
+- Update Apache Pulsar 2.11.1
+- Improve `ClientCnx`
+
 ## [2.11.2] / 2023-03-19
 - Package License
 
@@ -27,7 +32,9 @@
 ## [0.1.0] / 14 January 2022
 - First release
 
-[vNext]: https://github.com/eaba/SharpPulsar/compare/2.11.1...HEAD
+[vNext]: https://github.com/eaba/SharpPulsar/compare/2.12.0...HEAD
+[2.12.0]: https://github.com/eaba/SharpPulsar/compare/2.11.2...2.12.0
+[2.11.2]: https://github.com/eaba/SharpPulsar/compare/2.11.1...2.11.2
 [2.11.1]: https://github.com/eaba/SharpPulsar/compare/2.11.0...2.11.1
 [2.11.0]: https://github.com/eaba/SharpPulsar/compare/2.9.0...2.11.0
 [2.9.0]: https://github.com/eaba/SharpPulsar/compare/0.1.0...2.9.0
