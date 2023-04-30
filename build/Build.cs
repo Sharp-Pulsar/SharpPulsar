@@ -72,7 +72,7 @@ partial class Build : NukeBuild
 
     GitHubClient GitHubClient;
     public ChangeLog Changelog => MdHelper.ReadChangelog(ChangelogFile);
-    string TagVersion => GitRepository.Tags.SingleOrDefault()?[1..];
+    string TagVersion => GitRepository.Tags.SingleOrDefault()?[2..];
 
     bool IsTaggedBuild => !string.IsNullOrWhiteSpace(TagVersion);
 
