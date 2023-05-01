@@ -72,7 +72,7 @@ partial class Build : NukeBuild
 
     GitHubClient GitHubClient;
     public ChangeLog Changelog => MdHelper.ReadChangelog(ChangelogFile);
-    string TagVersion => GitRepository.Tags.SingleOrDefault()?[1..];
+    string TagVersion => GitVersion.MajorMinorPatch;
 
     bool IsTaggedBuild => !string.IsNullOrWhiteSpace(TagVersion);
 
@@ -137,13 +137,15 @@ partial class Build : NukeBuild
             if (keyInfo.Key == ConsoleKey.Y)
             {
                 Git($"add {ChangelogFile}");
-
-                Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
+                Information($"Add:\t{ChangelogFile}");
+                Git($"commit -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
 
                 Git($"tag -f {GitVersion.MajorMinorPatch}");
+
                 //git push --atomic origin <branch name> <tag>
                 //https://gist.github.com/danielestevez/2044589
-                //https://www.atlassian.com/git/tutorials/merging-vs-rebasing
+                //https://www.atlassian.com/git/tutorials/merging-vs-rebasing./build.cmd createnuget
+                //https://git-scm.com/docs/git-push
             }
         });
 
@@ -270,9 +272,10 @@ partial class Build : NukeBuild
               .EnableNoRestore()
               //.SetIncludeSymbols(true)
               .SetAssemblyVersion(TagVersion)
+              .SetVersion(TagVersion)
               .SetFileVersion(TagVersion)
               .SetInformationalVersion(TagVersion)
-              .SetVersionSuffix(VersionSuffix)
+              //.SetVersionSuffix(TagVersion)
               .SetPackageReleaseNotes(releaseNotes)
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven", "Event Sourcing", "Distributed System", "Microservice")
