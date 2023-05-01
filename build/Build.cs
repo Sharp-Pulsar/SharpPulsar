@@ -146,6 +146,16 @@ partial class Build : NukeBuild
                 //https://gist.github.com/danielestevez/2044589
                 //https://www.atlassian.com/git/tutorials/merging-vs-rebasing./build.cmd createnuget
                 //https://git-scm.com/docs/git-push
+                //Kleopatra certificates
+                // https://stackoverflow.com/questions/55111685/git-doesnt-see-gpg-key-as-secret-even-though-it-is-how-do-i-fix-it/55126589#55126589
+                //https://git-scm.com/docs/git-config#Documentation/git-config.txt-gpgprogram
+                //https://gist.github.com/paolocarrasco/18ca8fe6e63490ae1be23e84a7039374?permalink_comment_id=3976510
+                //https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key
+                //http://irtfweb.ifa.hawaii.edu/~lockhart/gpg/
+                //https://devconnected.com/how-to-delete-local-and-remote-tags-on-git/
+                //https://docs.github.com/en/actions/managing-workflow-runs/skipping-workflow-runs
+                //https://www.ankursheel.com/blog/securing-git-commits-windows
+                //https://tau.gr/posts/2018-06-29-how-to-set-up-signing-commits-with-git/
             }
         });
 
