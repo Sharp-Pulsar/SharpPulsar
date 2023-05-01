@@ -72,7 +72,7 @@ partial class Build : NukeBuild
 
     GitHubClient GitHubClient;
     public ChangeLog Changelog => MdHelper.ReadChangelog(ChangelogFile);
-    string TagVersion => GitRepository.Tags.SingleOrDefault()?[2..];
+    string TagVersion => GitVersion.MajorMinorPatch;
 
     bool IsTaggedBuild => !string.IsNullOrWhiteSpace(TagVersion);
 
@@ -272,9 +272,10 @@ partial class Build : NukeBuild
               .EnableNoRestore()
               //.SetIncludeSymbols(true)
               .SetAssemblyVersion(TagVersion)
+              .SetVersion(TagVersion)
               .SetFileVersion(TagVersion)
               .SetInformationalVersion(TagVersion)
-              .SetVersionSuffix(VersionSuffix)
+              //.SetVersionSuffix(TagVersion)
               .SetPackageReleaseNotes(releaseNotes)
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven", "Event Sourcing", "Distributed System", "Microservice")
