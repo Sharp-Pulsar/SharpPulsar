@@ -72,7 +72,7 @@ partial class Build : NukeBuild
 
     GitHubClient GitHubClient;
     public ChangeLog Changelog => MdHelper.ReadChangelog(ChangelogFile);
-    string TagVersion => GitRepository.Tags.SingleOrDefault()?[2..];
+    string TagVersion => GitRepository.Tags.SingleOrDefault()?[1..];
 
     bool IsTaggedBuild => !string.IsNullOrWhiteSpace(TagVersion);
 
@@ -137,8 +137,8 @@ partial class Build : NukeBuild
             if (keyInfo.Key == ConsoleKey.Y)
             {
                 Git($"add {ChangelogFile}");
-
-                Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
+                Information($"Add:\t{ChangelogFile}");
+                Git($"commit -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
 
                 Git($"tag -f {GitVersion.MajorMinorPatch}");
 
