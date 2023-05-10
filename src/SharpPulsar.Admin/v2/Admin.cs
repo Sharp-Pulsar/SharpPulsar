@@ -4476,7 +4476,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="subscriptionBacklogSize">If return backlog size for each subscription, require locking on ledger so be careful not to use when there's heavy traffic.</param>
         /// <param name="getEarliestTimeInBacklog">If return time of the earliest message in backlog</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetStatsAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog);
+        System.Threading.Tasks.Task<object> GetStatsAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -4490,7 +4490,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="subscriptionBacklogSize">If return backlog size for each subscription, require locking on ledger so be careful not to use when there's heavy traffic.</param>
         /// <param name="getEarliestTimeInBacklog">If return time of the earliest message in backlog</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetStatsAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object> GetStatsAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Remove subscribe rate configuration for specified topic.
@@ -6913,7 +6913,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="subscriptionBacklogSize">If return backlog size for each subscription, require locking on ledger so be careful not to use when there's heavy traffic.</param>
         /// <param name="getEarliestTimeInBacklog">If return time of the earliest message in backlog</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetStats2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog);
+        System.Threading.Tasks.Task<object> GetStats2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -6927,7 +6927,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="subscriptionBacklogSize">If return backlog size for each subscription, require locking on ledger so be careful not to use when there's heavy traffic.</param>
         /// <param name="getEarliestTimeInBacklog">If return time of the earliest message in backlog</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetStats2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object> GetStats2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Remove subscribe rate configuration for specified topic.
@@ -38388,7 +38388,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="subscriptionBacklogSize">If return backlog size for each subscription, require locking on ledger so be careful not to use when there's heavy traffic.</param>
         /// <param name="getEarliestTimeInBacklog">If return time of the earliest message in backlog</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetStatsAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog)
+        public virtual System.Threading.Tasks.Task<object> GetStatsAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog)
         {
             return GetStatsAsync(tenant, @namespace, topic, authoritative, getPreciseBacklog, subscriptionBacklogSize, getEarliestTimeInBacklog, System.Threading.CancellationToken.None);
         }
@@ -38405,7 +38405,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="subscriptionBacklogSize">If return backlog size for each subscription, require locking on ledger so be careful not to use when there's heavy traffic.</param>
         /// <param name="getEarliestTimeInBacklog">If return time of the earliest message in backlog</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetStatsAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object> GetStatsAsync(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -38514,7 +38514,12 @@ namespace SharpPulsar.Admin.v2
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
                         }
                         else
                         {
@@ -55176,7 +55181,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="subscriptionBacklogSize">If return backlog size for each subscription, require locking on ledger so be careful not to use when there's heavy traffic.</param>
         /// <param name="getEarliestTimeInBacklog">If return time of the earliest message in backlog</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetStats2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog)
+        public virtual System.Threading.Tasks.Task<object> GetStats2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog)
         {
             return GetStats2Async(tenant, @namespace, topic, authoritative, getPreciseBacklog, subscriptionBacklogSize, getEarliestTimeInBacklog, System.Threading.CancellationToken.None);
         }
@@ -55193,7 +55198,7 @@ namespace SharpPulsar.Admin.v2
         /// <param name="subscriptionBacklogSize">If return backlog size for each subscription, require locking on ledger so be careful not to use when there's heavy traffic.</param>
         /// <param name="getEarliestTimeInBacklog">If return time of the earliest message in backlog</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetStats2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object> GetStats2Async(string tenant, string @namespace, string topic, bool? authoritative, bool? getPreciseBacklog, bool? subscriptionBacklogSize, bool? getEarliestTimeInBacklog, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -55302,7 +55307,12 @@ namespace SharpPulsar.Admin.v2
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
                         }
                         else
                         {

@@ -31,8 +31,9 @@ namespace Tutorials
         //static string myTopic = $"persistent://public/default/mytopic-2";
         private static PulsarContainer _container;
         //private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.10.0", 6650);
-        
+
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
+        //static string myTopic = $"persistent://public/default/mytopic-pulsar";
         private static PulsarClient _client;
         static async Task Main(string[] args)
         {

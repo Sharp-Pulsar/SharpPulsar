@@ -32,5 +32,12 @@ namespace SharpPulsar.Admin.Test
             _output.WriteLine(JsonSerializer.Serialize(topic, _jsonSerializerOptions));
             Assert.True(topic != null);
         }
+        /*[Fact]
+        public async Task GetStatsPersisten()
+        {
+            var topic = await _admin.GetStats2Async("public", "default", "mytopic-pulsar", false, false, false,false);
+            _output.WriteLine(JsonSerializer.Serialize(topic, _jsonSerializerOptions));
+            Assert.True(topic != null);
+        }*/
     }
 }
