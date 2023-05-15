@@ -494,10 +494,19 @@ namespace SharpPulsar
         {
             return await NewReaderAsync(ISchema<object>.Bytes, conf).ConfigureAwait(false);
         }
-
+        [Obsolete("deprecated use newTableView(ISchema) instead")]
         public ITableViewBuilder<T> NewTableViewBuilder<T>(ISchema<T> Schema)
         {
             return new TableViewBuilder<T>(this, Schema);
+        }
+        public ITableViewBuilder<byte[]> NewTableView()
+        {
+            return new TableViewBuilder<byte[]>(this, ISchema<object>.Bytes);
+        }
+
+        public ITableViewBuilder<T> NewTableView<T>(ISchema<T> schema)
+        {
+            return new TableViewBuilder<T>(this, schema);
         }
 
         public async ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)

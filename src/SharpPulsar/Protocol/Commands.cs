@@ -509,7 +509,7 @@ namespace SharpPulsar.Protocol
 			
 		}
 
-		public ReadOnlySequence<byte> NewSeek(long consumerId, long requestId, long ledgerId, long entryId, long[] ackSet)
+		public ReadOnlySequence<byte> NewSeek(long consumerId, long requestId, long ledgerId, long entryId, List<long> ackSet)
 		{
             var seek = new CommandSeek {ConsumerId = (ulong) consumerId, RequestId = (ulong) requestId};
 
@@ -733,7 +733,7 @@ namespace SharpPulsar.Protocol
 			
 			
 		}
-		public ReadOnlySequence<byte> NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, long[] bitSet)> entries)
+		public ReadOnlySequence<byte> NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, List<long> bitSet)> entries)
 		{
             var ackBuilder = new CommandAck
             {
@@ -744,7 +744,7 @@ namespace SharpPulsar.Protocol
             };
             return NewMultiMessageAckCommon(ackBuilder, entries);
 		}
-		public ReadOnlySequence<byte> NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, long[] bitSet)> entries)
+		public ReadOnlySequence<byte> NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, List<long> bitSet)> entries)
 		{
 			int entriesCount = entries.Count;
 			for (int i = 0; i < entriesCount; i++)
@@ -770,7 +770,7 @@ namespace SharpPulsar.Protocol
 			return Serializer.Serialize(ack.ToBaseCommand());
 			
 		}
-        public ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, long[] Sets)> entries, long requestId)
+        public ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, List<long> Sets)> entries, long requestId)
         {
             var ackBuilder = new CommandAck
             {
@@ -796,14 +796,14 @@ namespace SharpPulsar.Protocol
                 var messageIdData = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId};
                 if (bitSet != null)
                 {
-                    messageIdData.AckSets = bitSet.ToLongArray();
+                    messageIdData.AckSets = bitSet.ToLongArray().ToList();
                 }
                 ackCmd.MessageIds.Add(messageIdData);
             }
             return Serializer.Serialize(ackCmd.ToBaseCommand());
             
         }
-        public ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, long[] Sets)> entries)
+        public ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, List<long> Sets)> entries)
         {
             var ackCmd = new CommandAck { ConsumerId = (ulong)consumerId, ack_type = AckType.Individual };
 
@@ -896,15 +896,15 @@ namespace SharpPulsar.Protocol
 
             return new ReadOnlySequence<byte>(NONE_KEY);
         }
-        public ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
+        public ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, List<long> ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
 		{
 			return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, -1L, -1L, -1L, -1);
 		}
-        public ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long requestId)
+        public ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, List<long> ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long requestId)
         {
             return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, -1L, -1L, requestId, -1);
         }
-        public ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, long[] ackSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
+        public ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, List<long> ackSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
 		{
 			return NewAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError,
 					properties, txnIdLeastBits, txnIdMostBits, requestId, -1);
@@ -918,7 +918,7 @@ namespace SharpPulsar.Protocol
 
             return NewAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack);
         }
-        public ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, int batchSize)
+        public ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, List<long> ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, int batchSize)
 		{
             var ack = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = ackType};
 			

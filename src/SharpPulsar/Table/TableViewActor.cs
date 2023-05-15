@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.ConstrainedExecution;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Util.Internal;
+using App.Metrics.Concurrency;
+using Avro.Generic;
+using Avro.Util;
 using SharpPulsar.Builder;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces;
@@ -37,7 +41,7 @@ namespace SharpPulsar.Table
 		private readonly PulsarClient _client;
 		private readonly ISchema<T> _schema;
 		private readonly TableViewConfigurationData _conf;
-
+        private readonly Reader<T> _reader;
 		private readonly ConcurrentDictionary<string, T> _data;
 
 		private readonly ConcurrentDictionary<string, IActorRef> _readers;
@@ -49,6 +53,7 @@ namespace SharpPulsar.Table
         private readonly IActorRef _self;
         private IActorRef _replyTo;
         private bool _isPersistentTopic;
+        private ITopicCompactionStrategy<T> _compactionStrategy;
 
         public TableViewActor(PulsarClient client, ISchema<T> schema, TableViewConfigurationData conf, ConcurrentDictionary<string, T> data)
 		{
@@ -61,46 +66,40 @@ namespace SharpPulsar.Table
 			_data = data;
 			_readers = new ConcurrentDictionary<string, IActorRef>();
 			_listeners = new List<Action<string, T>>();
+            _compactionStrategy = ITopicCompactionStrategy<T>.Load(conf.TopicCompactionStrategyClassName);
             _isPersistentTopic = conf.TopicName.StartsWith(TopicDomain.Persistent.ToString());
-            Receive<HandleMessage<T>>(hm =>
+
+            var readerBuilder = new ReaderConfigBuilder<T>()
+                .Topic(_conf.TopicName)
+                .StartMessageId(IMessageId.Earliest)
+                .AutoUpdatePartitions(true)
+                .AutoUpdatePartitionsInterval(_conf.AutoUpdatePartitionsSeconds)
+                .PoolMessages(true)
+                .ReaderName(_conf.SubscriptionName);
+
+            if (_isPersistentTopic)
             {
-                try
-                {
-                    var msg = hm.Message;
-                    if (!string.IsNullOrWhiteSpace(msg.Key))
-                    {
-                        if (_log.IsDebugEnabled)
-                        {
-                            _log.Debug($"Applying message from topic {_conf.TopicName}. key={msg.Key} value={msg.Value}");
-                        }
+                readerBuilder.ReadCompacted(true);
+            }
+            var cryptoKeyReader = _conf.CryptoKeyReader;
+            if (cryptoKeyReader != null)
+            {
+                readerBuilder.CryptoKeyReader(cryptoKeyReader);
+            }
 
-                        _data.TryAdd(msg.Key, msg.Value);
+            readerBuilder.CryptoFailureAction(_conf.CryptoFailureAction);
 
-                        foreach (var listener in _listeners)
-                        {
-                            try
-                            {
-                                listener(msg.Key, msg.Value);
-                            }
-                            catch (Exception t)
-                            {
-                                _log.Error($"Table view listener raised an exception: {t}");
-                            }
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    _log.Error(e.ToString());
-                }
-            });
+            _reader = _client.NewReader(_schema, readerBuilder);
             Receive<ForEachAction<T>>(a => ForEachAndListen(a.Action));
-            ReceiveAsync<StartMessage>(async _ =>
+            Receive<StartMessage>(_ =>
             {
                 _replyTo = Sender;
                 try
-                {                    
-                    await Start();
+                {
+                    Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+                    {
+                        await Start();
+                    });
                     _replyTo.Tell(new AskResponse());
                 }
                 catch(Exception ex)
@@ -114,63 +113,78 @@ namespace SharpPulsar.Table
         {
             return Props.Create(() => new TableViewActor<T>(client, schema, conf, data));
         }
-		private async ValueTask Start()
-		{
-            var partitions = await _client.GetPartitionsForTopicAsync(_conf.TopicName);
-            var partitionsSet = new HashSet<string>(partitions);
-            var partitionTasks = new List<Task>();  
-            foreach(var partition in partitions)
-            {
-                partitionTasks.Add(CreateReader(partition).AsTask());
-            }
-            await Task.WhenAll(partitionTasks)
-                .ContinueWith(async _ => 
-                { 
-                    foreach(var kv in _readers)
-                    {
-                        if (!partitionsSet.Contains(kv.Key))
-                        {
-                            await kv.Value.GracefulStop(TimeSpan.FromSeconds(1));
-                            _readers.Remove(kv.Key, out var _);
-                        }
-                    }
-                }); 
-            SchedulePartitionsCheck();
-        }
-        private async ValueTask CreateReader(string partition)
+        private void HandleMessage(IMessage<T> msg)
         {
-            var r = await NewReader(partition);
-            _readers.TryAdd(partition, r);
-        }
-		private void SchedulePartitionsCheck()
-		{
-			_partitionChecker = _context.System.Scheduler
-                .Advanced
-                .ScheduleOnceCancelable(_conf.AutoUpdatePartitionsSeconds, async () => await CheckForPartitionsChanges());
-		}
-
-		private async ValueTask CheckForPartitionsChanges()
-		{
-			if (_partitionChecker.IsCancellationRequested)
-			{
-				return;
-			}
             try
             {
-                await Start();
-                
-            }
-            catch (Exception ex)
-            {
-                _log.Warning($"Failed to check for changes in number of partitions:{ex}");
-            }
-            finally
-            {
-                SchedulePartitionsCheck();
-            }
-		}
+                if (!string.IsNullOrWhiteSpace(msg.Key))
+                {
+                    var key = msg.Key;
+                    var cur = msg.Size() > 0 ? msg.Value : default;
 
-		private void ForEach(Action<string, T> action)
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"Applying message from topic {_conf.TopicName}. key={key} value={cur}");
+                    }
+                    var update = true;
+                    if (_compactionStrategy != null)
+                    {
+                        var prev = _data[key];
+                        update = !_compactionStrategy.ShouldKeepLeft(prev, cur);
+                    }
+                    if (update)
+                    {
+                        try
+                        {
+                            if (null == cur)
+                            {
+                                _data.TryRemove(key, out _);
+                            }
+                            else
+                            {
+                                _data.TryAdd(key, cur);
+                            }
+
+
+                            foreach (var listener in _listeners)
+                            {
+                                try
+                                {
+                                    listener(key, cur);
+                                }
+                                catch (Exception t)
+                                {
+                                    _log.Error($"Table view listener raised an exception: {t}");
+                                }
+                            }
+                        }
+                        finally { }
+
+                    }
+
+                }
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.ToString());
+            }
+        }
+
+        private async ValueTask Start()
+		{
+            if (!_isPersistentTopic)
+                await ReadTailMessages(_reader);
+            else
+                await ReadAllExistingMessages(_reader);
+            
+        }
+        private async ValueTask ReadAllExistingMessages(Reader<T> reader)
+        {
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var messagesRead = new AtomicLong();
+            await ReadAllExistingMessages(reader, startTime, messagesRead);
+        }
+        private void ForEach(Action<string, T> action)
 		{
 			_data.ForEach(kv=> action(kv.Key, kv.Value));
 		}
@@ -191,40 +205,60 @@ namespace SharpPulsar.Table
 		}
         protected override void PostStop()
         {
-            _readers.Values.ForEach(r =>
-            {
-                r.Tell(PoisonPill.Instance);
-            });
             base.PostStop();
         }
 
-		private async ValueTask<IActorRef> NewReader(string partition)
-		{
-            var readerBuilder = new ReaderConfigBuilder<T>()
-                .Topic(_conf.TopicName)
-                .StartMessageId(IMessageId.Earliest)
-                .AutoUpdatePartitions(true)
-                .AutoUpdatePartitionsInterval(_conf.AutoUpdatePartitionsSeconds)
-                .PoolMessages(true)
-                .ReaderName(_conf.SubscriptionName)
-                .ReadCompacted(true);
-
-            if (_isPersistentTopic)
+        private async ValueTask ReadAllExistingMessages(Reader<T> reader, long startTime, AtomicLong messagesRead)
+        {
+            try
             {
-                readerBuilder.ReadCompacted(true);
+                var hasMessage = await reader.HasMessageAvailableAsync();
+                if (hasMessage)
+                {
+                    try
+                    {
+                        var msg = await reader.ReadNextAsync();
+                        messagesRead.Increment();
+                        HandleMessage(msg);
+                        await ReadAllExistingMessages(reader, startTime, messagesRead);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error($"Reader {reader.Topic} was interrupted while reading existing messages", ex.ToString());
+                        //await Self.GracefulStop(TimeSpan.FromSeconds(1));
+                    }
+                }
+                else
+                {
+                    // Reached the end
+                    var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                    var durationMillis = endTime - startTime;
+                    _log.Info($"Started table view for topic {reader.Topic} - Replayed {messagesRead} messages in {durationMillis / 1000.0} seconds");
+
+                    await ReadTailMessages(reader);
+                }
             }
-            var cryptoKeyReader = _conf.CryptoKeyReader;
-            if (cryptoKeyReader != null)
+            catch (Exception ex)
             {
-                readerBuilder.CryptoKeyReader(cryptoKeyReader);
+                _log.Error(ex.ToString());
+                //await Self.GracefulStop(TimeSpan.FromSeconds(1));
             }
+        }
 
-            readerBuilder.CryptoFailureAction(_conf.CryptoFailureAction);
-
-            var reader = await _client.NewReaderAsync(_schema, readerBuilder);
-            return _context.ActorOf(PartitionReader<T>.Prop(reader));
-		}
-
-	}
+        private async ValueTask ReadTailMessages(Reader<T> reader)
+        {
+            try
+            {
+                var msg = await reader.ReadNextAsync();
+                HandleMessage(msg);
+                await ReadTailMessages(reader);
+            }
+            catch(Exception ex) 
+            {
+                _log.Error($"Reader {reader.Topic} was interrupted while reading tail messages.", ex.ToString());
+                //await Self.GracefulStop(TimeSpan.FromSeconds(1));
+            } 
+        }
+    }
 
 }

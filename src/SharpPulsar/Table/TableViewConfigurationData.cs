@@ -31,8 +31,8 @@ namespace SharpPulsar.Table
 		public TimeSpan AutoUpdatePartitionsSeconds { get; set; } = TimeSpan.FromSeconds(60);
         public ICryptoKeyReader CryptoKeyReader { get; set; }
         public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
-        public string SubscriptionName { get; set; }
-        public string TopicCompactionStrategyClassName { get; set; }
+        public string SubscriptionName { get; set; } = string.Empty;
+        public string TopicCompactionStrategyClassName { get; set; } = null;
     }
 
 }

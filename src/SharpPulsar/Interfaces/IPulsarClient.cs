@@ -1,5 +1,7 @@
 ﻿using SharpPulsar.Builder;
+using SharpPulsar.Table;
 using SharpPulsar.TransactionImpl;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -267,7 +269,53 @@ namespace SharpPulsar.Interfaces
         /// </summary>
         /// <param name="schema"> provide a way to convert between serialized data and domain objects </param>
         /// <returns> a <seealso cref="ITableViewBuilder{T}"/> instance </returns>
+        /// 
+        [Obsolete]
         ITableViewBuilder<T> NewTableViewBuilder<T>(ISchema<T> schema);
+        /// <summary>
+        /// Create a table view builder for subscribing on a specific topic.
+        ///     
+        /// <para>The TableView provides a key-value map view of a compacted topic. Messages without keys will
+        /// be ignored.
+        ///     
+        /// </para>
+        /// <para>Example:
+        /// <pre>{@code
+        ///  TableView<byte[]> tableView = client.newTableView()
+        ///            .topic("my-topic")
+        ///            .autoUpdatePartitionsInterval(5, TimeUnit.SECONDS)
+        ///            .create();
+        ///     
+        ///  tableView.forEach((k, v) -> System.out.println(k + ":" + v));
+        /// }</pre>
+        ///     
+        /// </para>
+        /// </summary>
+        /// <returns> a <seealso cref="ITableViewBuilder{}"/> object to configure and construct the <seealso cref="TableView"/> instance </returns>
+        ITableViewBuilder<byte[]> NewTableView();
+
+        /// <summary>
+        /// Create a table view builder with a specific schema for subscribing on a specific topic.
+        /// 
+        /// <para>The TableView provides a key-value map view of a compacted topic. Messages without keys will
+        /// be ignored.
+        /// 
+        /// </para>
+        /// <para>Example:
+        /// <pre>{@code
+        ///  TableView<byte[]> tableView = client.newTableView(Schema.BYTES)
+        ///            .topic("my-topic")
+        ///            .autoUpdatePartitionsInterval(5, TimeUnit.SECONDS)
+        ///            .create();
+        /// 
+        ///  tableView.forEach((k, v) -> System.out.println(k + ":" + v));
+        /// }</pre>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="schema"> provide a way to convert between serialized data and domain objects </param>
+        /// <returns> a <seealso cref="ITableViewBuilder{T}"/> object to configure and construct the <seealso cref="TableView"/> instance </returns>
+        ITableViewBuilder<T> NewTableView<T>(ISchema<T> schema);
 
         void UpdateServiceUrl(string serviceUrl);
 
