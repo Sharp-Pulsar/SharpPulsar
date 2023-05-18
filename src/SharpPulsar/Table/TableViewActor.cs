@@ -226,6 +226,7 @@ namespace SharpPulsar.Table
                     {
                         _log.Error($"Reader {reader.Topic} was interrupted while reading existing messages", ex.ToString());
                         //await Self.GracefulStop(TimeSpan.FromSeconds(1));
+                        //((IInternalActorRef)Self).Stop();   
                     }
                 }
                 else
@@ -257,6 +258,7 @@ namespace SharpPulsar.Table
             {
                 _log.Error($"Reader {reader.Topic} was interrupted while reading tail messages.", ex.ToString());
                 //await Self.GracefulStop(TimeSpan.FromSeconds(1));
+                //((IInternalActorRef)Self).Stop();
             } 
         }
     }
