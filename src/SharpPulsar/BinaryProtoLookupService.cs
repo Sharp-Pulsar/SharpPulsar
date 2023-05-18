@@ -60,7 +60,6 @@ namespace SharpPulsar
         private TopicName _topicName;
         private Backoff _getTopicsUnderNamespaceBackOff;
         private Backoff _getPartitionedTopicMetadataBackOff;
-        private readonly Commands _commands = new Commands();
         private GetTopicsUnderNamespace _getTopicsUnderNamespace;
         public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout, TimeSpan timeCnx)
         {
@@ -319,7 +318,7 @@ namespace SharpPulsar
         /// <returns> broker-socket-address that serves given topic </returns>
         private async ValueTask<AskResponse> NewLookup(TopicName topicName, bool authoritative = false)
         {
-            var request = _commands.NewLookup(topicName.ToString(), _listenerName, authoritative, _requestId);
+            var request = Commands.NewLookup(topicName.ToString(), _listenerName, authoritative, _requestId);
             var payload = new Payload(request, _requestId, "NewLookup");
             return await _clientCnx.Ask<AskResponse>(payload);
         }
@@ -352,7 +351,7 @@ namespace SharpPulsar
         }
         private async ValueTask PartitionedTopicMetadata(TopicName topicName, TimeSpan opTimeout)
         {
-            var request = _commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
+            var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
             var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
             var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
             if (askResponse.Failed)
@@ -397,7 +396,7 @@ namespace SharpPulsar
         }
         private async ValueTask GetSchema(TopicName topicName, byte[] version)
 		{
-			var request = _commands.NewGetSchema(_requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
+			var request = Commands.NewGetSchema(_requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
 			var payload = new Payload(request, _requestId, "SendGetRawSchema");
 			var askResponse = await _clientCnx.Ask<AskResponse>(payload);
 
@@ -460,7 +459,7 @@ namespace SharpPulsar
 		{
             try
             {
-                var request = _commands.NewGetTopicsOfNamespaceRequest(ns.ToString(), _requestId, mode, topicsPattern, topicsHash);
+                var request = Commands.NewGetTopicsOfNamespaceRequest(ns.ToString(), _requestId, mode, topicsPattern, topicsHash);
                 var payload = new Payload(request, _requestId, "NewGetTopicsOfNamespaceRequest");
                 var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
                 var response = askResponse.ConvertTo<GetTopicsOfNamespaceResponse>();

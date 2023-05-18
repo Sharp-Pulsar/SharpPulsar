@@ -56,7 +56,6 @@ namespace SharpPulsar
 
         private readonly Dictionary<long, (ReadOnlySequence<byte> Command, IActorRef ReplyTo)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Command, IActorRef ReplyTo)>();
         private readonly ConcurrentQueue<RequestTime> _timeoutQueue;
-        private readonly Commands _commands = new Commands();
         private class RequestTime
         {
             internal readonly long CreationTimeMs;
@@ -181,7 +180,7 @@ namespace SharpPulsar
             }
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
-            var cmd = _commands.NewEndTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, action);
+            var cmd = Commands.NewEndTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, action);
             var op = OpForTxnIdCallBack.Create(cmd, callback, _conf, requestId, "NewEndTxn");
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
@@ -297,7 +296,7 @@ namespace SharpPulsar
             {
                 var reid = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                 var requestId = reid.Id;
-                var cmd = _commands.NewTcClientConnectRequest(_transactionCoordinatorId, requestId);
+                var cmd = Commands.NewTcClientConnectRequest(_transactionCoordinatorId, requestId);
                 var response = await _clientCnx.Ask<AskResponse>(new Payload(cmd, requestId, "NewTcClientConnectRequest"));
                 if (!response.Failed)
                 {
@@ -354,7 +353,7 @@ namespace SharpPulsar
             }
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
-            var cmd = _commands.NewTxn(_transactionCoordinatorId, requestId, timeout);
+            var cmd = Commands.NewTxn(_transactionCoordinatorId, requestId, timeout);
             var op = OpForTxnIdCallBack.Create(cmd, callback, _conf, requestId, "NewTxn");
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
@@ -469,7 +468,7 @@ namespace SharpPulsar
             }
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
-            var cmd = _commands.NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
+            var cmd = Commands.NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
             var op = OpForVoidCallBack.Create(cmd, callback, _conf, requestId, "NewAddPartitionToTxn");
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
@@ -572,7 +571,7 @@ namespace SharpPulsar
             }
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
-            var cmd = _commands.NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
+            var cmd = Commands.NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
             var op = OpForVoidCallBack.Create(cmd, callback, _conf, requestId, "NewAddSubscriptionToTxn");
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {

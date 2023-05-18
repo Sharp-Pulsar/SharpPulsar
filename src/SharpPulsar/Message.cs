@@ -96,7 +96,7 @@ namespace SharpPulsar
         {
         }
 
-        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0, false, new Commands().DefaultConsumerEpoch)
+        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0, false, Commands.DefaultConsumerEpoch)
         {
         }
         internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
@@ -254,7 +254,7 @@ namespace SharpPulsar
             var msg = new Message<byte[]>
             {
                 _brokerEntryMetadata =
-                    new Commands().ParseBrokerEntryMetadataIfExist(headersAndPayloadWithBrokerEntryMetadata)
+                    Commands.ParseBrokerEntryMetadataIfExist(headersAndPayloadWithBrokerEntryMetadata)
             };
 
 

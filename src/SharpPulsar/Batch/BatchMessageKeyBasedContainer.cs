@@ -169,11 +169,11 @@ namespace SharpPulsar.Batch
         {
             if (messageId is MessageId)
             {
-                return new Commands().NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
+                return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
             }
             else
             {
-                return new Commands().NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, -1, -1, msgMetadata, compressedPayload);
+                return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, -1, -1, msgMetadata, compressedPayload);
             }
         }
         public override IList<ProducerActor<T>.OpSendMsg<T>> CreateOpSendMsgs()
@@ -242,7 +242,7 @@ namespace SharpPulsar.Batch
 					foreach (var msg in Messages)
 					{
 						var msgMetadata = msg.Metadata.OriginalMetadata;
-						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToArray());
 					}
 					var batchedMessageMetadataAndPayload = stream.ToArray();
@@ -266,7 +266,7 @@ namespace SharpPulsar.Batch
 			{
 				if (Messages.Count == 0)
 				{
-					SequenceId = new Commands().InitBatchMessageMetadata(MessageMetadata);
+					SequenceId = Commands.InitBatchMessageMetadata(MessageMetadata);
 					BatchedMessageMetadataAndPayload.AddRange(msg.Data.ToArray());
 					FirstCallback = callback;
 				}
