@@ -5,7 +5,9 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 /// <summary>
@@ -271,6 +273,7 @@ namespace SharpPulsar.TransactionImpl
             Receive<EndTxnResponse>(e =>
             {
                 _log.Info("Got EndTxnResponse in Commit()");
+                CheckState(TransactionState.OPEN, TransactionState.ABORTING);
                 if (_cumulativeAckConsumers != null)
                 {
                     _cumulativeAckConsumers.ForEach(x => x.Key.Tell(new IncreaseAvailablePermits(1)));
@@ -314,27 +317,17 @@ namespace SharpPulsar.TransactionImpl
             return false;
         }
 
-        private void CheckIfOpenOrCommitting()
+        
+        private void CheckState(params TransactionState[] expectedStates)
         {
-            if (_state == TransactionState.OPEN || _state == TransactionState.COMMITTING)
+            var actualState = _state;
+            foreach (var expectedState in expectedStates)
             {
-                return;
-            }
-            else
-            {
-                InvalidTxnStatusFuture();
-            }
-        }
+                if (actualState == expectedState)
+                {
+                    return;
+                }
 
-        private void CheckIfOpenOrAborting()
-        {
-            if (_state == TransactionState.OPEN || _state == TransactionState.ABORTING)
-            {
-                return ;
-            }
-            else
-            {
-                InvalidTxnStatusFuture();
             }
         }
 
