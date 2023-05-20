@@ -1,33 +1,36 @@
-﻿using SharpPulsar.Common;
-using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.SocketImpl.Help;
-using System;
-using System.Buffers;
-using System.IO;
+﻿using System;
+using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
-using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Akka.Actor;
+using SharpPulsar.Configuration;
+using SharpPulsar.SocketImpl.Help;
+using SharpPulsar.TransactionImpl;
+using SharpPulsar.Auth;
+using SharpPulsar.Messages.Transaction;
+using System.IO;
+using System.Net.Security;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using System.Threading.Tasks;
-using SharpPulsar.Auth;
-using SharpPulsar.Protocol;
+using System.Buffers;
+using Org.BouncyCastle.Bcpg;
+using SharpPulsar.Protocol.Proto;
 using ProtoBuf;
-using Serializer = ProtoBuf.Serializer;
+using SharpPulsar.Common;
+using SharpPulsar.Extension;
+using SharpPulsar.Protocol;
+using System.Reactive;
 
 namespace SharpPulsar.SocketImpl
 {
-    //https://github.com/fzf003/TinyService/blob/242c38c06ef7cb685934ba653041d07c64a6f806/Src/TinyServer.ReactiveSocket/SocketAcceptClient.cs
-    public sealed class SocketClient : ISocketClient
+    internal sealed class SocketClientActor : ReceiveActor
     {
         private readonly Socket _socket;
         private readonly X509Certificate2Collection _clientCertificates;
@@ -52,22 +55,18 @@ namespace SharpPulsar.SocketImpl
         private readonly ILoggingAdapter _logger;
 
         private readonly DnsEndPoint _server;
+        private IActorRef _client;
 
         private readonly string _connectonId = string.Empty;
+        private bool _start = true;    
 
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
-        public static ISocketClient CreateClient(ClientConfigurationData conf, DnsEndPoint server, string hostName, ILoggingAdapter logger)
+        public SocketClientActor(IActorRef client, ClientConfigurationData conf, DnsEndPoint server, string hostName)
         {
+            _client = client;
             var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            //clientSocket.Connect(server.Host, server.Port);
-
-            return new SocketClient(conf, clientSocket, hostName, logger, server);
-        }
-        internal SocketClient(ClientConfigurationData conf, Socket server, string hostName, ILoggingAdapter logger, DnsEndPoint dnsEndPoint)
-        {
-            _socket = server;
-            _server = dnsEndPoint;
+            _socket = clientSocket;
+            _server = server;
             if (conf.ClientCertificates != null)
                 _clientCertificates = conf.ClientCertificates;
 
@@ -83,48 +82,34 @@ namespace SharpPulsar.SocketImpl
 
             _clientConfiguration = conf;
 
-            _logger = logger;
+            _logger = Context.GetLogger();
 
             _targetServerName = hostName;
-
-        }
-        public async ValueTask Connect()
-        {
-            var host = _server.Host;
-            var networkStream = await GetStream(_server);
-
-            if (_encrypt)
-                networkStream = await EncryptStream(networkStream, host);
-
-            _pipeline = new ChunkingPipeline(networkStream, ChunkSize);
-            _pipeReader = PipeReader.Create(networkStream);
-
-            _pipeWriter = PipeWriter.Create(networkStream);
-        }
-        public string RemoteConnectionId
-        {
-            get
+            ReceiveAsync<Connect>(async _ =>
             {
-                return _connectonId;
-            }
-        }
+                var host = _server.Host;
+                var networkStream = await GetStream(_server);
 
-        public IObservable<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)> ReceiveMessageObservable =>
-               Observable.Create<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
+                if (_encrypt)
+                    networkStream = await EncryptStream(networkStream, host);
 
+                _pipeline = new ChunkingPipeline(networkStream, ChunkSize);
+                _pipeReader = PipeReader.Create(networkStream);
 
-        IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)> observer, CancellationToken cancellationToken = default)
-        {
-            _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
-            return NewThreadScheduler.Default.Schedule(async () =>
+                _pipeWriter = PipeWriter.Create(networkStream);
+                var m = Context.ActorOf(SendMessageActor.Prop(_pipeline));
+                Sender.Tell(m); 
+
+            });
+            ReceiveAsync<Start>(async _ =>
             {
                 try
                 {
-                    while (true)
+                    while (_start)
                     {
-                        //_logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
-                        cancellationToken.ThrowIfCancellationRequested();
-                        var result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                        _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
+                        
+                        var result = await _pipeReader.ReadAsync().ConfigureAwait(false);
 
                         var buffer = result.Buffer;
                         var length = (int)buffer.Length;
@@ -168,12 +153,12 @@ namespace SharpPulsar.SocketImpl
                                     stream.Seek(metadataOffset, SeekOrigin.Begin);
                                     var calculatedCheckSum = (uint)CRC32C.Get(0u, stream, metadataLength + payloadLength);
                                     var hasValidCheckSum = messageCheckSum == calculatedCheckSum;
-                                    observer.OnNext((command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
+                                    _client.Tell(new Reader(command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
                                     //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                                 }
                                 else
                                 {
-                                    observer.OnNext((command, null, null, ReadOnlySequence<byte>.Empty, false, false));
+                                    _client.Tell(new Reader(command, null, null, ReadOnlySequence<byte>.Empty, false, false));                                    
                                 }
                                 if (result.IsCompleted)
                                     _pipeReader.AdvanceTo(buffer.Start, buffer.End);
@@ -192,42 +177,8 @@ namespace SharpPulsar.SocketImpl
                 finally
                 {
                     await _pipeReader.CompleteAsync().ConfigureAwait(false);
-                    observer.OnCompleted();
                 }
-
             });
-        }
-
-        public async ValueTask SendMessage(ReadOnlySequence<byte> message)
-        {
-            await _pipeline.Send(message);
-        }
-
-        public void Dispose()
-        {
-            try
-            {
-                cancellation?.Cancel();
-                _pipeReader?.Complete();
-                _pipeWriter?.Complete();
-                ShutDownSocket(_socket);
-            }
-            catch
-            {
-                // ignored
-            }
-
-            if (OnDisconnect != null) OnDisconnect();
-        }
-        void ShutDownSocket(Socket socket)
-        {
-            try
-            {
-                socket.Shutdown(SocketShutdown.Both);
-                socket?.Close(1000);
-            }
-            catch { }
-            _logger.Info("connection close complete....");
         }
 
         private async Task<Stream> GetStream(DnsEndPoint endPoint)
@@ -364,16 +315,44 @@ namespace SharpPulsar.SocketImpl
 
             return false;
         }
-
-        public void Connected()
+        public static Props Prop(IActorRef client, ClientConfigurationData conf, DnsEndPoint server, string hostName)
         {
-            throw new NotImplementedException();
+            return Props.Create(() => new SocketClientActor(client, conf, server, hostName));
         }
-
-        public void Disconnected()
+        protected override void PostStop()
         {
-            throw new NotImplementedException();
+            try
+            {
+                _start = false;
+                cancellation?.Cancel();
+                _pipeReader?.Complete();
+                _pipeWriter?.Complete();
+                _socket.Shutdown(SocketShutdown.Both);
+                _socket?.Close(1000);
+            }
+            catch
+            {
+                // ignored
+            }
+            _logger.Info("connection close complete....");
+            base.PostStop();
         }
-
+        internal readonly record struct Connect
+        {
+            internal static Connect Instance = new Connect();   
+        }
+        internal readonly record struct Start
+        {
+            internal static Start Instance = new Start();
+        }
+        internal readonly record struct SendMessage
+        {
+            public readonly ReadOnlySequence<byte> Message;
+            internal SendMessage(ReadOnlySequence<byte> message)
+            {
+                Message = message;
+            }
+        }
+        internal readonly record struct Reader(BaseCommand Command, MessageMetadata Metadata, BrokerEntryMetadata BrokerEntryMetadata, ReadOnlySequence<byte> Payload, bool HasValidcheckSum, bool HasMagicNumber);
     }
 }
