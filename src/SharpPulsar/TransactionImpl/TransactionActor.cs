@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
@@ -56,11 +57,11 @@ namespace SharpPulsar.TransactionImpl
         private readonly ISet<string> _registerPartitionMaps;
         private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
         private IActorRef _tcClient; //TransactionCoordinatorClientImpl
-        private IDictionary<IActorRef, int> _cumulativeAckConsumers;
         private readonly List<IMessageId> _sendList;
         private ICancelable _timeout = null;
         public IStash Stash { get; set; }
-
+        private readonly TxnID _txnId;
+        private TaskCompletionSource<object> _opFuture;
         public TransactionActor(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
         {
             _self = Self;
@@ -73,6 +74,8 @@ namespace SharpPulsar.TransactionImpl
             _sendList = new List<IMessageId>();
             _registerPartitionMaps = new HashSet<string>();
             _registerSubscriptionMap = new Dictionary<string, List<string>>();
+
+            _txnId = new TxnID(_txnIdMostBits, _txnIdLeastBits);
             TcClient();
         }
         private void TcClient()
@@ -99,10 +102,6 @@ namespace SharpPulsar.TransactionImpl
             {
                 Sender.Tell(NextSequenceId());
             });
-            Receive<RegisterCumulativeAckConsumer>(r =>
-            {
-                RegisterCumulativeAckConsumer(r.Consumer);
-            });
             Receive<GetTxnIdBits>(_ =>
             {
                 Sender.Tell(new GetTxnIdBitsResponse(_txnIdMostBits, _txnIdLeastBits));
@@ -121,10 +120,7 @@ namespace SharpPulsar.TransactionImpl
             {
                 RegisterAckedTopic(r.Topic, r.Subscription);
             });
-            Receive<IncomingMessagesCleared>(c =>
-            {
-                _cumulativeAckConsumers[Sender] = c.Cleared;
-            });
+            
             Receive<TransState>(_ =>
             {
                 Sender.Tell(_state);
@@ -226,18 +222,6 @@ namespace SharpPulsar.TransactionImpl
                 Sender.Tell(new AskResponse(false));
         }
 
-        private void RegisterCumulativeAckConsumer(IActorRef consumer)
-        {
-            if (CheckIfOpen())
-            {
-                if (_cumulativeAckConsumers == null)
-                {
-                    _cumulativeAckConsumers = new Dictionary<IActorRef, int>();
-                }
-                _cumulativeAckConsumers[consumer] = 0;
-            }
-        }
-
         private void Commit()
         {
             _state = TransactionState.COMMITTING;
@@ -264,21 +248,39 @@ namespace SharpPulsar.TransactionImpl
                 Become(Ready);
             });
             ReceiveAny(any => Stash.Stash());
-            _tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
+            if (_hasOpsFailed)
+            {
+                try
+                {
+                    CheckState(TransactionState.COMMITTING);
+                    _tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
+                    _log.Error(new PulsarClientException.TransactionHasOperationFailedException().ToString());
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex.ToString());
+                    Become(Ready);
+                }
+            }
+            else 
+                _tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
         }
 
         private void Abort()
         {
+            try
+            {
+                CheckState(TransactionState.OPEN, TransactionState.ABORTING);
+            }
+            catch(Exception ex) 
+            {
+                _log.Error(ex.ToString());
+                Become(Ready);
+            } 
             _state = TransactionState.ABORTING;
             Receive<EndTxnResponse>(e =>
             {
                 _log.Info("Got EndTxnResponse in Commit()");
-                CheckState(TransactionState.OPEN, TransactionState.ABORTING);
-                if (_cumulativeAckConsumers != null)
-                {
-                    _cumulativeAckConsumers.ForEach(x => x.Key.Tell(new IncreaseAvailablePermits(1)));
-                    _cumulativeAckConsumers.Clear();
-                }
                 if (e.Error != null)
                 {
                     var error = e.Error;
@@ -298,16 +300,25 @@ namespace SharpPulsar.TransactionImpl
                 Become(Ready);
             });
             ReceiveAny(any => Stash.Stash());
-            if (_cumulativeAckConsumers != null)
-            {
-                foreach (var c in _cumulativeAckConsumers)
-                {
-                    c.Key.Tell(ClearIncomingMessagesAndGetMessageNumber.Instance);
-                }
-            }
             _tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
 
         }
+        private TxnID TxnID
+        {
+            get
+            {
+                return _txnId;
+            }
+        }
+
+        private TransactionState State
+        {
+            get
+            {
+                return _state;
+            }
+        }
+
         private bool CheckIfOpen()
         {
             if (_state == TransactionState.OPEN)
@@ -329,13 +340,9 @@ namespace SharpPulsar.TransactionImpl
                 }
 
             }
-        }
+            throw new InvalidTxnStatusException("[" + _txnIdMostBits + ":" + _txnIdLeastBits + "] with unexpected state: " + actualState.ToString() + ", expect: " + expectedStates.ToString());
 
-        private void InvalidTxnStatusFuture()
-        {
-            throw new InvalidTxnStatusException("[" + _txnIdMostBits + ":" + _txnIdLeastBits + "] with unexpected state : " + _state.ToString() + ", expect " + TransactionState.OPEN + " state!");
         }
-
 
     }
 }

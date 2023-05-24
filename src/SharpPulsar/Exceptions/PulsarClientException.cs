@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 using System.Text;
 
 /// <summary>
@@ -29,7 +31,7 @@ namespace SharpPulsar.Exceptions
     public class PulsarClientException : Exception
 	{
 		private long _sequenceId = -1; 
-        private Collection<Exception> _previous;
+        private ICollection<Exception> _previous;
         /// <summary>
         /// Constructs an {@code PulsarClientException} with the specified detail message.
         /// </summary>
@@ -56,7 +58,7 @@ namespace SharpPulsar.Exceptions
         ///Add a list of previous exception which occurred for the same operation and have been retried.
         ///</summary>
         /// <param name="previous">A collection of throwables that triggered retries </param>
-        public void SetPreviousExceptions(Collection<Exception> previous)
+        public void SetPreviousExceptions(ICollection<Exception> previous)
         {
             _previous = previous;
         }
@@ -94,7 +96,7 @@ namespace SharpPulsar.Exceptions
         ///Get the collection of previous exceptions which have caused retries for this operation.
         ///</summary>
         ///<returns>a collection of exception, ordered as they occurred</returns>
-        public Collection<Exception> GetPreviousExceptions()
+        public ICollection<Exception> GetPreviousExceptions()
         {
             return _previous;
         }
@@ -135,11 +137,27 @@ namespace SharpPulsar.Exceptions
 		{
 			_sequenceId = sequenceId;
 		}
+        public class TransactionHasOperationFailedException : PulsarClientException
+        {
+            /// <summary>
+            /// Constructs an {@code TransactionHasOperationFailedException}.
+            /// </summary>
+            public TransactionHasOperationFailedException() : base("Now allowed to commit the transaction due to failed operations of producing or acknowledgment")
+            {
+            }
 
-		/// <summary>
-		/// Invalid Service URL exception thrown by Pulsar client.
-		/// </summary>
-		public class InvalidServiceUrl : PulsarClientException
+            /// <summary>
+            /// Constructs an {@code TransactionHasOperationFailedException} with the specified detail message. </summary>
+            /// <param name="msg"> The detail message. </param>
+            public TransactionHasOperationFailedException(string Msg) : base(Msg)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Invalid Service URL exception thrown by Pulsar client.
+        /// </summary>
+        public class InvalidServiceUrl : PulsarClientException
 		{
 			/// <summary>
 			/// Constructs an {@code InvalidServiceURL} with the specified cause.
@@ -344,11 +362,27 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
+        /// <summary>
+        /// Add a list of previous exception which occurred for the same operation
+        /// and have been retried.
+        /// </summary>
+        /// <param name="previous"> A collection of throwables that triggered retries </param>
+        public virtual ICollection<Exception> PreviousExceptions
+        {
+            set
+            {
+                _previous = value;
+            }
+            get
+            {
+                return _previous;
+            }
+        }
 
-		/// <summary>
-		/// Too many requests exception thrown by Pulsar client.
-		/// </summary>
-		public class TooManyRequestsException : LookupException
+        /// <summary>
+        /// Too many requests exception thrown by Pulsar client.
+        /// </summary>
+        public class TooManyRequestsException : LookupException
 		{
 			/// <summary>
 			/// Constructs an {@code TooManyRequestsException} with the specified detail message.
@@ -846,261 +880,362 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
-		// wrap an exception to enriching more info messages.
-		public static Exception Wrap(Exception t, string msg)
-		{
-			msg += "\n" + t.Message;
-			// wrap an exception with new message info
-			if (t is TimeoutException)
-			{
-				return new TimeoutException(msg);
-			}
+        /// <summary>
+        /// Consumer assign exception thrown by Pulsar client.
+        /// </summary>
+        public class MessageAcknowledgeException : PulsarClientException
+        {
 
-            if (t is InvalidConfigurationException)
+            /// <summary>
+            /// Constructs an {@code MessageAcknowledgeException} with the specified cause.
+            /// </summary>
+            /// <param name="t">
+            ///        The cause (which is saved for later retrieval by the
+            ///        <seealso cref="getCause()"/> method).  (A null value is permitted,
+            ///        and indicates that the cause is nonexistent or unknown.) </param>
+            public MessageAcknowledgeException(Exception T) : base(T)
+            {
+            }
+
+            /// <summary>
+            /// Constructs an {@code MessageAcknowledgeException} with the specified detail message. </summary>
+            /// <param name="msg"> The detail message. </param>
+            public MessageAcknowledgeException(string Msg) : base(Msg)
+            {
+            }
+        }
+
+        // wrap an exception to enriching more info messages.        
+        public static Exception Wrap(Exception t, string msg)
+        {
+            msg += "\n" + t.Message;
+            // wrap an exception with new message info
+            if (t is TimeoutException)
+            {
+                return new TimeoutException(msg);
+            }
+            else if (t is InvalidConfigurationException)
             {
                 return new InvalidConfigurationException(msg);
             }
-            if (t is AuthenticationException)
+            else if (t is AuthenticationException)
             {
                 return new AuthenticationException(msg);
             }
-            if (t is IncompatibleSchemaException)
+            else if (t is IncompatibleSchemaException)
             {
                 return new IncompatibleSchemaException(msg);
             }
-            if (t is TooManyRequestsException)
+            else if (t is TooManyRequestsException)
             {
                 return new TooManyRequestsException(msg);
             }
-            if (t is LookupException)
+            else if (t is LookupException)
             {
                 return new LookupException(msg);
             }
-            if (t is ConnectException)
+            else if (t is ConnectException)
             {
                 return new ConnectException(msg);
             }
-            if (t is AlreadyClosedException)
+            else if (t is AlreadyClosedException)
             {
                 return new AlreadyClosedException(msg);
             }
-            if (t is TopicTerminatedException)
+            else if (t is TopicTerminatedException)
             {
                 return new TopicTerminatedException(msg);
             }
-            if (t is AuthorizationException)
+            else if (t is AuthorizationException)
             {
                 return new AuthorizationException(msg);
             }
-            if (t is GettingAuthenticationDataException)
+            else if (t is GettingAuthenticationDataException)
             {
                 return new GettingAuthenticationDataException(msg);
             }
-            if (t is UnsupportedAuthenticationException)
+            else if (t is UnsupportedAuthenticationException)
             {
                 return new UnsupportedAuthenticationException(msg);
             }
-            if (t is BrokerPersistenceException)
+            else if (t is BrokerPersistenceException)
             {
                 return new BrokerPersistenceException(msg);
             }
-            if (t is BrokerMetadataException)
+            else if (t is BrokerMetadataException)
             {
                 return new BrokerMetadataException(msg);
             }
-            if (t is ProducerBusyException)
+            else if (t is ProducerBusyException)
             {
                 return new ProducerBusyException(msg);
             }
-            if (t is ConsumerBusyException)
+            else if (t is ConsumerBusyException)
             {
                 return new ConsumerBusyException(msg);
             }
-            if (t is NotConnectedException)
+            else if (t is NotConnectedException)
             {
                 return new NotConnectedException();
             }
-            if (t is InvalidMessageException)
+            else if (t is InvalidMessageException)
             {
                 return new InvalidMessageException(msg);
             }
-            if (t is InvalidTopicNameException)
+            else if (t is InvalidTopicNameException)
             {
                 return new InvalidTopicNameException(msg);
             }
-            if (t is NotSupportedException)
+            else if (t is NotSupportedException)
             {
                 return new NotSupportedException(msg);
             }
-            if (t is ProducerQueueIsFullError)
-            {
-                return new ProducerQueueIsFullError(msg);
-            }
-            if (t is ProducerBlockedQuotaExceededError)
-            {
-                return new ProducerBlockedQuotaExceededError(msg);
-            }
-            if (t is ProducerBlockedQuotaExceededException)
-            {
-                return new ProducerBlockedQuotaExceededException(msg);
-            }
-            if (t is ChecksumException)
-            {
-                return new ChecksumException(msg);
-            }
-            if (t is CryptoException)
-            {
-                return new CryptoException(msg);
-            }
-            if (t is ConsumerAssignException)
-            {
-                return new ConsumerAssignException(msg);
-            }
-            if (t is NotAllowedException)
+            else if (t is NotAllowedException)
             {
                 return new NotAllowedException(msg);
             }
-            if (t is TransactionConflictException)
-            {
-                return new TransactionConflictException(msg);
-            }
-            if (t is PulsarClientException)
-            {
-                return new PulsarClientException(msg);
-            }
-            if (t is Exception)
-            {
-                return new Exception(msg, t.InnerException);
-            }
-
-            return t;
-		}
-
-		public static PulsarClientException Unwrap(Exception t)
-		{
-			if (t is PulsarClientException exception)
-			{
-				return exception;
-			}
-
-            if (t is Exception)
-            {
-                return new PulsarClientException(t);
-            }
-
-            // Unwrap the exception to keep the same exception type but a stack trace that includes the application calling
-			// site
-			var cause = t.InnerException;
-			var msg = cause.Message;
-			if (cause is TimeoutException)
-			{
-				return new TimeoutException(msg);
-			}
-
-            if (cause is InvalidConfigurationException)
-            {
-                return new InvalidConfigurationException(msg);
-            }
-            if (cause is AuthenticationException)
-            {
-                return new AuthenticationException(msg);
-            }
-            if (cause is IncompatibleSchemaException)
-            {
-                return new IncompatibleSchemaException(msg);
-            }
-            if (cause is TooManyRequestsException)
-            {
-                return new TooManyRequestsException(msg);
-            }
-            if (cause is LookupException)
-            {
-                return new LookupException(msg);
-            }
-            if (cause is ConnectException)
-            {
-                return new ConnectException(msg);
-            }
-            if (cause is AlreadyClosedException)
-            {
-                return new AlreadyClosedException(msg);
-            }
-            if (cause is TopicTerminatedException)
-            {
-                return new TopicTerminatedException(msg);
-            }
-            if (cause is AuthorizationException)
-            {
-                return new AuthorizationException(msg);
-            }
-            if (cause is GettingAuthenticationDataException)
-            {
-                return new GettingAuthenticationDataException(msg);
-            }
-            if (cause is UnsupportedAuthenticationException)
-            {
-                return new UnsupportedAuthenticationException(msg);
-            }
-            if (cause is BrokerPersistenceException)
-            {
-                return new BrokerPersistenceException(msg);
-            }
-            if (cause is BrokerMetadataException)
-            {
-                return new BrokerMetadataException(msg);
-            }
-            if (cause is ProducerBusyException)
-            {
-                return new ProducerBusyException(msg);
-            }
-            if (cause is ConsumerBusyException)
-            {
-                return new ConsumerBusyException(msg);
-            }
-            if (cause is NotConnectedException)
-            {
-                return new NotConnectedException();
-            }
-            if (cause is InvalidMessageException)
-            {
-                return new InvalidMessageException(msg);
-            }
-            if (cause is InvalidTopicNameException)
-            {
-                return new InvalidTopicNameException(msg);
-            }
-            if (cause is NotSupportedException)
-            {
-                return new NotSupportedException(msg);
-            }
-            if (cause is ProducerQueueIsFullError)
+            else if (t is ProducerQueueIsFullError)
             {
                 return new ProducerQueueIsFullError(msg);
             }
-            if (cause is ProducerBlockedQuotaExceededError)
+            else if (t is ProducerBlockedQuotaExceededError)
             {
                 return new ProducerBlockedQuotaExceededError(msg);
             }
-            if (cause is ProducerBlockedQuotaExceededException)
+            else if (t is ProducerBlockedQuotaExceededException)
             {
                 return new ProducerBlockedQuotaExceededException(msg);
             }
-            if (cause is ChecksumException)
+            else if (t is ChecksumException)
             {
                 return new ChecksumException(msg);
             }
-            if (cause is CryptoException)
+            else if (t is CryptoException)
             {
                 return new CryptoException(msg);
             }
-            if (cause is TopicDoesNotExistException)
+            else if (t is ConsumerAssignException)
             {
-                return new TopicDoesNotExistException(msg);
+                return new ConsumerAssignException(msg);
             }
-            return new PulsarClientException(t);
+            else if (t is MessageAcknowledgeException)
+            {
+                return new MessageAcknowledgeException(msg);
+            }
+            else if (t is TransactionConflictException)
+            {
+                return new TransactionConflictException(msg);
+            }
+            else if (t is TransactionHasOperationFailedException)
+            {
+                return new TransactionHasOperationFailedException(msg);
+            }
+            else if (t is PulsarClientException)
+            {
+                return new PulsarClientException(msg);
+            }
+            else if (t is Exception)
+            {
+                return new Exception(msg, t.InnerException);
+            }
+            return t;
         }
 
-		public virtual long SequenceId
+        public static PulsarClientException Unwrap(Exception t)
+        {
+            if (t is PulsarClientException)
+            {
+                return (PulsarClientException)t;
+            }
+            else if (t is Exception)
+            {
+                throw (RuntimeException)t;
+            }
+
+            // Unwrap the exception to keep the same exception type but a stack trace that includes the application calling
+            // site
+            Exception cause = t.InnerException;
+            string msg = cause.Message;
+            PulsarClientException newException;
+            if (cause is TimeoutException)
+            {
+                newException = new TimeoutException(msg);
+            }
+            else if (cause is InvalidConfigurationException)
+            {
+                newException = new InvalidConfigurationException(msg);
+            }
+            else if (cause is AuthenticationException)
+            {
+                newException = new AuthenticationException(msg);
+            }
+            else if (cause is IncompatibleSchemaException)
+            {
+                newException = new IncompatibleSchemaException(msg);
+            }
+            else if (cause is TooManyRequestsException)
+            {
+                newException = new TooManyRequestsException(msg);
+            }
+            else if (cause is LookupException)
+            {
+                newException = new LookupException(msg);
+            }
+            else if (cause is ConnectException)
+            {
+                newException = new ConnectException(msg);
+            }
+            else if (cause is AlreadyClosedException)
+            {
+                newException = new AlreadyClosedException(msg);
+            }
+            else if (cause is TopicTerminatedException)
+            {
+                newException = new TopicTerminatedException(msg);
+            }
+            else if (cause is AuthorizationException)
+            {
+                newException = new AuthorizationException(msg);
+            }
+            else if (cause is GettingAuthenticationDataException)
+            {
+                newException = new GettingAuthenticationDataException(msg);
+            }
+            else if (cause is UnsupportedAuthenticationException)
+            {
+                newException = new UnsupportedAuthenticationException(msg);
+            }
+            else if (cause is BrokerPersistenceException)
+            {
+                newException = new BrokerPersistenceException(msg);
+            }
+            else if (cause is BrokerMetadataException)
+            {
+                newException = new BrokerMetadataException(msg);
+            }
+            else if (cause is ProducerBusyException)
+            {
+                newException = new ProducerBusyException(msg);
+            }
+            else if (cause is ConsumerBusyException)
+            {
+                newException = new ConsumerBusyException(msg);
+            }
+            else if (cause is NotConnectedException)
+            {
+                newException = new NotConnectedException();
+            }
+            else if (cause is InvalidMessageException)
+            {
+                newException = new InvalidMessageException(msg);
+            }
+            else if (cause is InvalidTopicNameException)
+            {
+                newException = new InvalidTopicNameException(msg);
+            }
+            else if (cause is NotSupportedException)
+            {
+                newException = new NotSupportedException(msg);
+            }
+            else if (cause is NotAllowedException)
+            {
+                newException = new NotAllowedException(msg);
+            }
+            else if (cause is ProducerQueueIsFullError)
+            {
+                newException = new ProducerQueueIsFullError(msg);
+            }
+            else if (cause is ProducerBlockedQuotaExceededError)
+            {
+                newException = new ProducerBlockedQuotaExceededError(msg);
+            }
+            else if (cause is ProducerBlockedQuotaExceededException)
+            {
+                newException = new ProducerBlockedQuotaExceededException(msg);
+            }
+            else if (cause is ChecksumException)
+            {
+                newException = new ChecksumException(msg);
+            }
+            else if (cause is CryptoException)
+            {
+                newException = new CryptoException(msg);
+            }
+            else if (cause is ConsumerAssignException)
+            {
+                newException = new ConsumerAssignException(msg);
+            }
+            else if (cause is MessageAcknowledgeException)
+            {
+                newException = new MessageAcknowledgeException(msg);
+            }
+            else if (cause is TransactionConflictException)
+            {
+                newException = new TransactionConflictException(msg);
+            }
+            else if (cause is TopicDoesNotExistException)
+            {
+                newException = new TopicDoesNotExistException(msg);
+            }
+            else if (cause is ProducerFencedException)
+            {
+                newException = new ProducerFencedException(msg);
+            }
+            else if (cause is NotFoundException)
+            {
+                newException = new NotFoundException(msg);
+            }
+            else if (cause is TransactionHasOperationFailedException)
+            {
+                newException = new TransactionHasOperationFailedException(msg);
+            }
+            else
+            {
+                newException = new PulsarClientException(t);
+            }
+
+            ICollection<Exception> previousExceptions = GetPreviousExceptions(t);
+            if (previousExceptions != null)
+            {
+                newException.SetPreviousExceptions(previousExceptions);
+            }
+            return newException;
+        }
+
+
+        public static ICollection<Exception> GetPreviousExceptions(Exception t)
+        {
+            Exception e = t;
+            for (int maxDepth = 20; maxDepth > 0 && e != null; maxDepth--)
+            {
+                if (e is PulsarClientException)
+                {
+                    ICollection<Exception> previous = ((PulsarClientException)e).GetPreviousExceptions();
+                    if (previous != null)
+                    {
+                        return previous;
+                    }
+                }
+                e = t.InnerException;
+            }
+            return null;
+        }
+
+        public static void SetPreviousExceptions(Exception t, ICollection<Exception> previous)
+        {
+            Exception e = t;
+            for (int maxDepth = 20; maxDepth > 0 && e != null; maxDepth--)
+            {
+                if (e is PulsarClientException)
+                {
+                    ((PulsarClientException)e).SetPreviousExceptions(previous);
+                    return;
+                }
+                e = t.InnerException;
+            }
+        }
+
+        public virtual long SequenceId
 		{
 			get => _sequenceId;
             set => _sequenceId = value;
@@ -1115,5 +1250,25 @@ namespace SharpPulsar.Exceptions
 			}
 			return true;
 		}
-	}
+
+        [Serializable]
+        private class RuntimeException : Exception
+        {
+            public RuntimeException()
+            {
+            }
+
+            public RuntimeException(string message) : base(message)
+            {
+            }
+
+            public RuntimeException(string message, Exception innerException) : base(message, innerException)
+            {
+            }
+
+            protected RuntimeException(SerializationInfo info, StreamingContext context) : base(info, context)
+            {
+            }
+        }
+    }
 }
