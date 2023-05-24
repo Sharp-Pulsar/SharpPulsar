@@ -1,5 +1,11 @@
 ## vNext
 
+## [2.13.0] / 2023-05-20
+- Improved `ClientCnx`
+  - `SocketClient`: changed to `SocketClientActor`
+  - Added `SendMessageActor`
+  - Removed `IObservable`, `NewThreadScheduler.Default.Schedule`	
+
 ## [2.12.1] / 2023-05-10
 - Fixed `GetStats*`
 
@@ -36,7 +42,8 @@
 - First release
 
 [vNext]: https://github.com/eaba/SharpPulsar/compare/2.13.0...HEAD
-[2.13.0]: https://github.com/eaba/SharpPulsar/compare/2.12.0...2.13.0
+[2.13.0]: https://github.com/eaba/SharpPulsar/compare/2.12.1...2.13.0
+[2.12.1]: https://github.com/eaba/SharpPulsar/compare/2.12.0...2.12.1
 [2.12.0]: https://github.com/eaba/SharpPulsar/compare/2.11.2...2.12.0
 [2.11.2]: https://github.com/eaba/SharpPulsar/compare/2.11.1...2.11.2
 [2.11.1]: https://github.com/eaba/SharpPulsar/compare/2.11.0...2.11.1
