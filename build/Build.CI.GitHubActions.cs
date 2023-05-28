@@ -36,8 +36,8 @@ using Nuke.Common.Utilities;
     EnableGitHubToken = true)]
 
 [CustomGitHubActions("docs",
-    GitHubActionsImage.WindowsLatest,
-    //AutoGenerate = false,
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = false,
     FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },

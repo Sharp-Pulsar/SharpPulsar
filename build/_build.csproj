@@ -20,6 +20,7 @@
     <PackageReference Include="Nuke.Common" />
     <PackageReference Include="docfx.console" ExcludeAssets="build" />
     <PackageReference Include="System.Configuration.ConfigurationManager" />
+    <PackageReference Include="Microsoft.DocAsCode.App" />
     <PackageReference Include="xunit.runner.console">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
