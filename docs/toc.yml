@@ -1,5 +1,10 @@
-- name: Articles
-  href: articles/
-- name: Api Documentation
+﻿- name: Docs
+  href: docs/
+- name: Commands 
+  href: commands 
+- name: API
   href: api/
-  homepage: api/index.md
+- name: Tutorial
+  href: tutorial/
+- name: Extensions
+  href: extensions/

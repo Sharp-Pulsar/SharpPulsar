@@ -255,7 +255,8 @@ partial class Build : NukeBuild
 
     Target ServeDocs => _ => _
         .DependsOn(DocBuild)
-        .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir).SetPort(8090)));
+        .OnlyWhenStatic(() => IsLocalBuild)
+        .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir).SetPort(9090)));
 
     Target CreateNuget => _ => _
       .DependsOn(Compile)
