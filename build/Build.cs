@@ -237,7 +237,7 @@ partial class Build : NukeBuild
     });
     Target DocsMetadata => _ => _
         .DependsOn(Compile)
-        .Executes(() =>
+        .Executes(async () =>
         {
             DocFXMetadata(s => s
             .SetProjects(DocFxDirJson)
@@ -245,16 +245,14 @@ partial class Build : NukeBuild
         });
 
     Target DocBuild => _ => _
-        .DependsOn(DocsMetadata)
-        .Executes(() =>
+        //.DependsOn(DocsMetadata)
+        .Executes(async () =>
         {
-            DocFXBuild(s => s
-            .SetConfigFile(DocFxDirJson)
-            .SetLogLevel(DocFXLogLevel.Verbose));
+            await Microsoft.DocAsCode.Docset.Build(DocFxDirJson);
         });
 
     Target ServeDocs => _ => _
-        .DependsOn(DocBuild)
+        //.DependsOn(DocBuild)
         .OnlyWhenStatic(() => IsLocalBuild)
         .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir).SetPort(9090)));
 
