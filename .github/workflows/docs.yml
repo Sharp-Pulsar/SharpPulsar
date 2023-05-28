@@ -29,9 +29,9 @@ on:
       - release
 
 jobs:
-  windows-latest:
-    name: windows-latest
-    runs-on: windows-latest
+  publish-docs:
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
