@@ -32,8 +32,8 @@
     ],
     "postProcessors": [ "ExtractSearchIndex" ],
     "globalMetadata": {
-      "_appTitle": "sharppulsar",
-      "_appName": "sharppulsar",
+      "_appTitle": "SharpPulsar",
+      "_appName": "SharpPulsar",
       "_appFooter": "<span>Supported by the <a href=\"https://pulsar.apache.org/\"> Apache Pulsar</a>. Made with <a href=\"https://dotnet.github.io/docfx\">docfx</a></span>",
       "_googleAnalyticsTagId": ""
     },
