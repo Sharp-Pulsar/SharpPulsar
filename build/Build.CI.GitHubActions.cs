@@ -35,6 +35,16 @@ using Nuke.Common.Utilities;
     PublishArtifacts = true,
     EnableGitHubToken = true)]
 
+[CustomGitHubActions("docs",
+    GitHubActionsImage.WindowsLatest,
+    //AutoGenerate = false,
+    FetchDepth = 0,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(DocBuild) },
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
+
 
 partial class Build
 {
