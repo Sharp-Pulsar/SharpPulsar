@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using Nuke.Common.Tools.MSBuild;
 using Nuke.Common.CI.GitHubActions;
 using Testcontainers.Pulsar;
+using Microsoft.DocAsCode.Dotnet;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 
@@ -237,7 +238,7 @@ partial class Build : NukeBuild
     });
     Target DocsMetadata => _ => _
         .DependsOn(Compile)
-        .Executes(async () =>
+        .Executes(() =>
         {
             DocFXMetadata(s => s
             .SetProjects(DocFxDirJson)
@@ -245,10 +246,13 @@ partial class Build : NukeBuild
         });
 
     Target DocBuild => _ => _
-        //.DependsOn(DocsMetadata)
-        .Executes(async () =>
+        .Produces(DocFxDir / "_site")
+        .DependsOn(DocsMetadata)
+        .Executes(() =>
         {
-            await Microsoft.DocAsCode.Docset.Build(DocFxDirJson);
+            DocFXBuild(s => s
+            .SetConfigFile(DocFxDirJson)
+            .SetLogLevel(DocFXLogLevel.Verbose));
         });
 
     Target ServeDocs => _ => _
