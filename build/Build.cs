@@ -45,7 +45,7 @@ partial class Build : NukeBuild
 
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
-    public static int Main () => Execute<Build>(x => x.Test);
+    public static int Main () => Execute<Build>(x => x.Install);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -102,7 +102,7 @@ partial class Build : NukeBuild
         {
             RootDirectory
             .GlobDirectories("sharppulsar/bin", "sharppulsar/obj", Output, OutputTests, OutputPerfTests, OutputNuget, DocSiteDirectory)
-            .ForEach(DeleteDirectory);
+            .ForEach(DeleteDirectory); 
             EnsureCleanDirectory(Output);
         });
 
@@ -311,7 +311,19 @@ partial class Build : NukeBuild
           }
           await GitHubRelease();
       });
-   async Task GitHubRelease ()
+    Target Install => _ => _
+       .Description("Install `Nuke.GlobalTool`")
+       .Executes(() =>
+       {
+           DotNetTasks.DotNet($"tool install Nuke.GlobalTool --global");
+       });
+    Target protobuf => _ => _
+       
+       .Executes(() =>
+       {
+           DotNetTasks.DotNet($"tool install Nuke.GlobalTool --global");
+       });
+    async Task GitHubRelease ()
         {
             GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
             {
@@ -368,6 +380,7 @@ partial class Build : NukeBuild
         await AwaitPortReadiness($"http://127.0.0.1:8081/");
         Information("AwaitPortReadiness Test Container");
     });
+    
     private PulsarContainer BuildContainer()
     {
         return new PulsarBuilder().Build();

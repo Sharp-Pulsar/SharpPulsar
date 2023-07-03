@@ -11,7 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageDownload Include="Nuke.GlobalTool" Version="[6.3.0]" />
+    <PackageDownload Include="Nuke.GlobalTool" Version="[7.0.2]" />
+    <PackageReference Include="protobuf-net.BuildTools" PrivateAssets="all" IncludeAssets="runtime;build;native;contentfiles;analyzers;buildtransitive" />
     <PackageReference Include="GitHubActionsTestLogger">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,8 +26,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageDownload Include="GitVersion.Tool" Version="[5.11.1]" />
-  </ItemGroup>
-
+  </ItemGroup> 
+    <!--    
+    <ItemGroup>
+        <AdditionalFiles Include="..\src\Protobuf\PulsarApi.proto" OneOf="enum" ListSet="true" RepeatedAsList="true" IncludeInOutput="true"/>
+    </ItemGroup>
+    -->
   <ItemGroup>
     <ProjectReference Include="..\src\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />
   </ItemGroup>

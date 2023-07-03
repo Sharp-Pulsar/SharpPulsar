@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Build Schema",
   "$ref": "#/definitions/build",
+  "title": "Build Schema",
   "definitions": {
     "build": {
       "type": "object",
@@ -86,6 +86,7 @@
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "Install",
               "PublishNuget",
               "Restore",
               "RunChangelog",
@@ -113,6 +114,7 @@
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "Install",
               "PublishNuget",
               "Restore",
               "RunChangelog",
