@@ -60,7 +60,6 @@ namespace SharpPulsar.Tracker
 		/// </summary>
 		private IMessageId _lastCumulativeAck = IMessageId.Earliest;
         private bool _cumulativeAckFlushRequired;
-        private readonly Commands _commands = new Commands();
 
         /// <summary>
         /// This is a set of all the individual acks that the application has issued and that were not already sent to
@@ -376,7 +375,7 @@ namespace SharpPulsar.Tracker
         {
             var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
             var protocolVersion = version.Version;
-            return _ackReceiptEnabled && cnx != null && _commands.PeerSupportsAckReceipt(protocolVersion);
+            return _ackReceiptEnabled && cnx != null && Commands.PeerSupportsAckReceipt(protocolVersion);
         }
         private MessageId ModifyBatchMessageIdAndStatesInConsumer(BatchMessageId batchMessageId)
         {
@@ -436,7 +435,7 @@ namespace SharpPulsar.Tracker
                 bitSet[batchIndex] = false;
             }
 
-            await NewMessageAckCommandAndWrite(cnx, _consumerId, msgId.LedgerId, msgId.EntryId, bitSet.ToLongArray(), ackType, null, properties, true, null);
+            await NewMessageAckCommandAndWrite(cnx, _consumerId, msgId.LedgerId, msgId.EntryId, bitSet.ToLongArray().ToList(), ackType, null, properties, true, null);
             
         }
         private async ValueTask DoIndividualAck(MessageId messageId, IDictionary<string, long> properties)
@@ -500,13 +499,13 @@ namespace SharpPulsar.Tracker
                 }
 
                 // Flush all individual acks
-                var entriesToAck = new List<(long ledger, long entry, long[] bitSet)>(_pendingIndividualAcks.Count + _pendingIndividualBatchIndexAcks.Count);
+                var entriesToAck = new List<(long ledger, long entry, List<long> bitSet)>(_pendingIndividualAcks.Count + _pendingIndividualBatchIndexAcks.Count);
                 //Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>> transactionEntriesToAck = new Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>>();
                 if (_pendingIndividualAcks.Count > 0)
                 {
                     var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
                     var protocolVersion = version.Version;
-                    if (_commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
+                    if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                     {
                         // We can send 1 single protobuf command with all individual acks
                         while (_pendingIndividualAcks.Count > 0)
@@ -607,9 +606,9 @@ namespace SharpPulsar.Tracker
             {
                 var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
                 var protocolVersion = version.Version;
-                if (_commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
+                if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                 {
-                    var entriesToAck = new List<(long LedgerId, long EntryId, long[] Sets)>(chunkMsgIds.Length);
+                    var entriesToAck = new List<(long LedgerId, long EntryId, List<long> Sets)>(chunkMsgIds.Length);
                     foreach (MessageId cMsgId in chunkMsgIds)
                     {
                         if (cMsgId != null && chunkMsgIds.Length > 1)
@@ -625,16 +624,16 @@ namespace SharpPulsar.Tracker
                     // ack receipt in this logic
                     foreach (MessageId cMsgId in chunkMsgIds)
                     {
-                        await NewMessageAckCommandAndWrite(cnx, consumerId, cMsgId.LedgerId, cMsgId.EntryId, bitSet, ackType, null, map, true, null);
+                        await NewMessageAckCommandAndWrite(cnx, consumerId, cMsgId.LedgerId, cMsgId.EntryId, bitSet.ToList(), ackType, null, map, true, null);
                     }
                 }
             }
             else
             {
-                await NewMessageAckCommandAndWrite(cnx, consumerId, msgId.LedgerId, msgId.EntryId, bitSet, ackType, null, map, true, null);
+                await NewMessageAckCommandAndWrite(cnx, consumerId, msgId.LedgerId, msgId.EntryId, bitSet.ToList()  , ackType, null, map, true, null);
             }
         }
-        private async ValueTask NewMessageAckCommandAndWrite(IActorRef cnx, long consumerId, long ledgerId, long entryId, long[] ackSet, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, bool flush, IList<(long LedgerId, long EntryId, long[] Sets)> entriesToAck)
+        private async ValueTask NewMessageAckCommandAndWrite(IActorRef cnx, long consumerId, long ledgerId, long entryId, List<long> ackSet, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, bool flush, IList<(long LedgerId, long EntryId, List<long> Sets)> entriesToAck)
         {
             if (await IsAckReceiptEnabled(cnx))
             {               
@@ -644,11 +643,11 @@ namespace SharpPulsar.Tracker
                 ReadOnlySequence<byte> cmd;
                 if (entriesToAck == null)
                 {
-                    cmd = _commands.NewAck(consumerId, ledgerId, entryId, ackSet, ackType, null, properties, requestId);
+                    cmd = Commands.NewAck(consumerId, ledgerId, entryId, ackSet, ackType, null, properties, requestId);
                 }
                 else
                 {
-                    cmd = _commands.NewMultiMessageAck(consumerId, entriesToAck, requestId);
+                    cmd = Commands.NewMultiMessageAck(consumerId, entriesToAck.ToList(), requestId);
                 }
                 cnx.Tell(new Payload(cmd, requestId, "NewAckForReceipt"));
             }
@@ -657,11 +656,11 @@ namespace SharpPulsar.Tracker
                 ReadOnlySequence<byte> cmd;
                 if (entriesToAck == null)
                 {
-                    cmd = _commands.NewAck(consumerId, ledgerId, entryId, ackSet, ackType, null, properties, -1);
+                    cmd = Commands.NewAck(consumerId, ledgerId, entryId, ackSet.ToList(), ackType, null, properties, -1);
                 }
                 else
                 {
-                    cmd = _commands.NewMultiMessageAck(consumerId, entriesToAck, -1);
+                    cmd = Commands.NewMultiMessageAck(consumerId, entriesToAck, -1);
                 }
                 cnx.Tell(new Payload(cmd, -1, "NewMessageAckCommandAndWrite"));
             }

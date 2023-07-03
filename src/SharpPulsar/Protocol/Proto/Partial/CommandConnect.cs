@@ -42,10 +42,14 @@ namespace SharpPulsar.Protocol.Proto
                 connect.ProtocolVersion = value;
                 return this;
 			}
-			
-			public Builder SetProxyToBrokerUrl(string value)
+            public Builder SetProxyToBrokerUrl(string value)
             {
                 connect.ProxyToBrokerUrl = value;
+                return this;
+            }
+            public Builder SetProxyVersion(string value)
+            {
+                connect.ProxyVersion = value;
                 return this;
 			}
 			

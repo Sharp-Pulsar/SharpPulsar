@@ -128,7 +128,7 @@ partial class Build : NukeBuild
 
     Target RunChangelog => _ => _
         .Requires(() => IsLocalBuild)
-        .OnlyWhenDynamic(() => GitRepository.Branch.Equals("main", StringComparison.OrdinalIgnoreCase))
+        //.OnlyWhenDynamic(() => GitRepository.Branch.Equals("main", StringComparison.OrdinalIgnoreCase))
         .Executes(() =>
         {
             FinalizeChangelog(ChangelogFile, GitVersion.MajorMinorPatch, GitRepository);
