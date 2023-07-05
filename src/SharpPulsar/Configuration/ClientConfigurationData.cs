@@ -36,8 +36,9 @@ namespace SharpPulsar.Configuration
 		/// TLS KeyStore type configuration: JKS, PKCS12
 		/// </summary>
 		public long InitialBackoffIntervalMs = 100;
-
-		public int ConnectionTimeoutMs { get; set; }
+        public int NumIoThreads = Environment.ProcessorCount;
+        public int NumListenerThreads = Environment.ProcessorCount;
+        public int ConnectionTimeoutMs { get; set; }
 		public string WebUrl { get; set; }
 		public int MaxLookupRedirects { get; set; }
 
