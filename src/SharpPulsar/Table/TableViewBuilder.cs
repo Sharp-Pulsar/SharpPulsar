@@ -66,7 +66,7 @@ namespace SharpPulsar.Table
 		{
             var data = new ConcurrentDictionary<string, T>();
             var actor = _client.ActorSystem.ActorOf(TableViewActor<T>.Prop(_client, _schema, _conf, data));
-             await Task.Delay(TimeSpan.FromSeconds(5));
+            // await Task.Delay(TimeSpan.FromSeconds(5));
             var response = await actor.Ask<AskResponse>(StartMessage.Instance);
             if (response.Failed)
             {

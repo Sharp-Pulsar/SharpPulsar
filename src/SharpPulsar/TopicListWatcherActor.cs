@@ -36,7 +36,6 @@ namespace SharpPulsar
         private ClientConfigurationData _conf;
         private readonly IActorRef _generator;
         private IActorRef _clientCnxUsedForWatcherRegistration;
-        private readonly Commands _commands = new Commands();
         public TopicListWatcherActor(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
         {
             _self = Self;
@@ -129,7 +128,7 @@ namespace SharpPulsar
             _createWatcherDeadline =  DateTimeHelper.CurrentUnixTimeMillis() + (long)_conf.OperationTimeout.TotalMilliseconds;
 
             // synchronized this, because redeliverUnAckMessage eliminate the epoch inconsistency between them
-            var watchRequest = _commands.NewWatchTopicList(requestId, _watcherId, _namespace.ToString(), _topicsPattern, _topicsHash);
+            var watchRequest = Commands.NewWatchTopicList(requestId, _watcherId, _namespace.ToString(), _topicsPattern, _topicsHash);
             try
             {
                 var response = await _cnx.Ask<CommandWatchTopicListSuccessResponse>(new Payload(watchRequest, requestId, "NewWatchTopicList"), _conf.OperationTimeout).ConfigureAwait(false);
@@ -240,7 +239,7 @@ namespace SharpPulsar
             {
                 try
                 {
-                    var cmd = _commands.NewWatchTopicListClose(_watcherId, requestId);
+                    var cmd = Commands.NewWatchTopicListClose(_watcherId, requestId);
                     response = await _cnx.Ask<CommandSuccess>(new Payload(cmd, requestId, "NewWatchTopicListClose"), _conf.OperationTimeout).ConfigureAwait(false);
 
                 }

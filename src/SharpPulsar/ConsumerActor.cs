@@ -17,6 +17,7 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Precondition;
+using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Stats.Consumer;
@@ -451,7 +452,7 @@ namespace SharpPulsar
                 }
                 // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
                 var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
-                var request = _commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy, Conf.SubscriptionProperties, ConsumerEpoch);
+                var request = Commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy, Conf.SubscriptionProperties, ConsumerEpoch);
 
                 var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), _clientConfigurationData.OperationTimeout).ConfigureAwait(false);
 
@@ -631,7 +632,7 @@ namespace SharpPulsar
                     }
                     else
                     {
-                        var cmd = _commands.NewCloseConsumer(_consumerId, requestId.Id);
+                        var cmd = Commands.NewCloseConsumer(_consumerId, requestId.Id);
                         var pay = new Payload(cmd, requestId.Id, "NewCloseConsumer");
                         var ask = await _clientCnx.Ask<AskResponse>(pay).ConfigureAwait(false);
                         _replyTo.Tell(ask);
@@ -1036,7 +1037,7 @@ namespace SharpPulsar
                     State.ConnectionState = HandlerState.State.Closing;
                     var res = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
                     var requestId = res.Id;
-                    var unsubscribe = _commands.NewUnsubscribe(_consumerId, requestId);
+                    var unsubscribe = Commands.NewUnsubscribe(_consumerId, requestId);
                     var cnx = _clientCnx;
                     cnx.Tell(new SendRequestWithId(unsubscribe, requestId));
                     CloseConsumerTasks();
@@ -1405,7 +1406,7 @@ namespace SharpPulsar
 				{
 					_log.Debug($"[{Topic}] [{Subscription}] Adding {numMessages} additional permits");
 				}
-				var cmd = _commands.NewFlow(_consumerId, numMessages);
+				var cmd = Commands.NewFlow(_consumerId, numMessages);
 				var pay = new Payload(cmd, -1, "NewFlow");
 				cnx.Tell(pay);
 			}
@@ -1529,7 +1530,7 @@ namespace SharpPulsar
 			var messageId = received.MessageId;
             var data = received.Payload.ToArray();
 			var redeliveryCount = received.RedeliveryCount;
-            var consumerEpoch = _commands.DefaultConsumerEpoch;
+            var consumerEpoch = Commands.DefaultConsumerEpoch;
             // if broker send messages to client with consumerEpoch, we should set consumerEpoch to message
             if (received.HasConsumerEpoch)
             {
@@ -2447,14 +2448,14 @@ namespace SharpPulsar
         }
         private void DiscardMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
 		{
-			var cmd = _commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
+			var cmd = Commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
 			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
 			IncreaseAvailablePermits(currentCnx);
 			Stats.IncrementNumReceiveFailed();
 		}
         private void DiscardMessage(MessageId messageId, IActorRef currentCnx, ValidationError validationError)
 		{
-			var cmd = _commands.NewAck(_consumerId, (long)messageId.LedgerId, (long)messageId.EntryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
+			var cmd = Commands.NewAck(_consumerId, (long)messageId.LedgerId, (long)messageId.EntryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
 			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
 			IncreaseAvailablePermits(currentCnx);
 			Stats.IncrementNumReceiveFailed();
@@ -2506,7 +2507,7 @@ namespace SharpPulsar
                 //possible deadlocks here
                 ClearIncomingMessages();
                 _unAckedMessageTracker.Tell(new Clear());
-				var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId);
+				var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId);
 				var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 				cnx.Tell(payload);
 
@@ -2577,7 +2578,7 @@ namespace SharpPulsar
                        var messageIdData = task.Result;
                         if (messageIdData.Count > 0)
                         {
-                            var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdData);
+                            var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdData);
                             var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
                             cnx.Tell(payload);
                         }
@@ -2742,12 +2743,12 @@ namespace SharpPulsar
                     ackSet.Clear(0, Math.Max(msgId.BatchIndex, 0));
                     var ackSetArr = ackSet.ToLongArray();
 
-                    seek = _commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
+                    seek = Commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr.ToList());
                 }
                 else
                 {
                     var msgid = (MessageId)messageId;
-                    seek = _commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new long[0]);
+                    seek = Commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new List<long> { 0 });
                 }
                 await SeekInternal(requestId, seek, messageId, seekBy);
             } 
@@ -2760,7 +2761,7 @@ namespace SharpPulsar
             {
                 var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                 var requestId = result.Id;
-                await SeekInternal(requestId, _commands.NewSeek(_consumerId, requestId, timestamp), IMessageId.Earliest, seekBy);
+                await SeekInternal(requestId, Commands.NewSeek(_consumerId, requestId, timestamp), IMessageId.Earliest, seekBy);
             };
         }
 
@@ -2928,14 +2929,14 @@ namespace SharpPulsar
                 if (Connected() && cnx != null)
                 {
                     var protocolVersion = _protocolVersion;
-                    if (!_commands.PeerSupportsGetLastMessageId(protocolVersion))
+                    if (!Commands.PeerSupportsGetLastMessageId(protocolVersion))
                     {
                         throw new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolVersion:D}. The consumer is {base.ConsumerName}, topic {_topicName}, subscription {base.Subscription}");
                     }
 
                     var res = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                     var requestId = res.Id;
-                    var getLastIdCmd = _commands.NewGetLastMessageId(_consumerId, requestId);
+                    var getLastIdCmd = Commands.NewGetLastMessageId(_consumerId, requestId);
                     _log.Info($"[{Topic}][{Subscription}] Get topic last message Id");
                     var payload = new Payload(getLastIdCmd, requestId, "NewGetLastMessageId");
                     try
@@ -3244,14 +3245,14 @@ namespace SharpPulsar
 					bitSet.Set(0, batchMessageId.BatchSize);
 					bitSet.Clear(batchMessageId.BatchIndex);
 				}
-				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
+				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray().ToList(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
 			}
 			else
 			{
 				var singleMessage = (MessageId) messageId;
 				ledgerId = singleMessage.LedgerId;
 				entryId = singleMessage.EntryId;
-				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, new long[]{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
+				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, new List<long>{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
 			}
 
 			_ackRequests.Add(requestId, (new List<IMessageId> { messageId}, txnID));
@@ -3328,7 +3329,7 @@ namespace SharpPulsar
                 }
             }
             _ackRequests.Add(requestId, (msgIds, txnID));
-            cmd = _commands.NewAck(_consumerId, messageIdDataList, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
+            cmd = Commands.NewAck(_consumerId, messageIdDataList, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
             var payload = new Payload(cmd, requestId, "NewAckForReceipt");
             _clientCnx.Tell(payload);
         }

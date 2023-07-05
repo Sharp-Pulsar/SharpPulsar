@@ -132,7 +132,7 @@ namespace SharpPulsar.SocketImpl
                                     BrokerEntryMetadata brokerEntryMetadata = null;
                                     var brokerEntryMetadataPosition = stream.Position;
                                     var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
-                                    if (brokerEntryMetadataMagicNumber == new Commands().MagicBrokerEntryMetadata)
+                                    if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
                                     {
                                         brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);
                                     }

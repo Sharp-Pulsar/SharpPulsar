@@ -103,7 +103,7 @@ partial class Build : NukeBuild
         {
             RootDirectory
             .GlobDirectories("sharppulsar/bin", "sharppulsar/obj", Output, OutputTests, OutputPerfTests, OutputNuget, DocSiteDirectory)
-            .ForEach(DeleteDirectory);
+            .ForEach(DeleteDirectory); 
             EnsureCleanDirectory(Output);
         });
 
@@ -314,7 +314,19 @@ partial class Build : NukeBuild
           }
           await GitHubRelease();
       });
-   async Task GitHubRelease ()
+    Target Install => _ => _
+       .Description("Install `Nuke.GlobalTool`")
+       .Executes(() =>
+       {
+           DotNetTasks.DotNet($"tool install Nuke.GlobalTool --global");
+       });
+    Target protobuf => _ => _
+       
+       .Executes(() =>
+       {
+           DotNetTasks.DotNet($"tool install Nuke.GlobalTool --global");
+       });
+    async Task GitHubRelease ()
         {
             GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
             {
@@ -371,6 +383,7 @@ partial class Build : NukeBuild
         await AwaitPortReadiness($"http://127.0.0.1:8081/");
         Information("AwaitPortReadiness Test Container");
     });
+    
     private PulsarContainer BuildContainer()
     {
         return new PulsarBuilder().Build();

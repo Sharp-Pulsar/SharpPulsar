@@ -118,7 +118,6 @@ namespace SharpPulsar
         private string _producerName;
         private readonly bool _userProvidedProducerName = false;
         private TaskCompletionSource<IMessageId> _lastSendFuture;
-        private readonly Commands _commands = new Commands(); 
         private readonly ILoggingAdapter _log;
 
         private string _connectionId;
@@ -375,7 +374,7 @@ namespace SharpPulsar
                     }
                     var resp = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                     var requestId = resp.Id;
-                    var cmd = _commands.NewCloseProducer(_producerId, requestId);
+                    var cmd = Commands.NewCloseProducer(_producerId, requestId);
                     var pay = new Payload(cmd, requestId, "NewCloseProducer");
                     var ask = await cnx.Ask<AskResponse>(pay).ConfigureAwait(false);
                     _log.Info($"[{Topic}] [{_producerName}] Closed Producer", Topic, _producerName);
@@ -492,7 +491,7 @@ namespace SharpPulsar
                         // JSONSchema originally generated a schema for pojo based of of the JSON schema standard
                         // but now we have standardized on every schema to generate an Avro based schema
                         var protocolVersion = _protocolVersion;
-                        if (_commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
+                        if (Commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
                         {
                             _schemaInfo = Schema.SchemaInfo;
                         }
@@ -519,7 +518,7 @@ namespace SharpPulsar
             var response = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
             _requestId = response.Id;
             _log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-            var cmd = _commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
+            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
             var payload = new Payload(cmd, _requestId, "NewProducer");
             await _cnx.Ask<AskResponse>(payload).ContinueWith(async response =>
              {
@@ -541,7 +540,7 @@ namespace SharpPulsar
                      {
                          var r = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                          var id = r.Id;
-                         var c = _commands.NewCloseProducer(_producerId, id);
+                         var c = Commands.NewCloseProducer(_producerId, id);
                          _cnx.Tell(new SendRequestWithId(c, id));
                      }
                      if (ex is ProducerFencedException)
@@ -1152,12 +1151,12 @@ namespace SharpPulsar
             {
                 _schemaInfo = (SchemaInfo)ISchema<T>.Bytes.SchemaInfo;
             }
-            if (!_commands.PeerSupportsGetOrCreateSchema(_protocolVersion))
+            if (!Commands.PeerSupportsGetOrCreateSchema(_protocolVersion))
             {
                 var err = new PulsarClientException.NotSupportedException($"The command `GetOrCreateSchema` is not supported for the protocol version {_protocolVersion}. The producer is {_producerName}, topic is {base.Topic}");
                 _log.Error(err.ToString());
             }
-            var request = _commands.NewGetOrCreateSchema(_requestId, base.Topic, _schemaInfo);
+            var request = Commands.NewGetOrCreateSchema(_requestId, base.Topic, _schemaInfo);
             var payload = new Payload(request, _requestId, "SendGetOrCreateSchema");
             _log.Info($"[{Topic}] [{_producerName}] GetOrCreateSchema request", Topic, _producerName);
             var schemaResponse = await _cnx.Ask<GetOrCreateSchemaResponse>(payload).ConfigureAwait(false);
@@ -1220,22 +1219,22 @@ namespace SharpPulsar
             _log.Info($"Send message with {_producerName}:{producerId}");
             if (messageId is MessageId)
             {
-                return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
+                return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
             }
             else
             {
-                return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, -1, -1, msgMetadata, compressedPayload);
+                return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, -1, -1, msgMetadata, compressedPayload);
                 
             }
         }
         private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
             _log.Info($"Send message with {_producerName}:{producerId}");
-            return _commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
+            return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
         }
         private ReadOnlySequence<byte> SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
-            return _commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
+            return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
         }
         private ChecksumType ChecksumType
         {
