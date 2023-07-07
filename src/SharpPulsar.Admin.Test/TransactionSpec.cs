@@ -5,7 +5,7 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Admin.Test
 {
     [Collection("pulsar admin")]
-    public class Transaction
+    public class TransactionSpec
     {
         private readonly ITestOutputHelper _output;
         private PulsarTransactionsRESTAPIClient _admin;
@@ -14,7 +14,7 @@ namespace SharpPulsar.Admin.Test
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
         };
-        public Transaction(ITestOutputHelper output)
+        public TransactionSpec(ITestOutputHelper output)
         {
             _output = output;
             var client = new HttpClient

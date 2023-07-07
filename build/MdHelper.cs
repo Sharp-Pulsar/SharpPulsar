@@ -44,7 +44,7 @@ public static class MdHelper
     [Pure]
     public static IEnumerable<string> ExtractChangelogSectionNotes(string changelogFile, string tag = null)
     {
-        var content = TextTasks.ReadAllLines(changelogFile).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+        var content = AbsolutePathExtensions.ReadAllLines(changelogFile).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
         var sections = GetReleaseSections(content);
         var section = tag == null
             ? sections.First(x => x.StartIndex < x.EndIndex)
@@ -84,7 +84,7 @@ public static class MdHelper
     [Pure]
     public static IReadOnlyList<ReleaseNotes> ReadReleaseNotes(string changelogFile)
     {
-        var lines = TextTasks.ReadAllLines(changelogFile).ToList();
+        var lines = AbsolutePathExtensions.ReadAllLines(changelogFile).ToList();
         var releaseSections = GetReleaseSections(lines).ToList();
 
         Assert.True(releaseSections.Any(), "Changelog should have at least one release note section");

@@ -1834,6 +1834,8 @@ namespace SharpPulsar
         {
             if (_cnx != null && BatchMessagingEnabled)
             {
+                try { _batchFlushTask.Cancel(); } catch { }
+                _batchFlushTask = null;
                 _batchFlushTask = _scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(batchingDelayMicros), async ()=> await BatchFlushTask());
             }
         }
@@ -1843,8 +1845,7 @@ namespace SharpPulsar
             {
                 _log.Debug($"[{Topic}] [{_producerName}] Batching the messages from the batch container from flush thread");
             }
-            _batchFlushTask.Cancel();
-            _batchFlushTask = null;
+            
             // If we're not ready, don't schedule another flush and don't try to send.
             if (State.ConnectionState != HandlerState. State.Ready)
             {

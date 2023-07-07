@@ -29,7 +29,7 @@ namespace SharpPulsar.Test.NBench
         }
 
         [PerfSetup]
-        public async Task Setup(BenchmarkContext context)
+        internal async Task Setup(BenchmarkContext context)
         {
             var producerBuilder = new ProducerConfigBuilder<byte[]>();
             producerBuilder.Topic(_topic);
@@ -66,7 +66,7 @@ namespace SharpPulsar.Test.NBench
         }
 
         [PerfCleanup]
-        public async Task Cleanup()
+        internal async Task Cleanup()
         {
             await _consumer.CloseAsync(); 
             await _producer.CloseAsync();   

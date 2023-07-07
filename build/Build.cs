@@ -103,8 +103,8 @@ partial class Build : NukeBuild
         {
             RootDirectory
             .GlobDirectories("sharppulsar/bin", "sharppulsar/obj", Output, OutputTests, OutputPerfTests, OutputNuget, DocSiteDirectory)
-            .ForEach(DeleteDirectory); 
-            EnsureCleanDirectory(Output);
+            .ForEach(AbsolutePathExtensions.DeleteDirectory);
+            AbsolutePathExtensions.CreateOrCleanDirectory(Output);
         });
 
     Target Restore => _ => _
@@ -168,7 +168,8 @@ partial class Build : NukeBuild
             var projects = new List<string> 
             {
                 "SharpPulsar.Test",
-                "SharpPulsar.Trino.Test"
+                "SharpPulsar.Trino.Test",
+                "SharpPulsar.Admin.Test"
             };
 
             foreach (var projectName in projects)

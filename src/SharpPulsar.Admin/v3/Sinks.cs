@@ -56,14 +56,14 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// Reload the built-in connectors, including Sources and Sinks
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ReloadSinksAsync();
+        System.Threading.Tasks.Task<object>ReloadSinksAsync();
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Reload the built-in connectors, including Sources and Sinks
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ReloadSinksAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>ReloadSinksAsync(System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Lists all Pulsar Sinks currently deployed in a given namespace
@@ -92,7 +92,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <returns>The Pulsar Sink was successfully deleted</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task DeregisterSinkAsync(string tenant, string @namespace, string sinkName);
+        System.Threading.Tasks.Task<object>DeregisterSinkAsync(string tenant, string @namespace, string sinkName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -103,7 +103,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <returns>The Pulsar Sink was successfully deleted</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task DeregisterSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>DeregisterSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Fetches information about a Pulsar Sink currently running in cluster mode
@@ -176,7 +176,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <br/>2. Encapsulate the JSON object to a multipart object.</param>
         /// <returns>Pulsar Sink successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RegisterSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream body);
+        System.Threading.Tasks.Task<object>RegisterSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream body);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -229,7 +229,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <br/>2. Encapsulate the JSON object to a multipart object.</param>
         /// <returns>Pulsar Sink successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RegisterSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream body, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>RegisterSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream body, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Updates a Pulsar Sink currently running in cluster mode
@@ -278,7 +278,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <br/>   Any flags that you want to pass to the runtime as a single string</param>
         /// <returns>Pulsar Sink successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task UpdateSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream bodyBody);
+        System.Threading.Tasks.Task<object>UpdateSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream bodyBody);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -328,7 +328,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <br/>   Any flags that you want to pass to the runtime as a single string</param>
         /// <returns>Pulsar Sink successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task UpdateSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream bodyBody, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>UpdateSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream bodyBody, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Restart all instances of a Pulsar Sink
@@ -337,7 +337,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RestartSinkAsync(string tenant, string @namespace, string sinkName);
+        System.Threading.Tasks.Task<object>RestartSinkAsync(string tenant, string @namespace, string sinkName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -347,7 +347,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RestartSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>RestartSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Start all instances of a Pulsar Sink
@@ -356,7 +356,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StartSinkAsync(string tenant, string @namespace, string sinkName);
+        System.Threading.Tasks.Task<object>StartSinkAsync(string tenant, string @namespace, string sinkName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -366,7 +366,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StartSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>StartSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Displays the status of a Pulsar Sink running in cluster mode
@@ -396,7 +396,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StopSinkAsync(string tenant, string @namespace, string sinkName);
+        System.Threading.Tasks.Task<object>StopSinkAsync(string tenant, string @namespace, string sinkName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -406,7 +406,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StopSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>StopSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Restart an instance of a Pulsar Sink
@@ -416,7 +416,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RestartSink2Async(string tenant, string @namespace, string sinkName, string instanceId);
+        System.Threading.Tasks.Task<object>RestartSink2Async(string tenant, string @namespace, string sinkName, string instanceId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -427,7 +427,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RestartSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>RestartSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Start an instance of a Pulsar Sink
@@ -437,7 +437,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StartSink2Async(string tenant, string @namespace, string sinkName, string instanceId);
+        System.Threading.Tasks.Task<object>StartSink2Async(string tenant, string @namespace, string sinkName, string instanceId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -448,7 +448,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StartSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>StartSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Displays the status of a Pulsar Sink instance
@@ -481,7 +481,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StopSink2Async(string tenant, string @namespace, string sinkName, string instanceId);
+        System.Threading.Tasks.Task<object>StopSink2Async(string tenant, string @namespace, string sinkName, string instanceId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -492,7 +492,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StopSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>StopSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken);
 
     }
 
@@ -717,7 +717,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// Reload the built-in connectors, including Sources and Sinks
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task ReloadSinksAsync()
+        public virtual System.Threading.Tasks.Task<object>ReloadSinksAsync()
         {
             return ReloadSinksAsync(System.Threading.CancellationToken.None);
         }
@@ -727,7 +727,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// Reload the built-in connectors, including Sources and Sinks
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task ReloadSinksAsync(System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>ReloadSinksAsync(System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append("sinks/reloadBuiltInSinks");
@@ -784,7 +784,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -930,7 +930,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <returns>The Pulsar Sink was successfully deleted</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task DeregisterSinkAsync(string tenant, string @namespace, string sinkName)
+        public virtual System.Threading.Tasks.Task<object>DeregisterSinkAsync(string tenant, string @namespace, string sinkName)
         {
             return DeregisterSinkAsync(tenant, @namespace, sinkName, System.Threading.CancellationToken.None);
         }
@@ -944,7 +944,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <returns>The Pulsar Sink was successfully deleted</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task DeregisterSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>DeregisterSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -992,7 +992,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         if (status_ == 400)
@@ -1216,7 +1216,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <br/>2. Encapsulate the JSON object to a multipart object.</param>
         /// <returns>Pulsar Sink successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task RegisterSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream body)
+        public virtual System.Threading.Tasks.Task<object>RegisterSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream body)
         {
             return RegisterSinkAsync(tenant, @namespace, sinkName, body, System.Threading.CancellationToken.None);
         }
@@ -1272,7 +1272,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <br/>2. Encapsulate the JSON object to a multipart object.</param>
         /// <returns>Pulsar Sink successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task RegisterSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream body, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>RegisterSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream body, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1323,7 +1323,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         if (status_ == 400)
@@ -1416,7 +1416,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <br/>   Any flags that you want to pass to the runtime as a single string</param>
         /// <returns>Pulsar Sink successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task UpdateSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream bodyBody)
+        public virtual System.Threading.Tasks.Task<object>UpdateSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream bodyBody)
         {
             return UpdateSinkAsync(tenant, @namespace, sinkName, bodyBody, System.Threading.CancellationToken.None);
         }
@@ -1469,7 +1469,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <br/>   Any flags that you want to pass to the runtime as a single string</param>
         /// <returns>Pulsar Sink successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task UpdateSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream bodyBody, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>UpdateSinkAsync(string tenant, string @namespace, string sinkName, System.IO.Stream bodyBody, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1520,7 +1520,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         if (status_ == 400)
@@ -1579,7 +1579,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task RestartSinkAsync(string tenant, string @namespace, string sinkName)
+        public virtual System.Threading.Tasks.Task<object>RestartSinkAsync(string tenant, string @namespace, string sinkName)
         {
             return RestartSinkAsync(tenant, @namespace, sinkName, System.Threading.CancellationToken.None);
         }
@@ -1592,7 +1592,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task RestartSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>RestartSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1673,7 +1673,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1702,7 +1702,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task StartSinkAsync(string tenant, string @namespace, string sinkName)
+        public virtual System.Threading.Tasks.Task<object>StartSinkAsync(string tenant, string @namespace, string sinkName)
         {
             return StartSinkAsync(tenant, @namespace, sinkName, System.Threading.CancellationToken.None);
         }
@@ -1715,7 +1715,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task StartSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>StartSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1796,7 +1796,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1953,7 +1953,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task StopSinkAsync(string tenant, string @namespace, string sinkName)
+        public virtual System.Threading.Tasks.Task<object>StopSinkAsync(string tenant, string @namespace, string sinkName)
         {
             return StopSinkAsync(tenant, @namespace, sinkName, System.Threading.CancellationToken.None);
         }
@@ -1966,7 +1966,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="namespace">The namespace of a Pulsar Sink</param>
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task StopSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>StopSinkAsync(string tenant, string @namespace, string sinkName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -2047,7 +2047,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -2077,7 +2077,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task RestartSink2Async(string tenant, string @namespace, string sinkName, string instanceId)
+        public virtual System.Threading.Tasks.Task<object>RestartSink2Async(string tenant, string @namespace, string sinkName, string instanceId)
         {
             return RestartSink2Async(tenant, @namespace, sinkName, instanceId, System.Threading.CancellationToken.None);
         }
@@ -2091,7 +2091,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task RestartSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>RestartSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -2182,7 +2182,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -2212,7 +2212,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task StartSink2Async(string tenant, string @namespace, string sinkName, string instanceId)
+        public virtual System.Threading.Tasks.Task<object>StartSink2Async(string tenant, string @namespace, string sinkName, string instanceId)
         {
             return StartSink2Async(tenant, @namespace, sinkName, instanceId, System.Threading.CancellationToken.None);
         }
@@ -2226,7 +2226,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task StartSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>StartSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -2311,7 +2311,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -2475,7 +2475,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task StopSink2Async(string tenant, string @namespace, string sinkName, string instanceId)
+        public virtual System.Threading.Tasks.Task<object>StopSink2Async(string tenant, string @namespace, string sinkName, string instanceId)
         {
             return StopSink2Async(tenant, @namespace, sinkName, instanceId, System.Threading.CancellationToken.None);
         }
@@ -2489,7 +2489,7 @@ namespace SharpPulsar.Admin.v3.Sinks
         /// <param name="sinkName">The name of a Pulsar Sink</param>
         /// <param name="instanceId">The instanceId of a Pulsar Sink</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task StopSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>StopSink2Async(string tenant, string @namespace, string sinkName, string instanceId, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -2574,7 +2574,7 @@ namespace SharpPulsar.Admin.v3.Sinks
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {

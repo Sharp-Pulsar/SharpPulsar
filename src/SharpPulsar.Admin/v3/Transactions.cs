@@ -24,138 +24,138 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get coordinator internal stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetCoordinatorInternalStatsAsync(bool? authoritative, string coordinatorId, bool? metadata);
+        System.Threading.Tasks.Task<object>GetCoordinatorInternalStatsAsync(bool? authoritative, string coordinatorId, bool? metadata);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get coordinator internal stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetCoordinatorInternalStatsAsync(bool? authoritative, string coordinatorId, bool? metadata, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetCoordinatorInternalStatsAsync(bool? authoritative, string coordinatorId, bool? metadata, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get transaction coordinator stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetCoordinatorStatsAsync(bool? authoritative, int? coordinatorId);
+        System.Threading.Tasks.Task<object>GetCoordinatorStatsAsync(bool? authoritative, int? coordinatorId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get transaction coordinator stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetCoordinatorStatsAsync(bool? authoritative, int? coordinatorId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetCoordinatorStatsAsync(bool? authoritative, int? coordinatorId, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get transaction pending ack internal stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPendingAckInternalStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? metadata);
+        System.Threading.Tasks.Task<object>GetPendingAckInternalStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? metadata);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get transaction pending ack internal stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPendingAckInternalStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? metadata, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetPendingAckInternalStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? metadata, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get transaction pending ack stats in topic.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? lowWaterMarks);
+        System.Threading.Tasks.Task<object>GetPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? lowWaterMarks);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get transaction pending ack stats in topic.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? lowWaterMarks, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? lowWaterMarks, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get position stats in pending ack.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPositionStatsInPendingAckAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, long ledgerId, long entryId, int? batchIndex);
+        System.Threading.Tasks.Task<object>GetPositionStatsInPendingAckAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, long ledgerId, long entryId, int? batchIndex);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get position stats in pending ack.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetPositionStatsInPendingAckAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, long ledgerId, long entryId, int? batchIndex, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetPositionStatsInPendingAckAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, long ledgerId, long entryId, int? batchIndex, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get slow transactions.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetSlowTransactionsAsync(bool? authoritative, string timeout, int? coordinatorId);
+        System.Threading.Tasks.Task<object>GetSlowTransactionsAsync(bool? authoritative, string timeout, int? coordinatorId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get slow transactions.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetSlowTransactionsAsync(bool? authoritative, string timeout, int? coordinatorId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetSlowTransactionsAsync(bool? authoritative, string timeout, int? coordinatorId, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get transaction buffer stats in topic.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetTransactionBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, bool? lowWaterMarks);
+        System.Threading.Tasks.Task<object>GetTransactionBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, bool? lowWaterMarks);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get transaction buffer stats in topic.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetTransactionBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, bool? lowWaterMarks, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetTransactionBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, bool? lowWaterMarks, System.Threading.CancellationToken cancellationToken);
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ScaleTransactionCoordinatorsAsync();
+        System.Threading.Tasks.Task<object>ScaleTransactionCoordinatorsAsync();
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ScaleTransactionCoordinatorsAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>ScaleTransactionCoordinatorsAsync(System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get transaction state in transaction buffer.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetTransactionInBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits);
+        System.Threading.Tasks.Task<object>GetTransactionInBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get transaction state in transaction buffer.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetTransactionInBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetTransactionInBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get transaction state in pending ack.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetTransactionInPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, string subName);
+        System.Threading.Tasks.Task<object>GetTransactionInPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, string subName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get transaction state in pending ack.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetTransactionInPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, string subName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetTransactionInPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, string subName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Get transaction metadata
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetTransactionMetadataAsync(bool? authoritative, string mostSigBits, string leastSigBits);
+        System.Threading.Tasks.Task<object>GetTransactionMetadataAsync(bool? authoritative, string mostSigBits, string leastSigBits);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Get transaction metadata
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task GetTransactionMetadataAsync(bool? authoritative, string mostSigBits, string leastSigBits, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>GetTransactionMetadataAsync(bool? authoritative, string mostSigBits, string leastSigBits, System.Threading.CancellationToken cancellationToken);
 
     }
 
@@ -190,7 +190,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get coordinator internal stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetCoordinatorInternalStatsAsync(bool? authoritative, string coordinatorId, bool? metadata)
+        public virtual System.Threading.Tasks.Task<object>GetCoordinatorInternalStatsAsync(bool? authoritative, string coordinatorId, bool? metadata)
         {
             return GetCoordinatorInternalStatsAsync(authoritative, coordinatorId, metadata, System.Threading.CancellationToken.None);
         }
@@ -200,7 +200,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get coordinator internal stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetCoordinatorInternalStatsAsync(bool? authoritative, string coordinatorId, bool? metadata, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetCoordinatorInternalStatsAsync(bool? authoritative, string coordinatorId, bool? metadata, System.Threading.CancellationToken cancellationToken)
         {
             if (coordinatorId == null)
                 throw new System.ArgumentNullException("coordinatorId");
@@ -281,7 +281,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -307,7 +307,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction coordinator stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetCoordinatorStatsAsync(bool? authoritative, int? coordinatorId)
+        public virtual System.Threading.Tasks.Task<object>GetCoordinatorStatsAsync(bool? authoritative, int? coordinatorId)
         {
             return GetCoordinatorStatsAsync(authoritative, coordinatorId, System.Threading.CancellationToken.None);
         }
@@ -317,7 +317,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction coordinator stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetCoordinatorStatsAsync(bool? authoritative, int? coordinatorId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetCoordinatorStatsAsync(bool? authoritative, int? coordinatorId, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append("transactions/coordinatorStats?");
@@ -388,7 +388,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -414,7 +414,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction pending ack internal stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetPendingAckInternalStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? metadata)
+        public virtual System.Threading.Tasks.Task<object>GetPendingAckInternalStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? metadata)
         {
             return GetPendingAckInternalStatsAsync(authoritative, tenant, @namespace, topic, subName, metadata, System.Threading.CancellationToken.None);
         }
@@ -424,7 +424,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction pending ack internal stats.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetPendingAckInternalStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? metadata, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetPendingAckInternalStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? metadata, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -529,7 +529,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -555,7 +555,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction pending ack stats in topic.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? lowWaterMarks)
+        public virtual System.Threading.Tasks.Task<object>GetPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? lowWaterMarks)
         {
             return GetPendingAckStatsAsync(authoritative, tenant, @namespace, topic, subName, lowWaterMarks, System.Threading.CancellationToken.None);
         }
@@ -565,7 +565,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction pending ack stats in topic.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? lowWaterMarks, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, bool? lowWaterMarks, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -664,7 +664,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -690,7 +690,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get position stats in pending ack.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetPositionStatsInPendingAckAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, long ledgerId, long entryId, int? batchIndex)
+        public virtual System.Threading.Tasks.Task<object>GetPositionStatsInPendingAckAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, long ledgerId, long entryId, int? batchIndex)
         {
             return GetPositionStatsInPendingAckAsync(authoritative, tenant, @namespace, topic, subName, ledgerId, entryId, batchIndex, System.Threading.CancellationToken.None);
         }
@@ -700,7 +700,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get position stats in pending ack.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetPositionStatsInPendingAckAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, long ledgerId, long entryId, int? batchIndex, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetPositionStatsInPendingAckAsync(bool? authoritative, string tenant, string @namespace, string topic, string subName, long ledgerId, long entryId, int? batchIndex, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -813,7 +813,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -839,7 +839,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get slow transactions.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetSlowTransactionsAsync(bool? authoritative, string timeout, int? coordinatorId)
+        public virtual System.Threading.Tasks.Task<object>GetSlowTransactionsAsync(bool? authoritative, string timeout, int? coordinatorId)
         {
             return GetSlowTransactionsAsync(authoritative, timeout, coordinatorId, System.Threading.CancellationToken.None);
         }
@@ -849,7 +849,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get slow transactions.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetSlowTransactionsAsync(bool? authoritative, string timeout, int? coordinatorId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetSlowTransactionsAsync(bool? authoritative, string timeout, int? coordinatorId, System.Threading.CancellationToken cancellationToken)
         {
             if (timeout == null)
                 throw new System.ArgumentNullException("timeout");
@@ -936,7 +936,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -962,7 +962,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction buffer stats in topic.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetTransactionBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, bool? lowWaterMarks)
+        public virtual System.Threading.Tasks.Task<object>GetTransactionBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, bool? lowWaterMarks)
         {
             return GetTransactionBufferStatsAsync(authoritative, tenant, @namespace, topic, lowWaterMarks, System.Threading.CancellationToken.None);
         }
@@ -972,7 +972,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction buffer stats in topic.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetTransactionBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, bool? lowWaterMarks, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetTransactionBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, bool? lowWaterMarks, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1067,7 +1067,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1090,14 +1090,14 @@ namespace SharpPulsar.Admin.v3.Transactions
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task ScaleTransactionCoordinatorsAsync()
+        public virtual System.Threading.Tasks.Task<object>ScaleTransactionCoordinatorsAsync()
         {
             return ScaleTransactionCoordinatorsAsync(System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task ScaleTransactionCoordinatorsAsync(System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>ScaleTransactionCoordinatorsAsync(System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append("transactions/transactionCoordinator/replicas");
@@ -1154,7 +1154,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1180,7 +1180,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction state in transaction buffer.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetTransactionInBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits)
+        public virtual System.Threading.Tasks.Task<object>GetTransactionInBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits)
         {
             return GetTransactionInBufferStatsAsync(authoritative, tenant, @namespace, topic, mostSigBits, leastSigBits, System.Threading.CancellationToken.None);
         }
@@ -1190,7 +1190,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction state in transaction buffer.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetTransactionInBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetTransactionInBufferStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1289,7 +1289,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1315,7 +1315,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction state in pending ack.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetTransactionInPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, string subName)
+        public virtual System.Threading.Tasks.Task<object>GetTransactionInPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, string subName)
         {
             return GetTransactionInPendingAckStatsAsync(authoritative, tenant, @namespace, topic, mostSigBits, leastSigBits, subName, System.Threading.CancellationToken.None);
         }
@@ -1325,7 +1325,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction state in pending ack.
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetTransactionInPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, string subName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetTransactionInPendingAckStatsAsync(bool? authoritative, string tenant, string @namespace, string topic, string mostSigBits, string leastSigBits, string subName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1428,7 +1428,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1454,7 +1454,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction metadata
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task GetTransactionMetadataAsync(bool? authoritative, string mostSigBits, string leastSigBits)
+        public virtual System.Threading.Tasks.Task<object>GetTransactionMetadataAsync(bool? authoritative, string mostSigBits, string leastSigBits)
         {
             return GetTransactionMetadataAsync(authoritative, mostSigBits, leastSigBits, System.Threading.CancellationToken.None);
         }
@@ -1464,7 +1464,7 @@ namespace SharpPulsar.Admin.v3.Transactions
         /// Get transaction metadata
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task GetTransactionMetadataAsync(bool? authoritative, string mostSigBits, string leastSigBits, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>GetTransactionMetadataAsync(bool? authoritative, string mostSigBits, string leastSigBits, System.Threading.CancellationToken cancellationToken)
         {
             if (mostSigBits == null)
                 throw new System.ArgumentNullException("mostSigBits");
@@ -1551,7 +1551,7 @@ namespace SharpPulsar.Admin.v3.Transactions
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {

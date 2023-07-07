@@ -56,14 +56,14 @@ namespace SharpPulsar.Admin.v3.Sources
         /// Reload the built-in connectors, including Sources and Sinks
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ReloadSourcesAsync();
+        System.Threading.Tasks.Task<object>ReloadSourcesAsync();
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Reload the built-in connectors, including Sources and Sinks
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ReloadSourcesAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>ReloadSourcesAsync(System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Lists all Pulsar Sources currently deployed in a given namespace
@@ -92,7 +92,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <returns>The function was successfully deleted</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task DeregisterSourceAsync(string tenant, string @namespace, string sourceName);
+        System.Threading.Tasks.Task<object>DeregisterSourceAsync(string tenant, string @namespace, string sourceName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -103,7 +103,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <returns>The function was successfully deleted</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task DeregisterSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>DeregisterSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Fetches information about a Pulsar Source currently running in cluster mode
@@ -160,7 +160,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <br/>2. Encapsulate the JSON object to a multipart object.</param>
         /// <returns>Pulsar Function successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RegisterSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream body);
+        System.Threading.Tasks.Task<object>RegisterSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream body);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -197,7 +197,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <br/>2. Encapsulate the JSON object to a multipart object.</param>
         /// <returns>Pulsar Function successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RegisterSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream body, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>RegisterSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream body, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Updates a Pulsar Source currently running in cluster mode
@@ -230,7 +230,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <br/>  Any flags that you want to pass to the runtime.</param>
         /// <returns>Pulsar Function successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task UpdateSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream bodyBody);
+        System.Threading.Tasks.Task<object>UpdateSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream bodyBody);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -264,7 +264,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <br/>  Any flags that you want to pass to the runtime.</param>
         /// <returns>Pulsar Function successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task UpdateSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream bodyBody, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>UpdateSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream bodyBody, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Restart all instances of a Pulsar Source
@@ -273,7 +273,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RestartSourceAsync(string tenant, string @namespace, string sourceName);
+        System.Threading.Tasks.Task<object>RestartSourceAsync(string tenant, string @namespace, string sourceName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -283,7 +283,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RestartSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>RestartSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Start all instances of a Pulsar Source
@@ -292,7 +292,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StartSourceAsync(string tenant, string @namespace, string sourceName);
+        System.Threading.Tasks.Task<object>StartSourceAsync(string tenant, string @namespace, string sourceName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -302,7 +302,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StartSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>StartSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Displays the status of a Pulsar Source running in cluster mode
@@ -332,7 +332,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StopSourceAsync(string tenant, string @namespace, string sourceName);
+        System.Threading.Tasks.Task<object>StopSourceAsync(string tenant, string @namespace, string sourceName);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -342,7 +342,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StopSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>StopSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Restart an instance of a Pulsar Source
@@ -352,7 +352,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RestartSource2Async(string tenant, string @namespace, string sourceName, string instanceId);
+        System.Threading.Tasks.Task<object>RestartSource2Async(string tenant, string @namespace, string sourceName, string instanceId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -363,7 +363,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RestartSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>RestartSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Start an instance of a Pulsar Source
@@ -373,7 +373,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StartSource2Async(string tenant, string @namespace, string sourceName, string instanceId);
+        System.Threading.Tasks.Task<object>StartSource2Async(string tenant, string @namespace, string sourceName, string instanceId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -384,7 +384,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StartSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>StartSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Displays the status of a Pulsar Source instance
@@ -417,7 +417,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StopSource2Async(string tenant, string @namespace, string sourceName, string instanceId);
+        System.Threading.Tasks.Task<object>StopSource2Async(string tenant, string @namespace, string sourceName, string instanceId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -428,7 +428,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task StopSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<object>StopSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken);
 
     }
 
@@ -677,7 +677,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// Reload the built-in connectors, including Sources and Sinks
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task ReloadSourcesAsync()
+        public virtual System.Threading.Tasks.Task<object>ReloadSourcesAsync()
         {
             return ReloadSourcesAsync(System.Threading.CancellationToken.None);
         }
@@ -687,7 +687,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// Reload the built-in connectors, including Sources and Sinks
         /// </summary>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task ReloadSourcesAsync(System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>ReloadSourcesAsync(System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append("sources/reloadBuiltInSources");
@@ -744,7 +744,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -890,7 +890,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <returns>The function was successfully deleted</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task DeregisterSourceAsync(string tenant, string @namespace, string sourceName)
+        public virtual System.Threading.Tasks.Task<object>DeregisterSourceAsync(string tenant, string @namespace, string sourceName)
         {
             return DeregisterSourceAsync(tenant, @namespace, sourceName, System.Threading.CancellationToken.None);
         }
@@ -904,7 +904,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <returns>The function was successfully deleted</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task DeregisterSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>DeregisterSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -952,7 +952,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         if (status_ == 400)
@@ -1160,7 +1160,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <br/>2. Encapsulate the JSON object to a multipart object.</param>
         /// <returns>Pulsar Function successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task RegisterSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream body)
+        public virtual System.Threading.Tasks.Task<object>RegisterSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream body)
         {
             return RegisterSourceAsync(tenant, @namespace, sourceName, body, System.Threading.CancellationToken.None);
         }
@@ -1200,7 +1200,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <br/>2. Encapsulate the JSON object to a multipart object.</param>
         /// <returns>Pulsar Function successfully created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task RegisterSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream body, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>RegisterSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream body, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1251,7 +1251,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         if (status_ == 400)
@@ -1328,7 +1328,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <br/>  Any flags that you want to pass to the runtime.</param>
         /// <returns>Pulsar Function successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task UpdateSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream bodyBody)
+        public virtual System.Threading.Tasks.Task<object>UpdateSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream bodyBody)
         {
             return UpdateSourceAsync(tenant, @namespace, sourceName, bodyBody, System.Threading.CancellationToken.None);
         }
@@ -1365,7 +1365,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <br/>  Any flags that you want to pass to the runtime.</param>
         /// <returns>Pulsar Function successfully updated</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task UpdateSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream bodyBody, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>UpdateSourceAsync(string tenant, string @namespace, string sourceName, System.IO.Stream bodyBody, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1416,7 +1416,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         if (status_ == 400)
@@ -1481,7 +1481,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task RestartSourceAsync(string tenant, string @namespace, string sourceName)
+        public virtual System.Threading.Tasks.Task<object>RestartSourceAsync(string tenant, string @namespace, string sourceName)
         {
             return RestartSourceAsync(tenant, @namespace, sourceName, System.Threading.CancellationToken.None);
         }
@@ -1494,7 +1494,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task RestartSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>RestartSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1575,7 +1575,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1604,7 +1604,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task StartSourceAsync(string tenant, string @namespace, string sourceName)
+        public virtual System.Threading.Tasks.Task<object>StartSourceAsync(string tenant, string @namespace, string sourceName)
         {
             return StartSourceAsync(tenant, @namespace, sourceName, System.Threading.CancellationToken.None);
         }
@@ -1617,7 +1617,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task StartSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>StartSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1698,7 +1698,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1843,7 +1843,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task StopSourceAsync(string tenant, string @namespace, string sourceName)
+        public virtual System.Threading.Tasks.Task<object>StopSourceAsync(string tenant, string @namespace, string sourceName)
         {
             return StopSourceAsync(tenant, @namespace, sourceName, System.Threading.CancellationToken.None);
         }
@@ -1856,7 +1856,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="namespace">The namespace of a Pulsar Source</param>
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task StopSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>StopSourceAsync(string tenant, string @namespace, string sourceName, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -1937,7 +1937,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -1967,7 +1967,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task RestartSource2Async(string tenant, string @namespace, string sourceName, string instanceId)
+        public virtual System.Threading.Tasks.Task<object>RestartSource2Async(string tenant, string @namespace, string sourceName, string instanceId)
         {
             return RestartSource2Async(tenant, @namespace, sourceName, instanceId, System.Threading.CancellationToken.None);
         }
@@ -1981,7 +1981,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task RestartSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>RestartSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -2072,7 +2072,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -2102,7 +2102,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task StartSource2Async(string tenant, string @namespace, string sourceName, string instanceId)
+        public virtual System.Threading.Tasks.Task<object>StartSource2Async(string tenant, string @namespace, string sourceName, string instanceId)
         {
             return StartSource2Async(tenant, @namespace, sourceName, instanceId, System.Threading.CancellationToken.None);
         }
@@ -2116,7 +2116,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task StartSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>StartSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -2201,7 +2201,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
@@ -2353,7 +2353,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task StopSource2Async(string tenant, string @namespace, string sourceName, string instanceId)
+        public virtual System.Threading.Tasks.Task<object>StopSource2Async(string tenant, string @namespace, string sourceName, string instanceId)
         {
             return StopSource2Async(tenant, @namespace, sourceName, instanceId, System.Threading.CancellationToken.None);
         }
@@ -2367,7 +2367,7 @@ namespace SharpPulsar.Admin.v3.Sources
         /// <param name="sourceName">The name of a Pulsar Source</param>
         /// <param name="instanceId">The instanceId of a Pulsar Source (if instance-id is not provided, the stats of all instances is returned).</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task StopSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<object>StopSource2Async(string tenant, string @namespace, string sourceName, string instanceId, System.Threading.CancellationToken cancellationToken)
         {
             if (tenant == null)
                 throw new System.ArgumentNullException("tenant");
@@ -2452,7 +2452,7 @@ namespace SharpPulsar.Admin.v3.Sources
                         if (status_ == 200 || status_ == 204)
                         {
 
-                            return;
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false); if (objectResponse_.Object == null){throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);} return objectResponse_.Object;
                         }
                         else
                         {
