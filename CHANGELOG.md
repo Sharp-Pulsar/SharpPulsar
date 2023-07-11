@@ -1,4 +1,8 @@
 ## vNext
+- Update `TableView`
+- Update `Transaction`
+- Improve `Admin` HttpClient
+- Update NUKE to `7.0.2`
 
 ## [2.13.0] / 2023-05-20
 - Improved `ClientCnx`

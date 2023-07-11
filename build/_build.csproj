@@ -26,7 +26,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageDownload Include="GitVersion.Tool" Version="[5.11.1]" />
+    <PackageDownload Include="GitVersion.Tool" Version="[5.12.0]" />
   </ItemGroup> 
     <!--    
     <ItemGroup>
