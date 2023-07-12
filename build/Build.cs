@@ -139,9 +139,9 @@ partial class Build : NukeBuild
             {
                 Git($"add {ChangelogFile}");
                 Information($"Add:\t{ChangelogFile}");
-                Git($"commit -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
+                //Git($"commit -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
 
-                Git($"tag -f {GitVersion.MajorMinorPatch}");
+                //Git($"tag -f {GitVersion.MajorMinorPatch}");
 
                 //git push --atomic origin <branch name> <tag>
                 //https://gist.github.com/danielestevez/2044589
