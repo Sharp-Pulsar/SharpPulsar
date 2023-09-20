@@ -273,7 +273,7 @@ namespace SharpPulsar
             OnDisconnected();
             _timeoutTask?.Cancel();
 			_sendPing?.Cancel();
-            _subscriber.Dispose();
+            //_subscriber.Dispose();
 			base.PostStop();
 		}
         
