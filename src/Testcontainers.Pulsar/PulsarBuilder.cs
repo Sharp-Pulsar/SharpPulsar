@@ -5,7 +5,7 @@ namespace Testcontainers.Pulsar
     [PublicAPI]
     public sealed class PulsarBuilder : ContainerBuilder<PulsarBuilder, PulsarContainer, PulsarConfiguration>
     {
-        public const string PulsarImage = "apachepulsar/pulsar-all:3.0.0";
+        public const string PulsarImage = "apachepulsar/pulsar-all:3.1.0";
         
         public ushort PulsarPort = 6650;
         public ushort PulsarAdminPort = 8080;
@@ -72,7 +72,7 @@ namespace Testcontainers.Pulsar
                     startupScript.Append("&& bin/pulsar standalone --no-functions-worker ");
                     startupScript.Append("&& bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2");
                     
-                    return container.CopyFileAsync(StartupScriptFilePath, Encoding.Default.GetBytes(startupScript.ToString()), 493, ct: ct);
+                    return container.CopyAsync(Encoding.Default.GetBytes(startupScript.ToString()), StartupScriptFilePath, Unix.FileMode755, ct: ct);
                 });
         }
 
