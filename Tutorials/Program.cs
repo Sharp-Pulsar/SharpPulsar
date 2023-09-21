@@ -139,7 +139,8 @@ namespace Tutorials
             for (var i = 0; i < 1000; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}");
-                var id = await producer.NewMessage().Value(data).SendAsync();
+                var id = await producer.NewMessage().Value(data).SequenceId(i).SendAsync();
+                Console.WriteLine($"{i} {JsonSerializer.Serialize(id)}"); 
             }
 
             await Task.Delay(TimeSpan.FromSeconds(10));
