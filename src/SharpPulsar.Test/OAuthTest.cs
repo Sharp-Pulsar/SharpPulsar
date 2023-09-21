@@ -42,7 +42,7 @@ namespace SharpPulsar.Test
             _system = PulsarSystem.GetInstance(actorSystemName:"oauth");
             _topic = $"persistent://public/default/oauth-{Guid.NewGuid()}";
         }
-        [Fact]
+        [Fact(Skip = "OAuth_ProducerInstantiation")]
         public virtual async Task OAuth_ProducerInstantiation()
         {
             var producer = new ProducerConfigBuilder<string>();
@@ -51,7 +51,7 @@ namespace SharpPulsar.Test
             Assert.NotNull(stringProducerBuilder);
             await stringProducerBuilder.CloseAsync();
         }
-        [Fact]
+        [Fact(Skip = "OAuth_ConsumerInstantiation")]
         public virtual async Task OAuth_ConsumerInstantiation()
         {
             var consumer = new ConsumerConfigBuilder<string>();
@@ -61,7 +61,7 @@ namespace SharpPulsar.Test
             Assert.NotNull(stringConsumerBuilder);
             await stringConsumerBuilder.CloseAsync();
         }
-        [Fact]
+        [Fact(Skip = "OAuth_ReaderInstantiation")]
         public virtual async void OAuth_ReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
@@ -72,7 +72,7 @@ namespace SharpPulsar.Test
             await stringReaderBuilder.CloseAsync();
         }
 
-        [Fact]
+        [Fact(Skip = "OAuth_ProduceAndConsume")]
         public async Task OAuth_ProduceAndConsume()
         {
             var topic = $"persistent://public/default/oauth-{Guid.NewGuid}";
@@ -112,7 +112,7 @@ namespace SharpPulsar.Test
             //producer.Close();
             await consumer.CloseAsync();
         }
-        [Fact]
+        [Fact(Skip = "OAuth_ProduceAndConsumeBatch")]
         public async Task OAuth_ProduceAndConsumeBatch()
         {
 

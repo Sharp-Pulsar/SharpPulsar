@@ -5,7 +5,7 @@ namespace SharpPulsar.Trino.Trino
 {
     public sealed class ProtocolHeaders
     {
-        public static readonly ProtocolHeaders TrinoHeaders = new ProtocolHeaders("Presto");
+        public static readonly ProtocolHeaders TrinoHeaders = new ProtocolHeaders("Trino");
 
         private readonly string _name;
         private readonly string _prefix;
