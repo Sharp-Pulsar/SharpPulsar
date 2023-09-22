@@ -26,7 +26,7 @@ namespace SharpPulsar.Interfaces
 		/// Generate the hash of a given String
 		/// </summary> </returns>
 		/// <returns> The hash of {<param name="s">}, which is non-negative integer. </param>
-		int MakeHash(string s);
+		//int MakeHash(string s);
 	}
 
 }
