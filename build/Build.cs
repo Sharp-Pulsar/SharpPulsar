@@ -71,6 +71,10 @@ partial class Build : NukeBuild
     public AbsolutePath DocFxDir => RootDirectory / "docs";
     public AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
 
+    //usage:
+    //./build.cmd RunChangelog --major-minor-patch 2.14.1
+    [Parameter] string MajorMinorPatch = "2.14.0";
+
     GitHubClient GitHubClient;
     public ChangeLog Changelog => MdHelper.ReadChangelog(ChangelogFile);
     string TagVersion => GitVersion.MajorMinorPatch;
@@ -132,7 +136,7 @@ partial class Build : NukeBuild
         //.OnlyWhenDynamic(() => GitRepository.Branch.Equals("main", StringComparison.OrdinalIgnoreCase))
         .Executes(() =>
         {
-            FinalizeChangelog(ChangelogFile, GitVersion.MajorMinorPatch, GitRepository);
+            FinalizeChangelog(ChangelogFile, MajorMinorPatch, GitRepository);
             Information($"Please review CHANGELOG.md ({ChangelogFile}) and press 'Y' to validate (any other key will cancel changes)...");
             ConsoleKeyInfo keyInfo = Console.ReadKey();
             if (keyInfo.Key == ConsoleKey.Y)

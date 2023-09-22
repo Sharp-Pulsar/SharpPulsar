@@ -1,4 +1,13 @@
 ## vNext
+- [UPDATE] NUKE v7.0.5
+- [FIX][SQL] Presto to Trino [APACHE PULSAR v3.1.0]
+- [UPDATES] Akka.NET v1.5.13, TestContainer v3.5.0
+- [TESTS][Skip] SharpPulsar.Test `OAuth`s
+- [ADD] `Tutorials` to `Launchsetting`
+- [FIX][Testcontainers][PULSAR] Set retention policy `defaultRetentionTimeInMinutes=-1`, `defaultRetentionSizeInMB=-1`. 
+- [REMOVED][TRINO] `HttpRequest<T> - WebRequest.Create(Url)`
+- [FIXED][Obsolete] `SHA256Managed`: Changed to `SHA256.Create()`
+- [REMOVED][IHash] `IHash.MakeHash(string)`
 
 ## [2.14.0] / 2023-07-12
 - Update `TableView`
