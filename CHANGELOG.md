@@ -1,4 +1,6 @@
 ## vNext
+
+## [2.14.1] / 2023-09-22
 - [UPDATE] NUKE v7.0.5
 - [FIX][SQL] Presto to Trino [APACHE PULSAR v3.1.0]
 - [UPDATES] Akka.NET v1.5.13, TestContainer v3.5.0
@@ -56,24 +58,14 @@
 ## [0.1.0] / 14 January 2022
 - First release
 
-[vNext]: https://github.com/eaba/SharpPulsar/compare/2.13.0...HEAD
-[2.13.0]: https://github.com/eaba/SharpPulsar/compare/2.12.1...2.13.0
-[2.12.1]: https://github.com/eaba/SharpPulsar/compare/2.12.0...2.12.1
-[2.12.0]: https://github.com/eaba/SharpPulsar/compare/2.11.2...2.12.0
-[2.11.2]: https://github.com/eaba/SharpPulsar/compare/2.11.1...2.11.2
-[2.11.1]: https://github.com/eaba/SharpPulsar/compare/2.11.0...2.11.1
-[2.11.0]: https://github.com/eaba/SharpPulsar/compare/2.9.0...2.11.0
-[2.9.0]: https://github.com/eaba/SharpPulsar/compare/0.1.0...2.9.0
-[0.1.0]: https://github.com/eaba/SharpPulsar/tree/0.1.0
-
-
-[vNext]: https://github.com/eaba/SharpPulsar/compare/2.14.0...HEAD
-[2.14.0]: https://github.com/eaba/SharpPulsar/compare/2.13.0...2.14.0
-[2.13.0]: https://github.com/eaba/SharpPulsar/compare/2.12.1...2.13.0
-[2.12.1]: https://github.com/eaba/SharpPulsar/compare/2.12.0...2.12.1
-[2.12.0]: https://github.com/eaba/SharpPulsar/compare/2.11.2...2.12.0
-[2.11.2]: https://github.com/eaba/SharpPulsar/compare/2.11.1...2.11.2
-[2.11.1]: https://github.com/eaba/SharpPulsar/compare/2.11.0...2.11.1
-[2.11.0]: https://github.com/eaba/SharpPulsar/compare/2.9.0...2.11.0
-[2.9.0]: https://github.com/eaba/SharpPulsar/compare/0.1.0...2.9.0
-[0.1.0]: https://github.com/eaba/SharpPulsar/tree/0.1.0
+[vNext]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.14.1...HEAD
+[2.14.1]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.14.0...2.14.1
+[2.14.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.13.0...2.14.0
+[2.13.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.12.1...2.13.0
+[2.12.1]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.12.0...2.12.1
+[2.12.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.11.2...2.12.0
+[2.11.2]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.11.1...2.11.2
+[2.11.1]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.11.0...2.11.1
+[2.11.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.9.0...2.11.0
+[2.9.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/0.1.0...2.9.0
+[0.1.0]: https://github.com/Sharp-Pulsar/SharpPulsar/tree/0.1.0
