@@ -54,6 +54,8 @@ namespace Testcontainers.Pulsar
                 .WithEnvironment("PULSAR_PREFIX_nettyMaxFrameSizeBytes", "5253120")
                 .WithEnvironment("PULSAR_PREFIX_transactionCoordinatorEnabled", "true")
                 .WithEnvironment("PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_defaultRetentionTimeInMinutes", "-1") //Default message retention time. 0 means retention is disabled. -1 means data is not removed by time quota
+                .WithEnvironment("PULSAR_PREFIX_defaultRetentionSizeInMB", "-1") //Default retention size. 0 means retention is disabled. -1 means data is not removed by size quota
                 .WithEnvironment("PULSAR_STANDALONE_USE_ZOOKEEPER", "1")
                 .WithEnvironment("PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled", "true")
                 .WithEnvironment("PULSAR_PREFIX_brokerEntryMetadataInterceptors", "org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
