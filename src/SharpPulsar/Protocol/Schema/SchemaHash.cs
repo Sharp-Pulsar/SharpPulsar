@@ -31,8 +31,6 @@ namespace SharpPulsar.Protocol.Schema
     public class SchemaHash
 	{
 
-		private static readonly SHA256Managed HashFunction = new SHA256Managed();
-
 		private readonly byte[] _hash;
 
 		private SchemaHash(byte[] hash)
@@ -54,7 +52,7 @@ namespace SharpPulsar.Protocol.Schema
 		private static SchemaHash Of(byte[] schemaBytes)
 		{
 			var scmBy = (byte[])(Array)schemaBytes;
-			return new SchemaHash(HashFunction.ComputeHash(scmBy));
+			return new SchemaHash(SHA256.Create().ComputeHash(scmBy));
 		}
 
 		public virtual byte[] AsBytes()
