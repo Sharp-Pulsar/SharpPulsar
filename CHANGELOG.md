@@ -1,4 +1,7 @@
 ## vNext
+- [Added] Code of Conduct
+- [Fixed] workflows badge.svg 
+- [Updated] Apache Pulsar v3.1.1
 
 ## [2.14.1] / 2023-09-22
 - [UPDATE] NUKE v7.0.5
