@@ -1,5 +1,6 @@
-[![Build](https://github.com/eaba/SharpPulsar/workflows/Build/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3ABuild)
-[![Tests](https://github.com/eaba/SharpPulsar/workflows/Tests/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3ATests)
+[![Build](https://github.com/Sharp-Pulsar/SharpPulsar/workflows/pr/badge.svg)](https://github.com/Sharp-Pulsar/SharpPulsar/actions?query=workflow%3Apr)
+[![Tests](https://github.com/Sharp-Pulsar/SharpPulsar/workflows/pulsar_linux/badge.svg)](https://github.com/Sharp-Pulsar/SharpPulsar/actions?query=workflow%3Apulsar_linux)
+[![Nuget](https://github.com/Sharp-Pulsar/SharpPulsar/workflows/nuget/badge.svg)](https://github.com/Sharp-Pulsar/SharpPulsar/actions?query=workflow%3Anuget)
 
 # SharpPulsar
 SharpPulsar is an [Apache Pulsar](https://github.com/apache/pulsar) Client built on top [Akka.net](https://github.com/akkadotnet/akka.net), which can handle millions of 
