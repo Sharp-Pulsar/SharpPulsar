@@ -62,7 +62,7 @@ public class CustomGitHubActionsAttribute : GitHubActionsAttribute
         
         var newSteps = new List<GitHubActionsStep>(job.Steps);
         //newSteps.Insert(1, new GitHubActionsUploadArtifact{ });
-        foreach (var version in new[] { "7.0.*"})
+        foreach (var version in new[] { "8.0.*"})
         {            
             newSteps.Insert(1, new GitHubActionsSetupDotNetStep
             {
