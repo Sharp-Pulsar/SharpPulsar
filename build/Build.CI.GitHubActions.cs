@@ -4,7 +4,7 @@ using Nuke.Common.CI.GitHubActions.Configuration;
 using Nuke.Common.Execution;
 using Nuke.Common.Utilities;
 
-[CustomGitHubActions("pr",
+[CustomGitHubActions("build",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.UbuntuLatest,
     //AutoGenerate = false,
@@ -15,7 +15,7 @@ using Nuke.Common.Utilities;
     PublishArtifacts = false,
     EnableGitHubToken = false)]
 
-[CustomGitHubActions("pulsar_linux",
+[CustomGitHubActions("test",
     GitHubActionsImage.UbuntuLatest,
     //AutoGenerate = false,
     FetchDepth = 0,
