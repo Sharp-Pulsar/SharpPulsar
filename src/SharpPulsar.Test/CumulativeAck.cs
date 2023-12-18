@@ -56,50 +56,50 @@ namespace SharpPulsar.Test
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
             var receivedMessageCount = 0;
 
-            var abortTxn = await Txn().ConfigureAwait(false);
+            var abortTxn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             var messageCnt = 50;
             // produce normal messages
             for (var i = 0; i < messageCnt; i++)
             {
-                await producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).SendAsync().ConfigureAwait(false);
+                await producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).SendAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             }
             IMessage<byte[]> message = null;
             //await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCnt; i++)
             {
-                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 if (message != null)
                 {
                     if (i % 3 == 0)
                     {
-                        await consumer.AcknowledgeCumulativeAsync(message.MessageId, abortTxn).ConfigureAwait(false);
+                        await consumer.AcknowledgeCumulativeAsync(message.MessageId, abortTxn);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                     }
                     _output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : 1, count : {i}");
                     receivedMessageCount++;
                 }
             }
             // the messages are pending ack state and can't be received
-            message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
+            message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Null(message);
 
-            await abortTxn.AbortAsync().ConfigureAwait(false);
+            await abortTxn.AbortAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             await Task.Delay(TimeSpan.FromSeconds(1));
-            var commitTxn = await Txn().ConfigureAwait(false);
+            var commitTxn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             for (var i = 0; i < messageCnt; i++)
             {
-                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 if (message != null)
                 {
-                    await consumer.AcknowledgeCumulativeAsync(message.MessageId, commitTxn).ConfigureAwait(false);
+                    await consumer.AcknowledgeCumulativeAsync(message.MessageId, commitTxn);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                     _output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : 1, count : {i}");
                     receivedMessageCount++;
                 }
             }
 
-            await commitTxn.CommitAsync().ConfigureAwait(false);
+            await commitTxn.CommitAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             await Task.Delay(TimeSpan.FromSeconds(1));
 
-            message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
+            message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             if (receivedMessageCount < 45)
                 Assert.Null(message);
 
@@ -133,7 +133,7 @@ namespace SharpPulsar.Test
 
             for (var retryCnt = 0; retryCnt < 2; retryCnt++)
             {
-                var abortTxn = await Txn().ConfigureAwait(false);
+                var abortTxn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 var messageCnt = 100;
                 // produce normal messages
                 for (var i = 0; i < messageCnt; i++)
@@ -164,7 +164,7 @@ namespace SharpPulsar.Test
                 Assert.Null(message);
 
                 await abortTxn.AbortAsync();
-                var commitTxn = await Txn().ConfigureAwait(false);
+                var commitTxn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
@@ -373,7 +373,7 @@ namespace SharpPulsar.Test
 
             for (var retryCnt = 0; retryCnt < 2; retryCnt++)
             {
-                var txn = await Txn().ConfigureAwait(false);
+                var txn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 //await Task.Delay(TimeSpan.FromSeconds(30));
                 var messageCnt = 100;
                 // produce normal messages
@@ -408,7 +408,7 @@ namespace SharpPulsar.Test
                 await txn.AbortAsync();
 
                 // after transaction abort, the messages could be received
-                var commitTxn = await Txn().ConfigureAwait(false);
+                var commitTxn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
@@ -458,7 +458,7 @@ namespace SharpPulsar.Test
 
             for (var retryCnt = 0; retryCnt < 2; retryCnt++)
             {
-                var txn = await Txn().ConfigureAwait(false);
+                var txn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
                 var messageCnt = 100;
                 // produce normal messages
@@ -485,7 +485,7 @@ namespace SharpPulsar.Test
                 await txn.AbortAsync();
 
                 // after transaction abort, the messages could be received
-                var commitTxn = await Txn().ConfigureAwait(false);
+                var commitTxn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt; i++)
                 {
@@ -533,7 +533,7 @@ namespace SharpPulsar.Test
 
             for (var retryCnt = 0; retryCnt < 2; retryCnt++)
             {
-                var txn = await Txn().ConfigureAwait(false);
+                var txn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
                 var messageCnt = 50;
                 // produce normal messages
@@ -563,7 +563,7 @@ namespace SharpPulsar.Test
                 await txn.AbortAsync();
 
                 // after transaction abort, the messages could be received
-                var commitTxn = await Txn().ConfigureAwait(false);
+                var commitTxn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 for (var i = 0; i < messageCnt - 2; i++)
                 {
@@ -661,61 +661,61 @@ namespace SharpPulsar.Test
                 .EnableBatching(false)
                 .SendTimeout(TimeSpan.Zero);
 
-            var producer = await _client.NewProducerAsync(producerBuilder).ConfigureAwait(false);
+            var producer = await _client.NewProducerAsync(producerBuilder);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
-            var txn = await Txn().ConfigureAwait(false);
+            var txn = await Txn();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
             var messageCnt = 10;
             for (var i = 0; i < messageCnt; i++)
             {
                 await producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i))
-                    .SendAsync().ConfigureAwait(false);
+                    .SendAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             }
             _output.WriteLine("produce transaction messages finished");
-            var consumer = await _client.NewConsumerAsync(consumerBuilder).ConfigureAwait(false);
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
             // Can't receive transaction messages before commit.
-            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Null(message);
             _output.WriteLine("transaction messages can't be received before transaction committed");
 
-            await txn.CommitAsync().ConfigureAwait(false);
+            await txn.CommitAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
             var ackedMessageCount = 0;
             var receiveCnt = 0;
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < messageCnt; i++)
             {
-                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 Assert.NotNull(message);
                 receiveCnt++;
                 if (i % 2 == 0)
                 {
-                    await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
+                    await consumer.AcknowledgeAsync(message);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                     ackedMessageCount++;
                 }
             }
             Assert.Equal(messageCnt, receiveCnt);
 
-            message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Null(message);
 
-            await consumer.RedeliverUnacknowledgedMessagesAsync().ConfigureAwait(false);
+            await consumer.RedeliverUnacknowledgedMessagesAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
             /*await Task.Delay(TimeSpan.FromSeconds(10));
             receiveCnt = 0;
             for (var i = 0; i < messageCnt; i++)
             {
-                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
+                message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 if(message != null)
                 {
-                    await consumer.AcknowledgeAsync(message).ConfigureAwait(false);
+                    await consumer.AcknowledgeAsync(message);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                     receiveCnt++;
                 }
             }
             Assert.True(receiveCnt > 5);
 
-            message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Null(message);
             _output.WriteLine($"receive transaction messages count: {receiveCnt}");*/
             //lient.Dispose();

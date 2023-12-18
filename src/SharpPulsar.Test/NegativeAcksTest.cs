@@ -52,13 +52,13 @@ namespace SharpPulsar.Test
         [Fact]
         public async Task TestNegativeAcksBatch()
         {
-            await TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 10000, 8000).ConfigureAwait(false);
+            await TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 10000, 8000);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
 
         [Fact]
         public async Task TestNegativeAcksNoBatch()
         {
-            await TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 5000, 8000).ConfigureAwait(false);
+            await TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 5000, 8000);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
         [Fact]
         public async Task TestAddAndRemove()
@@ -68,40 +68,40 @@ namespace SharpPulsar.Test
             builder.SubscriptionName("TestAckTracker-sub");
             builder.AckTimeout(TimeSpan.FromSeconds(2));
             builder.AckTimeoutTickTime(TimeSpan.FromMilliseconds(50));
-            var consumer = await _client.NewConsumerAsync(builder).ConfigureAwait(false);
+            var consumer = await _client.NewConsumerAsync(builder);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             var unack = _client.ActorSystem.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker<byte[]>.Prop(consumer.ConsumerActor, unack, builder.ConsumerConfigurationData));
 
-            var empty = await tracker.Ask<bool>(Empty.Instance).ConfigureAwait(false);
+            var empty = await tracker.Ask<bool>(Empty.Instance);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.True(empty);
 
-            var size = await tracker.Ask<long>(Size.Instance).ConfigureAwait(false);
+            var size = await tracker.Ask<long>(Size.Instance);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Equal(0, size);
 
             var mid = new MessageId(1L, 1L, -1);
-            var added = await tracker.Ask<bool>(new Add(mid)).ConfigureAwait(false);
+            var added = await tracker.Ask<bool>(new Add(mid));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.True(added);
-            added = await tracker.Ask<bool>(new Add(mid)).ConfigureAwait(false);
+            added = await tracker.Ask<bool>(new Add(mid));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.False(added);
-            size = await tracker.Ask<long>(Size.Instance).ConfigureAwait(false);
+            size = await tracker.Ask<long>(Size.Instance);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Equal(1, size);
 
             tracker.Tell(Clear.Instance);
 
-            added = await tracker.Ask<bool>(new Add(mid)).ConfigureAwait(false);
+            added = await tracker.Ask<bool>(new Add(mid));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.True(added);
 
-            size = await tracker.Ask<long>(Size.Instance).ConfigureAwait(false);
+            size = await tracker.Ask<long>(Size.Instance);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Equal(1, size);
 
-            var removed = await tracker.Ask<bool>(new Remove(mid)).ConfigureAwait(false);
+            var removed = await tracker.Ask<bool>(new Remove(mid));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
             Assert.True(removed);
 
-            empty = await tracker.Ask<bool>(Empty.Instance).ConfigureAwait(false);
+            empty = await tracker.Ask<bool>(Empty.Instance);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.True(empty);
 
-            size = await tracker.Ask<long>(Size.Instance).ConfigureAwait(false);
+            size = await tracker.Ask<long>(Size.Instance);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Equal(0, size);
         }
 
@@ -118,7 +118,7 @@ namespace SharpPulsar.Test
                 .AcknowledgmentGroupTime(TimeSpan.Zero)
                 .NegativeAckRedeliveryDelay(TimeSpan.FromMilliseconds(negAcksDelayMillis))
                 .SubscriptionType(subscriptionType);
-            var consumer = await _client.NewConsumerAsync(builder).ConfigureAwait(false);
+            var consumer = await _client.NewConsumerAsync(builder);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
             var pBuilder = new ProducerConfigBuilder<byte[]>();
             pBuilder.Topic(topic);
@@ -128,7 +128,7 @@ namespace SharpPulsar.Test
                 pBuilder.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(negAcksDelayMillis));
                 pBuilder.BatchingMaxMessages(10);
             }
-            var producer = await _client.NewProducerAsync(pBuilder).ConfigureAwait(false);
+            var producer = await _client.NewProducerAsync(pBuilder);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
             ISet<string> sentMessages = new HashSet<string>();
 
@@ -136,17 +136,17 @@ namespace SharpPulsar.Test
             for (var i = 0; i < n; i++)
             {
                 var value = "test-" + i;
-                await producer.SendAsync(Encoding.UTF8.GetBytes(value)).ConfigureAwait(false);
+                await producer.SendAsync(Encoding.UTF8.GetBytes(value));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 sentMessages.Add(value);
             }
             await Task.Delay(TimeSpan.FromSeconds(1));
             for (var i = 0; i < n; i++)
             {
-                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 if (msg != null)
                 {
                     var ms = Encoding.UTF8.GetString(msg.Data);
-                    await consumer.NegativeAcknowledgeAsync(msg).ConfigureAwait(false);
+                    await consumer.NegativeAcknowledgeAsync(msg);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                     _output.WriteLine(ms);
                 }
             }
@@ -157,13 +157,13 @@ namespace SharpPulsar.Test
             // All the messages should be received again
             for (var i = 0; i < n; i++)
             {
-                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000)).ConfigureAwait(false);
+                var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 if (msg != null)
                 {
                     var ms = Encoding.UTF8.GetString(msg.Data);
                     _output.WriteLine(ms);
                     receivedMessages.Add(ms);
-                    await consumer.AcknowledgeAsync(msg).ConfigureAwait(false);
+                    await consumer.AcknowledgeAsync(msg);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
                 }
             }
             _output.WriteLine(JsonSerializer.Serialize(receivedMessages));
@@ -171,8 +171,8 @@ namespace SharpPulsar.Test
             //var nu = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             // There should be no more messages
             //Assert.Null(nu);
-            await producer.CloseAsync().ConfigureAwait(false);
-            await consumer.CloseAsync().ConfigureAwait(false);
+            await producer.CloseAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
+            await consumer.CloseAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
         public async Task InitializeAsync()
         {

@@ -102,7 +102,7 @@ namespace SharpPulsar.Test
             var messageSet = 0;
             
             await Task.Delay(TimeSpan.FromSeconds(1));
-            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100)).ConfigureAwait(false);
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             if (message == null)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
@@ -172,7 +172,7 @@ namespace SharpPulsar.Test
             var messageSet = 0;
 
             await Task.Delay(TimeSpan.FromSeconds(1));
-            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100)).ConfigureAwait(false);
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(5100));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             if (message == null)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));

@@ -148,8 +148,8 @@ namespace SharpPulsar.Test
 
 			Assert.True(receivedMessages.Count > 0);
 
-			await consumer.CloseAsync().ConfigureAwait(false);
-			await producer.CloseAsync().ConfigureAwait(false);
+			await consumer.CloseAsync();//;//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
+			await producer.CloseAsync();//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
 		
         [Fact]
@@ -194,8 +194,8 @@ namespace SharpPulsar.Test
 			latch.Wait();
             Assert.True(receivedMessages.Count > 0);
 
-            await consumer.CloseAsync().ConfigureAwait(false);
-            await producer.CloseAsync().ConfigureAwait(false);
+            await consumer.CloseAsync();//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
+            await producer.CloseAsync();//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
 
         //[Fact(Skip = "TestPauseAndResume")]
@@ -243,8 +243,8 @@ namespace SharpPulsar.Test
 			//await Task.Delay(10000);
 			//Assert.True(latch.Value.Wait(TimeSpan.FromSeconds(2)), "Timed out waiting for message listener acks");
 
-			//await consumer.UnsubscribeAsync().ConfigureAwait(false);
-            await producer.CloseAsync().ConfigureAwait(false);
+			//await consumer.UnsubscribeAsync();//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
+            await producer.CloseAsync();//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
         public async Task InitializeAsync()
         {

@@ -188,7 +188,7 @@ namespace SharpPulsar.Test
                     id = await producer.NewMessage().Key(key).Value(new DataOpEx { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).SendAsync();
                 ids.Add(id);
             }
-            await producer.CloseAsync().ConfigureAwait(false);
+            await producer.CloseAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
 
             return ids;
         }
