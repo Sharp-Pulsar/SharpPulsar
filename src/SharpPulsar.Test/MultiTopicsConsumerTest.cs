@@ -8,6 +8,7 @@ using SharpPulsar.Test.Fixture;
 using System.Threading.Tasks;
 using SharpPulsar.Interfaces;
 using Xunit;
+using SharpPulsar.Messages;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -175,6 +176,7 @@ namespace SharpPulsar.Test
                 Assert.True(messages.Remove(value));
                 message = await reader.ReadNextAsync(TimeSpan.FromSeconds(5));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             }
+            _output.WriteLine($"MESSAGES COUNT: {messages.Count}");
             Assert.True(messages.Count == 0 || messages.Count == 1);
             // clean up
             foreach (var producer in producerList)
