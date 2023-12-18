@@ -168,13 +168,13 @@ namespace SharpPulsar.Test
                 }
             }
             // receive messagesS
-            var message = await reader.ReadNextAsync(TimeSpan.FromSeconds(5));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
+            var message = await reader.ReadNextAsync(TimeSpan.FromSeconds(1));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             while (message != null)
             {
                 var value = message.Value;
                 _output.WriteLine(value);
                 Assert.True(messages.Remove(value));
-                message = await reader.ReadNextAsync(TimeSpan.FromSeconds(5));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
+                message = await reader.ReadNextAsync(TimeSpan.FromSeconds(1));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             }
             _output.WriteLine($"MESSAGES COUNT: {messages.Count}");
             Assert.True(messages.Count == 0 || messages.Count == 1);
