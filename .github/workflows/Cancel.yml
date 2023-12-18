@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: styfle/cancel-workflow-action@0.11.0
+      - uses: styfle/cancel-workflow-action@0.12.0
         with:
-          workflow_id: 45548713,45548712,26218862,58515320,58522400
+          workflow_id: 26218862,58515320,79616816,79616817,5740115
           access_token: ${{ github.token }}

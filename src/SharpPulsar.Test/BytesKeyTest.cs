@@ -110,8 +110,8 @@ namespace SharpPulsar.Test
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
-            //await producer.CloseAsync().ConfigureAwait(false);
-            //await consumer.CloseAsync().ConfigureAwait(false);
+            //await producer.CloseAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
+            //await consumer.CloseAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
         [Fact]
         public async Task ProduceAndConsumeBatch()

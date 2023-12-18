@@ -9,12 +9,12 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_pr --host GitHubActions
+#         nuke --generate-configuration GitHubActions_test --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: pr
+name: test
 
 on:
   push:
@@ -29,29 +29,6 @@ on:
       - release
 
 jobs:
-  windows-latest:
-    name: windows-latest
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Make build.sh executable
-        run: chmod +x ./build.sh
-      - name: Make build.cmd executable
-        run: chmod +x ./build.cmd
-      - uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 7.0.*
-      - name: 'Cache: .nuke/temp, ~/.nuget/packages'
-        uses: actions/cache@v3
-        with:
-          path: |
-            .nuke/temp
-            ~/.nuget/packages
-          key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
-      - name: 'Run: Compile, API'
-        run: ./build.cmd Compile API
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
@@ -65,7 +42,7 @@ jobs:
         run: chmod +x ./build.cmd
       - uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 7.0.*
+          dotnet-version: 8.0.*
       - name: 'Cache: .nuke/temp, ~/.nuget/packages'
         uses: actions/cache@v3
         with:
@@ -73,5 +50,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
-      - name: 'Run: Compile, API'
-        run: ./build.cmd Compile API
+      - name: 'Run: Test'
+        run: ./build.cmd Test
