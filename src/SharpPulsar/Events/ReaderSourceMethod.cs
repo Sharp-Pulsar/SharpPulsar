@@ -66,7 +66,7 @@ namespace SharpPulsar.Events
 
         public ReaderSource<T> TaggedEvents(Tag tag)
         {
-            if (tag == new Tag(tag.Key, tag.Value))
+            if (tag.Key == null && tag.Value == null)
                 throw new ArgumentException("Tag is null");
 
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
@@ -77,7 +77,7 @@ namespace SharpPulsar.Events
         }
         public ReaderSource<T> CurrentTaggedEvents(Tag tag)
         {
-            if (tag == new Tag(tag.Key, tag.Value))
+            if (tag.Key == null && tag.Value == null)
                 throw new ArgumentException("Tag is null");
 
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
