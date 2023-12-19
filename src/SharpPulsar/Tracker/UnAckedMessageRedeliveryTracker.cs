@@ -238,13 +238,8 @@ namespace SharpPulsar.Tracker
             var messageIdWrapper = _unackMessageIdWrapper.ValueOf(messageId);
             try
             {
-                var removed = false;
-                var exist = RedeliveryMessageIdPartitionMap.Remove(messageIdWrapper);
-                if (exist != null)
-                {
-                    removed = exist;
-                }
-                return removed || AckTimeoutMessages.Remove(messageId) != null;
+                var removed = RedeliveryMessageIdPartitionMap.Remove(messageIdWrapper);
+                return removed || AckTimeoutMessages.Remove(messageId);
             }
             finally
             {

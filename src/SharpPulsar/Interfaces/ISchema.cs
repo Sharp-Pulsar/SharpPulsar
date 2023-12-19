@@ -237,9 +237,9 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> Json<T>(Type pojo)
+		static ISchema<T1> Json<T1>(Type pojo)
 		{
-			return DefaultImplementation.NewJsonSchema(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
+			return DefaultImplementation.NewJsonSchema(ISchemaDefinition<T1>.Builder().WithPojo(pojo).Build());
 		}
 
 		/// <summary>
@@ -247,7 +247,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> Json<T>(ISchemaDefinition<T> schemaDefinition)
+		static ISchema<T1> Json<T1>(ISchemaDefinition<T1> schemaDefinition)
 		{
 			return DefaultImplementation.NewJsonSchema(schemaDefinition);
 		}

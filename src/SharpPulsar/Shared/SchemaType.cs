@@ -171,7 +171,8 @@ namespace SharpPulsar.Shared
 
 		private static readonly List<SchemaType> _valueList = new List<SchemaType>();
 
-		static SchemaType()
+        [System.Obsolete]
+        static SchemaType()
 		{
 			_valueList.Add(NONE);
 			_valueList.Add(STRING);
@@ -254,7 +255,8 @@ namespace SharpPulsar.Shared
 			}
 		}
 
-		public static SchemaType ValueOf(int Value)
+        [System.Obsolete]
+        public static SchemaType ValueOf(int Value)
 		{
 			switch (Value)
 			{
