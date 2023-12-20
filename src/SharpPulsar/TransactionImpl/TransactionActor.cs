@@ -61,7 +61,6 @@ namespace SharpPulsar.TransactionImpl
         //private ICancelable _timeout = null;
         public IStash Stash { get; set; }
         private readonly TxnID _txnId;
-        private TaskCompletionSource<object> _opFuture;
         public TransactionActor(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
         {
             _self = Self;

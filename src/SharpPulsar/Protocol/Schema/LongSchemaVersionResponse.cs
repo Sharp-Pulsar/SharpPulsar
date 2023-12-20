@@ -23,7 +23,7 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public class LongSchemaVersionResponse
 	{
-		internal long? Version;
+		internal long? Version { get; set; }
 	}
 
 }

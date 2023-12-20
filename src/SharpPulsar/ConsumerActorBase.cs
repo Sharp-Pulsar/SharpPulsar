@@ -270,9 +270,9 @@ namespace SharpPulsar
             {
                 ValidateMessageId(message);
             }
-            catch (PulsarClientException e)
+            catch (PulsarClientException)
             {
-                throw e;
+                throw;
             }
             await DoReconsumeLater(message, AckType.Individual, customProperties, delayTime).Task;
         }
@@ -284,9 +284,9 @@ namespace SharpPulsar
                 {
                     ValidateMessageId(message);
                 }
-                catch (PulsarClientException e)
+                catch (PulsarClientException)
                 {
-                     throw e;
+                    throw;
                 }
             }
             try

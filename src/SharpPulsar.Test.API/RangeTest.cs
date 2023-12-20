@@ -72,7 +72,9 @@ namespace SharpPulsar.Test.Api
 		{
             var ex = Assert.Throws<ArgumentException>(() => Range.Of(0, -5));
 			_output.WriteLine(ex.Message);
-			Assert.True(ex.Message.Equals("Range end must >= range start."));
+            var t = ex.Message.Equals("Range end must >= range start.");
+
+            Assert.True(t);
 		}
 	}
 

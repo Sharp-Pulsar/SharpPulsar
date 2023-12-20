@@ -1209,7 +1209,7 @@ namespace SharpPulsar
                     _log.Warning($"[{Topic}] [{_producerName}] Failed to encrypt message {e}. Proceeding with publishing unencrypted message");
                     return compressedPayload;
                 }
-                throw e;
+                throw;
             }
             return encryptedPayload;
         }
