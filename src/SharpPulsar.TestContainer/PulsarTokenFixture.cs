@@ -18,16 +18,16 @@ namespace SharpPulsar.TestContainer
         private const string SecretKeyPath = "/pulsar/secret.key";
         private const string UserName = "test-user";
         private const int Port = 6650;
-        public PulsarSystem PulsarSystem;
-        public ClientConfigurationData ClientConfigurationData;
-        public PulsarClientConfigBuilder ConfigBuilder;
-        public string Token;
+        public PulsarSystem? PulsarSystem;
+        public ClientConfigurationData? ClientConfigurationData;
+        public PulsarClientConfigBuilder? ConfigBuilder;
+        public string? Token;
         private readonly IConfiguration _configuration;
         private readonly IMessageSink _messageSink;
         private readonly IContainerService _cluster;
         public PulsarTokenFixture(IMessageSink messageSink)
         {
-            var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
             _configuration = GetIConfigurationRoot(path);
             _messageSink = messageSink;
 
@@ -97,13 +97,13 @@ namespace SharpPulsar.TestContainer
             var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
             var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
             var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
-            var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
-            var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value);
-            var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
-            var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
-            var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value);
-            var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value);
-            var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value);
+            var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value!);
+            var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value!);
+            var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value!);
+            var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value!);
+            var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value!);
+            var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value!);
+            var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value!);
 
 
             client.EnableTransaction(enableTxn);

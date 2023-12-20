@@ -49,7 +49,6 @@ namespace SharpPulsar.Table
 		private readonly IList<Action<string, T>> _listeners;
         private IUntypedActorContext _context;
         private ILoggingAdapter _log;
-        private ICancelable _partitionChecker;
         private readonly IActorRef _self;
         private IActorRef _replyTo;
         private bool _isPersistentTopic;

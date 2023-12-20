@@ -48,7 +48,7 @@ namespace SharpPulsar.Events
 
         public SqlSource<IEventEnvelope> CurrentTaggedEvents(Tag tag)
         {
-            if (tag == null)
+            if (tag.Key == null && tag.Value == null)
                 throw new ArgumentException("Tag is null");
 
             var buffer = new BufferBlock<IEventEnvelope>();
@@ -71,7 +71,7 @@ namespace SharpPulsar.Events
 
         public SqlSource<IEventEnvelope> TaggedEvents(Tag tag)
         {
-            if (tag == null)
+            if (tag.Key == null && tag.Value == null)
                 throw new ArgumentException("Tag is null");
 
             var buffer = new BufferBlock<IEventEnvelope>();

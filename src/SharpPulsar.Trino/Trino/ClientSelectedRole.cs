@@ -32,7 +32,7 @@ namespace SharpPulsar.Trino.Trino
         private readonly string _role;
         public ClientSelectedRole(Type type, string role)
         {
-            if (type == null)
+            if (type == Type.None)
                 throw new NullReferenceException("type is null");
             _role = Condition.RequireNonNull(role, "Role", "role is null");
             if (type == Type.Role && !string.IsNullOrWhiteSpace(role))

@@ -1266,9 +1266,6 @@ namespace SharpPulsar.Exceptions
             {
             }
 
-            protected RuntimeException(SerializationInfo info, StreamingContext context) : base(info, context)
-            {
-            }
         }
     }
 }

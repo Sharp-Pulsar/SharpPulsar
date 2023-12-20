@@ -30,11 +30,11 @@ namespace SharpPulsar.Tracker
 
     internal class UnAckedMessageRedeliveryTracker<T> : UnAckedMessageTracker<T>
     {
-        private readonly ILoggingAdapter _log;
+        private readonly ILoggingAdapter _log = default;
         private ICancelable _timeout;
         protected internal readonly Dictionary<UnackMessageIdWrapper, HashSet<UnackMessageIdWrapper>> RedeliveryMessageIdPartitionMap;
         protected internal readonly ArrayDeque<HashSet<UnackMessageIdWrapper>> RedeliveryTimePartitions;
-        private readonly IScheduler _scheduler;
+        private readonly IScheduler _scheduler = default;
         protected internal readonly Dictionary<IMessageId, long> AckTimeoutMessages;
         private readonly IRedeliveryBackoff _ackTimeoutRedeliveryBackoff;
         private UnackMessageIdWrapper _unackMessageIdWrapper;
@@ -238,13 +238,8 @@ namespace SharpPulsar.Tracker
             var messageIdWrapper = _unackMessageIdWrapper.ValueOf(messageId);
             try
             {
-                var removed = false;
-                var exist = RedeliveryMessageIdPartitionMap.Remove(messageIdWrapper);
-                if (exist != null)
-                {
-                    removed = exist;
-                }
-                return removed || AckTimeoutMessages.Remove(messageId) != null;
+                var removed = RedeliveryMessageIdPartitionMap.Remove(messageIdWrapper);
+                return removed || AckTimeoutMessages.Remove(messageId);
             }
             finally
             {

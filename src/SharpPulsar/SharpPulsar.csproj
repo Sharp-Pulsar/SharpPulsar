@@ -12,18 +12,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Akka"/>
+    <PackageReference Include="Akka" />
       <Using Include="Akka.Event" />
     <PackageReference Include="Akka.Logger.Serilog" />
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Apache.Avro" />
-    <PackageReference Include="App.Metrics.Concurrency"/>
+    <PackageReference Include="App.Metrics.Concurrency" />
     <PackageReference Include="AvroSchemaGenerator" />
     <PackageReference Include="DotNetty.Common" />
-    <PackageReference Include="Google.Protobuf"/>
-    <PackageReference Include="IdentityModel"/>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="IdentityModel" />
     <PackageReference Include="JsonSubTypes" />
-    <PackageReference Include="K4os.Compression.LZ4"/>
+    <PackageReference Include="K4os.Compression.LZ4" />
     <PackageReference Include="Microsoft.CSharp" />
     <PackageReference Include="Microsoft.Extensions.ApiDescription.Client">
       <PrivateAssets>all</PrivateAssets>
@@ -31,8 +31,8 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream"/>
-    <PackageReference Include="Microsoft.Rest.ClientRuntime"/>
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" />
+    <PackageReference Include="Microsoft.Rest.ClientRuntime" />
     <PackageReference Include="Nager.PublicSuffix" />
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Nito.AsyncEx" />
@@ -74,6 +74,13 @@
     <None Update="SharpPulsar.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Consumer\" />
+    <Folder Include="Client\" />
+    <Folder Include="Internal\" />
+    <Folder Include="Producer\" />
   </ItemGroup>
 
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">

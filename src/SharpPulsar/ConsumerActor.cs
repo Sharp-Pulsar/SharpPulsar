@@ -116,7 +116,7 @@ namespace SharpPulsar
 
         private readonly bool _readCompacted;
         private readonly bool _resetIncludeHead;
-        private readonly bool _poolMessages = false;
+        //private readonly bool _poolMessages = false;
 
 
         private readonly ActorSystem _actorSystem;
@@ -2795,7 +2795,7 @@ namespace SharpPulsar
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
-                throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}");
+                throw new AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}");
                 
             }
 
@@ -2909,7 +2909,7 @@ namespace SharpPulsar
 
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
-				throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
+				throw new AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
 			}
 
 			var opTimeoutMs = _clientConfigurationData.OperationTimeout;
@@ -2943,12 +2943,8 @@ namespace SharpPulsar
                     {
                         var result = await cnx.Ask<LastMessageIdResponse>(payload);
                         IMessageId lastMessageId;
-                        MessageId markDeletePosition = null;
-                        if (result.MarkDeletePosition != null)
-                        {
-                            markDeletePosition = new MessageId(result.MarkDeletePosition.LedgerId, result.MarkDeletePosition.EntryId, -1);
-                        }
-                        _log.Info($"[{Topic}][{Subscription}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
+                        var markDeletePosition = new MessageId(result.MarkDeletePosition.LedgerId, result.MarkDeletePosition.EntryId, -1);
+                                                _log.Info($"[{Topic}][{Subscription}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
                         if (result.BatchIndex < 0)
                         {
                             lastMessageId = new MessageId(result.LedgerId, result.EntryId, result.Partition);

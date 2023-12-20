@@ -166,9 +166,9 @@ namespace SharpPulsar
                     {
                         return (MessageId)IMessageId.FromByteArray(messageId.ToByteArray());
                     }
-                    catch (IOException e)
+                    catch (IOException)
                     {
-                        throw e;
+                        throw;
                     }
                 }
             }

@@ -478,7 +478,7 @@ namespace SharpPulsar
                 }
 
                 // if last auto update not completed yet, do nothing.
-                if (_partitionsAutoUpdateFuture == null || _partitionsAutoUpdateFuture.IsCompleted)
+                if (_partitionsAutoUpdateFuture.IsCompleted)
                 {
                     _partitionsAutoUpdateFuture = _topicsPartitionChangedListener.OnTopicsExtended(new List<string> { Topic });
                 }

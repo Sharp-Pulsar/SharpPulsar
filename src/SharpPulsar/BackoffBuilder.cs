@@ -4,8 +4,8 @@ namespace SharpPulsar
 {
 	public class BackoffBuilder
 	{
-		private readonly long _backoffIntervalNanos;
-        private readonly long _maxBackoffIntervalNanos;
+		//private readonly long _backoffIntervalNanos;
+        //private readonly long _maxBackoffIntervalNanos;
         private TimeSpan _initial;
 		private TimeSpan _max;
 		private readonly DateTimeOffset _clock;
@@ -16,8 +16,8 @@ namespace SharpPulsar
 			_max = TimeSpan.Zero;
 			_mandatoryStop = TimeSpan.Zero;
 			_clock = DateTimeOffset.Now;
-			_backoffIntervalNanos = 0;
-			_maxBackoffIntervalNanos = 0;
+			//_backoffIntervalNanos = 0;
+			//_maxBackoffIntervalNanos = 0;
 		}
 
 		public virtual BackoffBuilder SetInitialTime(TimeSpan initial)

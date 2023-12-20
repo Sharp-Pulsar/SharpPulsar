@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Ductus.FluentDocker.Commands;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
@@ -11,14 +12,14 @@ namespace SharpPulsar.TestContainer
 {
     public class PulsarOAuthFixture : IAsyncLifetime
     {
-        public PulsarClient Client;
-        public PulsarSystem PulsarSystem;
+        public PulsarClient? Client;
+        public PulsarSystem? PulsarSystem;
         private readonly IConfiguration _configuration;
 
-        public ClientConfigurationData ClientConfigurationData;
+        public ClientConfigurationData? ClientConfigurationData;
         public PulsarOAuthFixture()
         {
-            var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
             _configuration = GetIConfigurationRoot(path);
             Container = BuildContainer();
         }
@@ -62,13 +63,13 @@ namespace SharpPulsar.TestContainer
             var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
             var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
             var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
-            var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
-            var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value);
-            var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
-            var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
-            var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value);
-            var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value);
-            var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value);
+            var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value!);
+            var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value!);
+            var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value!);
+            var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value!);
+            var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value!);
+            var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value!);
+            var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value!);
 
 
             client.EnableTransaction(enableTxn);
@@ -137,7 +138,7 @@ namespace SharpPulsar.TestContainer
         {
             var configFolderName = "Oauth2Files";
             var privateKeyFileName = "o-r7y4o-eabanonu.json";
-            var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
             var indexOfConfigDir = startup.IndexOf(startup, StringComparison.Ordinal);
             var examplesFolder = startup.Substring(0, startup.Length - indexOfConfigDir);
             var configFolder = Path.Combine(examplesFolder, configFolderName);

@@ -67,10 +67,9 @@ namespace SharpPulsar
 
 		private ICancelable _timeoutTask;
 
-		private readonly ICancelable _sendPing;
+		private readonly ICancelable _sendPing = default;
 		private readonly IActorRef _parent;
         private readonly IScheduler _scheduler;
-        private IDisposable _subscriber;
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;

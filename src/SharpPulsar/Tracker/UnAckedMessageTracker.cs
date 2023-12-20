@@ -163,10 +163,10 @@ namespace SharpPulsar.Tracker
         {            
             if (messageId is MessageId)
             {
-                var chunkedMsgIds = await Unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId })); ;
-                if (chunkedMsgIds != null && chunkedMsgIds.MessageIds.Length > 0)
+                UnAckedChunckedMessageIdSequenceMapCmdResponse? chunkedMsgIds = await Unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId })); ;
+                if (chunkedMsgIds != null && chunkedMsgIds?.MessageIds.Length > 0)
                 {
-                    MessageIds = messageIds.Select(m => m).Concat(chunkedMsgIds.MessageIds.Select(c => c)).ToHashSet();
+                    MessageIds = messageIds.Select(m => m).Concat(chunkedMsgIds?.MessageIds.Select(c => c)).ToHashSet();
                 }
                 Unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
             }

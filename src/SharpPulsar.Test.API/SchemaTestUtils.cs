@@ -29,19 +29,19 @@ namespace SharpPulsar.Test.API
         public class Foo : IEquatable<Foo>
         {
 
-            public string Field1 { get; set; }
-            public string Field2 { get; set; }
+            public string? Field1 { get; set; }
+            public string? Field2 { get; set; }
             public int Field3 { get; set; }
 
-            public Bar Field4 { get; set; }
+            public Bar? Field4 { get; set; }
 
             public Color Color { get; set; }
 
-            public string FieldUnableNull { get; set; }
-            public bool Equals(Foo other)
+            public string? FieldUnableNull { get; set; }
+            public bool Equals(Foo? other)
             {
-                if (Field1 == other.Field1 && Field2 == other.Field2 && Field3 == other.Field3
-                    && Field4?.Field1 == other.Field4?.Field1 && Color == other.Color && FieldUnableNull == other.FieldUnableNull)
+                if (Field1 == other?.Field1 && Field2 == other?.Field2 && Field3 == other?.Field3
+                    && Field4?.Field1 == other?.Field4?.Field1 && Color == other?.Color && FieldUnableNull == other?.FieldUnableNull)
                     return true;
                 return false;
             }
@@ -50,11 +50,11 @@ namespace SharpPulsar.Test.API
         [Serializable]
         public class FooV2 : IEquatable<FooV2>
         {
-            public string Field1 { get; set; }
+            public string? Field1 { get; set; }
             public int Field3 { get; set; }
-            public bool Equals(FooV2 other)
+            public bool Equals(FooV2? other)
             {
-                return Field1 == other.Field1 && Field3 == other.Field3;
+                return Field1 == other?.Field1 && Field3 == other?.Field3;
             }
         }
 
@@ -64,9 +64,9 @@ namespace SharpPulsar.Test.API
         {
             public bool Field1 { get; set; }
 
-            public bool Equals(Bar other)
+            public bool Equals(Bar? other)
             {
-                if (Field1 == other.Field1)
+                if (Field1 == other?.Field1)
                     return true;
                 return false;
             }
@@ -75,25 +75,25 @@ namespace SharpPulsar.Test.API
         public class NestedBar
         {
             public bool Field1 { get; set; }
-            public Bar Nested { get; set; }
+            public Bar? Nested { get; set; }
         }
 
 
         public class NestedBarList
         {
             public bool Field1 { get; set; }
-            public IList<Bar> List { get; set; }
+            public IList<Bar>? List { get; set; }
         }
 
 
         public class DerivedFoo : Foo, IEquatable<DerivedFoo>
         {
-            public string Field5 { get; set; }
+            public string? Field5 { get; set; }
             public int Field6 { get; set; }
-            public Foo Foo { get; set; }
-            public bool Equals(DerivedFoo other)
+            public Foo? Foo { get; set; }
+            public bool Equals(DerivedFoo? other)
             {
-                return Field5 == other.Field5 && Field6 == other.Field6 && Foo == other.Foo;
+                return Field5 == other?.Field5 && Field6 == other?.Field6 && Foo == other.Foo;
             }
         }
 
@@ -105,10 +105,10 @@ namespace SharpPulsar.Test.API
 
         public class DerivedDerivedFoo : DerivedFoo
         {
-            public string Field7 { get; set; }
+            public string? Field7 { get; set; }
             public int Field8 { get; set; }
-            public DerivedFoo DerivedFoo { get; set; }
-            public Foo Foo2 { get; set; }
+            public DerivedFoo? DerivedFoo { get; set; }
+            public Foo? Foo2 { get; set; }
         }
 
         public const string SchemaAvroNotAllowNull = @"{""type"":""record"",""name"":""Foo"",""namespace"":""org.apache.pulsar.client.impl.schema.SchemaTestUtils"",""fields"":[{""name"":""field1"",""type"":[""null"",""string""]," + @"""default"":null},{""name"":""field2"",""type"":[""null"",""string""],""default"":null},{""name"":""field3"",""type"":""int""},{""name"":""field4"",""type"":[""null"",{""type"":" + @"""record"",""name"":""Bar"",""fields"":[{""name"":""field1"",""type"":""boolean""}]}],""default"":null},{""name"":""color"",""type"":[""null"",{""type"":""enum"",""name"":""Color""," + @"""symbols"":[""RED"",""BLUE""]}],""default"":null},{""name"":""fieldUnableNull"",""type"":""string"",""default"":""defaultValue""}]}";

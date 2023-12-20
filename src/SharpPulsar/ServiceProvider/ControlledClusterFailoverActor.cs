@@ -77,6 +77,7 @@ namespace SharpPulsar.ServiceProvider
             var handler = new HttpClientHandler
             {
                 AllowAutoRedirect = true,
+                UseProxy = true,
                 MaxAutomaticRedirections = DefaultMaxRedirects
             };
             var client = new HttpClient(handler)
@@ -119,6 +120,7 @@ namespace SharpPulsar.ServiceProvider
                             pulsarClient.UpdateTlsTrustCertsFilePath(tlsTrustCertsFilePath);
                         }
                         pulsarClient.UpdateServiceUrl(ServiceUrl);
+                        pulsarClient.ReloadLookUp();
                         _currentPulsarServiceUrl = ServiceUrl;
                         currentControlledConfiguration = controlledConfiguration;
                     }
@@ -154,11 +156,11 @@ namespace SharpPulsar.ServiceProvider
 
         protected internal class ControlledConfiguration
         {
-            internal string ServiceUrl;
-            internal string TlsTrustCertsFilePath;
+            internal string ServiceUrl = default;
+            internal string TlsTrustCertsFilePath = default;
 
-            internal string AuthPluginClassName;
-            internal string AuthParamsString;
+            internal string AuthPluginClassName = default;
+            internal string AuthParamsString = default;
 
             public virtual string ToJson()
             {

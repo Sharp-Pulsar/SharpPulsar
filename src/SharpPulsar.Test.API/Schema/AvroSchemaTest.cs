@@ -33,15 +33,15 @@ namespace SharpPulsar.Test.API.Schema
     {
         private class DefaultStruct
         {
-            public int Field1 { get; set; }
-            public string Field2 { get; set; }
+            public int? Field1 { get; set; }
+            public string? Field2 { get; set; }
             public long? Field3 { get; set; }
         }
 
         private class StructWithAnnotations
         {
-            public int Field1 { get; set; }
-            public string Field2 { get; set; }
+            public int? Field1 { get; set; }
+            public string? Field2 { get; set; }
             public long? Field3 { get; set; }
         }
 
@@ -53,10 +53,11 @@ namespace SharpPulsar.Test.API.Schema
             public long TimeMillis { get; set; }
             public long TimestampMicros { get; set; }
             public long TimeMicros { get; set; }            
-            public bool Equals(SchemaLogicalType other)
+            public bool Equals(SchemaLogicalType? other)
             {
-                if (Decimal == other.Decimal && Date == other.Date && TimestampMillis == other.TimestampMillis
-                    && TimeMillis == other.TimeMillis && TimestampMicros == other.TimestampMicros && TimeMicros == other.TimeMicros)
+                if (Decimal == other?.Decimal && Date == other?.Date && TimestampMillis == other?.TimestampMillis
+                    && TimeMillis == other?.TimeMillis && TimestampMicros == other?.TimestampMicros 
+                    && TimeMicros == other?.TimeMicros)
                     return true;
                 return false;
             }
@@ -151,9 +152,9 @@ namespace SharpPulsar.Test.API.Schema
     {
         public bool Field1 { get; set; }
 
-        public bool Equals(Bar other)
+        public bool Equals(Bar? other)
         {
-            if (Field1 == other.Field1)
+            if (Field1 == other?.Field1)
                 return true;
             return false;
         }
@@ -162,19 +163,20 @@ namespace SharpPulsar.Test.API.Schema
     public class Foo : IEquatable<Foo>
     {
         public Color Color { get; set; }
-        public string Field1 { get; set; }
-        public string Field2 { get; set; }
-        public string Field3 { get; set; }
-        public Bar Field4 { get; set; }
-        public string Field5 { get; set; }
+        public string? Field1 { get; set; } 
+        public  string? Field2 { get; set; }
+        public string? Field3 { get; set; }
+        public Bar? Field4 { get; set; }
+        public string? Field5 { get; set; }
 
-        public bool Equals(Foo other)
+        public bool Equals(Foo? other)
         {
-            if (Field1 == other.Field1 && Field2 == other.Field2 && Field3 == other.Field3
-                && Field4?.Field1 == other.Field4?.Field1 && Field5 == other.Field5)
+            if (Field1 == other?.Field1 && Field2 == other?.Field2 && Field3 == other?.Field3
+                && Field4?.Field1 == other?.Field4?.Field1 && Field5 == other?.Field5)
                 return true;
             return false;
         }
+
     }
     [Serializable]
     public enum Color
@@ -189,10 +191,10 @@ namespace SharpPulsar.Test.API.Schema
         public DateTime CreatedTime { get; set; }
 
         public AvroDecimal Size { get; set; }
-        public string DayOfWeek { get; set; }
+        public required string DayOfWeek { get; set; }
 
         [Ignore]
-        public Avro.Schema Schema { get; set; }
+        public Avro.Schema? Schema { get; set; }
 
         public object Get(int fieldPos)
         {

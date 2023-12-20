@@ -79,7 +79,7 @@ namespace SharpPulsar.Test.API
 
             try
             {
-                var d = JsonSerializer.Serialize(batchMsgId, new JsonSerializerOptions { IgnoreNullValues = false });
+                var d = JsonSerializer.Serialize(batchMsgId, new JsonSerializerOptions {  });
                 //Assert.fail("Shouldn't be deserialized");
             }
             catch
@@ -93,7 +93,7 @@ namespace SharpPulsar.Test.API
 
             try
             {
-                var d = JsonSerializer.Serialize(batchMsgIdToDeserialize, new JsonSerializerOptions { IgnoreNullValues = false });
+                var d = JsonSerializer.Serialize(batchMsgIdToDeserialize, new JsonSerializerOptions { });
 
             }
             catch
