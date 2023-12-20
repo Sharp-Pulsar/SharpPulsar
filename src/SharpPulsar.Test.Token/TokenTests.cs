@@ -17,7 +17,7 @@ namespace SharpPulsar.Test.Token
         public TokenTests(ITestOutputHelper output, PulsarTokenFixture fixture)
         {
             _output = output;
-            _client = fixture.PulsarSystem.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult();
+            _client = fixture.PulsarSystem?.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult()!;
             _topic = $"persistent://public/default/token-{Guid.NewGuid()}";
         }
 

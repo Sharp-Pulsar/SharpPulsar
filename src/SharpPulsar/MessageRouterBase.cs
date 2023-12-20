@@ -10,7 +10,7 @@ namespace SharpPulsar
 		public abstract int ChoosePartition<T>(IMessage<T> msg, TopicMetadata metadata);
 		public abstract int ChoosePartition<T>(IMessage<T> msg);
 
-        protected internal readonly IHash Hash;
+        protected internal readonly IHash Hash = default;
 
 		internal MessageRouterBase(HashingScheme hashingScheme)
 		{

@@ -58,7 +58,7 @@ namespace SharpPulsar.TransactionImpl
         private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
         private IActorRef _tcClient; //TransactionCoordinatorClientImpl
         private readonly List<IMessageId> _sendList;
-        private ICancelable _timeout = null;
+        //private ICancelable _timeout = null;
         public IStash Stash { get; set; }
         private readonly TxnID _txnId;
         private TaskCompletionSource<object> _opFuture;

@@ -255,7 +255,7 @@ namespace SharpPulsar.Shared
 			}
 		}
 
-        [System.Obsolete]
+        
         public static SchemaType ValueOf(int Value)
 		{
 			switch (Value)

@@ -116,7 +116,7 @@ namespace SharpPulsar
 
         private readonly bool _readCompacted;
         private readonly bool _resetIncludeHead;
-        private readonly bool _poolMessages = false;
+        //private readonly bool _poolMessages = false;
 
 
         private readonly ActorSystem _actorSystem;

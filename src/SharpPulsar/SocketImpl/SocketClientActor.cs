@@ -45,9 +45,6 @@ namespace SharpPulsar.SocketImpl
 
         private ChunkingPipeline _pipeline;
 
-        public event Action OnConnect;
-        public event Action OnDisconnect;
-
         private PipeReader _pipeReader;
 
         private PipeWriter _pipeWriter;
