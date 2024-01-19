@@ -98,8 +98,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tutorials", "Tutorials\Tuto
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Token", "src\SharpPulsar.Test.Token\SharpPulsar.Test.Token.csproj", "{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.NBench", "src\SharpPulsar.Test.NBench\SharpPulsar.Test.NBench.csproj", "{D1ED187C-16BA-4067-8D09-8FDAD92C64B4}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar", "src\SharpPulsar\SharpPulsar.csproj", "{DE4A02EA-CEE0-462A-832A-5BDDEFB339B9}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.API", "src\SharpPulsar.Test.API\SharpPulsar.Test.API.csproj", "{229C808B-F1E2-4AC5-8B30-42E1E45DADBB}"
@@ -138,10 +136,6 @@ Global
 		{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D1ED187C-16BA-4067-8D09-8FDAD92C64B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D1ED187C-16BA-4067-8D09-8FDAD92C64B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D1ED187C-16BA-4067-8D09-8FDAD92C64B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D1ED187C-16BA-4067-8D09-8FDAD92C64B4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DE4A02EA-CEE0-462A-832A-5BDDEFB339B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DE4A02EA-CEE0-462A-832A-5BDDEFB339B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE4A02EA-CEE0-462A-832A-5BDDEFB339B9}.Release|Any CPU.ActiveCfg = Release|Any CPU

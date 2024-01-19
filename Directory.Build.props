@@ -1,28 +1,28 @@
 
 <Project>
   <PropertyGroup>
-    <AkkaVersion>1.5.14</AkkaVersion>
+    <AkkaVersion>1.5.15</AkkaVersion>
     <AkkaLoggerSerilogVersion>1.5.12.1</AkkaLoggerSerilogVersion>
     <SerilogSinksFileVersion>5.0.0</SerilogSinksFileVersion>
     <ApacheAvroVersion>1.11.3</ApacheAvroVersion>
     <AppMetricsConcurrencyVersion>4.3.0</AppMetricsConcurrencyVersion>
     <AvroSchemaGeneratorVersion>2.10.0</AvroSchemaGeneratorVersion>
     <DotNettyCommonVersion>0.7.5</DotNettyCommonVersion>
-    <GoogleProtobufVersion>3.25.1</GoogleProtobufVersion>
+    <GoogleProtobufVersion>3.25.2</GoogleProtobufVersion>
     <IdentityModelVersion>6.2.0</IdentityModelVersion>
     <JsonSubTypesVersion>2.0.1</JsonSubTypesVersion>
     <K4osCompressionLZ4Version>1.3.6</K4osCompressionLZ4Version>
     <MicrosoftCSharpVersion>4.7.0</MicrosoftCSharpVersion>
-    <MicrosoftExtensionsApiDescriptionClientVersion>8.0.0</MicrosoftExtensionsApiDescriptionClientVersion>
+    <MicrosoftExtensionsApiDescriptionClientVersion>8.0.1</MicrosoftExtensionsApiDescriptionClientVersion>
     <MicrosoftExtensionsLoggingVersion>8.0.0</MicrosoftExtensionsLoggingVersion>
     <MicrosoftIORecyclableMemoryStreamVersion>3.0.0</MicrosoftIORecyclableMemoryStreamVersion>
     <MicrosoftRestClientRuntimeVersion>2.3.24</MicrosoftRestClientRuntimeVersion>
     <NagerPublicSuffixVersion>2.4.0</NagerPublicSuffixVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NitoAsyncExVersion>5.1.2</NitoAsyncExVersion>
-    <NodaTimeVersion>3.1.9</NodaTimeVersion>
+    <NodaTimeVersion>3.1.10</NodaTimeVersion>
     <DocfxVersion>2.67.5</DocfxVersion>
-    <NSwagApiDescriptionClientVersion>13.20.0</NSwagApiDescriptionClientVersion>
+    <NSwagApiDescriptionClientVersion>14.0.2</NSwagApiDescriptionClientVersion>
     <OpenTelemetryVersion>1.7.0</OpenTelemetryVersion>
     <PortableBouncyCastleVersion>1.9.0</PortableBouncyCastleVersion>
     <ProNBenchxUnitVersion>2.0.0</ProNBenchxUnitVersion>
