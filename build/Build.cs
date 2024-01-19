@@ -54,7 +54,7 @@ partial class Build : NukeBuild
 
     [Required][Solution] public readonly Solution Solution;
     [Required][GitRepository] public readonly GitRepository GitRepository;
-    [Required][GitVersion(Framework = "net6.0")] public readonly GitVersion GitVersion = default!;
+    [Required][GitVersion(Framework = "net8.0")] public readonly GitVersion GitVersion = default!;
     [CI] public readonly GitHubActions GitHubActions;
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
 
