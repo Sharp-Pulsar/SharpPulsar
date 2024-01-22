@@ -10,6 +10,7 @@ using SharpPulsar.Events;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Trino;
 using System.Collections.Generic;
+using SharpPulsar.Client;
 
 namespace SharpPulsar
 {

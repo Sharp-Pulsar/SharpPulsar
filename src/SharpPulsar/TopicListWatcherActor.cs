@@ -13,6 +13,7 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Client;
 
 namespace SharpPulsar
 {

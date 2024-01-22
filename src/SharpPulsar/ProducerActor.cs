@@ -4,6 +4,7 @@ using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
+using SharpPulsar.Client;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Entity;

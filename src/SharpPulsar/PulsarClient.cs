@@ -33,7 +33,7 @@ namespace SharpPulsar
     public class PulsarClient : IPulsarClient, IDisposable
     {
         private readonly IActorRef _client;
-        internal IActorRef Client { get { return _client; } }   
+        internal IActorRef Client { get { return _client; } }
         private readonly IActorRef _transactionCoordinatorClient;
         private readonly ClientConfigurationData _clientConfigurationData;
         private readonly ActorSystem _actorSystem;
@@ -42,7 +42,7 @@ namespace SharpPulsar
         private readonly IActorRef _cnxPool;
         internal IActorRef CnxPool { get { return _cnxPool; } }
         private IActorRef _lookup;
-        internal IActorRef Lookup { get { return _lookup; } }   
+        internal IActorRef Lookup { get { return _lookup; } }
         private readonly IActorRef _generator;
         internal IActorRef Generator { get { return _generator; } }
         public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
@@ -276,8 +276,8 @@ namespace SharpPulsar
                     if (conf.ReceiverQueueSize == 0)
                         _actorSystem.ActorOf(ZeroQueueConsumer<T>.Prop(_client, consumerId, state, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
                     else
-                       _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
-                    
+                        _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, false, null, schema, true, _clientConfigurationData, tcs));
+
                     cnsr = await tcs.Task.ConfigureAwait(false);
 
                     _client.Tell(new AddConsumer(cnsr));
@@ -615,7 +615,7 @@ namespace SharpPulsar
             {
                 await _client.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
             }
-            catch   
+            catch
             {
 
             }
@@ -816,7 +816,7 @@ namespace SharpPulsar
                 _generator.GracefulStop(TimeSpan.FromMilliseconds(1000)).GetAwaiter().GetResult();
             }
             catch { }
-            
+
         }
         #endregion
     }

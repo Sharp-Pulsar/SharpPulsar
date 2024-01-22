@@ -4,7 +4,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 
-namespace SharpPulsar.SocketImpl
+namespace SharpPulsar.Client.Internal
 {
     internal class HeartbeatEvent
     {

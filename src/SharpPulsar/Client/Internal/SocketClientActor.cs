@@ -1,38 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Configuration;
-using SharpPulsar.SocketImpl.Help;
-using SharpPulsar.TransactionImpl;
 using SharpPulsar.Auth;
-using SharpPulsar.Messages.Transaction;
 using System.IO;
 using System.Net.Security;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Buffers;
-using Org.BouncyCastle.Bcpg;
 using SharpPulsar.Protocol.Proto;
 using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol;
-using System.Reactive;
+using SharpPulsar.Client.Internal.Help;
 
-namespace SharpPulsar.SocketImpl
+namespace SharpPulsar.Client.Internal
 {
     internal sealed class SocketClientActor : ReceiveActor
     {
-        private readonly Socket _socket;
+        private readonly  Socket _socket;
         private readonly X509Certificate2Collection _clientCertificates;
         private readonly X509Certificate2 _trustedCertificateAuthority;
         private readonly ClientConfigurationData _clientConfiguration;
@@ -53,14 +47,19 @@ namespace SharpPulsar.SocketImpl
 
         private readonly DnsEndPoint _server;
         private IActorRef _client;
+        //private IActorRef _self;
 
         private readonly string _connectonId = string.Empty;
-        private bool _start = true;    
+        private bool _start = true;
+        //private ICancelable _socketkCancellable;
+        //private readonly IScheduler _scheduler;
 
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         public SocketClientActor(IActorRef client, ClientConfigurationData conf, DnsEndPoint server, string hostName)
         {
+            //_scheduler = Context.System.Scheduler;
             _client = client;
+            //_self = Self;
             var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _socket = clientSocket;
             _server = server;
@@ -95,9 +94,93 @@ namespace SharpPulsar.SocketImpl
 
                 _pipeWriter = PipeWriter.Create(networkStream);
                 var m = Context.ActorOf(SendMessageActor.Prop(_pipeline));
-                Sender.Tell(m); 
+                Sender.Tell(m);
 
             });
+            // THIS IS NOT FAST ENOUGH
+            /*ReceiveAsync<ClientMessage>(async _ =>
+            {
+                try
+                {
+                    _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
+
+                    var result = await _pipeReader.ReadAsync().ConfigureAwait(false);
+
+                    var buffer = result.Buffer;
+                    var length = (int)buffer.Length;
+                    if (length >= 8)
+                    {
+                        using var stream = new MemoryStream(buffer.ToArray());
+                        using var reader = new BinaryReader(stream);
+                        // Wire format
+                        // [TOTAL_SIZE] [CMD_SIZE] [CMD] [BROKER_ENTRY_METADATA_MAGIC_NUMBER] [BROKER_ENTRY_METADATA_SIZE] [BROKER_ENTRY_METADATA] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
+                        // | 4 bytes  | |4 bytes | |CMD_SIZE|
+
+                        var frameSize = reader.ReadInt32().IntFromBigEndian();
+                        var totalSize = frameSize + 4;
+                        if (length >= totalSize)
+                        {
+                            var consumed = buffer.GetPosition(totalSize);
+                            var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
+                            if (command.type == BaseCommand.Type.Message)
+                            {
+                                BrokerEntryMetadata brokerEntryMetadata = null;
+                                var brokerEntryMetadataPosition = stream.Position;
+                                var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
+                                if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
+                                {
+                                    brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                }
+                                else
+                                    //we need to rewind to the brokerEntryMetadataPosition
+                                    stream.Seek(brokerEntryMetadataPosition, SeekOrigin.Begin);
+
+                                var magicNumber = (uint)reader.ReadInt16().Int16FromBigEndian();
+                                var hasMagicNumber = magicNumber == 3585;
+                                var messageCheckSum = (uint)reader.ReadInt32().IntFromBigEndian();
+
+                                var metadataOffset = stream.Position;
+                                var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                var payloadOffset = stream.Position;
+                                var metadataLength = (int)(payloadOffset - metadataOffset);
+                                var payloadLength = totalSize - (int)payloadOffset;
+                                var payload = reader.ReadBytes(payloadLength);
+                                stream.Seek(metadataOffset, SeekOrigin.Begin);
+                                var calculatedCheckSum = CRC32C.Get(0u, stream, metadataLength + payloadLength);
+                                var hasValidCheckSum = messageCheckSum == calculatedCheckSum;
+                                _client.Tell(new Reader(command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
+                                //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
+                            }
+                            else
+                            {
+                                _client.Tell(new Reader(command, null, null, ReadOnlySequence<byte>.Empty, false, false));
+                            }
+                            if (result.IsCompleted)
+                                _pipeReader.AdvanceTo(buffer.Start, buffer.End);
+                            else
+                                _pipeReader.AdvanceTo(consumed);
+                        }
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex.ToString());
+                }
+                
+            }); */
+            /*Receive<Start>(_ =>
+            {
+                if(_start) return;  
+                _socketkCancellable = _scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(100),
+                        TimeSpan.FromMilliseconds(100),
+                        () => 
+                        {
+                            _self.Tell(ClientMessage.Instance);
+                        });
+                _start = true;
+            });*/
+
             ReceiveAsync<Start>(async _ =>
             {
                 try
@@ -105,7 +188,7 @@ namespace SharpPulsar.SocketImpl
                     while (_start)
                     {
                         _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
-                        
+
                         var result = await _pipeReader.ReadAsync().ConfigureAwait(false);
 
                         var buffer = result.Buffer;
@@ -155,7 +238,7 @@ namespace SharpPulsar.SocketImpl
                                 }
                                 else
                                 {
-                                    _client.Tell(new Reader(command, null, null, ReadOnlySequence<byte>.Empty, false, false));                                    
+                                    _client.Tell(new Reader(command, null, null, ReadOnlySequence<byte>.Empty, false, false));
                                 }
                                 if (result.IsCompleted)
                                     _pipeReader.AdvanceTo(buffer.Start, buffer.End);
@@ -164,7 +247,7 @@ namespace SharpPulsar.SocketImpl
                             }
 
                         }
-
+                        //await Task.Delay(TimeSpan.FromMilliseconds(100));
                     }
                 }
                 catch (Exception ex)
@@ -246,7 +329,7 @@ namespace SharpPulsar.SocketImpl
 
                 // Try each address in turn, and return the socket opened for the first one that works.
                 ExceptionDispatchInfo lastException = null;
-                foreach (IPAddress address in serverAddresses)
+                foreach (var address in serverAddresses)
                 {
                     try
                     {
@@ -320,6 +403,8 @@ namespace SharpPulsar.SocketImpl
         {
             try
             {
+                //_pipeReader.CompleteAsync().ConfigureAwait(false).GetAwaiter();
+                //_socketkCancellable.Cancel();   
                 _start = false;
                 cancellation?.Cancel();
                 _pipeReader?.Complete();
@@ -336,11 +421,15 @@ namespace SharpPulsar.SocketImpl
         }
         internal readonly record struct Connect
         {
-            internal static Connect Instance = new Connect();   
+            internal static Connect Instance = new Connect();
         }
         internal readonly record struct Start
         {
             internal static Start Instance = new Start();
+        }
+        private readonly record struct ClientMessage
+        {
+            internal static ClientMessage Instance = new ClientMessage();
         }
         internal readonly record struct SendMessage
         {

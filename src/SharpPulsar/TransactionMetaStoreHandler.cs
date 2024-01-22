@@ -16,6 +16,7 @@ using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 using SharpPulsar.Messages.Consumer;
 using Akka.Util.Internal;
 using SharpPulsar.TransactionImpl;
+using SharpPulsar.Client;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

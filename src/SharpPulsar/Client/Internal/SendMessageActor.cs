@@ -1,19 +1,19 @@
 ﻿using Akka.Actor;
-using SharpPulsar.SocketImpl.Help;
-using static SharpPulsar.SocketImpl.SocketClientActor;
+using SharpPulsar.Client.Internal.Help;
+using static SharpPulsar.Client.Internal.SocketClientActor;
 
-namespace SharpPulsar.SocketImpl
+namespace SharpPulsar.Client.Internal
 {
     internal sealed class SendMessageActor : ReceiveActor
     {
         private ChunkingPipeline _pipeline;
-        public SendMessageActor(ChunkingPipeline pipeline) 
-        { 
+        public SendMessageActor(ChunkingPipeline pipeline)
+        {
             _pipeline = pipeline;
             ReceiveAsync<SendMessage>(async message =>
             {
                 await _pipeline.Send(message.Message);
-                Sender.Tell(message);   
+                Sender.Tell(message);
             });
         }
         public static Props Prop(ChunkingPipeline pipeline)
