@@ -12,14 +12,14 @@
  * limitations under the License.
  */
 
-namespace SharpPulsar.SocketImpl.Help
+namespace SharpPulsar.Client.Internal.Help
 {
     using System;
     using System.Buffers;
     using System.IO;
     using System.Threading.Tasks;
 
-    public sealed class ChunkingPipeline
+    internal sealed class ChunkingPipeline
     {
         private readonly Stream _stream;
         private readonly int _chunkSize;

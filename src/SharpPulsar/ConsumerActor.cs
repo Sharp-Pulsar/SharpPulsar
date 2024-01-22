@@ -4,6 +4,7 @@ using ProtoBuf;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Builder;
+using SharpPulsar.Client;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;

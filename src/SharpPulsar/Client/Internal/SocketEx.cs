@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpPulsar.SocketImpl
+namespace SharpPulsar.Client.Internal
 {
-    public static class SocketEx
+    internal static class SocketEx
     {
         public static byte[] ToMessageBuffer(this string source)
         {
@@ -33,7 +33,7 @@ namespace SharpPulsar.SocketImpl
 
         public static ValueTask<FlushResult> SendMessageAsync(this PipeWriter writer, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken = default)
         {
-            foreach(var seq in buffer)
+            foreach (var seq in buffer)
                 writer.WriteAsync(seq, cancellationToken);
 
             return new ValueTask<FlushResult>();
