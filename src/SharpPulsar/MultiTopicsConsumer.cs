@@ -1517,7 +1517,11 @@ namespace SharpPulsar
         private TaskCompletionSource<IActorRef> CreateInternalConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
         {
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var internalBatchReceivePolicy = new BatchReceivePolicy.Builder().MaxNumMessages(Math.Max(conf.ReceiverQueueSize / 2, 1)).MaxNumBytes(-1).Timeout((int)TimeSpan.FromSeconds(1).TotalMilliseconds).Build();
+            var internalBatchReceivePolicy = new BatchReceivePolicy.Builder()
+                .MaxNumMessages(Math.Max(conf.ReceiverQueueSize / 2, 1))
+                .MaxNumBytes(-1)
+                .Timeout((int)TimeSpan.FromSeconds(1).TotalMilliseconds, TimeUnit.TimeUnit.MILLISECONDS)
+                .Build();
             conf.BatchReceivePolicy = internalBatchReceivePolicy;
             
             if (conf.ReceiverQueueSize == 0)

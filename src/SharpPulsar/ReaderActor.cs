@@ -34,7 +34,10 @@ namespace SharpPulsar
 {
     internal class ReaderActor<T>: ReceiveActor
 	{
-		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout(0).MaxNumMessages(1).Build();
+		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder()
+            .Timeout(0, TimeUnit.TimeUnit.MILLISECONDS)
+            .MaxNumMessages(1)
+            .Build();
 		private readonly IActorRef _consumer;
 		private readonly IActorRef _generator;
 

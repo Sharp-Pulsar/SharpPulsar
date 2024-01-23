@@ -1,4 +1,7 @@
 ﻿using System;
+using DotNetty.Common.Utilities;
+using SharpPulsar.TimeUnit;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -57,14 +60,19 @@ namespace SharpPulsar.Batch.Api
         /// Timeout: 100ms<p/>
         /// </para>
         /// </summary>
-        public static readonly BatchReceivePolicy DefaultPolicy = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100);
+        public static readonly BatchReceivePolicy DefaultPolicy = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100, TimeUnit.TimeUnit.MILLISECONDS, true);
+        public static readonly BatchReceivePolicy DefaultMultiTopicsDisablePolicy = new BatchReceivePolicy(
+            -1, 10 * 1024 * 1024, 100, TimeUnit.TimeUnit.MILLISECONDS, false);
 
-		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeoutMs)
+        private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeoutMs, TimeUnit.TimeUnit timeoutUnit,
+                               bool messagesFromMultiTopicsEnabled)
 		{
 			MaxNumMessages = maxNumMessages;
 			MaxNumBytes = maxNumBytes;
 			_timeout = timeoutMs;
-		}
+            _timeoutUnit = timeoutUnit;
+            _messagesFromMultiTopicsEnabled = messagesFromMultiTopicsEnabled;
+        }
 
 		/// <summary>
 		/// Max number of messages for a single batch receive, 0 or negative means no limit.
@@ -80,21 +88,30 @@ namespace SharpPulsar.Batch.Api
 		/// timeout for waiting for enough messages(enough number or enough bytes).
 		/// </summary>
 		private readonly int _timeout;
+        private readonly TimeUnit.TimeUnit _timeoutUnit;
 
+        
+       /// If it is false, one time `batchReceive()` only can receive the single topic messages,
+       /// the max messages and max size will not be strictly followed. (default: true).
+     
+        private readonly bool _messagesFromMultiTopicsEnabled;
 		public virtual void Verify()
 		{
 			if (MaxNumMessages <= 0 && MaxNumBytes <= 0 && _timeout <= 0)
 			{
-				throw new ArgumentException("At least " + "one of maxNumMessages, maxNumBytes, timeout must be specified.");
+				throw new ArgumentException("At least one of maxNumMessages, maxNumBytes, timeout must be specified.");
 			}
-			if (_timeout > 0)
+			if (_timeout > 0 /*&& _timeoutUnit == null*/)
 			{
 				throw new ArgumentException("Must set timeout unit for timeout.");
 			}
 		}
 
 		public virtual long TimeoutMs => _timeout;
-
+        public bool IsMessagesFromMultiTopicsEnabled()
+        {
+            return _messagesFromMultiTopicsEnabled;
+        }
 
         /// <summary>
 		/// Builder of BatchReceivePolicy.
@@ -104,8 +121,10 @@ namespace SharpPulsar.Batch.Api
 			private int _maxNumMessages;
 			private int _maxNumBytes;
 			private int _timeout;
+            private TimeUnit.TimeUnit _timeoutUnit;
+            private bool _messagesFromMultiTopicsEnabled = true;
 
-			public virtual Builder MaxNumMessages(int maxNumMessages)
+            public virtual Builder MaxNumMessages(int maxNumMessages)
 			{
 				_maxNumMessages = maxNumMessages;
 				return this;
@@ -117,15 +136,21 @@ namespace SharpPulsar.Batch.Api
 				return this;
 			}
 
-			public virtual Builder Timeout(int timeout)
+			public virtual Builder Timeout(int timeout, TimeUnit.TimeUnit timeUnit)
 			{
 				_timeout = timeout;
+                _timeoutUnit = timeUnit;
 				return this;
 			}
-
-			public virtual BatchReceivePolicy Build()
+            public Builder MessagesFromMultiTopicsEnabled(bool messagesFromMultiTopicsEnabled)
+            {
+                _messagesFromMultiTopicsEnabled = messagesFromMultiTopicsEnabled;
+                return this;
+            }
+            public virtual BatchReceivePolicy Build()
 			{
-				return new BatchReceivePolicy(_maxNumMessages, _maxNumBytes, _timeout);
+				return new BatchReceivePolicy(_maxNumMessages, _maxNumBytes, _timeout, _timeoutUnit,
+                    _messagesFromMultiTopicsEnabled);
 			}
 		}
 
@@ -136,7 +161,7 @@ namespace SharpPulsar.Batch.Api
 
 		public override string ToString()
 		{
-			return "BatchReceivePolicy{" + "maxNumMessages=" + MaxNumMessages + ", maxNumBytes=" + MaxNumBytes + ", timeout=" + _timeout+'}';
+			return "BatchReceivePolicy{" + "maxNumMessages=" + MaxNumMessages + ", maxNumBytes=" + MaxNumBytes + ", timeout=" + _timeout + ", timeoutUnit=" + _timeoutUnit + ", messagesFromMultiTopicsEnabled=" + _messagesFromMultiTopicsEnabled + '}';
 		}
 	}
 

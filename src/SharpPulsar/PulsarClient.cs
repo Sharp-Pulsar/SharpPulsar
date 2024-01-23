@@ -21,6 +21,7 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
+using SharpPulsar.Producer;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
@@ -817,6 +818,11 @@ namespace SharpPulsar
             }
             catch { }
 
+        }
+
+        TransactionBuilder IPulsarClient.NewTransaction()
+        {
+            throw new NotImplementedException();
         }
         #endregion
     }

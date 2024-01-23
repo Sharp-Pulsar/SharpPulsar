@@ -70,6 +70,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <ProjectReference Include="..\SharpPulsar.Admin\SharpPulsar.Admin.csproj" />
+    <ProjectReference Include="..\SharpPulsar.TimeUnit\SharpPulsar.TimeUnit.csproj" />
     <ProjectReference Include="..\SharpPulsar.Trino\SharpPulsar.Trino.csproj" />
     <None Update="SharpPulsar.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -79,7 +80,6 @@
   <ItemGroup>
     <Folder Include="Consumer\" />
     <Folder Include="Internal\" />
-    <Folder Include="Producer\" />
   </ItemGroup>
 
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
