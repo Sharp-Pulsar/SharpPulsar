@@ -183,16 +183,16 @@ namespace SharpPulsar.TimeUnit
             Func<long, long, int> excessNanos
         )
         {
-            this.Value = value;
-            this._ToNanos = toNanos;
-            this._ToTicks = toTicks;
-            this._ToMicros = toMicros;
-            this._ToMillis = toMillis;
-            this._ToSeconds = toSeconds;
-            this._ToMinutes = toMinutes;
-            this._ToHours = toHours;
-            this._ToDays = toDays;
-            this._ExcessNanos = excessNanos;
+            Value = value;
+            _ToNanos = toNanos;
+            _ToTicks = toTicks;
+            _ToMicros = toMicros;
+            _ToMillis = toMillis;
+            _ToSeconds = toSeconds;
+            _ToMinutes = toMinutes;
+            _ToHours = toHours;
+            _ToDays = toDays;
+            _ExcessNanos = excessNanos;
         }
 
         #endregion
@@ -208,7 +208,7 @@ namespace SharpPulsar.TimeUnit
         {
             if (timeout > 0)
             {
-                long Milliseconds = this.ToMilliseconds(timeout);
+                long Milliseconds = ToMilliseconds(timeout);
                 Thread.Sleep((int)Milliseconds);
             }
         }
@@ -223,7 +223,7 @@ namespace SharpPulsar.TimeUnit
         {
             if (timeout > 0)
             {
-                long Milliseconds = this.ToMilliseconds(timeout);
+                long Milliseconds = ToMilliseconds(timeout);
                 thread.Join((int)Milliseconds);
             }
         }
@@ -247,49 +247,49 @@ namespace SharpPulsar.TimeUnit
         {
             if (timeout > 0)
             {
-                long Milliseconds = this.ToMilliseconds(timeout);
+                long Milliseconds = ToMilliseconds(timeout);
                 Monitor.Wait(obj, (int)Milliseconds);
             }
         }
 
         public long ToNanoseconds(long duration)
         {
-            return this._ToNanos(duration);
+            return _ToNanos(duration);
         }
 
         public long ToTicks(long duration)
         {
-            return this._ToTicks(duration);
+            return _ToTicks(duration);
         }
 
         public long ToMicroseconds(long duration)
         {
-            return this._ToMicros(duration);
+            return _ToMicros(duration);
         }
 
         public long ToMilliseconds(long duration)
         {
-            return this._ToMillis(duration);
+            return _ToMillis(duration);
         }
 
         public long ToSeconds(long duration)
         {
-            return this._ToSeconds(duration);
+            return _ToSeconds(duration);
         }
 
         public long ToMinutes(long duration)
         {
-            return this._ToMinutes(duration);
+            return _ToMinutes(duration);
         }
 
         public long ToHours(long duration)
         {
-            return this._ToHours(duration);
+            return _ToHours(duration);
         }
 
         public long ToDays(long duration)
         {
-            return this._ToDays(duration);
+            return _ToDays(duration);
         }
 
         /// <summary>
@@ -307,7 +307,7 @@ namespace SharpPulsar.TimeUnit
         /// positively overflow</returns>
         public long Convert(long sourceDuration, TimeUnit sourceUnit)
         {
-            switch (this.Value)
+            switch (Value)
             {
                 case _DAYS:
                     {
@@ -343,36 +343,36 @@ namespace SharpPulsar.TimeUnit
                     }
                 default:
                     {
-                        throw new ArgumentException($"The time unit {this.Value} is unrecognized.");
+                        throw new ArgumentException($"The time unit {Value} is unrecognized.");
                     }
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(this, obj))
             {
                 return true;
             }
 
-            if (obj == null || this.GetType() != obj.GetType())
+            if (obj == null || GetType() != obj.GetType())
             {
                 return false;
             }
 
-            TimeUnit Other = (TimeUnit)obj;
+            TimeUnit? Other = (TimeUnit)obj;
 
-            return this.Value == Other.Value;
+            return Value == Other.Value;
         }
 
         public override string ToString()
         {
-            return this.Value;
+            return Value;
         }
 
         public override int GetHashCode()
         {
-            return Hashing.Hash(this.Value);
+            return Hashing.Hash(Value);
         }
 
         public static bool operator ==(TimeUnit left, TimeUnit right)
@@ -407,7 +407,7 @@ namespace SharpPulsar.TimeUnit
         /// <returns>The number of excess nanoseconds</returns>
         private int ExcessNanos(long duration, long milliseconds)
         {
-            return this._ExcessNanos(duration, milliseconds);
+            return _ExcessNanos(duration, milliseconds);
         }
 
         /// <summary>

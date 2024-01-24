@@ -17,7 +17,7 @@ namespace SharpPulsar.Test
 
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
-        private TaskCompletionSource<PulsarClient> _tcs;
+        //private TaskCompletionSource<PulsarClient> _tcs;
         private PulsarSystem _system;
         private PulsarClientConfigBuilder _configBuilder;
         public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
