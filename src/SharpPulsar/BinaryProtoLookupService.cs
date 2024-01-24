@@ -40,7 +40,7 @@ using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMe
 /// </summary>
 namespace SharpPulsar
 {
-    public class BinaryProtoLookupService : ReceiveActor, IWithUnboundedStash
+    internal class BinaryProtoLookupService : ReceiveActor, IWithUnboundedStash
     {
         private readonly ServiceNameResolver _serviceNameResolver;
         private readonly bool _useTls;
