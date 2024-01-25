@@ -1,1 +1,7 @@
-{"type":"sn_service_account","client_id":"0BKIjB4D8X3H40pkJfn6T0KpLLqmEOzy","client_secret":"3WUI9Ha754C7k3lCO-zvE4KlORvvsAc-7ro9D9i6pUUL8jRsjLXnAe-kBIwGQ4WL","client_email":"eabanonu@o-r7y4o.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud/"}
+{
+  "type": "client_credentials",
+  "client_id": "Do5UQ4XX73IYU8DzWIHiSADUI1cB9Upb",
+  "client_secret": "a3enxPggDZTEODmQIWvaHMiIyyjZfjB6RW1KpEB5vQ7EGlB0y-dn8ePOG_5Tzwfq",
+  "client_email": "eabanonu@churchos.com",
+  "issuer_url": "https://churchos.auth0.com"
+}
