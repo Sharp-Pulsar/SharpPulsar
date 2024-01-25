@@ -264,7 +264,7 @@ namespace SharpPulsar.Test.API.Schema
             try
             {
                 keyValueSchema.Decode(encodeBytes);
-                Assert.True(false, "This method cannot be used under this SEPARATED encoding type");
+                Assert.Fail("This method cannot be used under this SEPARATED encoding type");
             }
             catch (SchemaSerializationException e)
             {

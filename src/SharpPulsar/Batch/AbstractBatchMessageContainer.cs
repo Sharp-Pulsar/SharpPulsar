@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.Producer;
 using SharpPulsar.Protocol.Proto;
 
 /// <summary>

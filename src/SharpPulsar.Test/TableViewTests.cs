@@ -45,7 +45,7 @@ namespace SharpPulsar.Test
             var count = 20;
             var keys = await PublishMessages(topic, count, false);
 
-            var tv = await _client.NewTableViewBuilder(ISchema<string>.Bytes)
+            var tv = await _client.NewTableView(ISchema<string>.Bytes)
                 .Topic(topic)
                 .AutoUpdatePartitionsInterval(TimeSpan.FromSeconds(60))
                 .CreateAsync();
@@ -83,7 +83,7 @@ namespace SharpPulsar.Test
             var count = 20;
             var keys = await PublishMessages(topic, count, false);
 
-            var tv = await _client.NewTableViewBuilder(ISchema<string>.Bytes).Topic(topic)
+            var tv = await _client.NewTableView(ISchema<string>.Bytes).Topic(topic)
                 .AutoUpdatePartitionsInterval(TimeSpan.FromSeconds(5)).CreateAsync();
 
             _output.WriteLine($"start tv size: {tv.Size}");

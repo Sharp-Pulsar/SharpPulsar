@@ -40,7 +40,7 @@ using SharpPulsar.Messages;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar
+namespace SharpPulsar.Producer
 {
     internal class PartitionedProducerActor<T> : ProducerActorBase<T>
     {
@@ -95,7 +95,7 @@ namespace SharpPulsar
                     break;
             }
 
-            
+
             _firstPartitionIndex = 0;
             // start track and auto subscribe partition increasement
             if (conf.AutoUpdatePartitions)
@@ -103,8 +103,8 @@ namespace SharpPulsar
                 _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
                 _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
-            
-            Receive<GetProducers>( _ => 
+
+            Receive<GetProducers>(_ =>
             {
                 Sender.Tell(new SetProducers(_producer));
             });
@@ -128,7 +128,7 @@ namespace SharpPulsar
             {
                 try
                 {
-                   await InternalSendWithTxn(m.Message, m.Txn, m.Callback);
+                    await InternalSendWithTxn(m.Message, m.Txn, m.Callback);
                 }
                 catch (Exception ex)
                 {
@@ -155,7 +155,7 @@ namespace SharpPulsar
 
             return await Task.FromResult(0);
         }
-       
+
 
         private async ValueTask Start()
         {
@@ -173,7 +173,7 @@ namespace SharpPulsar
                 var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
                 var actor = _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
                 try
-                {                                      
+                {
                     var producer = await tcs.Task;
                     Client.Tell(new AddProducer(producer));
                     _producer.TryAdd((int)producerId, producer);
@@ -186,8 +186,8 @@ namespace SharpPulsar
                 }
 
             }
-           //await CloseAsync();
-           _producers.TrySetResult(_producer);
+            //await CloseAsync();
+            _producers.TrySetResult(_producer);
         }
         private async Task CloseAsync()
         {
@@ -241,7 +241,7 @@ namespace SharpPulsar
             }
             return;
         }
-        private void ConnectionState(TaskCompletionSource<IMessageId> callback) 
+        private void ConnectionState(TaskCompletionSource<IMessageId> callback)
         {
             switch (State.ConnectionState)
             {
@@ -264,7 +264,7 @@ namespace SharpPulsar
                     return;
             }
         }
-        private async ValueTask Internal(IMessage<T> message) 
+        private async ValueTask Internal(IMessage<T> message)
         {
             var partition = ChoosePartition(message, _topicMetadata);
 
@@ -317,39 +317,39 @@ namespace SharpPulsar
                 return MathUtils.SignSafeMod(msg.Key.GetHashCode(), metadata.NumPartitions());
             }
 
-            return _firstPartitionIndex; 
+            return _firstPartitionIndex;
         }
-      
-		protected internal override bool Connected()
-		{
-			return true;
-		}
+
+        protected internal override bool Connected()
+        {
+            return true;
+        }
 
         protected override void PostStop()
         {
-			_partitionsAutoUpdateTimeout?.Cancel();    
+            _partitionsAutoUpdateTimeout?.Cancel();
 
-			base.PostStop();
+            base.PostStop();
         }
 
-		protected internal override async ValueTask<IProducerStats> Stats()
-		{
-			if (_stats == null)
-			{
-				return null;
-			}
-			_stats.Reset();
-            await Task.Delay(10);    
-			return _stats;
-		}
-        
+        protected internal override async ValueTask<IProducerStats> Stats()
+        {
+            if (_stats == null)
+            {
+                return null;
+            }
+            _stats.Reset();
+            await Task.Delay(10);
+            return _stats;
+        }
+
         internal string HandlerName
-		{
-			get
-			{
-				return "partition-producer";
-			}
-		}
+        {
+            get
+            {
+                return "partition-producer";
+            }
+        }
         internal class TopicsPartitionChangedListener : IPartitionsChangedListener
         {
             private readonly PartitionedProducerActor<T> _outerInstance;
@@ -362,9 +362,9 @@ namespace SharpPulsar
             // Check partitions changes of passed in topics, and add new topic partitions.
             public async ValueTask OnTopicsExtended(ICollection<string> topicsExtended)
             {
-                
+
                 if (topicsExtended.Count == 0 || !topicsExtended.Contains(_outerInstance.Topic))
-                {                    
+                {
                     return;
                 }
                 var topicName = TopicName.Get(_outerInstance.Topic);
@@ -374,8 +374,8 @@ namespace SharpPulsar
                 if (result.Failed)
                 {
                     _outerInstance._log.Error($"[{_outerInstance.Topic}] Auto getting partitions failed");
-                    
-                    throw result.Exception; 
+
+                    throw result.Exception;
                 }
 
                 var metadata = result.ConvertTo<PartitionedTopicMetadata>();
@@ -386,7 +386,7 @@ namespace SharpPulsar
                 {
                     _outerInstance._log.Debug($"[{_outerInstance.Topic}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
                 }
-                try 
+                try
                 {
                     if (oldPartitionNumber == currentPartitionNumber)
                     {
@@ -425,8 +425,8 @@ namespace SharpPulsar
                                 catch (Exception ex)
                                 {
                                     _outerInstance._log.Warning($"[{_outerInstance.Topic}] fail create producers for extended partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-                                    Enumerable.Range(oldPartitionNumber, (_outerInstance._producer.Count) - oldPartitionNumber)
-                                        .ForEach( i =>  _outerInstance._producer.Remove(i, out var a));
+                                    Enumerable.Range(oldPartitionNumber, _outerInstance._producer.Count - oldPartitionNumber)
+                                        .ForEach(i => _outerInstance._producer.Remove(i, out var a));
 
                                     _outerInstance._log.Error(ex.ToString());
                                 }
@@ -444,30 +444,30 @@ namespace SharpPulsar
                 }
                 catch (Exception ex)
                 {
-                    _outerInstance._log.Error($"[{_outerInstance.Topic}] Auto getting partitions failed { ex}");
+                    _outerInstance._log.Error($"[{_outerInstance.Topic}] Auto getting partitions failed {ex}");
                     throw;
-                }    
-                
-                
+                }
+
+
             }
         }
-        
+
         private IList<string> GetPartitionsForTopic(TopicName topicName, PartitionedTopicMetadata metadata)
-		{
-			if (metadata.Partitions > 0)
-			{
-				IList<string> partitions = new List<string>(metadata.Partitions);
-				for (var i = 0; i < metadata.Partitions; i++)
-				{
-					partitions.Add(topicName.GetPartition(i).ToString());
-				}
-				return partitions;
-			}
-			else
-			{
-				return new List<string> { topicName.ToString() };
-			}
-		}
+        {
+            if (metadata.Partitions > 0)
+            {
+                IList<string> partitions = new List<string>(metadata.Partitions);
+                for (var i = 0; i < metadata.Partitions; i++)
+                {
+                    partitions.Add(topicName.GetPartition(i).ToString());
+                }
+                return partitions;
+            }
+            else
+            {
+                return new List<string> { topicName.ToString() };
+            }
+        }
         internal void Run()
         {
             try
@@ -494,14 +494,14 @@ namespace SharpPulsar
             }
         }
         protected internal override long LastDisconnectedTimestamp()
-        {            
+        {
             return 0;
         }
 
         public readonly record struct ExtendTopics
         {
-			public static ExtendTopics Instance = new ExtendTopics();
+            public static ExtendTopics Instance = new ExtendTopics();
         }
-	}
+    }
 
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Avro.Generic;
 using SharpPulsar.Builder;
@@ -85,7 +86,7 @@ namespace SharpPulsar.Test
                 return null;
 
             return JsonSerializer.SerializeToUtf8Bytes(obj,
-                     new JsonSerializerOptions { WriteIndented = false, IgnoreNullValues = true });
+                     new JsonSerializerOptions { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull});
         }
 
         // Convert a byte array to an Object

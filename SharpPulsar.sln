@@ -112,6 +112,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Admin.Test", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Testcontainers.Pulsar", "src\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj", "{A434737B-2438-4B3B-AA2A-D15E9278B0D7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.TimeUnit", "src\SharpPulsar.TimeUnit\SharpPulsar.TimeUnit.csproj", "{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -164,6 +166,10 @@ Global
 		{A434737B-2438-4B3B-AA2A-D15E9278B0D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A434737B-2438-4B3B-AA2A-D15E9278B0D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A434737B-2438-4B3B-AA2A-D15E9278B0D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
