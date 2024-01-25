@@ -13,6 +13,7 @@ using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
+using SharpPulsar.Consumer;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Schema;
@@ -818,11 +819,6 @@ namespace SharpPulsar
             }
             catch { }
 
-        }
-
-        TransactionBuilder IPulsarClient.NewTransaction()
-        {
-            throw new NotImplementedException();
         }
         #endregion
     }

@@ -61,7 +61,7 @@ using SubscriptionInitialPosition = SharpPulsar.Common.SubscriptionInitialPositi
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar
+namespace SharpPulsar.Consumer
 {
 
     internal class ConsumerActor<T> : ConsumerActorBase<T>
@@ -163,7 +163,7 @@ namespace SharpPulsar
 
         private IActorRef _clientCnxUsedForConsumerRegistration;
         private readonly Dictionary<string, long> _properties = new Dictionary<string, long>();
-        
+
 
         public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture) : this
             (consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfigurationData, subscribeFuture)
@@ -181,7 +181,7 @@ namespace SharpPulsar
             _topicName = TopicName.Get(topic);
             _cnxPool = cnxPool;
             _actorSystem = Context.System;
-            _parentConsumerHasListener = parentConsumerHasListener; 
+            _parentConsumerHasListener = parentConsumerHasListener;
             _lookup = lookup;
             _self = Self;
             _tokenSource = new CancellationTokenSource();
@@ -231,7 +231,7 @@ namespace SharpPulsar
             {
                 if (conf.AckTimeoutRedeliveryBackoff != null)
                 {
-                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageRedeliveryTracker<T>.Prop(Self,UnAckedChunckedMessageIdSequenceMap, conf), "UnAckedMessageRedeliveryTracker");
+                    _unAckedMessageTracker = Context.ActorOf(UnAckedMessageRedeliveryTracker<T>.Prop(Self, UnAckedChunckedMessageIdSequenceMap, conf), "UnAckedMessageRedeliveryTracker");
                 }
                 else
                 {
@@ -378,7 +378,7 @@ namespace SharpPulsar
 
         public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(() =>new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
+            return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
         }
         protected internal override void CompleteOpBatchReceive(OpBatchReceive op)
         {
@@ -452,7 +452,7 @@ namespace SharpPulsar
                     si = null;
                 }
                 // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
-                var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
+                var startMessageRollbackDuration = _startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId) ? _startMessageRollbackDurationInSec : 0;
                 var request = Commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy, Conf.SubscriptionProperties, ConsumerEpoch);
 
                 var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), _clientConfigurationData.OperationTimeout).ConfigureAwait(false);
@@ -499,7 +499,7 @@ namespace SharpPulsar
 
                             _client.Tell(new CleanupConsumer(_self));
                         }
-                        else if (e is PulsarClientException.TopicDoesNotExistException)
+                        else if (e is TopicDoesNotExistException)
                         {
                             var msg = $"[{Topic}][{Subscription}] Closed consumer because topic does not exist anymore";
                             State.ConnectionState = HandlerState.State.Failed;
@@ -580,7 +580,7 @@ namespace SharpPulsar
             });
             Receive<Messages.Consumer.Receive>(receive =>
             {
-                _receives.Enqueue((Sender, receive));   
+                _receives.Enqueue((Sender, receive));
             });
             Receive<SendState>(_ =>
             {
@@ -595,7 +595,8 @@ namespace SharpPulsar
             {
                 OnNegativeAcksSend(ack.MessageIds);
             });
-            Receive<ConnectionClosed>(m => {
+            Receive<ConnectionClosed>(m =>
+            {
                 ConnectionClosed(m.ClientCnx);
             });
             ReceiveAsync<Close>(async c =>
@@ -625,7 +626,7 @@ namespace SharpPulsar
 
                 try
                 {
-                    
+
                     if (null == _clientCnx)
                     {
                         CleanupAtClose(null);
@@ -640,7 +641,7 @@ namespace SharpPulsar
                     }
 
                 }
-                catch(Exception ex) 
+                catch (Exception ex)
                 {
                     _replyTo.Tell(new AskResponse(ex));
                     _log.Error(ex.ToString());
@@ -697,39 +698,49 @@ namespace SharpPulsar
                 var last = LastDisconnectedTimestamp();
                 Sender.Tell(last);
             });
-            Receive<GetConsumerName>(m => {
+            Receive<GetConsumerName>(m =>
+            {
                 Sender.Tell(ConsumerName);
             });
-            Receive<AckReceipt>(m => {
+            Receive<AckReceipt>(m =>
+            {
                 AckReceipt(m.RequestId);
             });
-            Receive<AckError>(m => {
+            Receive<AckError>(m =>
+            {
                 AckError(m.RequestId, m.Exception);
             });
-            Receive<ActiveConsumerChanged>(m => {
+            Receive<ActiveConsumerChanged>(m =>
+            {
                 ActiveConsumerChanged(m.IsActive);
             });
             ReceiveAsync<MessageReceived>(async m =>
             {
                 await MessageReceived(m);
             });
-            Receive<GetSubscription>(m => {
+            Receive<GetSubscription>(m =>
+            {
                 Sender.Tell(Subscription);
-            }); 
-            Receive<GetTopicNameWithoutPartition>(m => {
+            });
+            Receive<GetTopicNameWithoutPartition>(m =>
+            {
                 Sender.Tell(TopicNameWithoutPartition);
             });
-            Receive<GetTopic>(m => {
+            Receive<GetTopic>(m =>
+            {
                 Sender.Tell(_topicName.ToString());
             });
-            Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
+            Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ =>
+            {
                 UnAckedChunckedMessageIdSequenceMap.Tell(Clear.Instance);
             });
-            Receive<HasReachedEndOfTopic>(_ => {
+            Receive<HasReachedEndOfTopic>(_ =>
+            {
                 var hasReached = HasReachedEndOfTopic();
                 Sender.Tell(new AskResponse(hasReached));
             });
-            Receive<GetAvailablePermits>(_ => {
+            Receive<GetAvailablePermits>(_ =>
+            {
                 var permits = AvailablePermits();
                 Sender.Tell(permits);
             });
@@ -744,13 +755,16 @@ namespace SharpPulsar
                     _log.Error($"{m}===>>>{ex}");
                 }
             });
-            Receive<IsConnected>(_ => {
+            Receive<IsConnected>(_ =>
+            {
                 Sender.Tell(Connected());
             });
-            Receive<Pause>(_ => {
+            Receive<Pause>(_ =>
+            {
                 Pause();
             });
-            ReceiveAsync<HasMessageAvailable>(async _ => {
+            ReceiveAsync<HasMessageAvailable>(async _ =>
+            {
                 try
                 {
                     _replyTo = Sender;
@@ -763,11 +777,13 @@ namespace SharpPulsar
                     _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command: {ex}");
                 }
             });
-            Receive<GetNumMessagesInQueue>(_ => {
+            Receive<GetNumMessagesInQueue>(_ =>
+            {
                 var num = NumMessagesInQueue();
                 Sender.Tell(num);
             });
-            Receive<Resume>(_ => {
+            Receive<Resume>(_ =>
+            {
                 Resume();
             });
             ReceiveAsync<GetLastMessageId>(async m =>
@@ -876,7 +892,7 @@ namespace SharpPulsar
                 RedeliverUnacknowledgedMessages();
                 Sender.Tell(new AskResponse());
             });
-            Receive<RedeliverUnacknowledgedMessageIds>( m =>
+            Receive<RedeliverUnacknowledgedMessageIds>(m =>
             {
                 try
                 {
@@ -892,7 +908,7 @@ namespace SharpPulsar
             {
                 try
                 {
-                    
+
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -991,7 +1007,7 @@ namespace SharpPulsar
             {
                 if (!IsCumulativeAcknowledgementAllowed(Conf.SubscriptionType))
                 {
-                    _replyTo.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(
+                    _replyTo.Tell(new AskResponse(new InvalidConfigurationException(
                             "Cannot use cumulative acks on a non-exclusive/non-failover subscription")));
                     return;
                 }
@@ -1008,7 +1024,7 @@ namespace SharpPulsar
                         await DoAcknowledgeWithTxn(ack.MessageId, AckType.Cumulative, _properties, ack.Txn).Task;
                         break;
                     case ReconsumeLaterCumulative<T> ack:
-                        if(ack.Properties != null)
+                        if (ack.Properties != null)
                             await DoReconsumeLater(ack.Message, AckType.Cumulative, ack.Properties, ack.DelayTime).Task;
                         else
                             await DoReconsumeLater(ack.Message, AckType.Cumulative, new Dictionary<string, string>(), ack.DelayTime).Task;
@@ -1052,7 +1068,7 @@ namespace SharpPulsar
                     var err = $"The client is not connected to the broker when unsubscribing the subscription {Subscription} of the topic {_topicName}";
                     _log.Error(err);
                     throw new PulsarClientException(err);
-                    
+
                 }
             }
         }
@@ -1074,7 +1090,7 @@ namespace SharpPulsar
             _batchRun.Cancel();
             base.PostStop();
         }
-        
+
         internal override IConsumerStatsRecorder Stats
         {
             get
@@ -1113,9 +1129,9 @@ namespace SharpPulsar
         {
             foreach (var messageId in messageIdList)
             {
-               Condition.CheckArgument(messageId is MessageId);
+                Condition.CheckArgument(messageId is MessageId);
             }
-            if (State.ConnectionState != HandlerState. State.Ready && State.ConnectionState != HandlerState.State.Connecting)
+            if (State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
             {
                 Stats.IncrementNumAcksFailed();
                 var exception = new PulsarClientException("Consumer not ready. State: " + State);
@@ -1314,81 +1330,81 @@ namespace SharpPulsar
             return null;
         }
         internal override void NegativeAcknowledge(IMessageId messageId)
-		{
-			_negativeAcksTracker.Tell(new Add(messageId));
+        {
+            _negativeAcksTracker.Tell(new Add(messageId));
 
-			// Ensure the message is not redelivered for ack-timeout, since we did receive an "ack"
-			_unAckedMessageTracker.Tell(new Remove(messageId));
-		}
+            // Ensure the message is not redelivered for ack-timeout, since we did receive an "ack"
+            _unAckedMessageTracker.Tell(new Remove(messageId));
+        }
 
-		protected internal virtual void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
-		{
-			_log.Info($"[{Topic}][{Subscription}] Subscribed to topic on -- consumer: {_consumerId}");
+        protected internal virtual void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
+        {
+            _log.Info($"[{Topic}][{Subscription}] Subscribed to topic on -- consumer: {_consumerId}");
 
-			_availablePermits = 0;
-		}
+            _availablePermits = 0;
+        }
 
-		/// <summary>
-		/// Clear the internal receiver queue and returns the message id of what was the 1st message in the queue that was
-		/// not seen by the application
-		/// </summary>
-		private BatchMessageId ClearReceiverQueue()
-		{
-			_log.Warning($"Clearing {IncomingMessages.Count} message(s) in queue");
-			var currentMessageQueue = new List<IMessage<T>>(IncomingMessages.Count);
-			var mcount = IncomingMessages.Count;
-			var n = 0;
+        /// <summary>
+        /// Clear the internal receiver queue and returns the message id of what was the 1st message in the queue that was
+        /// not seen by the application
+        /// </summary>
+        private BatchMessageId ClearReceiverQueue()
+        {
+            _log.Warning($"Clearing {IncomingMessages.Count} message(s) in queue");
+            var currentMessageQueue = new List<IMessage<T>>(IncomingMessages.Count);
+            var mcount = IncomingMessages.Count;
+            var n = 0;
             //incomingMessages.drainTo(CurrentMessageQueue);
             while (n < mcount)
-			{
-				if(IncomingMessages.TryReceive(out var m))
-					currentMessageQueue.Add(m);
-				else
-					break;
-				++n;
-			}
-			IncomingMessagesSize = 0;
+            {
+                if (IncomingMessages.TryReceive(out var m))
+                    currentMessageQueue.Add(m);
+                else
+                    break;
+                ++n;
+            }
+            IncomingMessagesSize = 0;
 
-			if (_duringSeek)
-			{
-				_duringSeek = false;
-				return _seekMessageId;
-			}
-			else if (_subscriptionMode == SubscriptionMode.Durable)
-			{
-				return _startMessageId;
-			}
+            if (_duringSeek)
+            {
+                _duringSeek = false;
+                return _seekMessageId;
+            }
+            else if (_subscriptionMode == SubscriptionMode.Durable)
+            {
+                return _startMessageId;
+            }
 
-			if(currentMessageQueue.Count > 0)
-			{
-				var nextMessageInQueue = currentMessageQueue[0].MessageId;
-				BatchMessageId previousMessage;
-				if(nextMessageInQueue is BatchMessageId next)
-				{
-					// Get on the previous message within the current batch
-					previousMessage = new BatchMessageId(next.LedgerId, next.EntryId, next.PartitionIndex, next.BatchIndex - 1);
-				}
-				else
-				{
-					var msgid = (MessageId)nextMessageInQueue;
-					// Get on previous message in previous entry
-					previousMessage = new BatchMessageId(msgid.LedgerId, msgid.EntryId - 1, msgid.PartitionIndex, -1);
-				}
+            if (currentMessageQueue.Count > 0)
+            {
+                var nextMessageInQueue = currentMessageQueue[0].MessageId;
+                BatchMessageId previousMessage;
+                if (nextMessageInQueue is BatchMessageId next)
+                {
+                    // Get on the previous message within the current batch
+                    previousMessage = new BatchMessageId(next.LedgerId, next.EntryId, next.PartitionIndex, next.BatchIndex - 1);
+                }
+                else
+                {
+                    var msgid = (MessageId)nextMessageInQueue;
+                    // Get on previous message in previous entry
+                    previousMessage = new BatchMessageId(msgid.LedgerId, msgid.EntryId - 1, msgid.PartitionIndex, -1);
+                }
 
-				return previousMessage;
-			}
-			else if(!_lastDequeuedMessageId.Equals(IMessageId.Earliest))
-			{
-				// If the queue was empty we need to restart from the message just after the last one that has been dequeued
-				// in the past
-				return new BatchMessageId((MessageId) _lastDequeuedMessageId);
-			}
-			else
-			{
-				// No message was received or dequeued by this consumer. Next message would still be the startMessageId
-				return _startMessageId;
-			}
-		}
+                return previousMessage;
+            }
+            else if (!_lastDequeuedMessageId.Equals(IMessageId.Earliest))
+            {
+                // If the queue was empty we need to restart from the message just after the last one that has been dequeued
+                // in the past
+                return new BatchMessageId((MessageId)_lastDequeuedMessageId);
+            }
+            else
+            {
+                // No message was received or dequeued by this consumer. Next message would still be the startMessageId
+                return _startMessageId;
+            }
+        }
         /// <summary>
         /// send the flow command to have the broker start pushing messages
         /// </summary>
@@ -1400,25 +1416,25 @@ namespace SharpPulsar
         }
 
         private void SendFlowPermitsToBroker(IActorRef cnx, int numMessages)
-		{
-			if(cnx != null && numMessages > 0)
-			{
-				if(_log.IsDebugEnabled)
-				{
-					_log.Debug($"[{Topic}] [{Subscription}] Adding {numMessages} additional permits");
-				}
-				var cmd = Commands.NewFlow(_consumerId, numMessages);
-				var pay = new Payload(cmd, -1, "NewFlow");
-				cnx.Tell(pay);
-			}
-		}
+        {
+            if (cnx != null && numMessages > 0)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{Topic}] [{Subscription}] Adding {numMessages} additional permits");
+                }
+                var cmd = Commands.NewFlow(_consumerId, numMessages);
+                var pay = new Payload(cmd, -1, "NewFlow");
+                cnx.Tell(pay);
+            }
+        }
 
-		internal virtual void ConnectionFailed(PulsarClientException exception)
-		{
-			var nonRetriableError = !IsRetriableError(exception);
-			var timeout = DateTimeHelper.CurrentUnixTimeMillis() > _subscribeTimeout;
-			if((nonRetriableError || timeout))
-			{
+        internal virtual void ConnectionFailed(PulsarClientException exception)
+        {
+            var nonRetriableError = !IsRetriableError(exception);
+            var timeout = DateTimeHelper.CurrentUnixTimeMillis() > _subscribeTimeout;
+            if (nonRetriableError || timeout)
+            {
                 exception.SetPreviousExceptions(_previousExceptions);
                 if (SubscribeFuture.TrySetException(exception))
                 {
@@ -1437,59 +1453,59 @@ namespace SharpPulsar
                     DeregisterFromClientCnx();
                     _client.Tell(new CleanupConsumer(_self));
                 }
-                
-			}
+
+            }
             else
             {
                 _previousExceptions.Add(exception);
             }
         }
 
-		private void CleanupAtClose(Exception exception)
-		{
-			_log.Info($"[{Topic}] [{Subscription}] Closed consumer");
-			State.ConnectionState = HandlerState.State.Closed;
-			CloseConsumerTasks();
-			DeregisterFromClientCnx();
-			_client.Tell(new CleanupConsumer(Self));
+        private void CleanupAtClose(Exception exception)
+        {
+            _log.Info($"[{Topic}] [{Subscription}] Closed consumer");
+            State.ConnectionState = HandlerState.State.Closed;
+            CloseConsumerTasks();
+            DeregisterFromClientCnx();
+            _client.Tell(new CleanupConsumer(Self));
             // fail all pending-receive futures to notify application
             FailPendingReceive();
-            
+
         }
 
-		private void CloseConsumerTasks()
-		{
-			_unAckedMessageTracker.GracefulStop(TimeSpan.FromSeconds(3));
-			if(_possibleSendToDeadLetterTopicMessages != null)
-			{
-				_possibleSendToDeadLetterTopicMessages.Clear();
-			}
-			_acknowledgmentsGroupingTracker.GracefulStop(TimeSpan.FromSeconds(3));
-			if (BatchReceiveTimeout != null)
-			{
-				BatchReceiveTimeout.Cancel();
-			}
-			Stats.StatTimeout?.Cancel();
-		}
+        private void CloseConsumerTasks()
+        {
+            _unAckedMessageTracker.GracefulStop(TimeSpan.FromSeconds(3));
+            if (_possibleSendToDeadLetterTopicMessages != null)
+            {
+                _possibleSendToDeadLetterTopicMessages.Clear();
+            }
+            _acknowledgmentsGroupingTracker.GracefulStop(TimeSpan.FromSeconds(3));
+            if (BatchReceiveTimeout != null)
+            {
+                BatchReceiveTimeout.Cancel();
+            }
+            Stats.StatTimeout?.Cancel();
+        }
 
-		internal virtual void ActiveConsumerChanged(bool isActive)
-		{
-			if(ConsumerEventListener == null)
-			{
-				return;
-			}
+        internal virtual void ActiveConsumerChanged(bool isActive)
+        {
+            if (ConsumerEventListener == null)
+            {
+                return;
+            }
 
-			if (isActive)
-			{
-				ConsumerEventListener.BecameActive(Self, _partitionIndex);
-			}
-			else
-			{
-				ConsumerEventListener.BecameInactive(Self, _partitionIndex);
-			}
-		}
-		private async ValueTask MessageReceived(MessageReceived received)
-		{
+            if (isActive)
+            {
+                ConsumerEventListener.BecameActive(Self, _partitionIndex);
+            }
+            else
+            {
+                ConsumerEventListener.BecameInactive(Self, _partitionIndex);
+            }
+        }
+        private async ValueTask MessageReceived(MessageReceived received)
+        {
             var ms = received;
             var messageId = ms.MessageId;
             if (_log.IsDebugEnabled)
@@ -1499,9 +1515,9 @@ namespace SharpPulsar
             var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 
             if (!received.HasMagicNumber && !received.HasValidCheckSum)
-			{
-				// discard message with checksum error
-				DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.ChecksumMismatch);
+            {
+                // discard message with checksum error
+                DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.ChecksumMismatch);
                 return;
             }
 
@@ -1526,11 +1542,11 @@ namespace SharpPulsar
             }
         }
 
-		private void ProcessMessage(MessageReceived received)
+        private void ProcessMessage(MessageReceived received)
         {
-			var messageId = received.MessageId;
+            var messageId = received.MessageId;
             var data = received.Payload.ToArray();
-			var redeliveryCount = received.RedeliveryCount;
+            var redeliveryCount = received.RedeliveryCount;
             var consumerEpoch = Commands.DefaultConsumerEpoch;
             // if broker send messages to client with consumerEpoch, we should set consumerEpoch to message
             if (received.HasConsumerEpoch)
@@ -1538,15 +1554,15 @@ namespace SharpPulsar
                 consumerEpoch = received.ConsumerEpoch;
             }
             IList<long> ackSet = messageId.AckSets;
-			
-			var msgMetadata = received.Metadata;
-			var brokerEntryMetadata = received.BrokerEntryMetadata;
-			var numMessages = msgMetadata.NumMessagesInBatch;
-			var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 
-				&& Conf.SubscriptionType != SubType.Shared;
 
-			var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
-			var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, data, _clientCnx);
+            var msgMetadata = received.Metadata;
+            var brokerEntryMetadata = received.BrokerEntryMetadata;
+            var numMessages = msgMetadata.NumMessagesInBatch;
+            var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1
+                && Conf.SubscriptionType != SubType.Shared;
+
+            var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
+            var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, data, _clientCnx);
             var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
             if (decryptedPayload == null)
             {
@@ -1554,9 +1570,9 @@ namespace SharpPulsar
                 return;
             }
 
-			
+
             // uncompress decryptedPayload and release decryptedPayload-ByteBuf
-            var uncompressedPayload = (isMessageUndecryptable || isChunkedMessage) ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, _clientCnx, true);
+            var uncompressedPayload = isMessageUndecryptable || isChunkedMessage ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, _clientCnx, true);
 
 
             if (uncompressedPayload == null)
@@ -1571,10 +1587,10 @@ namespace SharpPulsar
                 ProcessPayloadByProcessor(brokerEntryMetadata, msgMetadata, uncompressedPayload, msgId, Schema, redeliveryCount, ackSet, consumerEpoch);
                 return;
             }
-           
+
             // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
             // and return undecrypted payload
-            if (isMessageUndecryptable || (numMessages == 1 && !HasNumMessagesInBatch(msgMetadata)))
+            if (isMessageUndecryptable || numMessages == 1 && !HasNumMessagesInBatch(msgMetadata))
             {
 
                 // right now, chunked messages are only supported by non-shared subscription
@@ -1658,7 +1674,7 @@ namespace SharpPulsar
                 if (containMetadata)
                 {
                     singleMessageMetadata = Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-                     singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
+                    singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
 
                     singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
                 }
@@ -1688,8 +1704,8 @@ namespace SharpPulsar
 
                 var batchMessageId = new BatchMessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex, index, numMessages, acker);
 
-                var payloadBuffer = (singleMessagePayload != null) ? singleMessagePayload : payload.ToArray();
-                
+                var payloadBuffer = singleMessagePayload != null ? singleMessagePayload : payload.ToArray();
+
                 var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(payloadBuffer), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
                 message.BrokerEntryMetadata = brokerEntryMetadata;
                 return message;
@@ -1712,7 +1728,7 @@ namespace SharpPulsar
             {
                 _log.Debug($"[{Subscription}] [{ConsumerName}] processing message num - {index} in batch");
             }
-            
+
             byte[] singleMessagePayload = null;
             SingleMessageMetadata singleMessageMetadata = null;
             if (containMetadata)
@@ -1779,14 +1795,14 @@ namespace SharpPulsar
                 {
                     NotifyPendingBatchReceivedCallBack();
                 }
-            });            
+            });
         }
         private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet, long consumerEpoch)
         {
             var msgPayload = MessagePayload.Create(new ReadOnlySequence<byte>(payload));
-            
+
             var entryContext = MessagePayloadContext<T>.Get(brokerEntryMetadata, messageMetadata, messageId, redeliveryCount, ackSet, consumerEpoch, IsBatch, NewMessage, NewSingleMessage);
-            
+
             var skippedMessages = 0;
             try
             {
@@ -1803,7 +1819,7 @@ namespace SharpPulsar
                     }
                 });
             }
-            catch 
+            catch
             {
                 _log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch");
                 DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.BatchDeSerializeError);
@@ -1823,10 +1839,10 @@ namespace SharpPulsar
         }
 
         private bool HasNumMessagesInBatch(MessageMetadata m)
-		{
-			var should = m.ShouldSerializeNumMessagesInBatch();
-			return should;
-		}
+        {
+            var should = m.ShouldSerializeNumMessagesInBatch();
+            return should;
+        }
         /// <summary>
 		/// Notify waiting asyncReceive request with the received message.
 		/// </summary>
@@ -1839,7 +1855,7 @@ namespace SharpPulsar
             }
 
             // fetch receivedCallback from queue
-           var receivedFuture = NextPendingReceive();
+            var receivedFuture = NextPendingReceive();
             if (receivedFuture == null)
             {
                 return;
@@ -1874,113 +1890,113 @@ namespace SharpPulsar
 
         private void InterceptAndComplete(IMessage<T> message, TaskCompletionSource<IMessage<T>> receivedFuture)
         {
-           var interceptMessage = BeforeConsume(message);
+            var interceptMessage = BeforeConsume(message);
             // return message to receivedCallback
             CompletePendingReceive(receivedFuture, interceptMessage);
         }
 
         private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId, IActorRef cnx)
-		{
-			
-			// Lazy task scheduling to expire incomplete chunk message
-			if (!_expireChunkMessageTaskScheduled && ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds > 0)
-			{				
-				Context.System.Scheduler.Advanced.ScheduleRepeatedly(ExpireTimeOfIncompleteChunkedMessage, ExpireTimeOfIncompleteChunkedMessage, RemoveExpireIncompleteChunkedMessages);
-				_expireChunkMessageTaskScheduled = true;
-			}
+        {
 
-			if (msgMetadata.ChunkId == 0)
-			{
-				var totalChunks = msgMetadata.NumChunksFromMsg;
-				_chunkedMessagesMap.TryAdd(msgMetadata.Uuid, ChunkedMessageCtx.Get(totalChunks, new List<byte>()));
-				_pendingChunkedMessageCount++;
-				if (_maxPendingChuckedMessage > 0 && _pendingChunkedMessageCount > _maxPendingChuckedMessage)
-				{
-					RemoveOldestPendingChunkedMessage();
-				}
-				_pendingChunckedMessageUuidQueue.Enqueue(msgMetadata.Uuid);
-			}
+            // Lazy task scheduling to expire incomplete chunk message
+            if (!_expireChunkMessageTaskScheduled && ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds > 0)
+            {
+                Context.System.Scheduler.Advanced.ScheduleRepeatedly(ExpireTimeOfIncompleteChunkedMessage, ExpireTimeOfIncompleteChunkedMessage, RemoveExpireIncompleteChunkedMessages);
+                _expireChunkMessageTaskScheduled = true;
+            }
 
-			ChunkedMessageCtx chunkedMsgCtx = null;
-			if (_chunkedMessagesMap.ContainsKey(msgMetadata.Uuid))
-				chunkedMsgCtx = _chunkedMessagesMap[msgMetadata.Uuid];
+            if (msgMetadata.ChunkId == 0)
+            {
+                var totalChunks = msgMetadata.NumChunksFromMsg;
+                _chunkedMessagesMap.TryAdd(msgMetadata.Uuid, ChunkedMessageCtx.Get(totalChunks, new List<byte>()));
+                _pendingChunkedMessageCount++;
+                if (_maxPendingChuckedMessage > 0 && _pendingChunkedMessageCount > _maxPendingChuckedMessage)
+                {
+                    RemoveOldestPendingChunkedMessage();
+                }
+                _pendingChunckedMessageUuidQueue.Enqueue(msgMetadata.Uuid);
+            }
 
-			// discard message if chunk is out-of-order
-			if (chunkedMsgCtx == null || chunkedMsgCtx.ChunkedMsgBuffer == null || msgMetadata.ChunkId != (chunkedMsgCtx.LastChunkedMessageId + 1) || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
-			{
-				// means we lost the first chunk: should never happen
-				_log.Info($"Received unexpected chunk messageId {msgId}, last-chunk-id{chunkedMsgCtx?.LastChunkedMessageId ?? 0}, chunkId = {msgMetadata.ChunkId}, total-chunks {msgMetadata.TotalChunkMsgSize}");
-				chunkedMsgCtx?.Recycle();
-				_chunkedMessagesMap.Remove(msgMetadata.Uuid);
-				IncreaseAvailablePermits(cnx);
-				if(ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds > 0 && DateTimeHelper.CurrentUnixTimeMillis() > ((long)msgMetadata.PublishTime + ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds))
-				{
-					DoAcknowledge(msgId, AckType.Individual, new Dictionary<string, long>(), null);
-				}
-				else
-				{
-					TrackMessage(msgId);
-				}
-				return null;
-			}
+            ChunkedMessageCtx chunkedMsgCtx = null;
+            if (_chunkedMessagesMap.ContainsKey(msgMetadata.Uuid))
+                chunkedMsgCtx = _chunkedMessagesMap[msgMetadata.Uuid];
 
-			chunkedMsgCtx.ChunkedMessageIds[msgMetadata.ChunkId] = msgId;
-			// append the chunked payload and update lastChunkedMessage-id
-			chunkedMsgCtx.ChunkedMsgBuffer.AddRange(compressedPayload);
-			chunkedMsgCtx.LastChunkedMessageId = msgMetadata.ChunkId;
+            // discard message if chunk is out-of-order
+            if (chunkedMsgCtx == null || chunkedMsgCtx.ChunkedMsgBuffer == null || msgMetadata.ChunkId != chunkedMsgCtx.LastChunkedMessageId + 1 || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
+            {
+                // means we lost the first chunk: should never happen
+                _log.Info($"Received unexpected chunk messageId {msgId}, last-chunk-id{chunkedMsgCtx?.LastChunkedMessageId ?? 0}, chunkId = {msgMetadata.ChunkId}, total-chunks {msgMetadata.TotalChunkMsgSize}");
+                chunkedMsgCtx?.Recycle();
+                _chunkedMessagesMap.Remove(msgMetadata.Uuid);
+                IncreaseAvailablePermits(cnx);
+                if (ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds > 0 && DateTimeHelper.CurrentUnixTimeMillis() > (long)msgMetadata.PublishTime + ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds)
+                {
+                    DoAcknowledge(msgId, AckType.Individual, new Dictionary<string, long>(), null);
+                }
+                else
+                {
+                    TrackMessage(msgId);
+                }
+                return null;
+            }
 
-			// if final chunk is not received yet then release payload and return
-			if (msgMetadata.ChunkId != (msgMetadata.NumChunksFromMsg - 1))
-			{
-				IncreaseAvailablePermits(cnx);
-				return null;
-			}
+            chunkedMsgCtx.ChunkedMessageIds[msgMetadata.ChunkId] = msgId;
+            // append the chunked payload and update lastChunkedMessage-id
+            chunkedMsgCtx.ChunkedMsgBuffer.AddRange(compressedPayload);
+            chunkedMsgCtx.LastChunkedMessageId = msgMetadata.ChunkId;
 
-            
-			// last chunk received: so, stitch chunked-messages and clear up chunkedMsgBuffer
-			if(_log.IsDebugEnabled)
-			{
-				_log.Debug($"Chunked message completed chunkId {msgMetadata.ChunkId}, total-chunks {msgMetadata.NumChunksFromMsg}, msgId {msgId} sequenceId {msgMetadata.SequenceId}");
-			}
-			// remove buffer from the map, add chucked messageId to unack-message tracker, and reduce pending-chunked-message count
-			//_chunkedMessagesMap.Remove(msgMetadata.Uuid);
-			UnAckedChunckedMessageIdSequenceMap.Tell(new AddMessageIds(msgId, chunkedMsgCtx.ChunkedMessageIds));
-			_pendingChunkedMessageCount--;
-			compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer.ToArray();
-			chunkedMsgCtx.Recycle();
-			var uncompressedPayload = UncompressPayloadIfNeeded(messageId, msgMetadata, compressedPayload, cnx, false);
-			return uncompressedPayload;
-		}
+            // if final chunk is not received yet then release payload and return
+            if (msgMetadata.ChunkId != msgMetadata.NumChunksFromMsg - 1)
+            {
+                IncreaseAvailablePermits(cnx);
+                return null;
+            }
 
-		protected internal virtual void TriggerListener(int numMessages = 0)
-		{
+
+            // last chunk received: so, stitch chunked-messages and clear up chunkedMsgBuffer
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"Chunked message completed chunkId {msgMetadata.ChunkId}, total-chunks {msgMetadata.NumChunksFromMsg}, msgId {msgId} sequenceId {msgMetadata.SequenceId}");
+            }
+            // remove buffer from the map, add chucked messageId to unack-message tracker, and reduce pending-chunked-message count
+            //_chunkedMessagesMap.Remove(msgMetadata.Uuid);
+            UnAckedChunckedMessageIdSequenceMap.Tell(new AddMessageIds(msgId, chunkedMsgCtx.ChunkedMessageIds));
+            _pendingChunkedMessageCount--;
+            compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer.ToArray();
+            chunkedMsgCtx.Recycle();
+            var uncompressedPayload = UncompressPayloadIfNeeded(messageId, msgMetadata, compressedPayload, cnx, false);
+            return uncompressedPayload;
+        }
+
+        protected internal virtual void TriggerListener(int numMessages = 0)
+        {
             if (numMessages == 0)
                 numMessages = IncomingMessages.Count;
 
-			for (var i = 0; i < numMessages; i++)
-			{
-				if (!IncomingMessages.TryReceive(out var msg))
-				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"[{Topic}] [{Subscription}] Message has been cleared from the queue");
-					}
-					break;
-				}
-				try
-				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {msg.MessageId}");
-					}
-					Listener.Received(_self, msg);
-				}
-				catch (Exception t)
-				{
-					_log.Error($"[{Topic}][{Subscription}] Message listener error in processing message: {msg.MessageId} => {t}");
-				}
-			}
-		}
+            for (var i = 0; i < numMessages; i++)
+            {
+                if (!IncomingMessages.TryReceive(out var msg))
+                {
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{Topic}] [{Subscription}] Message has been cleared from the queue");
+                    }
+                    break;
+                }
+                try
+                {
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {msg.MessageId}");
+                    }
+                    Listener.Received(_self, msg);
+                }
+                catch (Exception t)
+                {
+                    _log.Error($"[{Topic}][{Subscription}] Message listener error in processing message: {msg.MessageId} => {t}");
+                }
+            }
+        }
         protected internal override IMessage<T> InternalReceive()
         {
             IMessage<T> message;
@@ -1990,7 +2006,7 @@ namespace SharpPulsar
                 {
                     ExpectMoreIncomingMessages();
                     return null;
-                }                
+                }
                 IncomingMessages.TryReceive(out message);
                 MessageProcessed(message);
                 if (!IsValidConsumerEpoch(message))
@@ -2044,7 +2060,7 @@ namespace SharpPulsar
 
             return result;
         }
-       
+
         protected internal override IMessage<T> InternalReceive(TimeSpan timeOut)
         {
             IMessage<T> message;
@@ -2078,7 +2094,7 @@ namespace SharpPulsar
             }
             catch (Exception e)
             {
-                if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState. State.Closed)
+                if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState.State.Closed)
                 {
                     Stats.IncrementNumReceiveFailed();
                     throw Unwrap(e);
@@ -2152,30 +2168,30 @@ namespace SharpPulsar
         }
 
         internal virtual void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx, long consumerEpoch)
-		{
-			var batchSize = msgMetadata.NumMessagesInBatch;
-			// create ack tracker for entry aka batch
-			var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
-			IList<IMessage<T>> possibleToDeadLetter = null;
-			if(_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
-			{
-				possibleToDeadLetter = new List<IMessage<T>>();
-			}
+        {
+            var batchSize = msgMetadata.NumMessagesInBatch;
+            // create ack tracker for entry aka batch
+            var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
+            IList<IMessage<T>> possibleToDeadLetter = null;
+            if (_deadLetterPolicy != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
+            {
+                possibleToDeadLetter = new List<IMessage<T>>();
+            }
 
-			var acker = BatchMessageAcker.NewAcker(batchSize);
-			BitSet ackBitSet = null;
-			if (ackSet != null && ackSet.Count > 0)
-			{
-				ackBitSet = BitSet.ValueOf(ackSet.ToArray());
-			}
+            var acker = BatchMessageAcker.NewAcker(batchSize);
+            BitSet ackBitSet = null;
+            if (ackSet != null && ackSet.Count > 0)
+            {
+                ackBitSet = BitSet.ValueOf(ackSet.ToArray());
+            }
 
             using var stream = new MemoryStream(payload);
-			using var binaryReader = new BinaryReader(stream);
-			var skippedMessages = 0;
-			try
-			{
-				for (var i = 0; i < batchSize; ++i)
-				{
+            using var binaryReader = new BinaryReader(stream);
+            var skippedMessages = 0;
+            try
+            {
+                for (var i = 0; i < batchSize; ++i)
+                {
                     var message = NewSingleMessage(i, batchSize, brokerEntryMetadata, msgMetadata, stream, binaryReader, new MessageId((long)messageId.ledgerId, (long)messageId.entryId, i), Schema, true, ackBitSet, acker, redeliveryCount, consumerEpoch);
 
                     if (message == null)
@@ -2183,49 +2199,49 @@ namespace SharpPulsar
                         ++skippedMessages;
                         continue;
                     }
-					_ = EnqueueMessageAndCheckBatchReceive(message);
-				}
-				if (ackBitSet != null)
-				{
-					ackBitSet = null;
-				}
-			}
-			catch(Exception ex)
-			{
-				_log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch: {ex}");
-				DiscardCorruptedMessage(messageId, cnx, ValidationError.BatchDeSerializeError);
-			}
+                    _ = EnqueueMessageAndCheckBatchReceive(message);
+                }
+                if (ackBitSet != null)
+                {
+                    ackBitSet = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch: {ex}");
+                DiscardCorruptedMessage(messageId, cnx, ValidationError.BatchDeSerializeError);
+            }
 
-			if(possibleToDeadLetter != null && _possibleSendToDeadLetterTopicMessages != null)
-			{
-				_possibleSendToDeadLetterTopicMessages[batchMessage] = possibleToDeadLetter;
-			}
+            if (possibleToDeadLetter != null && _possibleSendToDeadLetterTopicMessages != null)
+            {
+                _possibleSendToDeadLetterTopicMessages[batchMessage] = possibleToDeadLetter;
+            }
 
-			if(_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Subscription}] [{ConsumerName}] enqueued messages in batch. queue size - {IncomingMessages.Count}, available queue size - ({IncomingMessages.Count})");
-			}
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Subscription}] [{ConsumerName}] enqueued messages in batch. queue size - {IncomingMessages.Count}, available queue size - ({IncomingMessages.Count})");
+            }
 
-			if(skippedMessages > 0)
-			{
-				IncreaseAvailablePermits(cnx, skippedMessages);
-			}
-		}
-		
-		private bool IsPriorEntryIndex(long idx)
-		{
-			return _resetIncludeHead ? idx < _startMessageId.EntryId : idx <= _startMessageId.EntryId;
-		}
+            if (skippedMessages > 0)
+            {
+                IncreaseAvailablePermits(cnx, skippedMessages);
+            }
+        }
 
-		private bool IsPriorBatchIndex(long idx)
-		{
-			return _resetIncludeHead ? idx < _startMessageId.BatchIndex : idx <= _startMessageId.BatchIndex;
-		}
+        private bool IsPriorEntryIndex(long idx)
+        {
+            return _resetIncludeHead ? idx < _startMessageId.EntryId : idx <= _startMessageId.EntryId;
+        }
 
-		private bool IsSameEntry(MessageIdData messageId)
-		{
-			return _startMessageId != null && messageId.ledgerId == (ulong)_startMessageId.LedgerId && messageId.entryId == (ulong)_startMessageId.EntryId;
-		}
+        private bool IsPriorBatchIndex(long idx)
+        {
+            return _resetIncludeHead ? idx < _startMessageId.BatchIndex : idx <= _startMessageId.BatchIndex;
+        }
+
+        private bool IsSameEntry(MessageIdData messageId)
+        {
+            return _startMessageId != null && messageId.ledgerId == (ulong)_startMessageId.LedgerId && messageId.entryId == (ulong)_startMessageId.EntryId;
+        }
         private bool IsSameEntry(MessageId MessageId)
         {
             return _startMessageId != null && MessageId.LedgerId == _startMessageId.LedgerId && MessageId.EntryId == _startMessageId.EntryId;
@@ -2236,16 +2252,16 @@ namespace SharpPulsar
         /// Periodically, it sends a Flow command to notify the broker that it can push more messages
         /// </summary>
         protected internal override void MessageProcessed(IMessage<T> msg)
-		{
-			var currentCnx = _clientCnx;
-			var msgCnx = ((Message<T>)msg).Cnx();
-			_lastDequeuedMessageId = msg.MessageId;
+        {
+            var currentCnx = _clientCnx;
+            var msgCnx = ((Message<T>)msg).Cnx();
+            _lastDequeuedMessageId = msg.MessageId;
 
-			if (msgCnx != currentCnx)
-			{
-				// The processed message did belong to the old queue that was cleared after reconnection.
-				return;
-			}
+            if (msgCnx != currentCnx)
+            {
+                // The processed message did belong to the old queue that was cleared after reconnection.
+                return;
+            }
             else
             {
                 if (Listener == null && !_parentConsumerHasListener)
@@ -2257,15 +2273,15 @@ namespace SharpPulsar
                 TrackMessage(msg);
             }
             DecreaseIncomingMessageSize(msg);
-		}
+        }
 
-		protected internal virtual void TrackMessage(IMessage<T> msg)
-		{
-			if(msg != null)
-			{
-				TrackMessage(msg.MessageId, msg.RedeliveryCount);
-			}
-		}
+        protected internal virtual void TrackMessage(IMessage<T> msg)
+        {
+            if (msg != null)
+            {
+                TrackMessage(msg.MessageId, msg.RedeliveryCount);
+            }
+        }
 
         protected internal virtual void TrackMessage(IMessageId messageId)
         {
@@ -2273,30 +2289,30 @@ namespace SharpPulsar
         }
 
         protected internal virtual void TrackMessage(IMessageId messageId, int redeliveryCount)
-		{
-			if(Conf.AckTimeout > TimeSpan.Zero)
-			{
+        {
+            if (Conf.AckTimeout > TimeSpan.Zero)
+            {
                 MessageId id;
                 if (messageId is BatchMessageId msgId)
-				{
-					// do not add each item in batch message into tracker
-					id = new MessageId(msgId.LedgerId, msgId.EntryId, PartitionIndex);
-				}
-				else
-					id = (MessageId)messageId;
+                {
+                    // do not add each item in batch message into tracker
+                    id = new MessageId(msgId.LedgerId, msgId.EntryId, PartitionIndex);
+                }
+                else
+                    id = (MessageId)messageId;
 
-				if (HasParentConsumer)
-				{
-					//TODO: check parent consumer here
-					// we should no longer track this message, TopicsConsumer will take care from now onwards
-					_unAckedMessageTracker.Tell(new Remove(id));
-				}
-				else
-				{
-					_unAckedMessageTracker.Tell(new Add(id, redeliveryCount));
-				}
-			}
-		}
+                if (HasParentConsumer)
+                {
+                    //TODO: check parent consumer here
+                    // we should no longer track this message, TopicsConsumer will take care from now onwards
+                    _unAckedMessageTracker.Tell(new Remove(id));
+                }
+                else
+                {
+                    _unAckedMessageTracker.Tell(new Add(id, redeliveryCount));
+                }
+            }
+        }
         internal virtual void IncreaseAvailablePermits(Message<T> msg)
         {
             var currentCnx = _clientCnx;
@@ -2307,140 +2323,140 @@ namespace SharpPulsar
             }
         }
         internal virtual void IncreaseAvailablePermits(IActorRef currentCnx)
-		{
-			IncreaseAvailablePermits(currentCnx, 1);
-		}
+        {
+            IncreaseAvailablePermits(currentCnx, 1);
+        }
 
-		protected internal virtual void IncreaseAvailablePermits(IActorRef currentCnx, int delta)
-		{
-			_availablePermits += delta;
-			var available = _availablePermits;
+        protected internal virtual void IncreaseAvailablePermits(IActorRef currentCnx, int delta)
+        {
+            _availablePermits += delta;
+            var available = _availablePermits;
 
-			while(available >= _receiverQueueRefillThreshold && !Paused)
-			{
-				if (_availablePermits == available)
-				{
-					_availablePermits = 0;
-					SendFlowPermitsToBroker(currentCnx, available);
-					break;
-				}
+            while (available >= _receiverQueueRefillThreshold && !Paused)
+            {
+                if (_availablePermits == available)
+                {
+                    _availablePermits = 0;
+                    SendFlowPermitsToBroker(currentCnx, available);
+                    break;
+                }
                 available = _availablePermits;
             }
-		}
+        }
 
-		private void IncreaseAvailablePermits(int delta)
-		{
-			var cnx = _clientCnx;
-			IncreaseAvailablePermits(cnx, delta);
-		}
+        private void IncreaseAvailablePermits(int delta)
+        {
+            var cnx = _clientCnx;
+            IncreaseAvailablePermits(cnx, delta);
+        }
 
-		internal override void Pause()
-		{
-			Paused = true;
-		}
+        internal override void Pause()
+        {
+            Paused = true;
+        }
 
-		internal override void Resume()
-		{
-			if(Paused)
-			{
-				var cnx = _clientCnx;
-				Paused = false;
-				IncreaseAvailablePermits(cnx, 0);
-			}
-		}
+        internal override void Resume()
+        {
+            if (Paused)
+            {
+                var cnx = _clientCnx;
+                Paused = false;
+                IncreaseAvailablePermits(cnx, 0);
+            }
+        }
 
-		internal override long LastDisconnectedTimestamp()
-		{
-			var response = _connectionHandler.Ask<LastConnectionClosedTimestampResponse>(LastConnectionClosedTimestamp.Instance).GetAwaiter().GetResult();
+        internal override long LastDisconnectedTimestamp()
+        {
+            var response = _connectionHandler.Ask<LastConnectionClosedTimestampResponse>(LastConnectionClosedTimestamp.Instance).GetAwaiter().GetResult();
             return response.TimeStamp;
         }
 
-		private byte[] DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload, IActorRef currentCnx)
-		{
+        private byte[] DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload, IActorRef currentCnx)
+        {
 
-			if(msgMetadata.EncryptionKeys.Count == 0)
-			{
-				return payload;
-			}
+            if (msgMetadata.EncryptionKeys.Count == 0)
+            {
+                return payload;
+            }
 
-			// If KeyReader is not configured throw exception based on config param
-			if(Conf.CryptoKeyReader == null)
-			{
-				switch(Conf.CryptoFailureAction)
-				{
-					case ConsumerCryptoFailureAction.Consume:
-						_log.Warning($"[{Topic}][{Subscription}][{ConsumerName}] CryptoKeyReader interface is not implemented. Consuming encrypted message.");
-						return payload;
-					case ConsumerCryptoFailureAction.Discard:
-						_log.Warning($"[{Topic}][{Subscription}][{ConsumerName}] Skipping decryption since CryptoKeyReader interface is not implemented and config is set to discard");
-						DiscardMessage(messageId, currentCnx, ValidationError.DecryptionError);
-						return null;
-					case ConsumerCryptoFailureAction.Fail:
-						var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
-						_log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message");
-						_unAckedMessageTracker.Tell(new Add(m));
-						return null;
-				}
-			}
+            // If KeyReader is not configured throw exception based on config param
+            if (Conf.CryptoKeyReader == null)
+            {
+                switch (Conf.CryptoFailureAction)
+                {
+                    case ConsumerCryptoFailureAction.Consume:
+                        _log.Warning($"[{Topic}][{Subscription}][{ConsumerName}] CryptoKeyReader interface is not implemented. Consuming encrypted message.");
+                        return payload;
+                    case ConsumerCryptoFailureAction.Discard:
+                        _log.Warning($"[{Topic}][{Subscription}][{ConsumerName}] Skipping decryption since CryptoKeyReader interface is not implemented and config is set to discard");
+                        DiscardMessage(messageId, currentCnx, ValidationError.DecryptionError);
+                        return null;
+                    case ConsumerCryptoFailureAction.Fail:
+                        var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
+                        _log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message");
+                        _unAckedMessageTracker.Tell(new Add(m));
+                        return null;
+                }
+            }
 
-			var decryptedData = _msgCrypto.Decrypt(msgMetadata, payload, Conf.CryptoKeyReader);
-			if(decryptedData != null)
-			{
-				return decryptedData;
-			}
+            var decryptedData = _msgCrypto.Decrypt(msgMetadata, payload, Conf.CryptoKeyReader);
+            if (decryptedData != null)
+            {
+                return decryptedData;
+            }
 
-			switch(Conf.CryptoFailureAction)
-			{
-				case ConsumerCryptoFailureAction.Consume:
-					// Note, batch message will fail to consume even if config is set to consume
-					_log.Warning($"[{Topic}][{Subscription}][{ConsumerName}][{messageId}] Decryption failed. Consuming encrypted message since config is set to consume.");
-					return payload;
-				case ConsumerCryptoFailureAction.Discard:
-					_log.Warning($"[{Topic}][{Subscription}][{ConsumerName}][{messageId}] Discarding message since decryption failed and config is set to discard");
-					DiscardMessage(messageId, currentCnx, ValidationError.DecryptionError);
-					return null;
-				case ConsumerCryptoFailureAction.Fail:
-					var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
-					_log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since unable to decrypt incoming message");
-					_unAckedMessageTracker.Tell(new Add(m));
-					return null;
-			}
-			return null;
-		}
+            switch (Conf.CryptoFailureAction)
+            {
+                case ConsumerCryptoFailureAction.Consume:
+                    // Note, batch message will fail to consume even if config is set to consume
+                    _log.Warning($"[{Topic}][{Subscription}][{ConsumerName}][{messageId}] Decryption failed. Consuming encrypted message since config is set to consume.");
+                    return payload;
+                case ConsumerCryptoFailureAction.Discard:
+                    _log.Warning($"[{Topic}][{Subscription}][{ConsumerName}][{messageId}] Discarding message since decryption failed and config is set to discard");
+                    DiscardMessage(messageId, currentCnx, ValidationError.DecryptionError);
+                    return null;
+                case ConsumerCryptoFailureAction.Fail:
+                    var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
+                    _log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since unable to decrypt incoming message");
+                    _unAckedMessageTracker.Tell(new Add(m));
+                    return null;
+            }
+            return null;
+        }
 
-		private byte[] UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload, IActorRef currentCnx, bool checkMaxMessageSize)
-		{
-			var compressionType = msgMetadata.Compression;
-			var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
-			var uncompressedSize = (int)msgMetadata.UncompressedSize;
-			var payloadSize = payload.Length;
+        private byte[] UncompressPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload, IActorRef currentCnx, bool checkMaxMessageSize)
+        {
+            var compressionType = msgMetadata.Compression;
+            var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
+            var uncompressedSize = (int)msgMetadata.UncompressedSize;
+            var payloadSize = payload.Length;
 
-			var maxMessageSize = _maxMessageSize;
-			if (checkMaxMessageSize && payloadSize > maxMessageSize)
-			{
-				// payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
-				_log.Error($"[{Topic}][{Subscription}] Got corrupted payload message size {payloadSize} at {messageId}");
-				DiscardCorruptedMessage(messageId, currentCnx, ValidationError.UncompressedSizeCorruption);
-				return null;
-			}
-			try
-			{
-				var uncompressedPayload = codec.Decode(payload, uncompressedSize);
-				return uncompressedPayload;
-			}
-			catch(Exception e)
-			{
-				_log.Error($"[{Topic}][{Subscription}] Failed to decompress message with {compressionType} at {messageId}: {e}");
-				DiscardCorruptedMessage(messageId, currentCnx, ValidationError.DecompressionError);
-				return null;
-			}
-		}
+            var maxMessageSize = _maxMessageSize;
+            if (checkMaxMessageSize && payloadSize > maxMessageSize)
+            {
+                // payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
+                _log.Error($"[{Topic}][{Subscription}] Got corrupted payload message size {payloadSize} at {messageId}");
+                DiscardCorruptedMessage(messageId, currentCnx, ValidationError.UncompressedSizeCorruption);
+                return null;
+            }
+            try
+            {
+                var uncompressedPayload = codec.Decode(payload, uncompressedSize);
+                return uncompressedPayload;
+            }
+            catch (Exception e)
+            {
+                _log.Error($"[{Topic}][{Subscription}] Failed to decompress message with {compressionType} at {messageId}: {e}");
+                DiscardCorruptedMessage(messageId, currentCnx, ValidationError.DecompressionError);
+                return null;
+            }
+        }
 
-		private void DiscardCorruptedMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
-		{
-			_log.Error($"[{Topic}][{Subscription}] Discarding corrupted message at {messageId.ledgerId}:{messageId.entryId}");
-			DiscardMessage(messageId, currentCnx, validationError);
-		}
+        private void DiscardCorruptedMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
+        {
+            _log.Error($"[{Topic}][{Subscription}] Discarding corrupted message at {messageId.ledgerId}:{messageId.entryId}");
+            DiscardMessage(messageId, currentCnx, validationError);
+        }
 
         private void DiscardCorruptedMessage(MessageId messageId, IActorRef currentCnx, ValidationError validationError)
         {
@@ -2448,49 +2464,49 @@ namespace SharpPulsar
             DiscardMessage(messageId, currentCnx, validationError);
         }
         private void DiscardMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
-		{
-			var cmd = Commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
-			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
-			IncreaseAvailablePermits(currentCnx);
-			Stats.IncrementNumReceiveFailed();
-		}
+        {
+            var cmd = Commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
+            currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
+            IncreaseAvailablePermits(currentCnx);
+            Stats.IncrementNumReceiveFailed();
+        }
         private void DiscardMessage(MessageId messageId, IActorRef currentCnx, ValidationError validationError)
-		{
-			var cmd = Commands.NewAck(_consumerId, (long)messageId.LedgerId, (long)messageId.EntryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
-			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
-			IncreaseAvailablePermits(currentCnx);
-			Stats.IncrementNumReceiveFailed();
-		}
+        {
+            var cmd = Commands.NewAck(_consumerId, messageId.LedgerId, messageId.EntryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
+            currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
+            IncreaseAvailablePermits(currentCnx);
+            Stats.IncrementNumReceiveFailed();
+        }
 
-		internal string HandlerName
-		{
-			get
-			{
-				return Subscription;
-			}
-		}
+        internal string HandlerName
+        {
+            get
+            {
+                return Subscription;
+            }
+        }
 
-		internal override bool Connected()
-		{
-			return _clientCnx != null && (State.ConnectionState == HandlerState.State.Ready);
-		}
+        internal override bool Connected()
+        {
+            return _clientCnx != null && State.ConnectionState == HandlerState.State.Ready;
+        }
 
-		internal virtual int PartitionIndex
-		{
-			get
-			{
-				return _partitionIndex;
-			}
-		}
+        internal virtual int PartitionIndex
+        {
+            get
+            {
+                return _partitionIndex;
+            }
+        }
 
-		internal override int AvailablePermits()
-		{
-			return _availablePermits;
-		}
-		internal override int NumMessagesInQueue()
-		{
-			return IncomingMessages.Count;
-		}
+        internal override int AvailablePermits()
+        {
+            return _availablePermits;
+        }
+        internal override int NumMessagesInQueue()
+        {
+            return IncomingMessages.Count;
+        }
 
         protected internal override void RedeliverUnacknowledgedMessages()
         {
@@ -2501,16 +2517,16 @@ namespace SharpPulsar
             // Second : we should synchronized `ClientCnx cnx = cnx()` to
             // prevent use old cnx to send redeliverUnacknowledgedMessages to a old broker
             var cnx = _clientCnx;
-			var protocolVersion = _protocolVersion;
-			if (Connected() && protocolVersion >= (int)ProtocolVersion.V2)
-			{
-				var currentSize = IncomingMessages.Count;
+            var protocolVersion = _protocolVersion;
+            if (Connected() && protocolVersion >= (int)ProtocolVersion.V2)
+            {
+                var currentSize = IncomingMessages.Count;
                 //possible deadlocks here
                 ClearIncomingMessages();
                 _unAckedMessageTracker.Tell(new Clear());
-				var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId);
-				var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
-				cnx.Tell(payload);
+                var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId);
+                var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
+                cnx.Tell(payload);
 
                 // we should increase epoch every time, because MultiTopicsConsumerImpl also increase it,
                 // we need to keep both epochs the same
@@ -2520,16 +2536,16 @@ namespace SharpPulsar
                 }
 
                 if (currentSize > 0)
-					IncreaseAvailablePermits(cnx, currentSize);
+                    IncreaseAvailablePermits(cnx, currentSize);
 
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"[{Subscription}] [{Topic}] [{ConsumerName}] Redeliver unacked messages and send {currentSize} permits");
-				}
-			}
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{Subscription}] [{Topic}] [{ConsumerName}] Redeliver unacked messages and send {currentSize} permits");
+                }
+            }
             else
             {
-                if (cnx == null || (State.ConnectionState == HandlerState.State.Connecting))
+                if (cnx == null || State.ConnectionState == HandlerState.State.Connecting)
                 {
                     _log.Warning($"[{Self}] Client Connection needs to be established for redelivery of unacknowledged messages");
                 }
@@ -2539,44 +2555,44 @@ namespace SharpPulsar
                     cnx.Tell(PoisonPill.Instance);
                 }
             }
-		}
+        }
 
-		private int ClearIncomingMessagesAndGetMessageNumber()
-		{
-			var messagesNumber = IncomingMessages.Count;
+        private int ClearIncomingMessagesAndGetMessageNumber()
+        {
+            var messagesNumber = IncomingMessages.Count;
             ClearIncomingMessages();
             _unAckedMessageTracker.Tell(Clear.Instance);
 
-			return messagesNumber;
-		}
+            return messagesNumber;
+        }
 
-		protected internal override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
-		{
-			if(messageIds.Count == 0)
-			{
-				return;
-			}
+        protected internal override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
+        {
+            if (messageIds.Count == 0)
+            {
+                return;
+            }
 
-			Condition.CheckArgument(messageIds.First() is MessageId);
+            Condition.CheckArgument(messageIds.First() is MessageId);
 
-			if(Conf.SubscriptionType != SubType.Shared && Conf.SubscriptionType != SubType.KeyShared)
-			{
+            if (Conf.SubscriptionType != SubType.Shared && Conf.SubscriptionType != SubType.KeyShared)
+            {
                 // We cannot redeliver single messages if subscription type is not Shared
                 RedeliverUnacknowledgedMessages();
                 return;
-			}
-			var cnx = _clientCnx;
-			var protocolVersion = _protocolVersion;
-			if (Connected() && protocolVersion >= (int)ProtocolVersion.V2)
-			{
-				var messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
+            }
+            var cnx = _clientCnx;
+            var protocolVersion = _protocolVersion;
+            if (Connected() && protocolVersion >= (int)ProtocolVersion.V2)
+            {
+                var messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
 
-				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
-				foreach(var ids in batches)
+                var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
+                foreach (var ids in batches)
                 {
                     GetRedeliveryMessageIdData(ids).AsTask().ContinueWith(task =>
                     {
-                       var messageIdData = task.Result;
+                        var messageIdData = task.Result;
                         if (messageIdData.Count > 0)
                         {
                             var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdData);
@@ -2585,28 +2601,28 @@ namespace SharpPulsar
                         }
 
                     });
-                    
+
                 }
-				if(messagesFromQueue > 0)
-				{
-					IncreaseAvailablePermits(cnx, messagesFromQueue);
-				}
-				if(_log.IsDebugEnabled)
-				{
-					_log.Debug($"[{Subscription}] [{Topic}] [{ConsumerName}] Redeliver unacked messages and increase {messagesFromQueue} permits");
-				}
-				return;
-			}
-			if(cnx == null || (State.ConnectionState == HandlerState.State.Connecting))
-			{
-				_log.Warning($"[{Self}] Client Connection needs to be established for redelivery of unacknowledged messages");
-			}
-			else
-			{
-				_log.Warning($"[{Self}] Reconnecting the client to redeliver the messages.");
-				cnx.Tell(PoisonPill.Instance);
-			}
-		}
+                if (messagesFromQueue > 0)
+                {
+                    IncreaseAvailablePermits(cnx, messagesFromQueue);
+                }
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{Subscription}] [{Topic}] [{ConsumerName}] Redeliver unacked messages and increase {messagesFromQueue} permits");
+                }
+                return;
+            }
+            if (cnx == null || State.ConnectionState == HandlerState.State.Connecting)
+            {
+                _log.Warning($"[{Self}] Client Connection needs to be established for redelivery of unacknowledged messages");
+            }
+            else
+            {
+                _log.Warning($"[{Self}] Reconnecting the client to redeliver the messages.");
+                cnx.Tell(PoisonPill.Instance);
+            }
+        }
         private async ValueTask<IList<MessageIdData>> GetRedeliveryMessageIdData(IList<MessageId> messageIds)
         {
             IList<MessageIdData> data = new List<MessageIdData>(messageIds.Count);
@@ -2624,21 +2640,21 @@ namespace SharpPulsar
             return data;
         }
         private async ValueTask ProcessPossibleToDLQ(IMessageId messageId)
-		{
-			IList<IMessage<T>> deadLetterMessages = null;
+        {
+            IList<IMessage<T>> deadLetterMessages = null;
 
             if (_possibleSendToDeadLetterTopicMessages != null)
-			{
-				if(messageId is BatchMessageId bmid)
-				{
-					deadLetterMessages = _possibleSendToDeadLetterTopicMessages.GetValueOrNull(new MessageId(bmid.LedgerId, bmid.EntryId, PartitionIndex));
-				}
-				else
-				{
-					deadLetterMessages = _possibleSendToDeadLetterTopicMessages.GetValueOrNull(messageId);
-				}
-			}
-            if(deadLetterMessages != null)
+            {
+                if (messageId is BatchMessageId bmid)
+                {
+                    deadLetterMessages = _possibleSendToDeadLetterTopicMessages.GetValueOrNull(new MessageId(bmid.LedgerId, bmid.EntryId, PartitionIndex));
+                }
+                else
+                {
+                    deadLetterMessages = _possibleSendToDeadLetterTopicMessages.GetValueOrNull(messageId);
+                }
+            }
+            if (deadLetterMessages != null)
             {
                 try
                 {
@@ -2659,21 +2675,21 @@ namespace SharpPulsar
                                 .SendAsync();
 
                             _possibleSendToDeadLetterTopicMessages.Remove(finalMessageId);
-                            var r =  await DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), null).Task;                            
+                            var r = await DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), null).Task;
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
-                            _log.Warning($"[{Topic}] [{Subscription}] [{ConsumerName}] Failed to send DLQ message to {finalMessageId} for message id {ex}");                           
+                            _log.Warning($"[{Topic}] [{Subscription}] [{ConsumerName}] Failed to send DLQ message to {finalMessageId} for message id {ex}");
                         }
-                    }  
+                    }
                 }
                 catch (Exception e)
                 {
                     _log.Error($"Send to dead letter topic exception with topic: {_deadLetterPolicy.DeadLetterTopic}, messageId: {messageId} => {e}");
-                    _deadLetterProducer = null; 
+                    _deadLetterProducer = null;
                 }
             }
-		}
+        }
         private SortedDictionary<string, string> GetPropertiesMap(IMessage<T> message, string originMessageIdStr, string originTopicNameStr)
         {
             var propertiesMap = new SortedDictionary<string, string>();
@@ -2681,12 +2697,12 @@ namespace SharpPulsar
             {
                 propertiesMap = new SortedDictionary<string, string>(message.Properties);
             }
-            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyRealTopic)) 
+            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyRealTopic))
                 propertiesMap.Add(RetryMessageUtil.SystemPropertyRealTopic, originTopicNameStr);
-            
-            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyOriginMessageId)) 
+
+            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyOriginMessageId))
                 propertiesMap.Add(RetryMessageUtil.SystemPropertyOriginMessageId, originMessageIdStr);
-            
+
             return propertiesMap;
         }
         private string GetOriginMessageIdStr(IMessage<T> message)
@@ -2720,7 +2736,7 @@ namespace SharpPulsar
             {
                 var builder = new ProducerConfigBuilder<byte[]>()
                        .Topic(_deadLetterPolicy.DeadLetterTopic)
-                       .InitialSubscriptionName(_deadLetterPolicy.InitialSubscriptionName)  
+                       .InitialSubscriptionName(_deadLetterPolicy.InitialSubscriptionName)
                        .EnableBatching(false);
                 var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
 
@@ -2729,7 +2745,7 @@ namespace SharpPulsar
             }
         }
         internal override async ValueTask Seek(IMessageId messageId)
-		{
+        {
             var seekBy = $"the message {messageId}";
             if (SeekCheckState(seekBy))
             {
@@ -2752,11 +2768,11 @@ namespace SharpPulsar
                     seek = Commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new List<long> { 0 });
                 }
                 await SeekInternal(requestId, seek, messageId, seekBy);
-            } 
+            }
         }
 
-		internal override async ValueTask Seek(long timestamp)
-		{
+        internal override async ValueTask Seek(long timestamp)
+        {
             var seekBy = $"the timestamp {timestamp:D}";
             if (SeekCheckState(seekBy))
             {
@@ -2767,7 +2783,7 @@ namespace SharpPulsar
         }
 
         private async ValueTask SeekInternal(long requestId, ReadOnlySequence<byte> seek, IMessageId seekId, string seekBy)
-        {           
+        {
             var cnx = _clientCnx;
 
             var originSeekMessageId = _seekMessageId;
@@ -2783,7 +2799,7 @@ namespace SharpPulsar
                 _lastDequeuedMessageId = IMessageId.Earliest;
                 IncomingMessages.Empty();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _seekMessageId = originSeekMessageId;
                 _duringSeek = false;
@@ -2797,19 +2813,19 @@ namespace SharpPulsar
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
                 throw new AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}");
-                
+
             }
 
             if (!Connected())
             {
                 throw new PulsarClientException($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}");
-                
+
             }
 
             return true;
         }
         private async ValueTask<bool> HasMessageAvailableAsync()
-		{
+        {
             if (_lastDequeuedMessageId == IMessageId.Earliest)
             {
                 // if we are starting from latest, we should seek to the actual last message first.
@@ -2881,45 +2897,45 @@ namespace SharpPulsar
             }
         }
 
-		private bool HasMoreMessages(IMessageId lastMessageIdInBroker, IMessageId messageId, bool inclusive)
-		{
-			if(inclusive && lastMessageIdInBroker.CompareTo(messageId) >= 0 && ((MessageId)lastMessageIdInBroker).EntryId != -1)
-			{
-				return true;
-			}
+        private bool HasMoreMessages(IMessageId lastMessageIdInBroker, IMessageId messageId, bool inclusive)
+        {
+            if (inclusive && lastMessageIdInBroker.CompareTo(messageId) >= 0 && ((MessageId)lastMessageIdInBroker).EntryId != -1)
+            {
+                return true;
+            }
 
-			if(!inclusive && lastMessageIdInBroker.CompareTo(messageId) > 0 && ((MessageId)lastMessageIdInBroker).EntryId != -1)
-			{
-				return true;
-			}
+            if (!inclusive && lastMessageIdInBroker.CompareTo(messageId) > 0 && ((MessageId)lastMessageIdInBroker).EntryId != -1)
+            {
+                return true;
+            }
 
-			return false;
-		}
+            return false;
+        }
 
-		private async ValueTask<IMessageId> LastMessageId()
-		{
-			var id = await InternalGetLastMessageIdAsync();
+        private async ValueTask<IMessageId> LastMessageId()
+        {
+            var id = await InternalGetLastMessageIdAsync();
             return id.LastMessageId;
-		}
+        }
         private bool CompletehasMessageAvailableWithValue(bool value)
         {
             return value;
         }
         private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageIdAsync()
-		{
+        {
 
-			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-			{
-				throw new AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
-			}
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            {
+                throw new AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
+            }
 
-			var opTimeoutMs = _clientConfigurationData.OperationTimeout;
-			var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(opTimeoutMs.Multiply(2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
+            var opTimeoutMs = _clientConfigurationData.OperationTimeout;
+            var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(opTimeoutMs.Multiply(2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
 
-			return await InternalGetLastMessageIdAsync(backoff, (long)opTimeoutMs.TotalMilliseconds);
-		}
-		private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageIdAsync(Backoff backoff, long remainingTim)
-		{
+            return await InternalGetLastMessageIdAsync(backoff, (long)opTimeoutMs.TotalMilliseconds);
+        }
+        private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageIdAsync(Backoff backoff, long remainingTim)
+        {
             ///todo: add response to queue, where there is a retry, add something in the queue so that client knows we are 
             ///retrying in times delay
             ///
@@ -2945,7 +2961,7 @@ namespace SharpPulsar
                         var result = await cnx.Ask<LastMessageIdResponse>(payload);
                         IMessageId lastMessageId;
                         var markDeletePosition = new MessageId(result.MarkDeletePosition.LedgerId, result.MarkDeletePosition.EntryId, -1);
-                                                _log.Info($"[{Topic}][{Subscription}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
+                        _log.Info($"[{Topic}][{Subscription}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
                         if (result.BatchIndex < 0)
                         {
                             lastMessageId = new MessageId(result.LedgerId, result.EntryId, result.Partition);
@@ -2977,242 +2993,242 @@ namespace SharpPulsar
                     rmTime = rmTime - nextDelay;
                 }
             }
-		}
-
-		private IMessageId GetMessageId<T1>(IMessage<T1> msg)
-		{
-			var messageId = (MessageId) msg.MessageId;
-			if(messageId is BatchMessageId)
-			{
-				// messageIds contain MessageIdImpl, not BatchMessageIdImpl
-				messageId = new MessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex);
-			}
-			return messageId;
-		}
-
-
-		private bool IsMessageUndecryptable(MessageMetadata msgMetadata)
-		{
-			return (msgMetadata.EncryptionKeys.Count > 0 && Conf.CryptoKeyReader == null && Conf.CryptoFailureAction == ConsumerCryptoFailureAction.Consume);
-		}
-
-		/// <summary>
-		/// Create EncryptionContext if message payload is encrypted
-		/// </summary>
-		/// <param name="msgMetadata"> </param>
-		/// <returns> <seealso cref="Optional"/><<seealso cref="EncryptionContext"/>> </returns>
-		private Option<EncryptionContext> CreateEncryptionContext(MessageMetadata msgMetadata)
-		{
-
-			EncryptionContext encryptionCtx = null;
-			if(msgMetadata.EncryptionKeys.Count > 0)
-			{
-				encryptionCtx = new EncryptionContext(); 
-				IDictionary<string, EncryptionContext.EncryptionKey> keys = new Dictionary<string, EncryptionContext.EncryptionKey>();
-				foreach (var kv in msgMetadata.EncryptionKeys)
-				{
-					var neC = new EncryptionContext.EncryptionKey
-					{
-						KeyValue = kv.Value,
-						Metadata = new Dictionary<string, string>()
-					};
-					foreach (var m in kv.Metadatas)
-					{
-						if (!neC.Metadata.ContainsKey(m.Key))
-						{
-							neC.Metadata.Add(m.Key, m.Value);
-						}
-					}
-
-					if (!keys.ContainsKey(kv.Key))
-					{
-						keys.Add(kv.Key, neC);
-					}
-				}
-				var encParam = new byte[IMessageCrypto.IV_LEN];
-				msgMetadata.EncryptionParam.CopyTo(encParam, 0);
-				int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;
-				encryptionCtx.Keys = keys;
-				encryptionCtx.Param = encParam;
-				encryptionCtx.Algorithm = msgMetadata.EncryptionAlgo;
-				encryptionCtx.CompressionType = (int)msgMetadata.Compression;// CompressionCodecProvider.ConvertFromWireProtocol(msgMetadata.Compression);
-				encryptionCtx.UncompressedMessageSize = (int)msgMetadata.UncompressedSize;
-				encryptionCtx.BatchSize = batchSize;
-			}
-			return Option<EncryptionContext>.Create(encryptionCtx);
-		}
-        private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
-		{
-			var messagesFromQueue = 0;
-			if (IncomingMessages.TryReceive(out var peek))
-			{
-				var messageId = GetMessageId(peek);
-				if(!messageIds.Contains(messageId))
-				{
-					// first message is not expired, then no message is expired in queue.
-					return 0;
-				}
-
-				// try not to remove elements that are added while we remove
-				while(IncomingMessages.Count > 0)
-				{
-					if(IncomingMessages.TryReceive(out var message))
-					{
-						IncomingMessagesSize -= message.Data.Length;
-						messagesFromQueue++;
-						var id = GetMessageId(message);
-						if (!messageIds.Contains(id))
-						{
-							messageIds.Add(id);
-							break;
-						}
-					}
-				}
-			}
-			return messagesFromQueue;
-		}
-
-		private void SetTerminated()
-		{
-			_log.Info($"[{Subscription}] [{Topic}] [{ConsumerName}] Consumer has reached the end of topic");
-			_hasReachedEndOfTopic = true;
-			if(Listener != null)
-			{
-				// Propagate notification to listener
-				Listener.ReachedEndOfTopic(_self);
-			}
-		}
-
-		private bool HasReachedEndOfTopic()
-		{
-			return _hasReachedEndOfTopic;
-		}
-
-		
-		private void ResetBackoff()
-		{
-			_connectionHandler.Tell(Messages.Requests.ResetBackoff.Instance);
         }
 
-		private void ConnectionClosed(IActorRef cnx)
-		{
-			_connectionHandler.Tell(new ConnectionClosed(cnx));
-		}
-
-		private void SetCnx(IActorRef cnx)
+        private IMessageId GetMessageId<T1>(IMessage<T1> msg)
         {
-			if (cnx != null)
-			{
-				_connectionHandler.Tell(new SetCnx(cnx));
-				cnx.Tell(new RegisterConsumer(_consumerId, _self));
+            var messageId = (MessageId)msg.MessageId;
+            if (messageId is BatchMessageId)
+            {
+                // messageIds contain MessageIdImpl, not BatchMessageIdImpl
+                messageId = new MessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex);
+            }
+            return messageId;
+        }
+
+
+        private bool IsMessageUndecryptable(MessageMetadata msgMetadata)
+        {
+            return msgMetadata.EncryptionKeys.Count > 0 && Conf.CryptoKeyReader == null && Conf.CryptoFailureAction == ConsumerCryptoFailureAction.Consume;
+        }
+
+        /// <summary>
+        /// Create EncryptionContext if message payload is encrypted
+        /// </summary>
+        /// <param name="msgMetadata"> </param>
+        /// <returns> <seealso cref="Optional"/><<seealso cref="EncryptionContext"/>> </returns>
+        private Option<EncryptionContext> CreateEncryptionContext(MessageMetadata msgMetadata)
+        {
+
+            EncryptionContext encryptionCtx = null;
+            if (msgMetadata.EncryptionKeys.Count > 0)
+            {
+                encryptionCtx = new EncryptionContext();
+                IDictionary<string, EncryptionContext.EncryptionKey> keys = new Dictionary<string, EncryptionContext.EncryptionKey>();
+                foreach (var kv in msgMetadata.EncryptionKeys)
+                {
+                    var neC = new EncryptionContext.EncryptionKey
+                    {
+                        KeyValue = kv.Value,
+                        Metadata = new Dictionary<string, string>()
+                    };
+                    foreach (var m in kv.Metadatas)
+                    {
+                        if (!neC.Metadata.ContainsKey(m.Key))
+                        {
+                            neC.Metadata.Add(m.Key, m.Value);
+                        }
+                    }
+
+                    if (!keys.ContainsKey(kv.Key))
+                    {
+                        keys.Add(kv.Key, neC);
+                    }
+                }
+                var encParam = new byte[IMessageCrypto.IV_LEN];
+                msgMetadata.EncryptionParam.CopyTo(encParam, 0);
+                int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;
+                encryptionCtx.Keys = keys;
+                encryptionCtx.Param = encParam;
+                encryptionCtx.Algorithm = msgMetadata.EncryptionAlgo;
+                encryptionCtx.CompressionType = (int)msgMetadata.Compression;// CompressionCodecProvider.ConvertFromWireProtocol(msgMetadata.Compression);
+                encryptionCtx.UncompressedMessageSize = (int)msgMetadata.UncompressedSize;
+                encryptionCtx.BatchSize = batchSize;
+            }
+            return Option<EncryptionContext>.Create(encryptionCtx);
+        }
+        private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
+        {
+            var messagesFromQueue = 0;
+            if (IncomingMessages.TryReceive(out var peek))
+            {
+                var messageId = GetMessageId(peek);
+                if (!messageIds.Contains(messageId))
+                {
+                    // first message is not expired, then no message is expired in queue.
+                    return 0;
+                }
+
+                // try not to remove elements that are added while we remove
+                while (IncomingMessages.Count > 0)
+                {
+                    if (IncomingMessages.TryReceive(out var message))
+                    {
+                        IncomingMessagesSize -= message.Data.Length;
+                        messagesFromQueue++;
+                        var id = GetMessageId(message);
+                        if (!messageIds.Contains(id))
+                        {
+                            messageIds.Add(id);
+                            break;
+                        }
+                    }
+                }
+            }
+            return messagesFromQueue;
+        }
+
+        private void SetTerminated()
+        {
+            _log.Info($"[{Subscription}] [{Topic}] [{ConsumerName}] Consumer has reached the end of topic");
+            _hasReachedEndOfTopic = true;
+            if (Listener != null)
+            {
+                // Propagate notification to listener
+                Listener.ReachedEndOfTopic(_self);
+            }
+        }
+
+        private bool HasReachedEndOfTopic()
+        {
+            return _hasReachedEndOfTopic;
+        }
+
+
+        private void ResetBackoff()
+        {
+            _connectionHandler.Tell(Messages.Requests.ResetBackoff.Instance);
+        }
+
+        private void ConnectionClosed(IActorRef cnx)
+        {
+            _connectionHandler.Tell(new ConnectionClosed(cnx));
+        }
+
+        private void SetCnx(IActorRef cnx)
+        {
+            if (cnx != null)
+            {
+                _connectionHandler.Tell(new SetCnx(cnx));
+                cnx.Tell(new RegisterConsumer(_consumerId, _self));
                 /*if (Conf.AckReceiptEnabled && !Commands.PeerSupportsAckReceipt(value.getRemoteEndpointProtocolVersion()))
                 {
                     log.warn("Server don't support ack for receipt! " + "ProtoVersion >=17 support! nowVersion : {}", value.getRemoteEndpointProtocolVersion());
                 }*/
             }
-			var previousClientCnx = _clientCnxUsedForConsumerRegistration;
-			_clientCnxUsedForConsumerRegistration = cnx;
+            var previousClientCnx = _clientCnxUsedForConsumerRegistration;
+            _clientCnxUsedForConsumerRegistration = cnx;
             _prevconsumerId = _consumerId;
-			if (previousClientCnx != null && previousClientCnx != cnx)
-			{
-				previousClientCnx.Tell(new RemoveConsumer(_prevconsumerId));
-			}
-		}
+            if (previousClientCnx != null && previousClientCnx != cnx)
+            {
+                previousClientCnx.Tell(new RemoveConsumer(_prevconsumerId));
+            }
+        }
 
-		internal virtual void DeregisterFromClientCnx()
-		{
-			SetCnx(null);
-		}
+        internal virtual void DeregisterFromClientCnx()
+        {
+            SetCnx(null);
+        }
 
-		private void ReconnectLater(Exception exception)
-		{
-			 _connectionHandler.Tell(new ReconnectLater(exception));           
+        private void ReconnectLater(Exception exception)
+        {
+            _connectionHandler.Tell(new ReconnectLater(exception));
         }
 
         protected override void Unhandled(object message)
         {
-			_log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
+            _log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
         }
         internal virtual string TopicNameWithoutPartition
-		{
-			get
-			{
-				return _topicNameWithoutPartition;
-			}
-		}
-        
+        {
+            get
+            {
+                return _topicNameWithoutPartition;
+            }
+        }
 
-		private void RemoveOldestPendingChunkedMessage()
-		{
-			ChunkedMessageCtx chunkedMsgCtx = null;
-			string firstPendingMsgUuid = null;
-			while(chunkedMsgCtx == null && _pendingChunckedMessageUuidQueue.Count > 0)
-			{
-				// remove oldest pending chunked-message group and free memory
-				firstPendingMsgUuid = _pendingChunckedMessageUuidQueue.Dequeue();
-				chunkedMsgCtx = !string.IsNullOrWhiteSpace(firstPendingMsgUuid) ? _chunkedMessagesMap[firstPendingMsgUuid] : null;
-			}
-			RemoveChunkMessage(firstPendingMsgUuid, chunkedMsgCtx, _autoAckOldestChunkedMessageOnQueueFull);
-		}
 
-		private void RemoveExpireIncompleteChunkedMessages()
-		{
-			if(ExpireTimeOfIncompleteChunkedMessage <= TimeSpan.Zero)
-			{
-				return;
-			}
-			ChunkedMessageCtx chunkedMsgCtx = null;
-            
+        private void RemoveOldestPendingChunkedMessage()
+        {
+            ChunkedMessageCtx chunkedMsgCtx = null;
+            string firstPendingMsgUuid = null;
+            while (chunkedMsgCtx == null && _pendingChunckedMessageUuidQueue.Count > 0)
+            {
+                // remove oldest pending chunked-message group and free memory
+                firstPendingMsgUuid = _pendingChunckedMessageUuidQueue.Dequeue();
+                chunkedMsgCtx = !string.IsNullOrWhiteSpace(firstPendingMsgUuid) ? _chunkedMessagesMap[firstPendingMsgUuid] : null;
+            }
+            RemoveChunkMessage(firstPendingMsgUuid, chunkedMsgCtx, _autoAckOldestChunkedMessageOnQueueFull);
+        }
+
+        private void RemoveExpireIncompleteChunkedMessages()
+        {
+            if (ExpireTimeOfIncompleteChunkedMessage <= TimeSpan.Zero)
+            {
+                return;
+            }
+            ChunkedMessageCtx chunkedMsgCtx = null;
+
             while (_pendingChunckedMessageUuidQueue.TryDequeue(out var messageUUID))
-			{
-				chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? _chunkedMessagesMap[messageUUID] : null;
-				if(chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds))
-				{
+            {
+                chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? _chunkedMessagesMap[messageUUID] : null;
+                if (chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > chunkedMsgCtx.ReceivedTime + ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds)
+                {
                     _pendingChunckedMessageUuidQueue = new Queue<string>(_pendingChunckedMessageUuidQueue.Where(x => !x.Equals(messageUUID)));
                     RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
-				}
-				else
-				{
-					return;
-				}
-			}
-		}
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
 
-		private void RemoveChunkMessage(string msgUUID, ChunkedMessageCtx chunkedMsgCtx, bool autoAck)
-		{
-			if(chunkedMsgCtx == null)
-			{
-				return;
-			}
-			// clean up pending chuncked-Message
-			_chunkedMessagesMap.Remove(msgUUID);
-			if(chunkedMsgCtx.ChunkedMessageIds != null)
-			{
-				foreach(var msgId in chunkedMsgCtx.ChunkedMessageIds)
-				{
-					if(msgId == null)
-					{
-						continue;
-					}
-					if(autoAck)
-					{
-						_log.Info("Removing chunk message-id {}", msgId);
-						DoAcknowledge(msgId, AckType.Individual, new Dictionary<string, long>(), null);
-					}
-					else
-					{
-						TrackMessage(msgId);
-					}
-				}
-			}
-			if(chunkedMsgCtx.ChunkedMsgBuffer != null)
-			{
-				chunkedMsgCtx.ChunkedMsgBuffer = new List<byte>();
-			}
-			chunkedMsgCtx.Recycle();
-			_pendingChunkedMessageCount--;
-		}
-		
+        private void RemoveChunkMessage(string msgUUID, ChunkedMessageCtx chunkedMsgCtx, bool autoAck)
+        {
+            if (chunkedMsgCtx == null)
+            {
+                return;
+            }
+            // clean up pending chuncked-Message
+            _chunkedMessagesMap.Remove(msgUUID);
+            if (chunkedMsgCtx.ChunkedMessageIds != null)
+            {
+                foreach (var msgId in chunkedMsgCtx.ChunkedMessageIds)
+                {
+                    if (msgId == null)
+                    {
+                        continue;
+                    }
+                    if (autoAck)
+                    {
+                        _log.Info("Removing chunk message-id {}", msgId);
+                        DoAcknowledge(msgId, AckType.Individual, new Dictionary<string, long>(), null);
+                    }
+                    else
+                    {
+                        TrackMessage(msgId);
+                    }
+                }
+            }
+            if (chunkedMsgCtx.ChunkedMsgBuffer != null)
+            {
+                chunkedMsgCtx.ChunkedMsgBuffer = new List<byte>();
+            }
+            chunkedMsgCtx.Recycle();
+            _pendingChunkedMessageCount--;
+        }
+
         protected internal override void UpdateAutoScaleReceiverQueueHint()
         {
             var prev = ScaleReceiverQueueHint.GetAndSet(AvailablePermits() + IncomingMessages.Count >= CurrentReceiverQueueSize);
@@ -3222,48 +3238,48 @@ namespace SharpPulsar
             }
         }
         private void DoTransactionAcknowledgeForResponse(IMessageId messageId, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TransactionImpl.TxnID txnID, long requestId)
-		{
-			long ledgerId;
-			long entryId;
+        {
+            long ledgerId;
+            long entryId;
             ReadOnlySequence<byte> cmd;
-			if(messageId is BatchMessageId batchMessageId)
-			{
-				var bitSet = new BitSet(batchMessageId.BatchSize);
-				ledgerId = batchMessageId.LedgerId;
-				entryId = batchMessageId.EntryId;
-				if (ackType == AckType.Cumulative)
-				{
-					batchMessageId.AckCumulative();
-					bitSet.Set(0, batchMessageId.BatchSize);
-					bitSet.Clear(0, batchMessageId.BatchIndex + 1);
-				}
-				else
-				{
-					bitSet.Set(0, batchMessageId.BatchSize);
-					bitSet.Clear(batchMessageId.BatchIndex);
-				}
-				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray().ToList(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
-			}
-			else
-			{
-				var singleMessage = (MessageId) messageId;
-				ledgerId = singleMessage.LedgerId;
-				entryId = singleMessage.EntryId;
-				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, new List<long>{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
-			}
+            if (messageId is BatchMessageId batchMessageId)
+            {
+                var bitSet = new BitSet(batchMessageId.BatchSize);
+                ledgerId = batchMessageId.LedgerId;
+                entryId = batchMessageId.EntryId;
+                if (ackType == AckType.Cumulative)
+                {
+                    batchMessageId.AckCumulative();
+                    bitSet.Set(0, batchMessageId.BatchSize);
+                    bitSet.Clear(0, batchMessageId.BatchIndex + 1);
+                }
+                else
+                {
+                    bitSet.Set(0, batchMessageId.BatchSize);
+                    bitSet.Clear(batchMessageId.BatchIndex);
+                }
+                cmd = Commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray().ToList(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
+            }
+            else
+            {
+                var singleMessage = (MessageId)messageId;
+                ledgerId = singleMessage.LedgerId;
+                entryId = singleMessage.EntryId;
+                cmd = Commands.NewAck(_consumerId, ledgerId, entryId, new List<long> { }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
+            }
 
-			_ackRequests.Add(requestId, (new List<IMessageId> { messageId}, txnID));
-			if(ackType == AckType.Cumulative)
-			{
-				_unAckedMessageTracker.Tell(new RemoveMessagesTill(messageId));
-			}
-			else
-			{
-				_unAckedMessageTracker.Tell(new Remove(messageId));
-			}
-			var payload = new Payload(cmd, requestId, "NewAckForReceipt");
-			_clientCnx.Tell(payload);
-		}
+            _ackRequests.Add(requestId, (new List<IMessageId> { messageId }, txnID));
+            if (ackType == AckType.Cumulative)
+            {
+                _unAckedMessageTracker.Tell(new RemoveMessagesTill(messageId));
+            }
+            else
+            {
+                _unAckedMessageTracker.Tell(new Remove(messageId));
+            }
+            var payload = new Payload(cmd, requestId, "NewAckForReceipt");
+            _clientCnx.Tell(payload);
+        }
         private void DoTransactionAcknowledgeForResponse(IList<IMessageId> messageIds, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TransactionImpl.TxnID txnID, long requestId)
         {
             long ledgerId;
@@ -3332,37 +3348,37 @@ namespace SharpPulsar
         }
 
         private void AckReceipt(long requestId)
-		{
-			if (_ackRequests.TryGetValue(requestId, out var ot))
-			{
-				_ = _ackRequests.Remove(requestId);
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"MessageId : {ot.messageid} has ack by TxnId : {ot.txnid}");
-				}
-			}
-			else
-			{
-				_log.Info($"Ack request has been handled requestId : {requestId}");
-			}
-		}
-
-		private void AckError(long requestId, PulsarClientException pulsarClientException)
-		{			
-			if(_ackRequests.TryGetValue(requestId, out var ot))
+        {
+            if (_ackRequests.TryGetValue(requestId, out var ot))
             {
-				_ = _ackRequests.Remove(requestId);
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"MessageId : {ot.messageid} has ack by TxnId : {ot.txnid}");
-				}
-			}
+                _ = _ackRequests.Remove(requestId);
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"MessageId : {ot.messageid} has ack by TxnId : {ot.txnid}");
+                }
+            }
             else
             {
-				_log.Info($"Ack request has been handled requestId : {requestId}");
-			}
-			//ConsumerQueue.AcknowledgeException.Add(new ClientExceptions(pulsarClientException));
-		}
+                _log.Info($"Ack request has been handled requestId : {requestId}");
+            }
+        }
+
+        private void AckError(long requestId, PulsarClientException pulsarClientException)
+        {
+            if (_ackRequests.TryGetValue(requestId, out var ot))
+            {
+                _ = _ackRequests.Remove(requestId);
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"MessageId : {ot.messageid} has ack by TxnId : {ot.txnid}");
+                }
+            }
+            else
+            {
+                _log.Info($"Ack request has been handled requestId : {requestId}");
+            }
+            //ConsumerQueue.AcknowledgeException.Add(new ClientExceptions(pulsarClientException));
+        }
         internal IActorRef Cnx()
         {
             return _clientCnx;

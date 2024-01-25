@@ -41,111 +41,111 @@ using IScheduler = Akka.Actor.IScheduler;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar
+namespace SharpPulsar.Consumer
 {
     internal abstract class ConsumerActorBase<T> : ReceiveActor
-	{
+    {
         protected internal const int InitialReceiverQueueSize = 1;
         internal abstract long LastDisconnectedTimestamp();
-		internal abstract void NegativeAcknowledge(IMessageId messageId);
+        internal abstract void NegativeAcknowledge(IMessageId messageId);
         internal abstract void Resume();
-		internal abstract void Pause();
-		internal abstract bool Connected();
-		internal abstract ValueTask Seek(long timestamp);
-		internal abstract ValueTask Seek(IMessageId messageId);
-		internal abstract IConsumerStatsRecorder Stats { get; }
+        internal abstract void Pause();
+        internal abstract bool Connected();
+        internal abstract ValueTask Seek(long timestamp);
+        internal abstract ValueTask Seek(IMessageId messageId);
+        internal abstract IConsumerStatsRecorder Stats { get; }
         internal readonly AtomicBoolean ScaleReceiverQueueHint = new AtomicBoolean(false);
         private IActorRef _self;
 
         internal int CurrentReceiverQueueSize;
         internal enum ConsumerType
-		{
-			PARTITIONED,
-			NonPartitioned
-		}
-       
+        {
+            PARTITIONED,
+            NonPartitioned
+        }
+
         internal bool HasParentConsumer = false;
         protected readonly ILoggingAdapter _log;
-		private readonly string _subscription;
-		protected internal readonly ConsumerConfigurationData<T> Conf;
-		private readonly string _consumerName;
-		protected internal readonly IMessageListener<T> Listener;
-		protected internal readonly IConsumerEventListener ConsumerEventListener;
-		protected internal BufferBlock<IMessage<T>> IncomingMessages;
-		protected internal IActorRef UnAckedChunckedMessageIdSequenceMap;
+        private readonly string _subscription;
+        protected internal readonly ConsumerConfigurationData<T> Conf;
+        private readonly string _consumerName;
+        protected internal readonly IMessageListener<T> Listener;
+        protected internal readonly IConsumerEventListener ConsumerEventListener;
+        protected internal BufferBlock<IMessage<T>> IncomingMessages;
+        protected internal IActorRef UnAckedChunckedMessageIdSequenceMap;
         protected internal readonly ConcurrentQueue<TaskCompletionSource<IMessage<T>>> PendingReceives;
         protected internal readonly ConcurrentQueue<OpBatchReceive> PendingBatchReceives;
         protected internal int MaxReceiverQueueSize;
-		protected internal readonly ISchema<T> Schema;
-		protected internal readonly ConsumerInterceptors<T> Interceptors;
-		protected internal readonly BatchReceivePolicy BatchReceivePolicy;
-		protected internal long IncomingMessagesSize = 0L;
-		protected internal ICancelable BatchReceiveTimeout = null;
-		protected internal readonly IActorRef StateActor;
-		private readonly ICancelable _stateUpdater;
-		protected internal HandlerState State;
-		private readonly string _topic;
+        protected internal readonly ISchema<T> Schema;
+        protected internal readonly ConsumerInterceptors<T> Interceptors;
+        protected internal readonly BatchReceivePolicy BatchReceivePolicy;
+        protected internal long IncomingMessagesSize = 0L;
+        protected internal ICancelable BatchReceiveTimeout = null;
+        protected internal readonly IActorRef StateActor;
+        private readonly ICancelable _stateUpdater;
+        protected internal HandlerState State;
+        private readonly string _topic;
         protected internal readonly TaskCompletionSource<IActorRef> SubscribeFuture;
         protected internal long ConsumerEpoch;
         internal readonly IScheduler Scheduler;
         public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
-		{
+        {
             _self = Self;
             SubscribeFuture = subscribeFuture;
             if (conf.Interceptors != null && conf.Interceptors.Count > 0)
                 Interceptors = new ConsumerInterceptors<T>(Context.GetLogger(), conf.Interceptors);
             StateActor = stateActor;
-			_topic = topic;
-			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
-			State = new HandlerState(lookup, connectionPool, topic, Context.System, _consumerName);
-			_log = Context.GetLogger();
-			MaxReceiverQueueSize = receiverQueueSize;
-			_subscription = conf.SubscriptionName;
-			Conf = conf;
-			Listener = conf.MessageListener;
-            Scheduler = Context.System.Scheduler;   
+            _topic = topic;
+            _consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
+            State = new HandlerState(lookup, connectionPool, topic, Context.System, _consumerName);
+            _log = Context.GetLogger();
+            MaxReceiverQueueSize = receiverQueueSize;
+            _subscription = conf.SubscriptionName;
+            Conf = conf;
+            Listener = conf.MessageListener;
+            Scheduler = Context.System.Scheduler;
             ConsumerEventListener = conf.ConsumerEventListener;
             PendingBatchReceives = new ConcurrentQueue<OpBatchReceive>();
             PendingReceives = new ConcurrentQueue<TaskCompletionSource<IMessage<T>>>();
             IncomingMessages = new BufferBlock<IMessage<T>>();
-			UnAckedChunckedMessageIdSequenceMap = Context.ActorOf(Tracker.UnAckedChunckedMessageIdSequenceMap.Prop());
-			Schema = schema;
-			if (conf.BatchReceivePolicy != null)
-			{
-				var userBatchReceivePolicy = conf.BatchReceivePolicy;
-				if (userBatchReceivePolicy.MaxNumMessages > MaxReceiverQueueSize)
-				{
-					BatchReceivePolicy = new BatchReceivePolicy.Builder()
+            UnAckedChunckedMessageIdSequenceMap = Context.ActorOf(Tracker.UnAckedChunckedMessageIdSequenceMap.Prop());
+            Schema = schema;
+            if (conf.BatchReceivePolicy != null)
+            {
+                var userBatchReceivePolicy = conf.BatchReceivePolicy;
+                if (userBatchReceivePolicy.MaxNumMessages > MaxReceiverQueueSize)
+                {
+                    BatchReceivePolicy = new BatchReceivePolicy.Builder()
                         .MaxNumMessages(MaxReceiverQueueSize)
                         .MaxNumBytes(userBatchReceivePolicy.MaxNumBytes)
                         .MessagesFromMultiTopicsEnabled(userBatchReceivePolicy.IsMessagesFromMultiTopicsEnabled())
                         .Timeout((int)userBatchReceivePolicy.TimeoutMs, TimeUnit.TimeUnit.MILLISECONDS)
                         .Build();
-					_log.Warning($"BatchReceivePolicy maxNumMessages: {userBatchReceivePolicy.MaxNumMessages} is greater than maxReceiverQueueSize: {MaxReceiverQueueSize}, reset to maxReceiverQueueSize. batchReceivePolicy: {BatchReceivePolicy}");
-				}
-				else if (userBatchReceivePolicy.MaxNumMessages <= 0 && userBatchReceivePolicy.MaxNumBytes <= 0)
-				{
-					BatchReceivePolicy = new BatchReceivePolicy.Builder()
+                    _log.Warning($"BatchReceivePolicy maxNumMessages: {userBatchReceivePolicy.MaxNumMessages} is greater than maxReceiverQueueSize: {MaxReceiverQueueSize}, reset to maxReceiverQueueSize. batchReceivePolicy: {BatchReceivePolicy}");
+                }
+                else if (userBatchReceivePolicy.MaxNumMessages <= 0 && userBatchReceivePolicy.MaxNumBytes <= 0)
+                {
+                    BatchReceivePolicy = new BatchReceivePolicy.Builder()
                         .MaxNumMessages(BatchReceivePolicy.DefaultPolicy.MaxNumMessages)
                         .MaxNumBytes(BatchReceivePolicy.DefaultPolicy.MaxNumBytes)
                         .MessagesFromMultiTopicsEnabled(userBatchReceivePolicy.IsMessagesFromMultiTopicsEnabled())
                         .Timeout((int)userBatchReceivePolicy.TimeoutMs, TimeUnit.TimeUnit.MILLISECONDS)
                         .Build();
-					_log.Warning("BatchReceivePolicy maxNumMessages: {} or maxNumBytes: {} is less than 0. " + "Reset to DEFAULT_POLICY. batchReceivePolicy: {}", userBatchReceivePolicy.MaxNumMessages, userBatchReceivePolicy.MaxNumBytes, BatchReceivePolicy.ToString());
-				}
-				else
-				{
-					BatchReceivePolicy = conf.BatchReceivePolicy;
-				}
-			}
-			else
-			{
-				BatchReceivePolicy = BatchReceivePolicy.DefaultPolicy;
-			}
+                    _log.Warning("BatchReceivePolicy maxNumMessages: {} or maxNumBytes: {} is less than 0. " + "Reset to DEFAULT_POLICY. batchReceivePolicy: {}", userBatchReceivePolicy.MaxNumMessages, userBatchReceivePolicy.MaxNumBytes, BatchReceivePolicy.ToString());
+                }
+                else
+                {
+                    BatchReceivePolicy = conf.BatchReceivePolicy;
+                }
+            }
+            else
+            {
+                BatchReceivePolicy = BatchReceivePolicy.DefaultPolicy;
+            }
 
-			_stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), Self, SendState.Instance, ActorRefs.NoSender);
+            _stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), Self, SendState.Instance, ActorRefs.NoSender);
             InitReceiverQueueSize();
-            
+
         }
         protected internal virtual void TriggerBatchReceiveTimeoutTask()
         {
@@ -173,7 +173,7 @@ namespace SharpPulsar
             {
                 return;
             }
-             
+
             if (ScaleReceiverQueueHint.CompareAndSet(true, false))
             {
                 var oldSize = CurrentReceiverQueueSize;
@@ -226,7 +226,7 @@ namespace SharpPulsar
 
         private void FailPendingReceives()
         {
-            
+
             while (PendingReceives.Count > 0)
             {
                 var receiveFuture = new TaskCompletionSource<IMessage<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -271,7 +271,7 @@ namespace SharpPulsar
         }
 
         protected internal virtual async Task ReconsumeLater(IMessage<T> message, IDictionary<string, string> customProperties, TimeSpan delayTime)
-        {           
+        {
             if (!Conf.RetryEnable)
             {
                 throw new PulsarClientException("reconsumeLater method not support!");
@@ -307,7 +307,7 @@ namespace SharpPulsar
             {
                 throw new PulsarClientException.InvalidMessageException(npe.Message);
             }
-            
+
         }
         protected internal virtual IMessage<T> Receive()
         {
@@ -337,7 +337,7 @@ namespace SharpPulsar
         protected void VerifyBatchReceive()
         {
             if (Listener != null)
-            { 
+            {
                 throw new InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
             if (CurrentReceiverQueueSize == 0)
@@ -376,7 +376,7 @@ namespace SharpPulsar
                 return message;
             }
         }
-      
+
         protected void VerifyConsumerState()
         {
             var state = State.ConnectionState;
@@ -387,7 +387,7 @@ namespace SharpPulsar
                     break; // Ok
                 case HandlerState.State.Closing:
                 case HandlerState.State.Closed:
-                   throw new AlreadyClosedException("Consumer already closed");
+                    throw new AlreadyClosedException("Consumer already closed");
                 case HandlerState.State.Terminated:
                     throw new TopicTerminatedException("Topic was terminated");
                 case HandlerState.State.Failed:
@@ -405,66 +405,66 @@ namespace SharpPulsar
             {
                 return false;
             }
-            var batch = (BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= BatchReceivePolicy.MaxNumMessages) 
-                || (BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= BatchReceivePolicy.MaxNumBytes);
+            var batch = BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= BatchReceivePolicy.MaxNumMessages
+                || BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= BatchReceivePolicy.MaxNumBytes;
 
-            return batch;   
+            return batch;
         }
         internal void NegativeAcknowledge(IMessage<T> message)
-		{
-			NegativeAcknowledge(message.MessageId);
-		}
+        {
+            NegativeAcknowledge(message.MessageId);
+        }
         internal abstract void Unsubscribe();
         protected internal virtual void NegativeAcknowledge(IMessages<T> messages)
-		{
-			messages.ForEach(NegativeAcknowledge);
-		}
+        {
+            messages.ForEach(NegativeAcknowledge);
+        }
 
-		protected internal virtual SubType SubType
-		{
-			get
-			{
-				return Conf.SubscriptionType;
+        protected internal virtual SubType SubType
+        {
+            get
+            {
+                return Conf.SubscriptionType;
 
-			}
-		}
+            }
+        }
 
-		internal abstract int AvailablePermits();
+        internal abstract int AvailablePermits();
 
-		internal abstract int NumMessagesInQueue();
+        internal abstract int NumMessagesInQueue();
 
 
-		internal virtual string Topic
-		{
-			get
-			{
-				return _topic;
-			}
-		}
+        internal virtual string Topic
+        {
+            get
+            {
+                return _topic;
+            }
+        }
 
-		internal virtual string Subscription
-		{
-			get
-			{
-				return _subscription;
-			}
-		}
+        internal virtual string Subscription
+        {
+            get
+            {
+                return _subscription;
+            }
+        }
 
-		internal virtual string ConsumerName
-		{
-			get
-			{
-				return _consumerName;
-			}
-		}
+        internal virtual string ConsumerName
+        {
+            get
+            {
+                return _consumerName;
+            }
+        }
 
-		protected internal virtual void OnAcknowledge(IMessageId messageId, Exception exception)
-		{
-			if (Interceptors != null)
-			{
-				Interceptors.OnAcknowledge(Self, messageId, exception);
-			}
-		}
+        protected internal virtual void OnAcknowledge(IMessageId messageId, Exception exception)
+        {
+            if (Interceptors != null)
+            {
+                Interceptors.OnAcknowledge(Self, messageId, exception);
+            }
+        }
         protected internal virtual void OnAcknowledge(IList<IMessageId> messageIds, Exception exception)
         {
             if (Interceptors != null)
@@ -473,12 +473,12 @@ namespace SharpPulsar
             }
         }
         protected internal virtual void OnAcknowledgeCumulative(IMessageId messageId, Exception exception)
-		{
-			if (Interceptors != null)
-			{
-				Interceptors.OnAcknowledgeCumulative(Self, messageId, exception);
-			}
-		}
+        {
+            if (Interceptors != null)
+            {
+                Interceptors.OnAcknowledgeCumulative(Self, messageId, exception);
+            }
+        }
         protected internal virtual void OnAcknowledgeCumulative(IList<IMessageId> messageIds, Exception exception)
         {
             if (Interceptors != null)
@@ -487,20 +487,20 @@ namespace SharpPulsar
             }
         }
         protected internal virtual void OnNegativeAcksSend(ISet<IMessageId> messageIds)
-		{
-			if (Interceptors != null)
-			{
-				Interceptors.OnNegativeAcksSend(Self, messageIds);
-			}
-		}
-        
+        {
+            if (Interceptors != null)
+            {
+                Interceptors.OnNegativeAcksSend(Self, messageIds);
+            }
+        }
+
         protected internal virtual void OnAckTimeoutSend(ISet<IMessageId> messageIds)
-		{
-			if (Interceptors != null)
-			{
-				Interceptors.OnAckTimeoutSend(Self, messageIds);
-			}
-		}
+        {
+            if (Interceptors != null)
+            {
+                Interceptors.OnAckTimeoutSend(Self, messageIds);
+            }
+        }
         protected internal virtual void TryTriggerListener()
         {
             if (Listener != null)
@@ -524,7 +524,7 @@ namespace SharpPulsar
                         msg = InternalReceive(TimeSpan.FromMilliseconds(0));
                         if (msg != null)
                         {
-                            IMessage<T> finalMsg = msg;
+                            var finalMsg = msg;
                             if (SubType.KeyShared == Conf.SubscriptionType)
                             {
                                 PeekMessageKey(msg);
@@ -558,7 +558,7 @@ namespace SharpPulsar
         protected internal virtual void CompletePendingReceive(TaskCompletionSource<IMessage<T>> receivedFuture, IMessage<T> msg)
         {
             //ActorTaskScheduler.RunTask(() => { });
-            var receivedConsumer = (msg is TopicMessage<T>) ? ((TopicMessage<T>)msg).ReceivedByConsumer : null;
+            var receivedConsumer = msg is TopicMessage<T> ? ((TopicMessage<T>)msg).ReceivedByConsumer : null;
 
             var executor = receivedConsumer != null ? receivedConsumer : Self;
             /* return executor;
@@ -595,7 +595,7 @@ namespace SharpPulsar
                 {
                     _log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {msg.MessageId}");
                 }
-                var receivedConsumer = (msg is TopicMessage<T>) ? ((TopicMessage<T>)msg).ReceivedByConsumer : Self;
+                var receivedConsumer = msg is TopicMessage<T> ? ((TopicMessage<T>)msg).ReceivedByConsumer : Self;
                 // Increase the permits here since we will not increase permits while receive messages from consumer
                 // after enabled message listener.
                 receivedConsumer.Tell(new IncreaseAvailablePermits<T>(msg is TopicMessage<T> ? ((TopicMessage<T>)msg).Message : msg));
@@ -610,7 +610,7 @@ namespace SharpPulsar
         internal static readonly byte[] NoneKey = Encoding.UTF8.GetBytes("NONE_KEY");
         protected internal virtual byte[] PeekMessageKey(IMessage<T> msg)
         {
-            byte[] key = NoneKey;
+            var key = NoneKey;
             if (msg.HasKey())
             {
                 key = msg.KeyBytes;
@@ -622,10 +622,10 @@ namespace SharpPulsar
             return key;
         }
         protected internal virtual bool CanEnqueueMessage(IMessage<T> message)
-		{
-			// Default behavior, can be overridden in subclasses
-			return true;
-		}
+        {
+            // Default behavior, can be overridden in subclasses
+            return true;
+        }
         protected internal sealed class OpBatchReceive
         {
 
@@ -699,7 +699,7 @@ namespace SharpPulsar
 
         protected internal virtual void CompletePendingBatchReceive(TaskCompletionSource<IMessages<T>> future, IMessages<T> messages)
         {
-            if (!future.Task.IsCompletedSuccessfully )
+            if (!future.Task.IsCompletedSuccessfully)
             {
                 future.SetResult(messages);
                 _log.Warning($"Race condition detected. batch receive future was already completed (cancelled={future.Task.IsCanceled}) and messages were dropped. messages={messages}");
@@ -717,7 +717,7 @@ namespace SharpPulsar
         private void DoPendingBatchReceiveTask(TimeSpan timeout)
         {
             long timeToWaitMs;
-            bool hasPendingReceives = false;
+            var hasPendingReceives = false;
             // If it's closing/closed we need to ignore this timeout and not schedule next timeout.
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
@@ -786,8 +786,8 @@ namespace SharpPulsar
         protected internal virtual void ResetIncomingMessageSize()
         {
             IncomingMessagesSize = 0;
-            long oldSize = IncomingMessagesSize;
-           // MemoryLimitController..ifPresent(limiter => limiter.releaseMemory(OldSize));
+            var oldSize = IncomingMessagesSize;
+            // MemoryLimitController..ifPresent(limiter => limiter.releaseMemory(OldSize));
         }
 
         protected internal virtual void DecreaseIncomingMessageSize(in IMessage<T> message)
@@ -796,12 +796,12 @@ namespace SharpPulsar
             //MemoryLimitController.ifPresent(limiter => limiter.releaseMemory(Message.size()));
         }
         protected internal virtual Messages<T> NewMessages
-		{
-			get
-			{
-				return new Messages<T>(BatchReceivePolicy.MaxNumMessages, BatchReceivePolicy.MaxNumBytes);
-			}
-		}
+        {
+            get
+            {
+                return new Messages<T>(BatchReceivePolicy.MaxNumMessages, BatchReceivePolicy.MaxNumBytes);
+            }
+        }
         public virtual long IncomingMessageSize
         {
             get
@@ -823,7 +823,7 @@ namespace SharpPulsar
             var ackFuture = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (txn != null)
             {
-                
+
                 txn.Ask(new RegisterAckedTopic(Topic, Subscription))
                     .ContinueWith(task =>
                     {
@@ -884,14 +884,14 @@ namespace SharpPulsar
 		/// </summary>
 		protected internal abstract void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds);
         protected internal abstract void RedeliverUnacknowledgedMessages();
-        protected internal abstract void  DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
+        protected internal abstract void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
         protected internal abstract void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
         protected internal abstract TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, string> properties, TimeSpan delayTime);
 
         protected internal abstract void CompleteOpBatchReceive(OpBatchReceive op);
-        
+
         // If message consumer epoch is smaller than consumer epoch present that
         // it has been sent to the client before the user calls redeliverUnacknowledgedMessages, this message is invalid.
         // so we should release this message and receive again
@@ -941,31 +941,31 @@ namespace SharpPulsar
             }
         }
     }
-	internal class ConsumerStateActor: ReceiveActor
+    internal class ConsumerStateActor : ReceiveActor
     {
-		private HandlerState.State _state;
-		public ConsumerStateActor()
+        private HandlerState.State _state;
+        public ConsumerStateActor()
         {
-			Receive<SetConumerState>(m => 
-			{
-				_state = m.State;
-			});
-			Receive<GetHandlerState>(_ => 
-			{
-				Sender.Tell(new AskResponse(_state));
-			});
+            Receive<SetConumerState>(m =>
+            {
+                _state = m.State;
+            });
+            Receive<GetHandlerState>(_ =>
+            {
+                Sender.Tell(new AskResponse(_state));
+            });
         }
     }
-	internal sealed class SendState
+    internal sealed class SendState
     {
-		public static SendState Instance = new SendState();
+        public static SendState Instance = new SendState();
     }
-	internal class SetConumerState
+    internal class SetConumerState
     {
-		public HandlerState.State State { get; }
+        public HandlerState.State State { get; }
         public SetConumerState(HandlerState.State state)
         {
-			State = state;
+            State = state;
         }
     }
 }

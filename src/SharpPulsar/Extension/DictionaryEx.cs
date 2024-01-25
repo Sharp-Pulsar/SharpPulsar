@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Consumer;
 using SharpPulsar.Tracker;
 
 namespace SharpPulsar.Extension

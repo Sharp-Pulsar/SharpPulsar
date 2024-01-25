@@ -78,7 +78,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Consumer\" />
     <Folder Include="Internal\" />
   </ItemGroup>
 
