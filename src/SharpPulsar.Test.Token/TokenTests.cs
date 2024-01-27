@@ -1,4 +1,7 @@
 ﻿using System.Text;
+using SharpCompress;
+using SharpPulsar.Auth;
+using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
@@ -9,15 +12,30 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test.Token
 {
     [Collection(nameof(PulsarTokenCollection))]
-    public class TokenTests 
+    public class TokenTests : IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
         private readonly string _topic;
-        private readonly PulsarClient _client;
+        private PulsarClient _client;
+        private PulsarSystem _system;
+        private PulsarClientConfigBuilder _configBuilder;
         public TokenTests(ITestOutputHelper output, PulsarTokenFixture fixture)
         {
+            var s = fixture.Container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" })
+                .GetAwaiter()
+                .GetResult();
             _output = output;
-            _client = fixture.PulsarSystem?.NewClient(fixture.ConfigBuilder).AsTask().GetAwaiter().GetResult()!;
+            var client = new PulsarClientConfigBuilder();
+            var serviceUrl = "pulsar://localhost:6650";
+            var webUrl = "http://localhost:8080";
+            client.ServiceUrl(serviceUrl);
+            client.WebUrl(webUrl);
+            
+            client.Authentication(AuthenticationFactory.Token(s.Stdout));
+            client.ServiceUrl(serviceUrl);
+            client.WebUrl(webUrl);
+            _system = PulsarSystem.GetInstance(actorSystemName: "token");
+            _configBuilder = client;           
             _topic = $"persistent://public/default/token-{Guid.NewGuid()}";
         }
 
@@ -85,7 +103,7 @@ namespace SharpPulsar.Test.Token
             if (message != null)
                 _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
 
-            Assert.Equal(byteKey, message.KeyBytes);
+            Assert.Equal(byteKey, message!.KeyBytes);
 
             Assert.True(message.HasBase64EncodedKey());
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
@@ -149,6 +167,15 @@ namespace SharpPulsar.Test.Token
             await consumer.CloseAsync();
             _client.Dispose();
         }
-        
+        public async Task InitializeAsync()
+        {
+
+            _client = await _system.NewClient(_configBuilder);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await _client.ShutdownAsync();
+        }
     }
 }
