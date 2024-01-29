@@ -506,7 +506,7 @@ namespace SharpPulsar.Consumer
             {
                 try
                 {
-                    Unsubscribe();
+                    Unsubscribe(u.Force);
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -518,7 +518,7 @@ namespace SharpPulsar.Consumer
             {
                 try
                 {
-                    await Unsubscribe(u.TopicName);
+                    await Unsubscribe(u.TopicName, u.Force);
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -1072,7 +1072,7 @@ namespace SharpPulsar.Consumer
             consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
         }
 
-        internal override void Unsubscribe()
+        internal override void Unsubscribe(bool force)
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
@@ -1080,7 +1080,7 @@ namespace SharpPulsar.Consumer
             }
 
             State.ConnectionState = HandlerState.State.Closing;
-            var futureList = _consumers.Values.Select(async consumer => await consumer.Ask<AskResponse>(Messages.Consumer.Unsubscribe.Instance)).ToList();
+            var futureList = _consumers.Values.Select(async consumer => await consumer.Ask<AskResponse>(new Unsubscribe(force))).ToList();
             try
             {
                 // Wait for all the tasks to finish.
@@ -1099,7 +1099,7 @@ namespace SharpPulsar.Consumer
             }
         }
         // un-subscribe a given topic
-        private async ValueTask Unsubscribe(string topicName)
+        private async ValueTask Unsubscribe(string topicName, bool force)
         {
             Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
 
@@ -1123,7 +1123,7 @@ namespace SharpPulsar.Consumer
                 if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
                     consumersToUnsub.Add(c);
             }
-            var futureList = consumersToUnsub.Select(async consumer => await consumer.Ask<AskResponse>(Messages.Consumer.Unsubscribe.Instance)).ToList();
+            var futureList = consumersToUnsub.Select(async consumer => await consumer.Ask<AskResponse>(new Unsubscribe(force))).ToList();
             try
             {
                 Task.WaitAll(futureList.ToArray());

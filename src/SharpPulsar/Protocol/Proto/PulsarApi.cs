@@ -1800,6 +1800,16 @@ namespace SharpPulsar.Protocol.Proto
         [global::ProtoBuf.ProtoMember(2, Name = @"request_id", IsRequired = true)]
         public ulong RequestId { get; set; }
 
+        [global::ProtoBuf.ProtoMember(3, Name = @"force")]
+        [global::System.ComponentModel.DefaultValue(false)]
+        public bool Force
+        {
+            get => __pbn__Force ?? false;
+            set => __pbn__Force = value;
+        }
+        public bool ShouldSerializeForce() => __pbn__Force != null;
+        public void ResetForce() => __pbn__Force = null;
+        private bool? __pbn__Force;
     }
 
     [global::ProtoBuf.ProtoContract()]

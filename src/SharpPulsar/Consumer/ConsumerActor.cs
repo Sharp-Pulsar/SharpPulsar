@@ -187,6 +187,12 @@ namespace SharpPulsar.Consumer
             _tokenSource = new CancellationTokenSource();
             _client = client;
             _consumerId = consumerId;
+            if (!_topicName.Persistent && conf.SubscriptionMode.Equals(SubscriptionMode.Durable))
+            {
+                conf.SubscriptionMode = SubscriptionMode.NonDurable;
+                _log.Warning($"[{topic}] Cannot create a [Durable] subscription for a NonPersistentTopic, "
+                        + $"will use [NonDurable] to subscribe. Subscription name: {conf.SubscriptionName}");
+            }
             _subscriptionMode = conf.SubscriptionMode;
             if (startMessageId != null)
             {
@@ -281,7 +287,10 @@ namespace SharpPulsar.Consumer
                 _metadata = new Dictionary<string, string>(conf.Properties).ToImmutableDictionary();
             }
 
-            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(clientConfiguration.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(clientConfiguration.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
+            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder()
+                .SetInitialTime(TimeSpan.FromMilliseconds(clientConfiguration.InitialBackoffIntervalMs))
+                .SetMax(TimeSpan.FromMilliseconds(clientConfiguration.MaxBackoffIntervalMs))
+                .SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
 
             if (_topicName.Persistent)
             {
@@ -904,12 +913,12 @@ namespace SharpPulsar.Consumer
                     Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
-            Receive<Unsubscribe>(_ =>
+            Receive<Unsubscribe>(un =>
             {
                 try
                 {
-
-                    Sender.Tell(new AskResponse());
+                    Unsubscribe(un.Force);
+                    Sender.Tell(new AskResponse($"[{Topic}][{Subscription}] Successfully unsubscribed from topic"));
                 }
                 catch (Exception ex)
                 {
@@ -1041,7 +1050,7 @@ namespace SharpPulsar.Consumer
             }
         }
 
-        internal override void Unsubscribe()
+        internal override void Unsubscribe(bool force)
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
@@ -1054,7 +1063,7 @@ namespace SharpPulsar.Consumer
                     State.ConnectionState = HandlerState.State.Closing;
                     var res = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
                     var requestId = res.Id;
-                    var unsubscribe = Commands.NewUnsubscribe(_consumerId, requestId);
+                    var unsubscribe = Commands.NewUnsubscribe(_consumerId, requestId, force);
                     var cnx = _clientCnx;
                     cnx.Tell(new SendRequestWithId(unsubscribe, requestId));
                     CloseConsumerTasks();

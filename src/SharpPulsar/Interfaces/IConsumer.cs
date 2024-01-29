@@ -76,6 +76,23 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException"> if the operation fails </exception>
         void Unsubscribe();
 
+        /// <summary>
+        /// Unsubscribe the consumer.
+        /// 
+        /// <para>This call blocks until the consumer is unsubscribed.
+        /// 
+        /// </para>
+        /// <para>Unsubscribing will the subscription to be deleted and all the
+        /// data retained can potentially be deleted as well.
+        /// 
+        /// </para>
+        /// <para>The operation will fail when performed on a shared subscription
+        /// where multiple consumers are currently connected.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <exception cref="PulsarClientException"> if the operation fails </exception>
+        void Unsubscribe(bool force);
 
         /// <summary>
         /// Unsubscribe the consumer.
@@ -94,18 +111,19 @@ namespace SharpPulsar.Interfaces
         /// </summary>
         /// <exception cref="PulsarClientException"> if the operation fails </exception>
         ValueTask UnsubscribeAsync();
+        ValueTask UnsubscribeAsync(bool force   );
 
         /// <summary>
         /// MultiTopicsConsumer
         /// </summary>
         /// <param name="topicName"></param>
-        void Unsubscribe(string topicName);
+        void Unsubscribe(string topicName, bool force);
         /// <summary>
         /// MultiTopicsConsumer
         /// </summary>
         /// <param name="topicName"></param>
         /// <returns></returns>
-        ValueTask UnsubscribeAsync(string topicName);
+        ValueTask UnsubscribeAsync(string topicName, bool force);
 
         /// <summary>
         /// Receive a single message.
