@@ -24,7 +24,7 @@ namespace SharpPulsar
         private static PulsarSystem _instance;
         private static readonly Nito.AsyncEx.AsyncLock _lock = new Nito.AsyncEx.AsyncLock();
         private static ActorSystem _actorSystem;
-        private readonly ClientConfigurationData _conf;
+        private readonly ClientConfigurationData _conf = new();
         private readonly List<IActorRef> _actorRefs= new List<IActorRef>();
         private readonly Action _logSetup = () => 
         {

@@ -22,7 +22,7 @@ namespace SharpPulsar.TestContainer
         private readonly IConfiguration _configuration;
         //private readonly IMessageSink _messageSink;
         //private readonly IContainerService _cluster;
-        public PulsarContainer Container { get { return _container; } } 
+        public PulsarContainer Container { get { return _container!; } } 
         public PulsarTokenFixture(/*IMessageSink messageSink*/)
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
@@ -173,7 +173,7 @@ namespace SharpPulsar.TestContainer
             //_cluster.Remove(true);
             //_cluster.Stop();
             //_cluster.Dispose();
-            await _container.StopAsync();
+            await _container!.StopAsync();
             //return Task.CompletedTask;
         }
         /*public string CreateToken(TimeSpan expiryTime)
