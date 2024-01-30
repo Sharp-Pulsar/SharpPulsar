@@ -22,6 +22,9 @@ using SharpPulsar.Builder;
 using SharpPulsar.Extension;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Compression;
+using DotNetty.Common.Utilities;
+using SharpPulsar.Crypto;
+using SharpPulsar.Precondition;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -44,7 +47,7 @@ using SharpPulsar.Common.Compression;
 namespace SharpPulsar.Builder
 {
 
-    public class ProducerConfigBuilder<T>: IProducerBuilder<T>
+    public class ProducerConfigBuilder<T>
     {
         private ProducerConfigurationData _conf = new ProducerConfigurationData();
         private ISchema<T> _schema;
@@ -176,6 +179,21 @@ namespace SharpPulsar.Builder
         public ProducerConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
         {
             _conf.CryptoKeyReader = cryptoKeyReader;
+            return this;
+        }
+        public ProducerConfigBuilder<T> DefaultCryptoKeyReader(string publicKey)
+        {
+            Condition.CheckArgument(!string.IsNullOrWhiteSpace(publicKey), "publicKey cannot be blank");
+            return CryptoKeyReader(Crypto.DefaultCryptoKeyReader.Builder().DefaultPublicKey(publicKey).Build());
+        }
+        public ProducerConfigBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> publicKeys)
+        {
+            Condition.CheckArgument(publicKeys.Count > 0, "publicKeys cannot be empty");
+            return CryptoKeyReader(Crypto.DefaultCryptoKeyReader.Builder().PublicKeys(publicKeys).Build());
+        }
+        public ProducerConfigBuilder<T> MessageCrypto(MessageCrypto messageCrypto)
+        {
+            _conf.MessageCrypto = messageCrypto;
             return this;
         }
 
