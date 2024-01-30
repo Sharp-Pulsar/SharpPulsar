@@ -1,32 +1,27 @@
 ﻿using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using Ductus.FluentDocker.Services;
-using Ductus.FluentDocker.Services.Extensions;
 using Microsoft.Extensions.Configuration;
-using SharpPulsar.Auth;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using Testcontainers.Pulsar;
 using Xunit;
-using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace SharpPulsar.TestContainer
 {
     public class PulsarTokenFixture : IAsyncLifetime
     {
-        private const string AuthenticationPlugin = "org.apache.pulsar.client.impl.auth.AuthenticationToken";
-        private const string SecretKeyPath = "/pulsar/secret.key";
-        private const string UserName = "test-user";
-        private const int Port = 6650;
+        //private const string AuthenticationPlugin = "org.apache.pulsar.client.impl.auth.AuthenticationToken";
+        //private const string SecretKeyPath = "/pulsar/secret.key";
+        //private const string UserName = "test-user";
+        //private const int Port = 6650;
         public PulsarSystem? PulsarSystem;
         public ClientConfigurationData? ClientConfigurationData;
         public PulsarClientConfigBuilder? ConfigBuilder;
         public string? Token;
-        private PulsarContainer _container;
+        private PulsarContainer? _container;
         private readonly IConfiguration _configuration;
-        private readonly IMessageSink _messageSink;
-        private readonly IContainerService _cluster;
+        //private readonly IMessageSink _messageSink;
+        //private readonly IContainerService _cluster;
         public PulsarContainer Container { get { return _container; } } 
         public PulsarTokenFixture(/*IMessageSink messageSink*/)
         {
@@ -181,7 +176,7 @@ namespace SharpPulsar.TestContainer
             await _container.StopAsync();
             //return Task.CompletedTask;
         }
-        public string CreateToken(TimeSpan expiryTime)
+        /*public string CreateToken(TimeSpan expiryTime)
         {
             var arguments = $"bin/pulsar tokens create --secret-key {SecretKeyPath} --subject {UserName}";
 
@@ -213,6 +208,6 @@ namespace SharpPulsar.TestContainer
 
             if (!result.Success)
                 throw new Exception($"Could not create the partitioned topic: {result.Error}");
-        }
+        }*/
     }
 }
