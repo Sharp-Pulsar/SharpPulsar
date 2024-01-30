@@ -44,7 +44,7 @@ using SharpPulsar.Common.Compression;
 namespace SharpPulsar.Builder
 {
 
-    public class ProducerConfigBuilder<T>
+    public class ProducerConfigBuilder<T>: IProducerBuilder<T>
     {
         private ProducerConfigurationData _conf = new ProducerConfigurationData();
         private ISchema<T> _schema;

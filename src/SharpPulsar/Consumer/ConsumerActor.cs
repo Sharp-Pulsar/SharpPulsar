@@ -1076,7 +1076,7 @@ namespace SharpPulsar.Consumer
                 {
                     var err = $"The client is not connected to the broker when unsubscribing the subscription {Subscription} of the topic {_topicName}";
                     _log.Error(err);
-                    throw new PulsarClientException(err);
+                    throw new NotConnectedException(err);
 
                 }
             }
