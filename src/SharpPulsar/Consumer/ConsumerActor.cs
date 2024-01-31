@@ -949,6 +949,8 @@ namespace SharpPulsar.Consumer
                     Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
+            Receive<bool>(c => { });
+            Receive<string>(s => { });
         }
 
         private async ValueTask Acknowledge(IAcknowledge ack)

@@ -550,6 +550,8 @@ namespace SharpPulsar.Consumer
                     Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
+            Receive<bool>(c => { });
+            Receive<string>(s => { });
         }
 
         // Check topics are valid.

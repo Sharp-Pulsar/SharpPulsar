@@ -185,10 +185,10 @@ namespace SharpPulsar.Client.Internal
             {
                 try
                 {
-                    while (_start)
-                    {
-                        _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
+                    _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
 
+                    while (_start)
+                    {                        
                         var result = await _pipeReader.ReadAsync().ConfigureAwait(false);
 
                         var buffer = result.Buffer;

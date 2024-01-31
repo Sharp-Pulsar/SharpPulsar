@@ -69,8 +69,8 @@ namespace SharpPulsar.Tracker
             }
             else
             {
-                MessageIdPartitionMap = null;
-                TimePartitions = null;
+                MessageIdPartitionMap = new();
+                TimePartitions = new();
             }
             BecomeReady();
 
@@ -117,6 +117,8 @@ namespace SharpPulsar.Tracker
             {
                 RedeliverMessages();
             });
+            Receive<bool>(c => { });
+            Receive<string>(s => { });
         }
         internal virtual void RedeliverMessages()
         {
@@ -124,7 +126,7 @@ namespace SharpPulsar.Tracker
             try
             {
                 var headPartition = TimePartitions.RemoveFirst();
-                if (headPartition.Count > 0)
+                if (headPartition?.Count > 0)
                 {
                     _log.Warning($"[{Consumer.Path.Name}] {headPartition.Count} messages will be re-delivered");
                     headPartition.ForEach(async messageId =>
@@ -171,6 +173,7 @@ namespace SharpPulsar.Tracker
                 Unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
             }
         }
+
         internal virtual void Clear()
         {
             try
