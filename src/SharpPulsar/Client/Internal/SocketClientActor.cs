@@ -185,10 +185,10 @@ namespace SharpPulsar.Client.Internal
             {
                 try
                 {
-                    while (_start)
-                    {
-                        _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
+                    _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
 
+                    while (_start)
+                    {                        
                         var result = await _pipeReader.ReadAsync().ConfigureAwait(false);
 
                         var buffer = result.Buffer;
@@ -249,6 +249,10 @@ namespace SharpPulsar.Client.Internal
                         }
                         //await Task.Delay(TimeSpan.FromMilliseconds(100));
                     }
+                }
+                catch (IOException e)
+                {
+                    _logger.Error($"[SocketClientActor] {e.Message} [_pipeReader.ReadAsync()]");
                 }
                 catch (Exception ex)
                 {

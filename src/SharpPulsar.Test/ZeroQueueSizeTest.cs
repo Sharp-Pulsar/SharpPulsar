@@ -175,7 +175,9 @@ namespace SharpPulsar.Test
 					}
 					finally
 					{
-						latch.Signal();
+                        _output.WriteLine($"Message Listener Count: {latch?.CurrentCount!}");
+                        if (latch?.CurrentCount! > 0)
+						   latch?.Signal();
 					}
 
 				}, null));

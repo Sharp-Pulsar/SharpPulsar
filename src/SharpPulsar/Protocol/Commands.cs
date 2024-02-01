@@ -20,6 +20,7 @@ using Akka.Util.Internal;
 using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.TransactionImpl;
 using static SharpPulsar.Protocol.Proto.CommandAck;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -536,11 +537,13 @@ namespace SharpPulsar.Protocol
                     throw new ArgumentException("Unexpected key shared mode: " + mode);
             }
         }
-		public static ReadOnlySequence<byte> NewUnsubscribe(long consumerId, long requestId)
+		public static ReadOnlySequence<byte> NewUnsubscribe(long consumerId, long requestId, bool force)
 		{
             var unsubscribe = new CommandUnsubscribe
             {
-                ConsumerId = (ulong) consumerId, RequestId = (ulong) requestId
+                ConsumerId = (ulong) consumerId, 
+                RequestId = (ulong) requestId,
+                Force = force
             };
             return Serializer.Serialize(unsubscribe.ToBaseCommand());
 			

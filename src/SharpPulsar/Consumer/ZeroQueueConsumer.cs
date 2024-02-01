@@ -28,24 +28,24 @@ using System.Threading.Tasks.Dataflow;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar
+namespace SharpPulsar.Consumer
 {
     internal class ZeroQueueConsumer<T> : ConsumerActor<T>
-	{
-		private volatile bool _waitingOnReceiveForZeroQueueSize = false;
-		private volatile bool _waitingOnListenerForZeroQueueSize = false;
-        
-        public ZeroQueueConsumer(IActorRef client, long consumerId, IActorRef stateActor, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : 
+    {
+        private volatile bool _waitingOnReceiveForZeroQueueSize = false;
+        private volatile bool _waitingOnListenerForZeroQueueSize = false;
+
+        public ZeroQueueConsumer(IActorRef client, long consumerId, IActorRef stateActor, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) :
             base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
-		{
+        {
             InitReceiverQueueSize();
         }
         public ZeroQueueConsumer(IActorRef client, long consumerId, IActorRef stateActor, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
-            :base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
+            : base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
         {
-            InitReceiverQueueSize();    
+            InitReceiverQueueSize();
         }
-        public static Props Prop(IActorRef client, long consumerId, IActorRef stateActor,  IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
+        public static Props Prop(IActorRef client, long consumerId, IActorRef stateActor, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             return Props.Create(() => new ZeroQueueConsumer<T>(client, consumerId, stateActor, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
         }
@@ -79,12 +79,12 @@ namespace SharpPulsar
             }
             finally
             {
-                
+
             }
         }
         protected internal override TaskCompletionSource<IMessage<T>> InternalReceiveAsync()
         {
-            TaskCompletionSource<IMessage<T>> future = base.InternalReceiveAsync();
+            var future = base.InternalReceiveAsync();
             if (!future.Task.IsCompleted)
             {
                 // We expect the message to be not in the queue yet
@@ -145,34 +145,34 @@ namespace SharpPulsar
             }
         }
         protected internal override void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
-		{
-			base.ConsumerIsReconnectedToBroker(cnx, currentQueueSize);
+        {
+            base.ConsumerIsReconnectedToBroker(cnx, currentQueueSize);
 
-			// For zerosize queue : If the connection is reset and someone is waiting for the messages
-			// or queue was not empty: send a flow command
-			if(_waitingOnReceiveForZeroQueueSize || currentQueueSize > 0 || (Listener != null && !_waitingOnListenerForZeroQueueSize))
-			{
-				IncreaseAvailablePermits(cnx);
-			}
-		}
+            // For zerosize queue : If the connection is reset and someone is waiting for the messages
+            // or queue was not empty: send a flow command
+            if (_waitingOnReceiveForZeroQueueSize || currentQueueSize > 0 || Listener != null && !_waitingOnListenerForZeroQueueSize)
+            {
+                IncreaseAvailablePermits(cnx);
+            }
+        }
 
-		protected internal override bool CanEnqueueMessage(IMessage<T> message)
-		{
-			if(Listener != null)
-			{
-				TriggerZeroQueueSizeListener(message);
-				return false;
-			}
-			else
-			{
-				return true;
-			}
-		}
+        protected internal override bool CanEnqueueMessage(IMessage<T> message)
+        {
+            if (Listener != null)
+            {
+                TriggerZeroQueueSizeListener(message);
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
 
-		private void TriggerZeroQueueSizeListener(IMessage<T> message)
-		{
-			Condition.CheckNotNull(Listener, "listener can't be null");
-			Condition.CheckNotNull(message, "unqueued message can't be null");
+        private void TriggerZeroQueueSizeListener(IMessage<T> message)
+        {
+            Condition.CheckNotNull(Listener, "listener can't be null");
+            Condition.CheckNotNull(message, "unqueued message can't be null");
 
             var self = _self;
             var log = _log;
@@ -195,10 +195,10 @@ namespace SharpPulsar
             _waitingOnListenerForZeroQueueSize = false;
         }
 
-		protected internal override void TriggerListener(int numMessages)
-		{
-			// Ignore since it was already triggered in the triggerZeroQueueSizeListener() call
-		}
+        protected internal override void TriggerListener(int numMessages)
+        {
+            // Ignore since it was already triggered in the triggerZeroQueueSizeListener() call
+        }
         internal override void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] uncompressedPayload, MessageIdData messageId, IActorRef cnx, long consumerEpoch)
         {
             _log.Warning($"Closing consumer [{Subscription}]-[{ConsumerName}] due to unsupported received batch-message with zero receiver queue size");

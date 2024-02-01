@@ -116,7 +116,7 @@ namespace SharpPulsar.Table
         {
             try
             {
-                if (!string.IsNullOrWhiteSpace(msg.Key))
+                if (!string.IsNullOrWhiteSpace(msg?.Key))
                 {
                     var key = msg.Key;
                     var cur = msg.Size() > 0 ? msg.Value : default;

@@ -77,11 +77,6 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Consumer\" />
-    <Folder Include="Internal\" />
-  </ItemGroup>
-
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
     <ItemGroup>
       <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />

@@ -97,6 +97,7 @@
               "ServeDocs",
               "Test",
               "TestContainer",
+              "Tests",
               "Token"
             ]
           }
@@ -126,6 +127,7 @@
               "ServeDocs",
               "Test",
               "TestContainer",
+              "Tests",
               "Token"
             ]
           }

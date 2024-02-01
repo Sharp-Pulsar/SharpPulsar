@@ -33,36 +33,36 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar
+namespace SharpPulsar.Consumer
 {
 
-    internal class PatternMultiTopicsConsumer<T>: MultiTopicsConsumer<T>
-	{
-		private readonly Regex _topicsPattern;
-        private  string _topicsHash;
-		private readonly Mode _subscriptionMode;
-		private readonly IActorRef _lookup;
-		private NamespaceName _namespaceName;
-		private ICancelable _recheckPatternTimeout = null;
-		private readonly IActorContext _context;
-		private readonly IActorRef _self;
+    internal class PatternMultiTopicsConsumer<T> : MultiTopicsConsumer<T>
+    {
+        private readonly Regex _topicsPattern;
+        private string _topicsHash;
+        private readonly Mode _subscriptionMode;
+        private readonly IActorRef _lookup;
+        private NamespaceName _namespaceName;
+        private ICancelable _recheckPatternTimeout = null;
+        private readonly IActorContext _context;
+        private readonly IActorRef _self;
 
-        public PatternMultiTopicsConsumer(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, schema, false, clientConfiguration, subscribeFuture)
-		{
-			_self = Self;
-			_lookup = lookup;
-			_context = Context;
-			_topicsPattern = topicsPattern;
+        public PatternMultiTopicsConsumer(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(stateActor, client, lookup, cnxPool, idGenerator, conf, schema, false, clientConfiguration, subscribeFuture)
+        {
+            _self = Self;
+            _lookup = lookup;
+            _context = Context;
+            _topicsPattern = topicsPattern;
             _topicsHash = topicsHash;
             _subscriptionMode = subscriptionMode;
-			if(_namespaceName == null)
-			{
-				_namespaceName = GetNameSpaceFromPattern(topicsPattern);
-			}
+            if (_namespaceName == null)
+            {
+                _namespaceName = GetNameSpaceFromPattern(topicsPattern);
+            }
             Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(_namespaceName.ToString()));
             _recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await Run(); });
             //_topicsChangeListener = new PatternTopicsChangedListener(this);
-            
+
             if (_subscriptionMode == Mode.Persistent)
             {
 
@@ -98,10 +98,10 @@ namespace SharpPulsar
             });
             //Ready();
         }
-       
+
         public static Props Prop(Regex topicsPattern, string topicsHash, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, topicsHash, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration, subscribeFuture));
+            return Props.Create(() => new PatternMultiTopicsConsumer<T>(topicsPattern, topicsHash, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration, subscribeFuture));
         }
         private void OnTopicsRemoved(ICollection<string> removedTopics)
         {
@@ -129,7 +129,7 @@ namespace SharpPulsar
             }
         }
         private async ValueTask Run()
-		{
+        {
             var topics = _context.GetChildren().ToList();
             try
             {
@@ -138,13 +138,13 @@ namespace SharpPulsar
                 var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(_namespaceName, _subscriptionMode, topicsPattern, _topicsHash)).ConfigureAwait(false);
                 var response = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
                 var topicsFound = response.Topics;
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"Get topics under namespace {_namespaceName}, topics.size: {topics.Count}, topicsHash: {response.TopicsHash}, filtered: {response.GetHashCode}");
-					PartitionedTopics.ForEach(t => _log.Debug($"Get topics under namespace {_namespaceName}, topic: {t.Key}"));
-				}
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Get topics under namespace {_namespaceName}, topics.size: {topics.Count}, topicsHash: {response.TopicsHash}, filtered: {response.GetHashCode}");
+                    PartitionedTopics.ForEach(t => _log.Debug($"Get topics under namespace {_namespaceName}, topic: {t.Key}"));
+                }
                 IList<string> oldTopics = new List<string>();
-                foreach (string partition in response.Topics)
+                foreach (var partition in response.Topics)
                 {
                     var topicName = TopicName.Get(partition);
 
@@ -154,28 +154,28 @@ namespace SharpPulsar
                     }
                 }
                 await UpdateSubscriptions(_topicsPattern, response, oldTopics);
-               
+
             }
-			catch(Exception ex)
+            catch (Exception ex)
             {
-				_log.Error($"[{topics}] Failed to recheck topics change: {ex}");
+                _log.Error($"[{topics}] Failed to recheck topics change: {ex}");
             }
             finally
             {
-				_recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await Run(); });
+                _recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await Run(); });
             }
-			if (_recheckPatternTimeout.IsCancellationRequested)
-			{
-				return;
-			}
-			
-		}
+            if (_recheckPatternTimeout.IsCancellationRequested)
+            {
+                return;
+            }
+
+        }
         private async ValueTask UpdateSubscriptions(Regex topicsPattern, GetTopicsUnderNamespaceResponse result, IList<string> oldTopics)
         {
             _topicsHash = result.TopicsHash;
             if (!result.Changed)
             {
-                return ;
+                return;
             }
 
             IList<string> newTopics;
@@ -192,12 +192,12 @@ namespace SharpPulsar
             OnTopicsRemoved(TopicList.Minus(oldTopics, newTopics));
         }
         public virtual Regex Pattern
-		{
-			get
-			{
-				return _topicsPattern;
-			}
-		}
+        {
+            get
+            {
+                return _topicsPattern;
+            }
+        }
         private string TopicsHash
         {
             set
@@ -205,28 +205,28 @@ namespace SharpPulsar
                 _topicsHash = value;
             }
         }
-      
-		private NamespaceName GetNameSpaceFromPattern(Regex pattern)
-		{
-			return TopicName.Get(pattern.ToString()).NamespaceObject;
-		}
-		// get topics that match 'topicsPattern' from original topics list
-		// return result should contain only topic names, without partition part
-		private IList<string> TopicsPatternFilter(IList<string> original, Regex topicsPattern)
-		{
-			var pattern = topicsPattern.ToString().Contains("://") ? new Regex(Regex.Split(topicsPattern.ToString(), @"\:\/\/")[1]) : topicsPattern;
 
-			return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic, @"\:\/\/")[1]).Success).ToList();
-		}
-		
+        private NamespaceName GetNameSpaceFromPattern(Regex pattern)
+        {
+            return TopicName.Get(pattern.ToString()).NamespaceObject;
+        }
+        // get topics that match 'topicsPattern' from original topics list
+        // return result should contain only topic names, without partition part
+        private IList<string> TopicsPatternFilter(IList<string> original, Regex topicsPattern)
+        {
+            var pattern = topicsPattern.ToString().Contains("://") ? new Regex(Regex.Split(topicsPattern.ToString(), @"\:\/\/")[1]) : topicsPattern;
+
+            return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic, @"\:\/\/")[1]).Success).ToList();
+        }
+
         protected override void PostStop()
         {
-			_recheckPatternTimeout?.Cancel();
-			base.PostStop();
+            _recheckPatternTimeout?.Cancel();
+            base.PostStop();
         }
-	}
-	public sealed class RecheckTopics
+    }
+    public sealed class RecheckTopics
     {
-		public static RecheckTopics Instance = new RecheckTopics();
+        public static RecheckTopics Instance = new RecheckTopics();
     }
 }

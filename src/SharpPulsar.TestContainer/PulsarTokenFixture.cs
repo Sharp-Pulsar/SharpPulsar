@@ -1,35 +1,33 @@
 ﻿using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using Ductus.FluentDocker.Services;
-using Ductus.FluentDocker.Services.Extensions;
 using Microsoft.Extensions.Configuration;
-using SharpPulsar.Auth;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
+using Testcontainers.Pulsar;
 using Xunit;
-using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace SharpPulsar.TestContainer
 {
     public class PulsarTokenFixture : IAsyncLifetime
     {
-        private const string AuthenticationPlugin = "org.apache.pulsar.client.impl.auth.AuthenticationToken";
-        private const string SecretKeyPath = "/pulsar/secret.key";
-        private const string UserName = "test-user";
-        private const int Port = 6650;
+        //private const string AuthenticationPlugin = "org.apache.pulsar.client.impl.auth.AuthenticationToken";
+        //private const string SecretKeyPath = "/pulsar/secret.key";
+        //private const string UserName = "test-user";
+        //private const int Port = 6650;
         public PulsarSystem? PulsarSystem;
         public ClientConfigurationData? ClientConfigurationData;
         public PulsarClientConfigBuilder? ConfigBuilder;
         public string? Token;
+        private PulsarContainer? _container;
         private readonly IConfiguration _configuration;
-        private readonly IMessageSink _messageSink;
-        private readonly IContainerService _cluster;
-        public PulsarTokenFixture(IMessageSink messageSink)
+        //private readonly IMessageSink _messageSink;
+        //private readonly IContainerService _cluster;
+        public PulsarContainer Container { get { return _container!; } } 
+        public PulsarTokenFixture(/*IMessageSink messageSink*/)
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
             _configuration = GetIConfigurationRoot(path);
-            _messageSink = messageSink;
+            /*_messageSink = messageSink;
 
             var environmentVariables = new[]
             {
@@ -60,24 +58,36 @@ namespace SharpPulsar.TestContainer
 
             _cluster = new Ductus.FluentDocker.Builders.Builder()
                 .UseContainer()
-                .UseImage("apachepulsar/pulsar-all:2.11.1")
+                .UseImage("apachepulsar/pulsar-all:3.1.2")
                 .WithEnvironment(environmentVariables)
                 .ExposePort(Port)
                 .Command("/bin/bash -c", arguments)
-                .Build();
+                .Build();*/
 
             ServiceUrl = "pulsar://localhost:6650";
         }
         public string ServiceUrl { get; private set; }
         public virtual async Task InitializeAsync()
         {
-            _cluster.StateChange += (sender, args) => _messageSink.OnMessage(new DiagnosticMessage($"The Pulsar cluster changed state to: {args.State}"));
-            _cluster.Start();
-            _cluster.WaitForMessageInLogs("Successfully updated the policies on namespace public/default", int.MaxValue);
-            var endpoint = _cluster.ToHostExposedEndpoint($"{Port}/tcp");
-            _messageSink.OnMessage(new DiagnosticMessage($"Endpoint opened at {endpoint}"));
-            ServiceUrl = $"pulsar://localhost:{endpoint.Port}";
-            Token = CreateToken(Timeout.InfiniteTimeSpan);
+            _container = new PulsarTokenBuilder()
+              .WithCleanUp(true)
+              .Build();
+
+            await _container.StartAsync();
+            Console.WriteLine("Start Test Container");
+            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
+
+            //await Task.Delay(2000);
+            //var s = await _container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" });
+            //Token = s.Stdout;
+            //_cluster.StateChange += (sender, args) => _messageSink.OnMessage(new DiagnosticMessage($"The Pulsar cluster changed state to: {args.State}"));
+            //_cluster.Start();
+            //_cluster.WaitForMessageInLogs("Successfully updated the policies on namespace public/default", int.MaxValue);
+            //var endpoint = _cluster.ToHostExposedEndpoint($"{Port}/tcp");
+            //await Task.Delay(5000);
+            //_messageSink.OnMessage(new DiagnosticMessage($"Endpoint opened at {endpoint}"));
+            //ServiceUrl = $"pulsar://localhost:6650";
+            //Token = CreateToken(Timeout.InfiniteTimeSpan);
             SetupSystem();
             await Task.CompletedTask;
         }
@@ -123,23 +133,50 @@ namespace SharpPulsar.TestContainer
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            client.Authentication(AuthenticationFactory.Token(Token));
+            //client.Authentication(AuthenticationFactory.Token(Token));
             //client.Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
-            PulsarSystem = PulsarSystem.GetInstance(actorSystemName: "token");
+            //PulsarSystem = PulsarSystem.GetInstance(actorSystemName: "token");
            
             ConfigBuilder = client;
             ClientConfigurationData = client.ClientConfigurationData;
         }
-        public Task DisposeAsync()
+        private static async ValueTask AwaitPortReadiness(string address)
         {
-           
-            _cluster.Remove(true);
-            _cluster.Stop();
-            _cluster.Dispose();
+            var waitTries = 20;
 
-            return Task.CompletedTask;
+            using var handler = new HttpClientHandler
+            {
+                AllowAutoRedirect = true
+            };
+
+            using var client = new HttpClient(handler);
+
+            while (waitTries > 0)
+            {
+                try
+                {
+                    await client.GetAsync(address).ConfigureAwait(false);
+                    return;
+                }
+                catch
+                {
+                    waitTries--;
+                    await Task.Delay(5000).ConfigureAwait(false);
+                }
+            }
+
+            throw new Exception("Unable to confirm Pulsar has initialized");
         }
-        public string CreateToken(TimeSpan expiryTime)
+        public async  Task DisposeAsync()
+        {
+
+            //_cluster.Remove(true);
+            //_cluster.Stop();
+            //_cluster.Dispose();
+            await _container!.StopAsync();
+            //return Task.CompletedTask;
+        }
+        /*public string CreateToken(TimeSpan expiryTime)
         {
             var arguments = $"bin/pulsar tokens create --secret-key {SecretKeyPath} --subject {UserName}";
 
@@ -171,6 +208,6 @@ namespace SharpPulsar.TestContainer
 
             if (!result.Success)
                 throw new Exception($"Could not create the partitioned topic: {result.Error}");
-        }
+        }*/
     }
 }

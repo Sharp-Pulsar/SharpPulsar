@@ -117,7 +117,7 @@ namespace SharpPulsar.Test
                 _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
                 message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
-            consumer.Unsubscribe();
+            consumer.Unsubscribe(true);
             foreach (var producer in producers)
             {
                 await producer.CloseAsync();
@@ -258,7 +258,7 @@ namespace SharpPulsar.Test
                 _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
                 message = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
             }
-            consumer.Unsubscribe();
+            consumer.Unsubscribe(false);
             await consumer.CloseAsync();
             await producer1.CloseAsync();
             await producer2.CloseAsync();

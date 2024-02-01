@@ -342,7 +342,8 @@ namespace SharpPulsar.Extension
         {
 
             if (Count == 0)
-                throw new InvalidOperationException("There are no items to remove.");
+                //throw new InvalidOperationException("There are no items to remove.");
+                return default(T);  
 
             _size--;
 
@@ -358,7 +359,8 @@ namespace SharpPulsar.Extension
         {
 
             if (Count == 0)
-                throw new InvalidOperationException("There are no items to remove.");
+                //throw new InvalidOperationException("There are no items to remove.");
+                return default(T);
 
             _size--;
 

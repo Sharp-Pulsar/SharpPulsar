@@ -36,7 +36,7 @@ namespace SharpPulsar.Test
     public class AcknowledgementsGroupingTrackerTest : IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
-        private TaskCompletionSource<PulsarClient> _tcs;
+        //private TaskCompletionSource<PulsarClient> _tcs;
         private PulsarClient _client;
         private PulsarSystem _system;   
         private PulsarClientConfigBuilder _configBuilder;   

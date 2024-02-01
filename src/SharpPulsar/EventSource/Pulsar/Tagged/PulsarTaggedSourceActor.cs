@@ -11,6 +11,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utils;
 using System.Threading.Tasks;
+using SharpPulsar.Consumer;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
 {

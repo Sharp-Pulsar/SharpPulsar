@@ -472,23 +472,31 @@ namespace SharpPulsar
         }
         public void Unsubscribe()
         {
-            UnsubscribeAsync().GetAwaiter().GetResult();    
+            UnsubscribeAsync().GetAwaiter().GetResult();
         }
-        public async ValueTask UnsubscribeAsync ()
+        public async ValueTask UnsubscribeAsync()
         {
-            var ask = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Unsubscribe.Instance)
+            await UnsubscribeAsync(false);
+        }
+        public void Unsubscribe(bool force)
+        {
+            UnsubscribeAsync(force).GetAwaiter().GetResult();
+        }
+        public async ValueTask UnsubscribeAsync(bool force)
+        {
+            var ask = await _consumerActor.Ask<AskResponse>(new Unsubscribe(force))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
         }
-        public void Unsubscribe(string topicName)
+        public void Unsubscribe(string topicName, bool force = false)
         {
-            UnsubscribeAsync(topicName).GetAwaiter().GetResult();
+            UnsubscribeAsync(topicName, force).GetAwaiter().GetResult();
         }
-        public async ValueTask UnsubscribeAsync(string topicName)
+        public async ValueTask UnsubscribeAsync(string topicName, bool force = false)
         {
             //MultiTopicsConsumer<T>
-            var ask = await _consumerActor.Ask<AskResponse>(new UnsubscribeTopicName(topicName))
+            var ask = await _consumerActor.Ask<AskResponse>(new UnsubscribeTopicName(topicName, force))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;

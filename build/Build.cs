@@ -118,7 +118,9 @@ partial class Build : NukeBuild
             DotNetRestore(s => s
                 .SetProjectFile(Solution));
         });
-
+    Target Tests => _ => _
+    .DependsOn(Test)
+    .DependsOn(Token);
     Target Compile => _ => _
         .DependsOn(Restore)
         .Executes(() =>
@@ -169,6 +171,7 @@ partial class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(async() =>
         {
+            
             var projects = new List<string> 
             {
                 "SharpPulsar.Test",
@@ -199,6 +202,25 @@ partial class Build : NukeBuild
             }
             await Container.StopAsync();
             await Container.DisposeAsync();
+            await Task.Delay(5000);
+            var token = Solution.GetProject("SharpPulsar.Test.Token").NotNull("project != null");
+            Information($"Running tests from {token}");
+            foreach (var fw in token.GetTargetFrameworks())
+            {
+
+                DotNetTest(c => c
+               .SetProjectFile(token)
+               .SetConfiguration(Configuration)
+               .SetFramework(fw)
+               .EnableNoBuild()
+               .SetBlameCrash(true)
+               .SetBlameHang(true)
+               .SetBlameHangTimeout("30m")
+               .EnableNoRestore()
+               .When(true, _ => _
+                   .SetLoggers("console;verbosity=detailed")
+                   .SetResultsDirectory(OutputTests)));
+            }
         });
     Target Token => _ => _
         .DependsOn(Compile)

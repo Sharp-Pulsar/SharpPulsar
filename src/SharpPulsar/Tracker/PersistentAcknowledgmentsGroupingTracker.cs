@@ -492,7 +492,7 @@ namespace SharpPulsar.Tracker
                 if (_cumulativeAckFlushRequired)
                 {
                     var lastAck = (MessageId)_lastCumulativeAck;
-                    await NewMessageAckCommandAndWrite(cnx, _consumerId, lastAck.LedgerId, lastAck.EntryId, null, AckType.Cumulative, null, new Dictionary<string, long>(), false,  null);
+                    await NewMessageAckCommandAndWrite(cnx, _consumerId, lastAck.LedgerId, lastAck.EntryId, new List<long> { }, AckType.Cumulative, null, new Dictionary<string, long>(), false,  null);
                     _unAckedChunckedMessageIdSequenceMap.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> {_lastCumulativeAck}));
                     //shouldFlush = true;
                     _cumulativeAckFlushRequired = false;
@@ -542,7 +542,7 @@ namespace SharpPulsar.Tracker
                         {
                             var msgId = _pendingIndividualAcks.Min;
                             _pendingIndividualAcks.Remove(msgId);
-                            await NewMessageAckCommandAndWrite(cnx, _consumerId, msgId.LedgerId, msgId.EntryId, null, AckType.Individual, null, new Dictionary<string, long>(), false, null);
+                            await NewMessageAckCommandAndWrite(cnx, _consumerId, msgId.LedgerId, msgId.EntryId, new List<long> { }, AckType.Individual, null, new Dictionary<string, long>(), false, null);
                             //shouldFlush = true;
                         }
                     }
@@ -560,7 +560,7 @@ namespace SharpPulsar.Tracker
                 }
                 if (entriesToAck.Count > 0)
                 {
-                    await NewMessageAckCommandAndWrite(cnx, _consumerId, 0L, 0L, null, AckType.Individual, null, null, true, entriesToAck);
+                    await NewMessageAckCommandAndWrite(cnx, _consumerId, 0L, 0L, new List<long> { }, AckType.Individual, null, new Dictionary<string, long>(), true, entriesToAck);
                     //shouldFlush = true;
                 }
 
@@ -656,7 +656,7 @@ namespace SharpPulsar.Tracker
                 ReadOnlySequence<byte> cmd;
                 if (entriesToAck == null)
                 {
-                    cmd = Commands.NewAck(consumerId, ledgerId, entryId, ackSet.ToList(), ackType, null, properties, -1);
+                    cmd = Commands.NewAck(consumerId, ledgerId, entryId, ackSet!.ToList(), ackType, null!, properties!, -1);
                 }
                 else
                 {

@@ -641,12 +641,16 @@ namespace SharpPulsar.Exceptions
 			public NotConnectedException(long sequenceId) : base("Not connected to broker", sequenceId)
 			{
 			}
-		}
+            public NotConnectedException(string msg) : base(msg)
+            {
+            }
 
-		/// <summary>
-		/// Invalid message exception thrown by Pulsar client.
-		/// </summary>
-		public class InvalidMessageException : PulsarClientException
+        }
+
+        /// <summary>
+        /// Invalid message exception thrown by Pulsar client.
+        /// </summary>
+        public class InvalidMessageException : PulsarClientException
 		{
 			/// <summary>
 			/// Constructs an {@code InvalidMessageException} with the specified detail message.

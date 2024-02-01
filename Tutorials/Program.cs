@@ -35,9 +35,11 @@ namespace Tutorials
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         //static string myTopic = $"persistent://public/default/mytopic-pulsar";
         private static PulsarClient _client;
+        public static string Token { get; private set; }
         static async Task Main(string[] args)
         {
-            await StartContainer();
+            //await StartContainer();
+            await TokenStartContainer();
             var url = "pulsar://127.0.0.1:6650";
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");
@@ -121,6 +123,22 @@ namespace Tutorials
             await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
             await AwaitPortReadiness($"http://127.0.0.1:8081/");
             Console.WriteLine("AwaitPortReadiness Test Container");
+        }
+        private static async ValueTask TokenStartContainer()
+        {
+            var t = TokenBuildContainer();
+            _container = t
+              .WithCleanUp(true)
+              .Build();
+
+            await _container.StartAsync();
+            Console.WriteLine("Start Test Container");
+            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
+           
+            await Task.Delay(2000);
+            var s = await _container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" });
+            Token = s.Stdout;
+           // await AwaitPortReadiness($"http://127.0.0.1:8081/");
         }
         private static async ValueTask ProduceConsumer(PulsarClient pulsarClient)
         {
@@ -828,6 +846,10 @@ namespace Tutorials
         private static PulsarBuilder BuildContainer()
         {
             return new PulsarBuilder();
+        }
+        private static PulsarTokenBuilder TokenBuildContainer()
+        {
+            return new PulsarTokenBuilder();
         }
         internal static async Task RunOauth()
         {

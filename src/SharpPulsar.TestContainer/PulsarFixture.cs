@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Akka.Configuration;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
@@ -29,7 +30,28 @@ namespace SharpPulsar.TestContainer
         }
         public virtual void SetupSystem(string? service = null, string? web = null)
         {
-            System = PulsarSystem.GetInstance(actorSystemName: "tests");
+            System = PulsarSystem.GetInstance(actorSystemName: "tests", config: ConfigurationFactory.ParseString(@"
+            akka
+            {
+                loglevel = DEBUG
+			    log-config-on-start = on 
+                loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
+			    actor 
+                {              
+				      debug 
+				      {
+					      receive = on
+					      autoreceive = on
+					      lifecycle = on
+					      event-stream = on
+					      unhandled = on
+				      }  
+			    }
+                coordinated-shutdown
+                {
+                    exit-clr = on
+                }
+            }"));
             var client = new PulsarClientConfigBuilder();
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;

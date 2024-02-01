@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.Crypto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -174,28 +175,41 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the producer builder instance </returns>
 		IProducerBuilder<T> MaxPendingMessages(int maxPendingMessages);
 
-		/// <summary>
-		/// Set the number of max pending messages across all the partitions.
-		/// 
-		/// <para>This setting will be used to lower the max pending messages for each partition
-		/// (<seealso cref="maxPendingMessages(int)"/>), if the total exceeds the configured value.
-		/// The purpose of this setting is to have an upper-limit on the number
-		/// of pending messages when publishing on a partitioned topic.
-		/// 
-		/// </para>
-		/// <para>Default is 50000.
-		/// 
-		/// </para>
-		/// <para>If publishing at high rate over a topic with many partitions (especially when publishing messages without a
-		/// partitioning key), it might be beneficial to increase this parameter to allow for more pipelining within the
-		/// individual partitions producers.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="maxPendingMessagesAcrossPartitions">
-		///            max pending messages across all the partitions </param>
-		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions);
+        /// <summary>
+        /// Sets a <seealso cref="MessageCrypto"/>.
+        ///     
+        /// <para>Contains methods to encrypt/decrypt messages for end-to-end encryption.
+        ///     
+        /// </para>
+        /// </summary>
+        /// <param name="messageCrypto">
+        ///            MessageCrypto object </param>
+        /// <returns> the producer builder instance </returns>
+        IProducerBuilder<T> MessageCrypto(MessageCrypto messageCrypto);
+
+
+        /// <summary>
+        /// Set the number of max pending messages across all the partitions.
+        /// 
+        /// <para>This setting will be used to lower the max pending messages for each partition
+        /// (<seealso cref="maxPendingMessages(int)"/>), if the total exceeds the configured value.
+        /// The purpose of this setting is to have an upper-limit on the number
+        /// of pending messages when publishing on a partitioned topic.
+        /// 
+        /// </para>
+        /// <para>Default is 50000.
+        /// 
+        /// </para>
+        /// <para>If publishing at high rate over a topic with many partitions (especially when publishing messages without a
+        /// partitioning key), it might be beneficial to increase this parameter to allow for more pipelining within the
+        /// individual partitions producers.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="maxPendingMessagesAcrossPartitions">
+        ///            max pending messages across all the partitions </param>
+        /// <returns> the producer builder instance </returns>
+        IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions);
 
 		/// <summary>
 		/// Set whether the <seealso cref="Producer.send"/> and <seealso cref="Producer.sendAsync"/> operations should block when the outgoing
