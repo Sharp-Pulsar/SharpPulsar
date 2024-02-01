@@ -250,6 +250,10 @@ namespace SharpPulsar.Client.Internal
                         //await Task.Delay(TimeSpan.FromMilliseconds(100));
                     }
                 }
+                catch (IOException e)
+                {
+                    _logger.Error($"[SocketClientActor] {e.Message} [_pipeReader.ReadAsync()]");
+                }
                 catch (Exception ex)
                 {
                     _logger.Error(ex.ToString());

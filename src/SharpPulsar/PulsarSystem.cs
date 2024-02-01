@@ -76,7 +76,7 @@ namespace SharpPulsar
             var confg = config ?? ConfigurationFactory.ParseString(@"
             akka
             {
-                loglevel = DEBUG
+                loglevel = INFO
 			    log-config-on-start = on 
                 loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
 			    actor 

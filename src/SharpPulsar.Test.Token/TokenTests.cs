@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Akka.Configuration;
 using SharpCompress;
 using SharpPulsar.Auth;
 using SharpPulsar.Auth.OAuth2;
@@ -34,7 +35,28 @@ namespace SharpPulsar.Test.Token
             client.Authentication(AuthenticationFactory.Token(s.Stdout));
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
-            _system = PulsarSystem.GetInstance(actorSystemName: "token");
+            _system = PulsarSystem.GetInstance(actorSystemName: "token", config: ConfigurationFactory.ParseString(@"
+            akka
+            {
+                loglevel = DEBUG
+			    log-config-on-start = on 
+                loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
+			    actor 
+                {              
+				      debug 
+				      {
+					      receive = on
+					      autoreceive = on
+					      lifecycle = on
+					      event-stream = on
+					      unhandled = on
+				      }  
+			    }
+                coordinated-shutdown
+                {
+                    exit-clr = on
+                }
+            }"));
             _configBuilder = client;           
             _topic = $"persistent://public/default/token-{Guid.NewGuid()}";
         }
