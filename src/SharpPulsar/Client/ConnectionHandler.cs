@@ -87,7 +87,7 @@ namespace SharpPulsar.Client
             {
                 var children = Context.GetChildren();
                 foreach (var child in children)
-                    await child.GracefulStop(TimeSpan.FromMilliseconds(100));
+                    _ = child.GracefulStop(TimeSpan.FromMilliseconds(100));
                 ConnectionClosed(c.ClientCnx);
             });
             Stash?.UnstashAll();
