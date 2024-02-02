@@ -38,8 +38,8 @@ namespace Tutorials
         public static string Token { get; private set; }
         static async Task Main(string[] args)
         {
-            //await StartContainer();
-            await TokenStartContainer();
+            await StartContainer();
+            //await TokenStartContainer();
             var url = "pulsar://127.0.0.1:6650";
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");

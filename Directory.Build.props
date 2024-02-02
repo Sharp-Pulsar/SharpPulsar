@@ -1,7 +1,7 @@
 
 <Project>
   <PropertyGroup>
-    <AkkaVersion>1.5.15</AkkaVersion>
+    <AkkaVersion>1.5.16</AkkaVersion>
     <AkkaLoggerSerilogVersion>1.5.12.1</AkkaLoggerSerilogVersion>
     <SerilogSinksFileVersion>5.0.0</SerilogSinksFileVersion>
     <ApacheAvroVersion>1.11.3</ApacheAvroVersion>
@@ -36,7 +36,7 @@
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeSerializationPrimitivesVersion>4.3.0</SystemRuntimeSerializationPrimitivesVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
-    <SystemTextJsonVersion>8.0.0</SystemTextJsonVersion>
+    <SystemTextJsonVersion>8.0.1</SystemTextJsonVersion>
     <SystemThreadingTasksDataflowVersion>8.0.0</SystemThreadingTasksDataflowVersion>
     <zlibnetmutliplatformVersion>1.0.6</zlibnetmutliplatformVersion>
     <ZstdNetVersion>1.4.5</ZstdNetVersion>
