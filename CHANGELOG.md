@@ -1,4 +1,5 @@
 ## vNext
+- [UPGRADED] SharpPulsar v3
 
 ## [2.15.0] / 2024-02-03
 - [FIX][ConnectionHandler] Akka.NET Version 1.5.16: `error AK1002`
