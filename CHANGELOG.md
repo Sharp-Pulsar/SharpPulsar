@@ -1,7 +1,15 @@
 ## vNext
-- [Added] Code of Conduct
-- [Fixed] workflows badge.svg 
-- [Updated] Apache Pulsar v3.1.1
+
+## [2.15.0] / 2024-02-03
+- [FIX][ConnectionHandler] Akka.NET Version 1.5.16: `error AK1002`
+- [Added][ProducerConfigBuilder] `DefaultCryptoKeyReader`*
+- [Added] Token Test 
+- [Added][Consumer] `Unsubscribe(bool force)`
+- [Changed][`Actors`] Add folder for internal `Client`, `Producer`, `Consumer` etc 
+- [FIXED] OAuth Test 
+- [Removed] Deletes all the Obsoletes in PulsarSystem
+- [Updated] Apache Pulsar v3.1.2
+- [Upgraded] .NET 7 to .NET 8
 
 ## [2.14.1] / 2023-09-22
 - [UPDATE] NUKE v7.0.5
@@ -61,7 +69,8 @@
 ## [0.1.0] / 14 January 2022
 - First release
 
-[vNext]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.14.1...HEAD
+[vNext]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.15.0...HEAD
+[2.15.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.14.1...2.15.0
 [2.14.1]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.14.0...2.14.1
 [2.14.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.13.0...2.14.0
 [2.13.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.12.1...2.13.0
