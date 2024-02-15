@@ -138,6 +138,7 @@ partial class Build : NukeBuild
         //.OnlyWhenDynamic(() => GitRepository.Branch.Equals("main", StringComparison.OrdinalIgnoreCase))
         .Executes(() =>
         {
+            // ./build.cmd RunChangelog --major-minor-patch 2.15.1
             FinalizeChangelog(ChangelogFile, MajorMinorPatch, GitRepository);
             Information($"Please review CHANGELOG.md ({ChangelogFile}) and press 'Y' to validate (any other key will cancel changes)...");
             ConsoleKeyInfo keyInfo = Console.ReadKey();
