@@ -2,6 +2,7 @@
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Precondition;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
@@ -207,24 +208,22 @@ namespace SharpPulsar.Builder
         {
             get
             {
-                if (string.IsNullOrWhiteSpace(_conf.ServiceUrl) && _conf.ServiceUrlProvider == null)
-                {
-                    throw new ArgumentException("service URL or service URL provider needs to be specified on the ClientBuilder object.");
-                }
-                if (!string.IsNullOrWhiteSpace(_conf.ServiceUrl) && _conf.ServiceUrlProvider != null)
-                {
-                    throw new ArgumentException("Can only chose one way service URL or service URL provider.");
-                }
+                if (string.IsNullOrWhiteSpace(_conf.ServiceUrl))
+                    if (_conf.ServiceUrlProvider == null)
+                        throw new ArgumentNullException("service URL or service URL provider needs to be specified on the ClientBuilder object.");
+
+               // Condition.CheckArgument(string.IsNullOrWhiteSpace(_conf.ServiceUrl) && _conf.ServiceUrlProvider == null, 
+                 //   "service URL or service URL provider needs to be specified on the ClientBuilder object.");
+                
+               Condition.CheckArgument(!string.IsNullOrWhiteSpace(_conf.ServiceUrl) || _conf.ServiceUrlProvider != null, 
+                    "Can only chose one way service URL or service URL provider.");
+                
                 if (_conf.ServiceUrlProvider != null)
                 {
-                    if (string.IsNullOrWhiteSpace(_conf.ServiceUrlProvider.ServiceUrl))
-                    {
-                        throw new ArgumentException("Cannot get service url from service url provider.");
-                    }
-                    else
-                    {
-                        _conf.ServiceUrl = _conf.ServiceUrlProvider.ServiceUrl;
-                    }
+                    Condition.CheckArgument(!string.IsNullOrWhiteSpace(_conf.ServiceUrlProvider.ServiceUrl),
+                        "Cannot get service url from service url provider.");
+
+                    _conf.ServiceUrl = _conf.ServiceUrlProvider.ServiceUrl;
                 }
                 return _conf;
             }

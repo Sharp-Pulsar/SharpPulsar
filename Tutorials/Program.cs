@@ -14,6 +14,7 @@ using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
+using SharpPulsar.ServiceProvider;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Trino;
 using SharpPulsar.Trino.Message;
@@ -55,24 +56,38 @@ namespace Tutorials
             }
             if (selection.Equals("1"))
                 url = "pulsar+ssl://127.0.0.1:6651";
-
-
-            var clientConfig = new PulsarClientConfigBuilder()
-                .ServiceUrl(url);
-
-            if (selection.Equals("1"))
+            var clientConfig = new PulsarClientConfigBuilder();
+            Console.WriteLine("auto-cluster or config?");
+            var cluster = Console.ReadLine();
+            if (cluster == "auto-cluster")
             {
-                var ca = new System.Security.Cryptography.X509Certificates.X509Certificate2(@"certs/ca.cert.pem");
-                clientConfig.EnableTls(true);
-                clientConfig.AddTrustedAuthCert(ca);
+                clientConfig
+                    .ServiceUrlProvider(new AutoClusterFailover((AutoClusterFailoverBuilder)new AutoClusterFailoverBuilder()
+                .Primary("pulsar://localhost:6650")
+                .Secondary(new List<string> { "pulsar://localhost:6650" })
+                .CheckInterval(TimeSpan.FromSeconds(20))
+                .FailoverDelay(TimeSpan.FromSeconds(20))
+                .SwitchBackDelay(TimeSpan.FromSeconds(20))));
             }
+            else
+            {
+                clientConfig
+               .ServiceUrl(url)
+               .EnableTransaction(true);
+                if (selection.Equals("1"))
+                {
+                    var ca = new System.Security.Cryptography.X509Certificates.X509Certificate2(@"certs/ca.cert.pem");
+                    clientConfig.EnableTls(true);
+                    clientConfig.AddTrustedAuthCert(ca);
+                }
+            }   
+            
             Console.WriteLine("Please, time to execute some command, which do you want?");
             var cmd = Console.ReadLine();
 
-            clientConfig.EnableTransaction(true);
-
             //pulsar actor system
             var pulsarSystem = PulsarSystem.GetInstance(actorSystemName: "program");
+            
 
             var pulsarClient = await pulsarSystem.NewClient(clientConfig);
             _client = pulsarClient;

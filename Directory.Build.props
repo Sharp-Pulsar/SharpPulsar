@@ -13,16 +13,16 @@
     <JsonSubTypesVersion>2.0.1</JsonSubTypesVersion>
     <K4osCompressionLZ4Version>1.3.6</K4osCompressionLZ4Version>
     <MicrosoftCSharpVersion>4.7.0</MicrosoftCSharpVersion>
-    <MicrosoftExtensionsApiDescriptionClientVersion>8.0.1</MicrosoftExtensionsApiDescriptionClientVersion>
+    <MicrosoftExtensionsApiDescriptionClientVersion>8.0.2</MicrosoftExtensionsApiDescriptionClientVersion>
     <MicrosoftExtensionsLoggingVersion>8.0.0</MicrosoftExtensionsLoggingVersion>
     <MicrosoftIORecyclableMemoryStreamVersion>3.0.0</MicrosoftIORecyclableMemoryStreamVersion>
     <MicrosoftRestClientRuntimeVersion>2.3.24</MicrosoftRestClientRuntimeVersion>
-    <NagerPublicSuffixVersion>2.4.0</NagerPublicSuffixVersion>
+    <NagerPublicSuffixVersion>3.0.0</NagerPublicSuffixVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NitoAsyncExVersion>5.1.2</NitoAsyncExVersion>
-    <NodaTimeVersion>3.1.10</NodaTimeVersion>
+    <NodaTimeVersion>3.1.11</NodaTimeVersion>
     <DocfxVersion>2.67.5</DocfxVersion>
-    <NSwagApiDescriptionClientVersion>14.0.2</NSwagApiDescriptionClientVersion>
+    <NSwagApiDescriptionClientVersion>14.0.3</NSwagApiDescriptionClientVersion>
     <OpenTelemetryVersion>1.7.0</OpenTelemetryVersion>
     <PortableBouncyCastleVersion>1.9.0</PortableBouncyCastleVersion>
     <ProNBenchxUnitVersion>2.0.0</ProNBenchxUnitVersion>
@@ -36,7 +36,7 @@
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeSerializationPrimitivesVersion>4.3.0</SystemRuntimeSerializationPrimitivesVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
-    <SystemTextJsonVersion>8.0.1</SystemTextJsonVersion>
+    <SystemTextJsonVersion>8.0.2</SystemTextJsonVersion>
     <SystemThreadingTasksDataflowVersion>8.0.0</SystemThreadingTasksDataflowVersion>
     <zlibnetmutliplatformVersion>1.0.6</zlibnetmutliplatformVersion>
     <ZstdNetVersion>1.4.5</ZstdNetVersion>
