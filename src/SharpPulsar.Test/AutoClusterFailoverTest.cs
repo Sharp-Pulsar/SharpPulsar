@@ -7,6 +7,9 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Xunit;
+using Akka.Actor;
+using SharpPulsar.ServiceProvider;
+using Ductus.FluentDocker.Commands;
 
 namespace SharpPulsar.Test
 {
@@ -19,11 +22,11 @@ namespace SharpPulsar.Test
         private readonly ITestOutputHelper _output;
         //private TaskCompletionSource<PulsarClient> _tcs;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+       // private PulsarClientConfigBuilder _configBuilder;
         public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _configBuilder = fixture.ConfigBuilder;
+           // _configBuilder = fixture.ConfigBuilder;
             _system = fixture.System;
         }
         [Fact]
@@ -64,7 +67,7 @@ namespace SharpPulsar.Test
 
                     Assert.True(message.HasBase64EncodedKey());
                     var receivedMessage = Encoding.UTF8.GetString(message.Data);
-                    _output.WriteLine($"Received message: [{receivedMessage}]");
+                    _output.WriteLine($"Received message: [{receivedMessage}]. Time: {DateTime.Now.ToLongTimeString()}");
                     Assert.Equal("AutoMessage", receivedMessage);
                 }
                 await Act(consumer, producer);
@@ -91,7 +94,14 @@ namespace SharpPulsar.Test
                 _tcs.TrySetResult(client);
             })();
            _client = await _tcs.Task; */
-            _client = await _system.NewClient(_configBuilder);
+            var auto = new AutoClusterFailover((AutoClusterFailoverBuilder)new AutoClusterFailoverBuilder()
+                .Primary("pulsar://localhost:6650")
+                .Secondary(new List<string> { "pulsar://localhost:6650" })
+                .CheckInterval(TimeSpan.FromSeconds(20))
+                .FailoverDelay(TimeSpan.FromSeconds(20))
+                .SwitchBackDelay(TimeSpan.FromSeconds(20)));
+            var b = new PulsarClientConfigBuilder().ServiceUrlProvider(auto);
+            _client = await _system.NewClient(b);
         }
 
         public async Task DisposeAsync()

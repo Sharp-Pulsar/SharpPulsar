@@ -1,4 +1,5 @@
 ﻿using Nager.PublicSuffix;
+using Nager.PublicSuffix.RuleProviders;
 using SharpPulsar.Common;
 using System;
 using System.Collections.Generic;
@@ -78,7 +79,7 @@ namespace SharpPulsar.Tls
 		}
 		private readonly ILoggingAdapter _log;
 
-		private readonly DomainParser _publicSuffixMatcher = new DomainParser(new WebTldRuleProvider());
+		private readonly DomainParser _publicSuffixMatcher = new DomainParser(new SimpleHttpRuleProvider());
 		public TlsHostnameVerifier(ILoggingAdapter log)
 		{
 			_log = log;
