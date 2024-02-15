@@ -1,5 +1,9 @@
 ## vNext
 
+## [2.15.1] / 2024-02-15
+- [FIX][ServiceUrlProvider] ClientConfigurationData
+- [Updated] Nager.PublicSuffix v3.0.0
+
 ## [2.15.0] / 2024-02-03
 - [FIX][ConnectionHandler] Akka.NET Version 1.5.16: `error AK1002`
 - [Added][ProducerConfigBuilder] `DefaultCryptoKeyReader`*
@@ -69,7 +73,8 @@
 ## [0.1.0] / 14 January 2022
 - First release
 
-[vNext]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.15.0...HEAD
+[vNext]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.15.1...HEAD
+[2.15.1]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.15.0...2.15.1
 [2.15.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.14.1...2.15.0
 [2.14.1]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.14.0...2.14.1
 [2.14.0]: https://github.com/Sharp-Pulsar/SharpPulsar/compare/2.13.0...2.14.0
