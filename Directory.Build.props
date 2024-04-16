@@ -1,29 +1,29 @@
 
 <Project>
   <PropertyGroup>
-    <AkkaVersion>1.5.16</AkkaVersion>
+    <AkkaVersion>1.5.19</AkkaVersion>
     <AkkaLoggerSerilogVersion>1.5.12.1</AkkaLoggerSerilogVersion>
     <SerilogSinksFileVersion>5.0.0</SerilogSinksFileVersion>
     <ApacheAvroVersion>1.11.3</ApacheAvroVersion>
     <AppMetricsConcurrencyVersion>4.3.0</AppMetricsConcurrencyVersion>
     <AvroSchemaGeneratorVersion>2.10.0</AvroSchemaGeneratorVersion>
-    <DotNettyCommonVersion>0.7.5</DotNettyCommonVersion>
-    <GoogleProtobufVersion>3.25.2</GoogleProtobufVersion>
-    <IdentityModelVersion>6.2.0</IdentityModelVersion>
+    <DotNettyCommonVersion>0.7.6</DotNettyCommonVersion>
+    <GoogleProtobufVersion>3.26.1</GoogleProtobufVersion>
+    <IdentityModelVersion>7.0.0</IdentityModelVersion>
     <JsonSubTypesVersion>2.0.1</JsonSubTypesVersion>
-    <K4osCompressionLZ4Version>1.3.6</K4osCompressionLZ4Version>
+    <K4osCompressionLZ4Version>1.3.8</K4osCompressionLZ4Version>
     <MicrosoftCSharpVersion>4.7.0</MicrosoftCSharpVersion>
-    <MicrosoftExtensionsApiDescriptionClientVersion>8.0.1</MicrosoftExtensionsApiDescriptionClientVersion>
-    <MicrosoftExtensionsLoggingVersion>8.0.0</MicrosoftExtensionsLoggingVersion>
+    <MicrosoftExtensionsApiDescriptionClientVersion>8.0.4</MicrosoftExtensionsApiDescriptionClientVersion>
+    <MicrosoftExtensionsLoggingVersion>8.0.1</MicrosoftExtensionsLoggingVersion>
     <MicrosoftIORecyclableMemoryStreamVersion>3.0.0</MicrosoftIORecyclableMemoryStreamVersion>
     <MicrosoftRestClientRuntimeVersion>2.3.24</MicrosoftRestClientRuntimeVersion>
-    <NagerPublicSuffixVersion>2.4.0</NagerPublicSuffixVersion>
+    <NagerPublicSuffixVersion>3.2.0</NagerPublicSuffixVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NitoAsyncExVersion>5.1.2</NitoAsyncExVersion>
-    <NodaTimeVersion>3.1.10</NodaTimeVersion>
+    <NodaTimeVersion>3.1.11</NodaTimeVersion>
     <DocfxVersion>2.67.5</DocfxVersion>
-    <NSwagApiDescriptionClientVersion>14.0.2</NSwagApiDescriptionClientVersion>
-    <OpenTelemetryVersion>1.7.0</OpenTelemetryVersion>
+    <NSwagApiDescriptionClientVersion>14.0.7</NSwagApiDescriptionClientVersion>
+    <OpenTelemetryVersion>1.8.0</OpenTelemetryVersion>
     <PortableBouncyCastleVersion>1.9.0</PortableBouncyCastleVersion>
     <ProNBenchxUnitVersion>2.0.0</ProNBenchxUnitVersion>
     <protobufnetVersion>3.2.30</protobufnetVersion>
@@ -36,7 +36,7 @@
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemRuntimeSerializationPrimitivesVersion>4.3.0</SystemRuntimeSerializationPrimitivesVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
-    <SystemTextJsonVersion>8.0.1</SystemTextJsonVersion>
+    <SystemTextJsonVersion>8.0.3</SystemTextJsonVersion>
     <SystemThreadingTasksDataflowVersion>8.0.0</SystemThreadingTasksDataflowVersion>
     <zlibnetmutliplatformVersion>1.0.6</zlibnetmutliplatformVersion>
     <ZstdNetVersion>1.4.5</ZstdNetVersion>
