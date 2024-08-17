@@ -3,7 +3,6 @@ using System.Linq;
 using Nuke.Common;
 using Nuke.Common.ChangeLog;
 using Nuke.Common.CI;
-using Nuke.Common.Execution;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
@@ -14,8 +13,6 @@ using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Xunit;
 using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
-using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.ChangeLog.ChangelogTasks;
 using static Nuke.Common.Tools.Git.GitTasks;
@@ -24,12 +21,9 @@ using Nuke.Common.Tools.DocFX;
 using System.IO;
 using System.Collections.Generic;
 using Octokit;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Nuke.Common.Tools.MSBuild;
 using Nuke.Common.CI.GitHubActions;
-using Testcontainers.Pulsar;
-using Microsoft.DocAsCode.Dotnet;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 
@@ -119,8 +113,7 @@ partial class Build : NukeBuild
                 .SetProjectFile(Solution));
         });
     Target Tests => _ => _
-    .DependsOn(Test)
-    .DependsOn(Token);
+    .DependsOn(Test);
     Target Compile => _ => _
         .DependsOn(Restore)
         .Executes(() =>
@@ -167,8 +160,7 @@ partial class Build : NukeBuild
             }
         });
 
-    Target Test => _ => _
-        .DependsOn(TestContainer)
+    Target Test => _ => _        
         .DependsOn(Compile)
         .Executes(async() =>
         {
@@ -201,8 +193,7 @@ partial class Build : NukeBuild
                             .SetResultsDirectory(OutputTests)));
                     }
             }
-            await Container.StopAsync();
-            await Container.DisposeAsync();
+            
             await Task.Delay(5000);
             var token = Solution.GetProject("SharpPulsar.Test.Token").NotNull("project != null");
             Information($"Running tests from {token}");
@@ -397,53 +388,7 @@ partial class Build : NukeBuild
                 Information($"  {releaseAsset.BrowserDownloadUrl}");
             }
         }
-    Target TestContainer => _ => _
-    .Executes(async () =>
-    {
-        Information("Test Container");
-        Container = BuildContainer();
-        await Container.StartAsync();//;.GetAwaiter().GetResult();]
-        Information("Start Test Container");
-        await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-        Information("ExecAsync Test Container");
-        await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
-
-        await AwaitPortReadiness($"http://127.0.0.1:8081/");
-        Information("AwaitPortReadiness Test Container");
-    });
     
-    private PulsarContainer BuildContainer()
-    {
-        return new PulsarBuilder().Build();
-    }
-    private async ValueTask AwaitPortReadiness(string address)
-    {
-        var waitTries = 20;
-
-        using var handler = new HttpClientHandler
-        {
-            AllowAutoRedirect = true
-        };
-
-        using var client = new HttpClient(handler);
-
-        while (waitTries > 0)
-        {
-            try
-            {
-                await client.GetAsync(address).ConfigureAwait(false);
-                return;
-            }
-            catch
-            {
-                waitTries--;
-                await Task.Delay(5000).ConfigureAwait(false);
-            }
-        }
-
-        throw new Exception("Unable to confirm Pulsar has initialized");
-    }
-    public PulsarContainer Container { get; set; }
     private string MajorMinorPatchVersion => GitVersion.MajorMinorPatch;
 
     string ParseReleaseNote()

@@ -1,18 +1,19 @@
-﻿using System.Text;
-using Akka.Configuration;
-using SharpCompress;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
 using SharpPulsar.Auth;
-using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Test.Token.Fixture;
+using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
+using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.Token
+namespace SharpPulsar.Test
 {
-    [Collection(nameof(PulsarTokenCollection))]
+    [Collection(nameof(PulsarCollection))]
     public class TokenTests : IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
@@ -20,7 +21,7 @@ namespace SharpPulsar.Test.Token
         private PulsarClient? _client;
         private PulsarSystem _system;
         private PulsarClientConfigBuilder _configBuilder;
-        public TokenTests(ITestOutputHelper output, PulsarTokenFixture fixture)
+        public TokenTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             var s = fixture.Container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" })
                 .GetAwaiter()
@@ -35,28 +36,7 @@ namespace SharpPulsar.Test.Token
             client.Authentication(AuthenticationFactory.Token(s.Stdout));
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
-            _system = PulsarSystem.GetInstance(actorSystemName: "token", config: ConfigurationFactory.ParseString(@"
-            akka
-            {
-                loglevel = DEBUG
-			    log-config-on-start = on 
-                loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
-			    actor 
-                {              
-				      debug 
-				      {
-					      receive = on
-					      autoreceive = on
-					      lifecycle = on
-					      event-stream = on
-					      unhandled = on
-				      }  
-			    }
-                coordinated-shutdown
-                {
-                    exit-clr = on
-                }
-            }"));
+            _system = PulsarSystem.GetInstance(actorSystemName: "token");
             _configBuilder = client;           
             _topic = $"persistent://public/default/token-{Guid.NewGuid()}";
         }
@@ -83,7 +63,7 @@ namespace SharpPulsar.Test.Token
             _client.Dispose();
         }
         [Fact]
-        public virtual async void Token_ReaderInstantiation()
+        public virtual async Task Token_ReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
             reader.Topic(_topic);

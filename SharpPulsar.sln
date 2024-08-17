@@ -96,8 +96,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.TestContainer",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tutorials", "Tutorials\Tutorials.csproj", "{8841EEEE-7E06-4D51-AF9E-11012274AA10}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Token", "src\SharpPulsar.Test.Token\SharpPulsar.Test.Token.csproj", "{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar", "src\SharpPulsar\SharpPulsar.csproj", "{DE4A02EA-CEE0-462A-832A-5BDDEFB339B9}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.API", "src\SharpPulsar.Test.API\SharpPulsar.Test.API.csproj", "{229C808B-F1E2-4AC5-8B30-42E1E45DADBB}"
@@ -110,9 +108,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Trino.Test", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Admin.Test", "src\SharpPulsar.Admin.Test\SharpPulsar.Admin.Test.csproj", "{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Testcontainers.Pulsar", "src\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj", "{A434737B-2438-4B3B-AA2A-D15E9278B0D7}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.TimeUnit", "src\SharpPulsar.TimeUnit\SharpPulsar.TimeUnit.csproj", "{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.TimeUnit", "src\SharpPulsar.TimeUnit\SharpPulsar.TimeUnit.csproj", "{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -134,10 +130,6 @@ Global
 		{8841EEEE-7E06-4D51-AF9E-11012274AA10}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8841EEEE-7E06-4D51-AF9E-11012274AA10}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8841EEEE-7E06-4D51-AF9E-11012274AA10}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1A2F76A3-9D14-4C1B-A7BB-C55F8D4E1F41}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DE4A02EA-CEE0-462A-832A-5BDDEFB339B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DE4A02EA-CEE0-462A-832A-5BDDEFB339B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE4A02EA-CEE0-462A-832A-5BDDEFB339B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -162,10 +154,6 @@ Global
 		{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6DFD7A4C-AB3F-41F0-A495-F147D462AC8E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A434737B-2438-4B3B-AA2A-D15E9278B0D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A434737B-2438-4B3B-AA2A-D15E9278B0D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A434737B-2438-4B3B-AA2A-D15E9278B0D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A434737B-2438-4B3B-AA2A-D15E9278B0D7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9AFA30FC-730F-4AE7-A2AF-691C4BDF809B}.Release|Any CPU.ActiveCfg = Release|Any CPU
