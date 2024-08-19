@@ -1,111 +1,87 @@
-﻿using System.Text;
-using Akka.Configuration;
-using SharpCompress;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using SharpPulsar.Auth;
-using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Test.Token.Fixture;
+using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
+using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.Token
+namespace SharpPulsar.Test
 {
-    [Collection(nameof(PulsarTokenCollection))]
-    public class TokenTests : IAsyncLifetime
+    [Collection(nameof(PulsarCollection))]
+    public class TokenTests : IDisposable
     {
+        private readonly CancellationTokenSource _cts;
         private readonly ITestOutputHelper _output;
-        private readonly string _topic;
-        private PulsarClient? _client;
         private PulsarSystem _system;
         private PulsarClientConfigBuilder _configBuilder;
-        public TokenTests(ITestOutputHelper output, PulsarTokenFixture fixture)
+        private PulsarFixture _fixture;
+        public TokenTests(ITestOutputHelper output, PulsarFixture fixture)
         {
-            var s = fixture.Container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" })
-                .GetAwaiter()
-                .GetResult();
+            _cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+            _fixture = fixture;
             _output = output;
-            var client = new PulsarClientConfigBuilder();
-            var serviceUrl = "pulsar://localhost:6650";
-            var webUrl = "http://localhost:8080";
-            client.ServiceUrl(serviceUrl);
-            client.WebUrl(webUrl);
-            
-            client.Authentication(AuthenticationFactory.Token(s.Stdout));
-            client.ServiceUrl(serviceUrl);
-            client.WebUrl(webUrl);
-            _system = PulsarSystem.GetInstance(actorSystemName: "token", config: ConfigurationFactory.ParseString(@"
-            akka
-            {
-                loglevel = DEBUG
-			    log-config-on-start = on 
-                loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
-			    actor 
-                {              
-				      debug 
-				      {
-					      receive = on
-					      autoreceive = on
-					      lifecycle = on
-					      event-stream = on
-					      unhandled = on
-				      }  
-			    }
-                coordinated-shutdown
-                {
-                    exit-clr = on
-                }
-            }"));
-            _configBuilder = client;           
-            _topic = $"persistent://public/default/token-{Guid.NewGuid()}";
+            _system = fixture.System;
         }
 
         [Fact]
         public virtual async Task Token_ProducerInstantiation()
         {
+            var c = await CreateCient();
+            var client = await _system.NewClient(c.builder);
             var producer = new ProducerConfigBuilder<string>();
-            producer.Topic(_topic);
-            var stringProducerBuilder = await _client!.NewProducerAsync(new StringSchema(), producer);
+            producer.Topic(c.topic);
+            var stringProducerBuilder = await client!.NewProducerAsync(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
             await stringProducerBuilder.CloseAsync();
-            _client.Dispose();
+            //_client.Dispose();
         }
         [Fact]
         public virtual async Task Token_ConsumerInstantiation()
         {
+            var c = await CreateCient();
+            var client = await _system.NewClient(c.builder);
             var consumer = new ConsumerConfigBuilder<string>();
-            consumer.Topic(_topic);
+            consumer.Topic(c.topic);
             consumer.SubscriptionName($"token-test-sub-{Guid.NewGuid()}");
-            var stringConsumerBuilder = await _client!.NewConsumerAsync(new StringSchema(), consumer);
+            var stringConsumerBuilder = await client!.NewConsumerAsync(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
             await stringConsumerBuilder.CloseAsync();
-            _client.Dispose();
+            //_client.Dispose();
         }
         [Fact]
-        public virtual async void Token_ReaderInstantiation()
+        public virtual async Task Token_ReaderInstantiation()
         {
+            var c = await CreateCient();
+            var client = await _system.NewClient(c.builder);
             var reader = new ReaderConfigBuilder<string>();
-            reader.Topic(_topic);
+            reader.Topic(c.topic);
             reader.StartMessageId(IMessageId.Earliest);
-            var stringReaderBuilder = await _client!.NewReaderAsync(new StringSchema(), reader);
+            var stringReaderBuilder = await client!.NewReaderAsync(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
             await stringReaderBuilder.CloseAsync();
-            _client.Dispose();
+            //_client.Dispose();
         }
 
         [Fact]
         public async Task Token_ProduceAndConsume()
         {
-            var topic = $"persistent://public/default/token-{Guid.NewGuid}";
+            var c = await CreateCient();
+            var client = await _system.NewClient(c.builder);
 
             var r = new Random(0);
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>();
-            producerBuilder.Topic(topic);
-            var producer = await _client!.NewProducerAsync(producerBuilder);
+            producerBuilder.Topic(c.topic);
+            var producer = await client!.NewProducerAsync(producerBuilder);
 
             await producer.NewMessage().KeyBytes(byteKey)
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
@@ -113,11 +89,11 @@ namespace SharpPulsar.Test.Token
                .SendAsync();
 
             var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(topic)
+                .Topic(c.topic)
                 //.StartMessageId(77L, 0L, -1, 0)
                 .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest)
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
-            var consumer = await _client.NewConsumerAsync(consumerBuilder);
+            var consumer = await client.NewConsumerAsync(consumerBuilder);
 
             await Task.Delay(TimeSpan.FromSeconds(10));
             var message = (Message<byte[]>)await consumer.ReceiveAsync();
@@ -133,31 +109,32 @@ namespace SharpPulsar.Test.Token
             Assert.Equal("TestMessage", receivedMessage);
             //producer.Close();
             await consumer.CloseAsync();
-            _client.Dispose();
+            //_client.Dispose();
         }
         [Fact]
         public async Task Token_ProduceAndConsumeBatch()
         {
-
+            var c = await CreateCient();
+            var client = await _system.NewClient(c.builder);
             var r = new Random(0);
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 
             var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(_topic)
+                .Topic(c.topic)
                 .ForceTopicCreation(true)
                 .SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
-            var consumer = await _client!.NewConsumerAsync(consumerBuilder);
+            var consumer = await client!.NewConsumerAsync(consumerBuilder);
 
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
-                .Topic(_topic)
+                .Topic(c.topic)
                 .SendTimeout(TimeSpan.FromMilliseconds(10000))
                 .EnableBatching(true)
                 .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(120000))
                 .BatchingMaxMessages(5);
 
-            var producer = await _client.NewProducerAsync(producerBuilder);
+            var producer = await client.NewProducerAsync(producerBuilder);
 
             for (var i = 0; i < 5; i++)
             {
@@ -187,17 +164,29 @@ namespace SharpPulsar.Test.Token
 
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            _client.Dispose();
+            //_client.Dispose();
         }
-        public async Task InitializeAsync()
+        
+        private async Task<string> CreateToken()
         {
-
-            _client = await _system.NewClient(_configBuilder);
+            var token = await _fixture.Container!.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" });
+            return token.Stdout;
         }
-
-        public async Task DisposeAsync()
+        private async ValueTask<(PulsarClientConfigBuilder builder, string topic)> CreateCient()
         {
-            await _client!.ShutdownAsync();
+            var client = new PulsarClientConfigBuilder();
+            var serviceUrl = "pulsar://localhost:6650";
+            //var webUrl = "http://localhost:8080";
+            client.ServiceUrl(serviceUrl);
+            //client.WebUrl(webUrl);
+
+            client.Authentication(AuthenticationFactory.Token(await CreateToken()));
+            client.ServiceUrl(serviceUrl);
+            //client.WebUrl(webUrl);
+            _configBuilder = client;
+            var topic = $"persistent://public/default/token-{Guid.NewGuid()}";
+            return (client, topic);
         }
+        public void Dispose() => _cts.Dispose();
     }
 }

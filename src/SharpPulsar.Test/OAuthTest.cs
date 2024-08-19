@@ -62,7 +62,7 @@ namespace SharpPulsar.Test
             await stringConsumerBuilder.CloseAsync();
         }
         [Fact]
-        public virtual async void OAuth_ReaderInstantiation()
+        public virtual async Task OAuth_ReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
             reader.Topic(_topic);

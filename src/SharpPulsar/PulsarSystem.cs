@@ -76,6 +76,7 @@ namespace SharpPulsar
             var confg = config ?? ConfigurationFactory.ParseString(@"
             akka
             {
+                log-dead-letters = off
                 loglevel = INFO
 			    log-config-on-start = on 
                 loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
@@ -96,7 +97,7 @@ namespace SharpPulsar
                 }
             }");
 
-
+            
             var actorSystem = actorsystem ?? ActorSystem.Create(actorSystemName, confg);
             return new PulsarSystem(actorSystem, logSetup, runLogSetup);
         }

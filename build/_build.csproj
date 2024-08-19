@@ -21,6 +21,7 @@
     <PackageReference Include="Nuke.Common" />
     <PackageReference Include="docfx.console" ExcludeAssets="build" />
     <PackageReference Include="System.Configuration.ConfigurationManager" />
+    <PackageReference Include="Testcontainers.Pulsar" />
     <PackageReference Include="Microsoft.DocAsCode.App" />
     <PackageReference Include="xunit.runner.console">
       <PrivateAssets>all</PrivateAssets>
@@ -33,10 +34,6 @@
         <AdditionalFiles Include="..\src\Protobuf\PulsarApi.proto" OneOf="enum" ListSet="true" RepeatedAsList="true" IncludeInOutput="true"/>
     </ItemGroup>
     -->
-  <ItemGroup>
-    <ProjectReference Include="..\src\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />
-  </ItemGroup>
-
     
 
 </Project>

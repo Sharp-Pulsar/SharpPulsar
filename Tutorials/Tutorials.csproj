@@ -7,8 +7,8 @@
 
   <ItemGroup>
     <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="Testcontainers.Pulsar" />
     <ProjectReference Include="..\src\SharpPulsar\SharpPulsar.csproj" />
-    <ProjectReference Include="..\src\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />
   </ItemGroup>
 
   <ItemGroup>

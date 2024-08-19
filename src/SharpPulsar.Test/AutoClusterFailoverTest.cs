@@ -7,9 +7,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Xunit;
-using Akka.Actor;
 using SharpPulsar.ServiceProvider;
-using Ductus.FluentDocker.Commands;
 
 namespace SharpPulsar.Test
 {

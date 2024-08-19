@@ -9,6 +9,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
 using SharpPulsar;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
@@ -101,6 +103,10 @@ namespace Tutorials
             Console.ReadKey();
             await _container.StopAsync();
         }
+        ~Program()
+        {
+            _client.Shutdown();
+        }
         private static async ValueTask HandleCmd(string cmd, PulsarClient pulsarClient)
         {
             if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
@@ -133,6 +139,7 @@ namespace Tutorials
               .Build();
 
             await _container.StartAsync();
+            //await _container.ExecAsync(new List<string> { @"./bin/pulsar", "initialize-transaction-coordinator-metadata", "-cs", "localhost:2181", "-c", "standalone", "--initial-num-transaction-coordinators", "2" });
             Console.WriteLine("Start Test Container");
             await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
             await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
@@ -860,11 +867,65 @@ namespace Tutorials
         }
         private static PulsarBuilder BuildContainer()
         {
-            return new PulsarBuilder();
+            return new PulsarBuilder()
+                .WithImage("apachepulsar/pulsar-all:3.1.2")
+                .WithPortBinding(6650, 6650)
+                .WithPortBinding(8080, 8080)
+                .WithPortBinding(8081, 8081)
+                //.WithPortBinding(8081, true)
+                .WithEnvironment("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g")
+                .WithEnvironment("PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_nettyMaxFrameSizeBytes", "5253120")
+                .WithEnvironment("PULSAR_PREFIX_transactionCoordinatorEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_defaultRetentionTimeInMinutes", "-1") //Default message retention time. 0 means retention is disabled. -1 means data is not removed by time quota
+                .WithEnvironment("PULSAR_PREFIX_defaultRetentionSizeInMB", "-1") //Default retention size. 0 means retention is disabled. -1 means data is not removed by size quota
+                .WithEnvironment("PULSAR_STANDALONE_USE_ZOOKEEPER", "1")
+                .WithEnvironment("PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_brokerEntryMetadataInterceptors", "org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
+                .WithWaitStrategy(Wait.ForUnixContainer())
+                .WithStartupCallback((container, ct) =>
+                {
+                    const char lf = '\n';
+                    var startupScript = new StringBuilder();
+                    startupScript.Append("#!/bin/bash");
+                    startupScript.Append(lf);
+                    startupScript.Append("bin/apply-config-from-env.py conf/standalone.conf ");
+                    startupScript.Append("&& bin/pulsar standalone --no-functions-worker ");
+                    startupScript.Append("&& bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2");
+
+                    return container.CopyAsync(Encoding.Default.GetBytes(startupScript.ToString()), "/testcontainers.sh", Unix.FileMode755, ct: ct);
+                });
         }
-        private static PulsarTokenBuilder TokenBuildContainer()
+        private static PulsarBuilder TokenBuildContainer()
         {
-            return new PulsarTokenBuilder();
+            return new PulsarBuilder()
+                .WithImage("apachepulsar/pulsar-all:3.1.2")
+                .WithPortBinding(8081, true)
+                .WithEnvironment("PULSAR_MEM", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g")
+                .WithEnvironment("PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_nettyMaxFrameSizeBytes", "5253120")
+                .WithEnvironment("PULSAR_PREFIX_transactionCoordinatorEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_defaultRetentionTimeInMinutes", "-1") //Default message retention time. 0 means retention is disabled. -1 means data is not removed by time quota
+                .WithEnvironment("PULSAR_PREFIX_defaultRetentionSizeInMB", "-1") //Default retention size. 0 means retention is disabled. -1 means data is not removed by size quota
+                .WithEnvironment("PULSAR_STANDALONE_USE_ZOOKEEPER", "1")
+                .WithEnvironment("PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled", "true")
+                .WithEnvironment("PULSAR_PREFIX_brokerEntryMetadataInterceptors", "org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
+                .WithAuthentication()
+                .WithWaitStrategy(Wait.ForUnixContainer())
+                .WithStartupCallback((container, ct) =>
+                {
+                    const char lf = '\n';
+                    var startupScript = new StringBuilder();
+                    startupScript.Append("#!/bin/bash");
+                    startupScript.Append(lf);
+                    startupScript.Append("bin/apply-config-from-env.py conf/standalone.conf ");
+                    startupScript.Append("&& bin/pulsar standalone --no-functions-worker ");
+                    startupScript.Append("&& bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2");
+
+                    return container.CopyAsync(Encoding.Default.GetBytes(startupScript.ToString()), "/testcontainers.sh", Unix.FileMode755, ct: ct);
+                });
         }
         internal static async Task RunOauth()
         {

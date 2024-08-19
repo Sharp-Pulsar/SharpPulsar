@@ -18,13 +18,13 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.json" />
     <PackageReference Include="polly" />
     <PackageReference Include="SharpCompress" />
-    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="Testcontainers.Pulsar" />
     <PackageReference Include="xunit" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
-    <ProjectReference Include="..\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />
+   <!-- <ProjectReference Include="..\Testcontainers.Pulsar\Testcontainers.Pulsar.csproj" />-->
   </ItemGroup>
 
   <ItemGroup>

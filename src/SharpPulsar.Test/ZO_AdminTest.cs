@@ -1,13 +1,17 @@
-﻿
+﻿using System;
+using System.Net.Http;
 using System.Text.Json;
+using System.Threading.Tasks;
 using SharpPulsar.Admin.v2;
+using SharpPulsar.Test.Fixture;
+using Xunit;
 using Xunit.Abstractions;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace SharpPulsar.Admin.Test
+namespace SharpPulsar.Test
 {
-    [Collection("pulsar admin")]
-    public class AdminTestSpec
+    [Collection(nameof(PulsarCollection))]
+    public class ZO_AdminTest 
     {
         private readonly ITestOutputHelper _output;
         private PulsarAdminRESTAPIClient _admin;
@@ -16,7 +20,7 @@ namespace SharpPulsar.Admin.Test
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
         };
-        public AdminTestSpec(ITestOutputHelper output)
+        public ZO_AdminTest(ITestOutputHelper output)
         {
             _output = output;
             var client = new HttpClient
@@ -32,7 +36,7 @@ namespace SharpPulsar.Admin.Test
             _output.WriteLine(JsonSerializer.Serialize(topic, _jsonSerializerOptions));
             Assert.True(true);
         }
-        
+
         [Fact]
         public async Task GetOffloadThreshold()
         {
@@ -40,7 +44,7 @@ namespace SharpPulsar.Admin.Test
             _output.WriteLine(JsonSerializer.Serialize(topic, _jsonSerializerOptions));
             Assert.True(true);
         }
-        
+
         [Fact]
         public async Task GetPropertiesAsync()
         {
@@ -48,27 +52,5 @@ namespace SharpPulsar.Admin.Test
             _output.WriteLine(JsonSerializer.Serialize(topic, _jsonSerializerOptions));
             Assert.True(true);
         }
-        /*
-        [Fact]
-        public async Task GetStatsPersisten()
-        {
-            var topic = await _admin.GetStats2Async("public", "default", "query_topics_avro", false, false, false,false);
-            _output.WriteLine(JsonSerializer.Serialize(topic, _jsonSerializerOptions));
-            Assert.True(true);
-        }
-        [Fact]
-        public async Task GetPersistenceAsync()
-        {
-            var topic = await _admin.GetPersistenceAsync("public", "default"); 
-            _output.WriteLine(JsonSerializer.Serialize(topic, _jsonSerializerOptions));
-            Assert.True(true);
-        }
-        [Fact]
-        public async Task GetReplicatorDispatchRateAsync()
-        {
-            var topic = await _admin.GetReplicatorDispatchRateAsync("public", "default");
-            _output.WriteLine(JsonSerializer.Serialize(topic, _jsonSerializerOptions));
-            Assert.True(true);
-        }*/
     }
 }
