@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Akka.Configuration;
 using DotNet.Testcontainers.Configurations;
@@ -8,7 +7,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using Testcontainers.Pulsar;
 using Xunit;
-
 namespace SharpPulsar.TestContainer
 {
     public class PulsarFixture : IAsyncLifetime
@@ -18,13 +16,16 @@ namespace SharpPulsar.TestContainer
         public PulsarClientConfigBuilder? ConfigBuilder;
         public ClientConfigurationData? ClientConfigurationData; 
         public string? Token;
-        private PulsarContainer? _container;
+        private PulsarContainer? _container; 
+        private const string SecretKeyPath = "/pulsar/secret.key";
+        private const string UserName = "test-user";
+
+        public const string StartupScriptFilePath = "/testcontainers.sh";
         public PulsarContainer Container { get { return _container!; } }
         public PulsarFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
-            _configuration = GetIConfigurationRoot(path);
-            
+            _configuration = GetIConfigurationRoot(path);            
         }
         
        
@@ -64,21 +65,21 @@ namespace SharpPulsar.TestContainer
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
             var webUrl = web ?? clienConfigSetting.GetSection("web-url").Value;
-            var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
-            var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
-            var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
+            //var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
+            //var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
+            //var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value!);
             var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value!);
-            var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value!);
+            //var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value!);
             var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value!);
             var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value!);
             var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value!);
-            var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value!);
+            //var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value!);
 
 
             client.EnableTransaction(enableTxn);
 
-            if (operationTime > 0)
+            /* if (operationTime > 0)
                 client.OperationTimeout(TimeSpan.FromMilliseconds(operationTime));
 
             if (!string.IsNullOrWhiteSpace(authCertPath))
@@ -86,12 +87,13 @@ namespace SharpPulsar.TestContainer
 
             if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
                 client.Authentication(authPluginClassName, authParamsString);
-
+            */
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
+            //client.Authentication(AuthenticationFactory.Token(token));
             client.EnableTls(enableTls);
             ConfigBuilder = client;
             ClientConfigurationData = client.ClientConfigurationData;
@@ -123,11 +125,17 @@ namespace SharpPulsar.TestContainer
                 var startupScript = new StringBuilder();
                 startupScript.Append("#!/bin/bash");
                 startupScript.Append(lf);
-                startupScript.Append("bin/apply-config-from-env.py conf/standalone.conf ");
-                startupScript.Append("&& bin/pulsar standalone --no-functions-worker ");
-                startupScript.Append("&& bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2");
-               
-                return container.CopyAsync(Encoding.Default.GetBytes(startupScript.ToString()), "/testcontainers.sh", Unix.FileMode755, ct: ct);
+                startupScript.Append($"bin/pulsar tokens create-secret-key --output {SecretKeyPath} && ");
+                startupScript.Append($"export brokerClientAuthenticationParameters=token:$(bin/pulsar tokens create --secret-key {SecretKeyPath} --subject {UserName}) && ");
+                startupScript.Append("export CLIENT_PREFIX_authParams=$brokerClientAuthenticationParameters && ");
+
+                startupScript.Append("bin/apply-config-from-env.py conf/standalone.conf && ");
+                startupScript.Append("bin/apply-config-from-env-with-prefix.py CLIENT_PREFIX_ conf/client.conf && ");
+
+                startupScript.Append("bin/pulsar standalone --no-functions-worker && ");
+                startupScript.Append("bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2");
+
+                return container.CopyAsync(Encoding.Default.GetBytes(startupScript.ToString()), StartupScriptFilePath, Unix.FileMode755, ct: ct);
             })
             .WithCleanUp(true)
             .Build();
@@ -140,7 +148,7 @@ namespace SharpPulsar.TestContainer
 
             await AwaitPortReadiness($"http://127.0.0.1:8081/");
             Console.WriteLine("AwaitPortReadiness Test Container");
-
+            //var s = await _container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" });
             SetupSystem();
             await Task.CompletedTask;
         }
@@ -176,5 +184,6 @@ namespace SharpPulsar.TestContainer
         {
             await _container!.StopAsync();
         }
+        
     }
 }

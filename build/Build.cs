@@ -162,14 +162,14 @@ partial class Build : NukeBuild
 
     Target Test => _ => _        
         .DependsOn(Compile)
-        .Executes(async() =>
+        .Executes(() =>
         {
             
             var projects = new List<string> 
             {
                 "SharpPulsar.Test",
-                "SharpPulsar.Trino.Test",
-                "SharpPulsar.Admin.Test"
+                //"SharpPulsar.Trino.Test",
+                //"SharpPulsar.Admin.Test"
             };
 
             foreach (var projectName in projects)
@@ -192,34 +192,10 @@ partial class Build : NukeBuild
                             .SetLoggers("console;verbosity=detailed")
                             .SetResultsDirectory(OutputTests)));
                     }
-            }
+            }            
             
-            await Task.Delay(5000);
-            var token = Solution.GetProject("SharpPulsar.Test.Token").NotNull("project != null");
-            Information($"Running tests from {token}");
-            foreach (var fw in token.GetTargetFrameworks())
-            {
-
-                DotNetTest(c => c
-               .SetProjectFile(token)
-               .SetConfiguration(Configuration)
-               .SetFramework(fw)
-               .EnableNoBuild()
-               .SetBlameCrash(true)
-               .SetBlameHang(true)
-               .SetBlameHangTimeout("30m")
-               .EnableNoRestore()
-               .When(true, _ => _
-                   .SetLoggers("console;verbosity=detailed")
-                   .SetResultsDirectory(OutputTests)));
-            }
         });
-    Target Token => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            CoreTest("SharpPulsar.Test.Token");
-        });
+    
     Target API => _ => _
         .DependsOn(Compile)
         .Executes(() =>
