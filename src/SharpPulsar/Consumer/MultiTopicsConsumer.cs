@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
-using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
@@ -53,7 +52,7 @@ using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMe
 namespace SharpPulsar.Consumer
 {
 
-    internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>
+    internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>, IWithTimers
     {
 
         internal const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
@@ -85,11 +84,11 @@ namespace SharpPulsar.Consumer
         // timeout related to auto check and subscribe partition increasement
         private ICancelable _partitionsAutoUpdateTimeout = null;
 
-        private readonly IConsumerStatsRecorder _stats;
+        private readonly IConsumerStatsRecorder /*MultiTopicConsumerStatsRecorder<T>*/ _stats;
         private readonly IActorRef _unAckedMessageTracker;
         private readonly ConsumerConfigurationData<T> _internalConfig;
 
-        private readonly BatchMessageId _startMessageId = null;
+        private readonly IMessageIdAdv _startMessageId;
         private readonly long _startMessageRollbackDurationInSec;
         private readonly ClientConfigurationData _clientConfiguration;
         private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
@@ -98,6 +97,8 @@ namespace SharpPulsar.Consumer
 
         private readonly IActorRef _self;
         private readonly IActorContext _context;
+
+
         public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
         {
         }
@@ -134,9 +135,10 @@ namespace SharpPulsar.Consumer
             PartitionedTopics = new Dictionary<string, int>();
             _consumers = new ConcurrentDictionary<string, IActorRef>();
             _pausedConsumers = new Queue<IActorRef>();
+            _paused = conf.StartPaused;
             _sharedQueueResumeThreshold = MaxReceiverQueueSize / 2;
             AllTopicPartitionsNumber = 0;
-            _startMessageId = startMessageId != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
+            _startMessageId = (IMessageIdAdv)startMessageId;// != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
             _startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 
             if (conf.AckTimeout != TimeSpan.Zero)
@@ -156,7 +158,7 @@ namespace SharpPulsar.Consumer
             }
 
             _internalConfig = InternalConsumerConfig;
-            _stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) : ConsumerStatsDisabled.Instance;
+            _stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) :  ConsumerStatsDisabled.Instance;
 
             if (_internalConfig.AutoUpdatePartitions)
             {
@@ -164,6 +166,11 @@ namespace SharpPulsar.Consumer
                 {
                     SubscribeIncreasedTopicPartitions(Topic);
                 });
+            }
+            // start track and auto subscribe partition increment
+            if (conf.AutoUpdatePartitions)
+            {
+                Timers.StartSingleTimer("OnTopicsExtended", "OnTopicsExtended", conf.AutoUpdatePartitionsInterval.Add(TimeSpan.FromSeconds(10)));
             }
             if (conf.TopicNames.Count == 0)
             {
@@ -174,12 +181,20 @@ namespace SharpPulsar.Consumer
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames.ToList()), "Topics is empty or invalid.");
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
-                PulsarClientException lastError = null;
                 foreach (var t in conf.TopicNames)
                 {
                     try
                     {
                         await Subscribe(t, createTopicIfDoesNotExist);
+                        if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
+                        {
+                            MaxReceiverQueueSize = AllTopicPartitionsNumber;
+                        }
+                        State.ConnectionState = HandlerState.State.Ready;
+                        StartReceivingMessages(_consumers.Values.ToList());
+                        _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
+
+                        subscribeFuture.TrySetResult(_self);
                     }
                     catch (PulsarClientException ex)
                     {
@@ -187,20 +202,7 @@ namespace SharpPulsar.Consumer
                         _log.Warning($"[{Topic}] Failed to subscribe topics: {ex.Message}, closing consumer");
                         //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
                         subscribeFuture.TrySetException(ex);
-                        lastError = ex;
                     }
-                }
-                if (lastError == null)
-                {
-                    if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
-                    {
-                        MaxReceiverQueueSize = AllTopicPartitionsNumber;
-                    }
-                    State.ConnectionState = HandlerState.State.Ready;
-                    StartReceivingMessages(_consumers.Values.ToList());
-                    _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
-
-                    subscribeFuture.TrySetResult(_self);
                 }
             });
             Ready();
@@ -551,7 +553,40 @@ namespace SharpPulsar.Consumer
                 }
             });
             Receive<bool>(c => { });
-            Receive<string>(s => { });
+            Receive<string>(s => 
+            {
+                switch (s)
+                {
+                    case "OnTopicsExtended":
+                        try
+                        {
+                            if (State.ConnectionState != HandlerState.State.Ready)
+                            {
+                                return;
+                            }
+
+                            if (_log.IsDebugEnabled)
+                            {
+                                _log.Debug($"[{Topic}] run partitionsAutoUpdateTimerTask");
+                            }
+
+                            OnTopicsExtended(PartitionedTopics.Keys);
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.Warning("Encountered error in partition auto update timer task for multi-topic consumer."
+                                    + " Another task will be scheduled.", ex);
+                        }
+                        finally
+                        {
+                            Timers.StartSingleTimer("OnTopicsExtended", "OnTopicsExtended", Conf.AutoUpdatePartitionsInterval);
+                        }
+                        
+                        break;
+                    default:       
+                        break;
+                }
+            });
         }
 
         // Check topics are valid.
@@ -586,6 +621,7 @@ namespace SharpPulsar.Consumer
 
         private void StartReceivingMessages(IList<IActorRef> newConsumers)
         {
+            
             if (_log.IsDebugEnabled)
             {
                 _log.Debug($"[{Topic}] startReceivingMessages for {newConsumers.Count} new consumers in topics consumer, state: {State.ConnectionState}");
@@ -707,18 +743,19 @@ namespace SharpPulsar.Consumer
                 }
                 IncomingMessages.TryReceive(out message);
 
-                if (message == null)
-                    return message;
-
-                DecreaseIncomingMessageSize(message);
-                //checkState(Message is TopicMessageImpl);
-                if (!IsValidConsumerEpoch(message))
+                if (message != null)
                 {
-                    ResumeReceivingFromPausedConsumersIfNeeded();
-                    message = null;
-                    return InternalReceive();
+                    DecreaseIncomingMessageSize(message);
+                    //checkState(Message is TopicMessageImpl);
+                    /*if (!IsValidConsumerEpoch(message))
+                    {
+                        ResumeReceivingFromPausedConsumersIfNeeded();
+                        message = null;
+                        return InternalReceive();
+                    }*/
+                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                    message = BeforeConsume(message);
                 }
-                _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                 ResumeReceivingFromPausedConsumersIfNeeded();
                 return message;
             }
@@ -744,7 +781,7 @@ namespace SharpPulsar.Consumer
                 {
                     DecreaseIncomingMessageSize(message);
                     //checkArgument(Message is TopicMessageImpl);
-                    if (!IsValidConsumerEpoch(message))
+                    /*if (!IsValidConsumerEpoch(message))
                     {
                         var executionTime = NanoTime() - callTime;
                         var timeoutInNanos = time.TotalMilliseconds;
@@ -757,8 +794,9 @@ namespace SharpPulsar.Consumer
                             ResumeReceivingFromPausedConsumersIfNeeded();
                             return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime));
                         }
-                    }
+                    }*/
                     _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                    message = BeforeConsume(message);
                 }
                 ResumeReceivingFromPausedConsumersIfNeeded();
                 return message;
@@ -1273,7 +1311,7 @@ namespace SharpPulsar.Consumer
 
         protected internal override void CompleteOpBatchReceive(OpBatchReceive op)
         {
-            NotifyPendingBatchReceivedCallBack(op);
+            NotifyPendingBatchReceivedCallBack(op.Future);
             ResumeReceivingFromPausedConsumersIfNeeded();
         }
         internal override async ValueTask Seek(IMessageId messageId)
@@ -1632,6 +1670,7 @@ namespace SharpPulsar.Consumer
             }
         }
 
+        public ITimerScheduler Timers { get; set; }
 
         internal override void Pause()
         {
@@ -1661,7 +1700,7 @@ namespace SharpPulsar.Consumer
         // subscribe increased partitions for a given topic
         private void SubscribeIncreasedTopicPartitions(string topic)
         {
-            ;
+
             var oldPartitionNumber = PartitionedTopics.GetValueOrNull(topic);
             var topicName = TopicName.Get(topic);
             _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName))
@@ -1796,10 +1835,28 @@ namespace SharpPulsar.Consumer
                 return new List<string> { topicName.ToString() };
             }
         }
-        internal sealed class UpdatePartitionSub
+        private void OnTopicsExtended(ICollection<string> topicsExtended)
         {
-            public static UpdatePartitionSub Instance = new UpdatePartitionSub();
-        }
-    }
+            if (topicsExtended.Count > 0)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{Topic}]  run onTopicsExtended: {topicsExtended}, size: {topicsExtended.Count}");
+                }
+                foreach (var topic in topicsExtended)
+                {
+                    try
+                    {
+                        SubscribeIncreasedTopicPartitions(topic);
+                    }
+                    catch (Exception e)
+                    {
+                        _log.Warning($"[{topic}] Failed to subscribe increased topics partitions: {e.Message}");
+                    }
+                }
 
+            }
+        }
+        
+    }
 }

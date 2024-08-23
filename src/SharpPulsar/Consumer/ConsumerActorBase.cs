@@ -654,7 +654,7 @@ namespace SharpPulsar.Consumer
             {
                 return;
             }
-            NotifyPendingBatchReceivedCallBack(opBatchReceive);
+            NotifyPendingBatchReceivedCallBack(opBatchReceive.Future);
         }
 
         private bool HasNextBatchReceive()
@@ -684,17 +684,35 @@ namespace SharpPulsar.Consumer
             return opBatchReceive;
         }
 
-        protected internal void NotifyPendingBatchReceivedCallBack(OpBatchReceive opBatchReceive)
+        protected internal void NotifyPendingBatchReceivedCallBack(TaskCompletionSource<IMessages<T>> batchReceiveFuture)
         {
             var messages = NewMessages;
-            while (IncomingMessages.TryReceive(out var msg) && messages.CanAdd(msg))
+            IncomingMessages.TryReceive(out var msg);
+            string topicName = null;
+            while (msg != null && messages.CanAdd(msg))
             {
+                // one batch receive request only can receive the same topic partition
+                // messages to ensure cumulative ack is not lost.
+                if (!BatchReceivePolicy.IsMessagesFromMultiTopicsEnabled())
+                {
+                    // get the first message's `topicName` to check if
+                    // the following message peeked is the same topic message.
+                    if (messages.Size() == 1)
+                    {
+                        topicName = messages.MessageList()[0].Topic;
+                    }
+                    // if the peeked message is not the same topic as the first message, return the batch receive result
+                    if (topicName != null && !topicName.Equals(msg.Topic))
+                    {
+                        break;
+                    }
+                }
                 MessageProcessed(msg);
                 var interceptMsg = BeforeConsume(msg);
                 messages.Add(interceptMsg);
             }
 
-            CompletePendingBatchReceive(opBatchReceive.Future, messages);
+            CompletePendingBatchReceive(batchReceiveFuture, messages);
         }
 
         protected internal virtual void CompletePendingBatchReceive(TaskCompletionSource<IMessages<T>> future, IMessages<T> messages)

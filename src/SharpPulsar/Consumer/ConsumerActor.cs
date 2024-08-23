@@ -391,7 +391,7 @@ namespace SharpPulsar.Consumer
         }
         protected internal override void CompleteOpBatchReceive(OpBatchReceive op)
         {
-            NotifyPendingBatchReceivedCallBack(op);
+            NotifyPendingBatchReceivedCallBack(op.Future);
         }
         private async ValueTask ConnectionOpened(ConnectionOpened c)
         {
@@ -1798,6 +1798,11 @@ namespace SharpPulsar.Consumer
             // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
             Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
             {
+                if (!IsValidConsumerEpoch(message))
+                {
+                    IncreaseAvailablePermits(Cnx());
+                    return;
+                }
                 if (HasNextPendingReceive())
                 {
                     NotifyPendingReceivedCallback(message, null);
@@ -2020,10 +2025,10 @@ namespace SharpPulsar.Consumer
                 }
                 IncomingMessages.TryReceive(out message);
                 MessageProcessed(message);
-                if (!IsValidConsumerEpoch(message))
+                /*if (!IsValidConsumerEpoch(message))
                 {
                     return InternalReceive();
-                }
+                }*/
                 return BeforeConsume(message);
             }
             catch (Exception e)
@@ -2055,7 +2060,7 @@ namespace SharpPulsar.Consumer
                 else
                 {
                     MessageProcessed(message);
-                    if (!IsValidConsumerEpoch(message))
+                    /*if (!IsValidConsumerEpoch(message))
                     {
                         PendingReceives.Enqueue(result);
                         result.Task.ContinueWith(s =>
@@ -2064,7 +2069,7 @@ namespace SharpPulsar.Consumer
                                 PendingReceives.TryDequeue(out result);
                         });
                         return;
-                    }
+                    }*/
                     result.SetResult(BeforeConsume(message));
                 }
             });
@@ -2088,7 +2093,7 @@ namespace SharpPulsar.Consumer
                     return null;
                 }
                 MessageProcessed(message);
-                if (!IsValidConsumerEpoch(message))
+                /*if (!IsValidConsumerEpoch(message))
                 {
                     var executionTime = NanoTime() - callTime;
                     var timeoutInNanos = timeOut.TotalMilliseconds;
@@ -2100,7 +2105,7 @@ namespace SharpPulsar.Consumer
                     {
                         return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime));
                     }
-                }
+                }*/
                 return BeforeConsume(message);
             }
             catch (Exception e)
