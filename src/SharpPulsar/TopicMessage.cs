@@ -74,8 +74,7 @@ namespace SharpPulsar
 
 		public virtual IMessageId MessageId => _messageId;
 
-        public virtual IMessageId InnerMessageId => _messageId.InnerMessageId;
-
+        
         public virtual IDictionary<string, string> Properties => _msg.Properties;
 
         public bool HasProperty(string name)

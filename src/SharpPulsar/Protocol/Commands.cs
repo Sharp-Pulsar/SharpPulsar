@@ -1327,8 +1327,11 @@ namespace SharpPulsar.Protocol
 		{
 			return peerVersion >= (int)ProtocolVersion.V12;
 		}
-
-		public static bool PeerSupportAvroSchemaAvroFormat(int peerVersion)
+        public static bool PeerSupportsCarryAutoConsumeSchemaToBroker(int peerVersion)
+        {
+            return peerVersion >= (int)ProtocolVersion.V21;
+        }
+        public static bool PeerSupportAvroSchemaAvroFormat(int peerVersion)
 		{
 			return peerVersion >= (int)ProtocolVersion.V13;
 		}

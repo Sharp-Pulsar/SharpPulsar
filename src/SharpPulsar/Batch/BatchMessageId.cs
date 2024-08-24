@@ -1,4 +1,5 @@
 ﻿using System;
+using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -44,7 +45,7 @@ namespace SharpPulsar.Batch
 			Acker = acker;
 		}
 
-		public BatchMessageId(MessageId other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
+		public BatchMessageId(IMessageIdAdv other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
 		{
 			if (other is BatchMessageId otherId)
 			{
@@ -79,7 +80,7 @@ namespace SharpPulsar.Batch
             }
             else if (o is TopicMessageId)
             {
-                return CompareTo(((TopicMessageId) o).InnerMessageId);
+                return CompareTo(((TopicMessageId) o).FirstChunkMessageId);
             }
             else
             {

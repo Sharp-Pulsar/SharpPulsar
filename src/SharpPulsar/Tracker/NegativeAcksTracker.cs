@@ -154,18 +154,6 @@ namespace SharpPulsar.Tracker
         }
         private void Add(IMessageId messageId, int redeliveryCount)
         {
-            if (messageId is TopicMessageId)
-            {
-                var topicMessageId = (TopicMessageId)messageId;
-                messageId = topicMessageId.InnerMessageId;
-            }
-
-            if (messageId is BatchMessageId)
-            {
-                var batchMessageId = (BatchMessageId)messageId;
-                messageId = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
-            }
-
             if (_nackedMessages == null)
             {
                 _nackedMessages = new Dictionary<IMessageId, long>();
@@ -181,7 +169,7 @@ namespace SharpPulsar.Tracker
                 backoffNs = (long)_nackDelayMs.TotalMilliseconds;
             }
 
-            _nackedMessages[messageId] = DateTimeHelper.CurrentUnixTimeMillis() + backoffNs;
+            _nackedMessages[MessageIdAdvUtils.DiscardBatch(messageId)] = DateTimeHelper.CurrentUnixTimeMillis() + backoffNs;
 
             if (_timeout == null)
             {

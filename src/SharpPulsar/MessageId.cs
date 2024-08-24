@@ -28,7 +28,7 @@ using SharpPulsar.Protocol.Proto;
 /// </summary>
 namespace SharpPulsar
 {
-    public class MessageId : IMessageId
+    public class MessageId : IMessageIdAdv
 	{
 		private  readonly long _ledgerId;
 		private readonly long _entryId;
@@ -55,22 +55,13 @@ namespace SharpPulsar
 
         public override int GetHashCode()
 		{
-			return (int)(31 * (_ledgerId + 31 * _entryId) + _partitionIndex);
-		}
+            return MessageIdAdvUtils.HashCode(this);
+        }
 
 		public override bool Equals(object obj)
 		{
-			if (obj is BatchMessageId other1)
-			{
-                return other1.Equals(this);
-			}
-
-            if (obj is MessageId other)
-            {
-                return _ledgerId == other._ledgerId && _entryId == other._entryId && _partitionIndex == other._partitionIndex;
-            }
-            return false;
-		}
+            return MessageIdAdvUtils.Equals(this, obj);
+        }
 
 		public override string ToString()
 		{
@@ -89,21 +80,30 @@ namespace SharpPulsar
             MessageIdData idData = builder;
 
 			MessageId messageId;
-			if (idData.BatchIndex >= 0)
-			{
-				if(idData.BatchSize > 0)
-				{
-					messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.BatchSize, BatchMessageAcker.NewAcker(idData.BatchSize));
-				}
+            if (idData.BatchIndex >= 0)
+            {
+                if (idData.BatchSize > 0)
+                {
+                    messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.BatchSize, BatchMessageAcker.NewAcker(idData.BatchSize));
+                }
                 else
-				{
-					messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
-				}
-			}
-			else
-			{
-				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
-			}
+                {
+                    messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
+                }
+            }
+            else if (idData.FirstChunkMessageId != null)
+            {
+                var firstChunkIdData = idData.FirstChunkMessageId;
+                messageId = new ChunkMessageId(
+                        new MessageId((long)firstChunkIdData.ledgerId, (long)firstChunkIdData.entryId,
+                                firstChunkIdData.Partition),
+                        new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition));
+            }
+            else
+            {
+                messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
+            }
+            
 
 			return messageId;
 		}
@@ -121,15 +121,23 @@ namespace SharpPulsar
 
             MessageIdData idData = builder;
 
-			IMessageId messageId;
-			if (idData.BatchIndex >= 0)
-			{
-				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.BatchSize, BatchMessageAcker.NewAcker(idData.BatchSize));
-			}
-			else
-			{
-				messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
-			}
+			IMessageIdAdv messageId;
+            if (idData.BatchIndex >= 0)
+            {
+                if (idData.BatchIndex >= 0)
+                {
+                    messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.BatchSize, BatchMessageAcker.NewAcker(idData.BatchSize));
+                }
+                else
+                {
+                    messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition,
+                        idData.BatchIndex, 0, null);
+                }
+            }
+            else
+            {
+                messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
+            }
 			if (idData.Partition > -1 && topicName != null)
 			{
 				var t = new TopicName();
@@ -138,8 +146,36 @@ namespace SharpPulsar
 
 			return messageId;
 		}
+        protected MessageIdData WriteMessageIdData(MessageIdData msgId, int batchIndex, int batchSize)
+        {
+            if (msgId == null)
+            {
+                //msgId = LOCAL_MESSAGE_ID.get()
+                        //.clear();
+            }
 
-		public static MessageId ConvertToMessageId(IMessageId messageId)
+            msgId.ledgerId = (ulong)LedgerId;
+            msgId.entryId = (ulong)EntryId;
+
+            if (PartitionIndex >= 0)
+            {
+                msgId.Partition = PartitionIndex;
+            }
+
+            if (batchIndex != -1)
+            {
+                msgId.BatchIndex = batchIndex;
+            }
+
+            if (batchSize > -1)
+            {
+                msgId.BatchSize = batchSize;
+            }
+
+            return msgId;
+        }
+
+        public static MessageId ConvertToMessageId(IMessageId messageId)
 		{
 			/*if (messageId is BatchMessageId batch)
 			{
@@ -158,7 +194,7 @@ namespace SharpPulsar
             {
                 if (messageId is TopicMessageId topic) 
                 {
-                    return (MessageId)topic.InnerMessageId;
+                    return (MessageId)topic.FirstChunkMessageId;
                 } 
                 else
                 {
@@ -178,22 +214,8 @@ namespace SharpPulsar
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
 		public virtual byte[] ToByteArray(int batchIndex, int batchSize)
 		{
-			MessageIdData msgId = new MessageIdData { ledgerId = (ulong)(_ledgerId), entryId = (ulong)(_entryId) };
-			if (_partitionIndex >= 0)
-			{
-				msgId.Partition = _partitionIndex;
-			}
-
-			if (batchIndex != -1)
-			{
-				msgId.BatchIndex = batchIndex;
-			}
-
-			if (batchSize > 0)
-			{
-				msgId.BatchSize = batchSize;
-			}
-
+			MessageIdData msgId = WriteMessageIdData(null, batchIndex, batchSize);
+            
 			return msgId.ToByteArrays();
 		}
 		public virtual byte[] ToByteArray()
@@ -245,7 +267,7 @@ namespace SharpPulsar
             }
             if (o is TopicMessageId impl)
             {
-                return CompareTo(impl.InnerMessageId);
+                return CompareTo(impl.FirstChunkMessageId);
             }
             throw new ArgumentException("expected MessageId object. Got instance of " + o.GetType().FullName);
         }

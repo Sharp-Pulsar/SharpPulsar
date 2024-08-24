@@ -138,7 +138,7 @@ namespace SharpPulsar.Consumer
             _paused = conf.StartPaused;
             _sharedQueueResumeThreshold = MaxReceiverQueueSize / 2;
             AllTopicPartitionsNumber = 0;
-            _startMessageId = (IMessageIdAdv)startMessageId;// != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
+            _startMessageId  = (IMessageIdAdv)startMessageId;// != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
             _startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 
             if (conf.AckTimeout != TimeSpan.Zero)
@@ -1009,7 +1009,7 @@ namespace SharpPulsar.Consumer
                 var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
                 if (consumer != null)
                 {
-                    var innerId = topicMessageId.InnerMessageId;
+                    var innerId = topicMessageId.FirstChunkMessageId;
                     consumer.Tell(new AcknowledgeCumulativeMessageId(innerId), Sender);
                 }
                 else
@@ -1021,7 +1021,7 @@ namespace SharpPulsar.Consumer
             {
                 var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 
-                var innerId = topicMessageId.InnerMessageId;
+                var innerId = topicMessageId.FirstChunkMessageId;
                 consumer.Tell(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl), Sender);
                 _unAckedMessageTracker.Tell(new Remove(topicMessageId));
             }
@@ -1051,7 +1051,7 @@ namespace SharpPulsar.Consumer
                         topicToMessageIdMap.Add(topicMessageId.TopicPartitionName, new List<IMessageId>());
 
                     topicToMessageIdMap.GetValueOrNull(topicMessageId.TopicPartitionName)
-                        .Add(topicMessageId.InnerMessageId);
+                        .Add(topicMessageId.FirstChunkMessageId);
                 }
                 topicToMessageIdMap.ForEach(t =>
                 {
@@ -1100,7 +1100,7 @@ namespace SharpPulsar.Consumer
             var topicMessageId = (TopicMessageId)messageId;
 
             var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
+            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.FirstChunkMessageId), Sender);
         }
         protected internal new void NegativeAcknowledge(IMessage<T> message)
         {
@@ -1109,7 +1109,7 @@ namespace SharpPulsar.Consumer
             var topicMessageId = (TopicMessageId)messageId;
 
             var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.InnerMessageId), Sender);
+            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.FirstChunkMessageId), Sender);
         }
 
         internal override void Unsubscribe(bool force)
@@ -1301,7 +1301,7 @@ namespace SharpPulsar.Consumer
             RemoveExpiredMessagesFromQueue(messageIds);
             messageIds.Select(messageId => (TopicMessageId)messageId).Collect()
                 .ForEach(t => _consumers.GetValueOrNull(t.First().TopicPartitionName)
-                .Tell(new RedeliverUnacknowledgedMessageIds(t.Select(mid => mid.InnerMessageId).ToHashSet())));
+                .Tell(new RedeliverUnacknowledgedMessageIds(t.Select(mid => (IMessageId)mid.FirstChunkMessageId).ToHashSet())));
             ResumeReceivingFromPausedConsumersIfNeeded();
         }
         protected internal override void UpdateAutoScaleReceiverQueueHint()

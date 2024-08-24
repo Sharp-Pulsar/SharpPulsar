@@ -10,6 +10,8 @@ using NodaTime;
 using SharpPulsar.Shared;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Protocol.Extension;
+using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -303,6 +305,28 @@ namespace SharpPulsar
         {
             return new KeyBasedBatcherBuilder(log);
         }
-	}
+        public static ITopicMessageId NewTopicMessageId(string topic, IMessageId messageId)
+        {
+          
+            IMessageIdAdv messageIdAdv;
+            if (messageId is IMessageIdAdv)
+            {
+                messageIdAdv = (IMessageIdAdv)messageId;
+            }
+            else
+            {
+                try
+                {
+                    messageIdAdv = (IMessageIdAdv)IMessageId.FromByteArray(messageId.ToByteArray());
+                }
+                catch (IOException e)
+                {
+                    throw new Exception(e.Message);
+                }
+            }
+            return new TopicMessageId(topic, messageIdAdv);
+        }
+
+    }
 
 }
