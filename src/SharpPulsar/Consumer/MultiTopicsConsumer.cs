@@ -552,7 +552,14 @@ namespace SharpPulsar.Consumer
                     Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
-            Receive<bool>(c => { });
+            Receive<bool>(c =>
+            {
+                _log.Info($"MultiTopicConsumer `bool` {c}");
+            });
+            Receive<int>(i =>
+            {
+                _log.Info($"MultiTopicConsumer `int` {i}");
+            });
             Receive<string>(s => 
             {
                 switch (s)
@@ -1009,7 +1016,7 @@ namespace SharpPulsar.Consumer
                 var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
                 if (consumer != null)
                 {
-                    var innerId = topicMessageId.FirstChunkMessageId;
+                    var innerId = topicMessageId.MessageId;
                     consumer.Tell(new AcknowledgeCumulativeMessageId(innerId), Sender);
                 }
                 else
@@ -1021,7 +1028,7 @@ namespace SharpPulsar.Consumer
             {
                 var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 
-                var innerId = topicMessageId.FirstChunkMessageId;
+                var innerId = topicMessageId.MessageId;
                 consumer.Tell(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl), Sender);
                 _unAckedMessageTracker.Tell(new Remove(topicMessageId));
             }
@@ -1051,7 +1058,7 @@ namespace SharpPulsar.Consumer
                         topicToMessageIdMap.Add(topicMessageId.TopicPartitionName, new List<IMessageId>());
 
                     topicToMessageIdMap.GetValueOrNull(topicMessageId.TopicPartitionName)
-                        .Add(topicMessageId.FirstChunkMessageId);
+                        .Add(topicMessageId.MessageId);
                 }
                 topicToMessageIdMap.ForEach(t =>
                 {
@@ -1100,7 +1107,7 @@ namespace SharpPulsar.Consumer
             var topicMessageId = (TopicMessageId)messageId;
 
             var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.FirstChunkMessageId), Sender);
+            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.MessageId), Sender);
         }
         protected internal new void NegativeAcknowledge(IMessage<T> message)
         {
@@ -1109,7 +1116,7 @@ namespace SharpPulsar.Consumer
             var topicMessageId = (TopicMessageId)messageId;
 
             var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
-            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.FirstChunkMessageId), Sender);
+            consumer.Tell(new NegativeAcknowledgeMessageId(topicMessageId.MessageId), Sender);
         }
 
         internal override void Unsubscribe(bool force)
@@ -1301,7 +1308,7 @@ namespace SharpPulsar.Consumer
             RemoveExpiredMessagesFromQueue(messageIds);
             messageIds.Select(messageId => (TopicMessageId)messageId).Collect()
                 .ForEach(t => _consumers.GetValueOrNull(t.First().TopicPartitionName)
-                .Tell(new RedeliverUnacknowledgedMessageIds(t.Select(mid => (IMessageId)mid.FirstChunkMessageId).ToHashSet())));
+                .Tell(new RedeliverUnacknowledgedMessageIds(t.Select(mid => (IMessageId)mid.MessageId).ToHashSet())));
             ResumeReceivingFromPausedConsumersIfNeeded();
         }
         protected internal override void UpdateAutoScaleReceiverQueueHint()

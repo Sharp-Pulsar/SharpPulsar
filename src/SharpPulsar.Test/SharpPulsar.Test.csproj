@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="OAuthTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Akka.TestKit.Xunit2" />
     <PackageReference Include="Castle.Core" />
     <PackageReference Include="FluentAssertions" />

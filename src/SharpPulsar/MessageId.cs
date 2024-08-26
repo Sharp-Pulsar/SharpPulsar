@@ -194,7 +194,7 @@ namespace SharpPulsar
             {
                 if (messageId is TopicMessageId topic) 
                 {
-                    return (MessageId)topic.FirstChunkMessageId;
+                    return (MessageId)topic.MessageId;
                 } 
                 else
                 {
@@ -267,7 +267,7 @@ namespace SharpPulsar
             }
             if (o is TopicMessageId impl)
             {
-                return CompareTo(impl.FirstChunkMessageId);
+                return CompareTo(impl.MessageId);
             }
             throw new ArgumentException("expected MessageId object. Got instance of " + o.GetType().FullName);
         }

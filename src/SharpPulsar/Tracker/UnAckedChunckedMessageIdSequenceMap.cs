@@ -22,7 +22,7 @@ namespace SharpPulsar.Tracker
                     if (msgId is BatchMessageId id)
                         msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
                     else if (msgId is TopicMessageId tmid)
-                        msgid = (MessageId)tmid.FirstChunkMessageId;
+                        msgid = (MessageId)tmid.MessageId;
                     else
                         msgid = (MessageId)msgId;
 

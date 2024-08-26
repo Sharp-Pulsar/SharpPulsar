@@ -952,8 +952,18 @@ namespace SharpPulsar.Consumer
                     Sender.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
-            Receive<bool>(c => { });
-            Receive<string>(s => { });
+            Receive<bool>(c =>
+            {
+                _log.Info($"ConsumerActor `bool` {c}: {Sender.Path}");
+            });
+            Receive<string>(s =>
+            {
+                _log.Info($"ConsumerActor `string` {s}: {Sender.Path}");
+            });
+            Receive<int>(i =>
+            {
+                _log.Info($"ConsumerActor `int` {i}: {Sender.Path}");
+            });
         }
 
         private async ValueTask Acknowledge(IAcknowledge ack)

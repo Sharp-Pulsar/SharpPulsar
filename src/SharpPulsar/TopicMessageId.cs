@@ -72,6 +72,8 @@ namespace SharpPulsar
 
         public IMessageIdAdv FirstChunkMessageId => _msgId.FirstChunkMessageId;
 
+        public IMessageIdAdv MessageId => _msgId;
+
 
         public byte[] ToByteArray()
 		{

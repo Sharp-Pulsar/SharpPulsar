@@ -1840,7 +1840,7 @@ namespace SharpPulsar.Producer
         {
             if (_cnx != null && BatchMessagingEnabled)
             {
-                try { _batchFlushTask.Cancel(); } catch { }
+                try { _batchFlushTask!.Cancel(); } catch { }
                 _batchFlushTask = null;
                 _batchFlushTask = _scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(batchingDelayMicros), async () => await BatchFlushTask());
             }

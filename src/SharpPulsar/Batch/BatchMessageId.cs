@@ -80,7 +80,7 @@ namespace SharpPulsar.Batch
             }
             else if (o is TopicMessageId)
             {
-                return CompareTo(((TopicMessageId) o).FirstChunkMessageId);
+                return CompareTo(((TopicMessageId) o).MessageId);
             }
             else
             {

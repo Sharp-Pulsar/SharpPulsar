@@ -32,7 +32,7 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Tracker
 {
 
-    public class NegativeAcksTracker<T>:ReceiveActor, IWithUnboundedStash
+    public class NegativeAcksTracker<T>:ReceiveActor, IWithUnboundedStash, IWithTimers
 	{
 
 		private Dictionary<IMessageId, long> _nackedMessages;
@@ -44,12 +44,13 @@ namespace SharpPulsar.Tracker
         private readonly ILoggingAdapter _log; 
         private readonly IRedeliveryBackoff _negativeAckRedeliveryBackoff;
 
-        private ICancelable _timeout;
+        //private ICancelable _timeout;
 
 		// Set a min delay to allow for grouping nacks within a single batch
 		private static readonly TimeSpan MinNackDelayMs = TimeSpan.FromMilliseconds(100);
 
         public IStash Stash { get; set; }
+        public ITimerScheduler Timers { get; set; }
 
         public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef consumer, IActorRef unack)
         {
@@ -71,7 +72,8 @@ namespace SharpPulsar.Tracker
             Ready();
 
             //_timeout = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), TimeSpan.FromMilliseconds(_timerIntervalMs), _self, Trigger.Instance, ActorRefs.NoSender);
-            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
+            //_timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
+            Timers.StartSingleTimer(Trigger.Instance, Trigger.Instance, _timerIntervalMs);
         }
         private void Ready()
         {
@@ -95,10 +97,12 @@ namespace SharpPulsar.Tracker
        
         protected override void PostStop()
         {
-            if (_timeout != null)
+            if (Timers != null)
             {
-                _timeout.Cancel();
-                _timeout = null;
+                Timers!.Cancel(Trigger.Instance);
+                Timers = null;  
+               // _timeout.Cancel();
+                //_timeout = null;
             }
 
             if (_nackedMessages != null)
@@ -116,8 +120,10 @@ namespace SharpPulsar.Tracker
         {
             if(_nackedMessages.Count == 0)
             {
-                _timeout?.Cancel();
-                _timeout = null;
+                Timers!.Cancel(Trigger.Instance);
+                Timers = null;
+                //_timeout?.Cancel();
+                //_timeout = null;
                 return;
             }
 
@@ -141,7 +147,8 @@ namespace SharpPulsar.Tracker
             _consumer.Tell(new OnNegativeAcksSend(messagesToRedeliver));
             _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
 
-            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
+            Timers.StartSingleTimer(Trigger.Instance, Trigger.Instance, _timerIntervalMs);
+            //_timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
         }
         private void Add(IMessageId messageId)
         {
@@ -171,11 +178,12 @@ namespace SharpPulsar.Tracker
 
             _nackedMessages[MessageIdAdvUtils.DiscardBatch(messageId)] = DateTimeHelper.CurrentUnixTimeMillis() + backoffNs;
 
-            if (_timeout == null)
+            if (Timers == null)
             {
                 // Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
                 // nack immediately following the current one will be batched into the same redeliver request.
-                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
+                Timers.StartSingleTimer(Trigger.Instance, Trigger.Instance, _timerIntervalMs);
+                //_timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
             }
         }
 

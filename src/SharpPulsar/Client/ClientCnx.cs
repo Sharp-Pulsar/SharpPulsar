@@ -24,7 +24,7 @@ using static SharpPulsar.Client.Internal.SocketClientActor;
 
 namespace SharpPulsar.Client
 {
-    internal sealed class ClientCnx : ReceiveActor, IWithUnboundedStash
+    internal sealed class ClientCnx : ReceiveActor, IWithUnboundedStash, IWithTimers
     {
         private readonly IActorRef _socketClient;
         private readonly IAuthentication _authentication;
@@ -65,7 +65,7 @@ namespace SharpPulsar.Client
 
         private readonly TlsHostnameVerifier _hostnameVerifier;
 
-        private ICancelable _timeoutTask;
+        //private ICancelable _timeoutTask;
 
         private readonly ICancelable _sendPing = default;
         private readonly IActorRef _parent;
@@ -113,8 +113,8 @@ namespace SharpPulsar.Client
             try
             {
                 _sendMessage = await _socketClient.Ask<IActorRef>(SocketClientActor.Connect.Instance);
-                _timeoutTask = _scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
-
+               // _timeoutTask = _scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
+                Timers.StartSingleTimer("0", RequestTimeout.Instance, _operationTimeout);
                 //_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
 
                 if (string.IsNullOrWhiteSpace(_proxyToTargetBrokerAddress))
@@ -269,7 +269,8 @@ namespace SharpPulsar.Client
             _producers.Clear();
             _consumers.Clear();
             _topicListWatchers.Clear();
-            _timeoutTask?.Cancel(true);
+            Timers.Cancel(RequestTimeout.Instance);
+            //_timeoutTask?.Cancel(true);
         }
 
         private void NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
@@ -279,7 +280,8 @@ namespace SharpPulsar.Client
         protected override void PostStop()
         {
             OnDisconnected();
-            _timeoutTask?.Cancel();
+            Timers.Cancel(RequestTimeout.Instance);
+            //_timeoutTask?.Cancel();
             _sendPing?.Cancel();
             //_subscriber.Dispose();
             base.PostStop();
@@ -778,6 +780,7 @@ namespace SharpPulsar.Client
         }
 
         public IStash Stash { get; set; }
+        public ITimerScheduler Timers { get; set; }
 
         private void NewLookup(ReadOnlySequence<byte> request, long requestId)
         {
@@ -1180,27 +1183,35 @@ namespace SharpPulsar.Client
         {
             _consumers.Remove(consumerId);
         }
+        private long _reqId = 0;
         private void CheckRequestTimeout()
         {
+
             while (!_requestTimeoutQueue.IsEmpty)
             {
                 var req = _requestTimeoutQueue.TryPeek(out var request);
+                
                 if (!req || DateTimeHelper.CurrentUnixTimeMillis() - request.CreationTimeMs < _operationTimeout.TotalMilliseconds)
                 {
                     // if there is no request that is timed out then exit the loop
                     break;
                 }
-                if (_requestTimeoutQueue.TryDequeue(out request))
+                if (!_requestTimeoutQueue.TryDequeue(out request))
                 {
-                    if (_pendingRequests.Remove(request.RequestId, out var val))
-                    {
-                        var timeoutMessage = $"{request.RequestId} {request.RequestType.Description} timedout after ms {_operationTimeout.TotalMilliseconds}";
-                        _log.Warning(timeoutMessage);
-                        val.Requester.Tell(new AskResponse(new PulsarClientException(new Exception(timeoutMessage))));
-                    }
+                    // the request has been removed by another thread
+                    continue;
                 }
+                if (_pendingRequests.Remove(request.RequestId, out var val))
+                {
+                    var timeoutMessage = $"{request.RequestId} {request.RequestType.Description} timedout after ms {_operationTimeout.TotalMilliseconds}";
+                    //_log.Warning(timeoutMessage);
+                    //_log.Info(val.Requester.Path.ToString());
+                    val.Requester.Tell(new AskResponse(new PulsarClientException(new Exception(timeoutMessage))));
+                }
+                _reqId = request.RequestId + 1;    
             }
-            _timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, Self, RequestTimeout.Instance, ActorRefs.NoSender);
+            Timers.StartSingleTimer($"{_reqId}", RequestTimeout.Instance, _operationTimeout);
+            //_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
         }
         public ReadOnlySequence<byte> NewConnectCommand()

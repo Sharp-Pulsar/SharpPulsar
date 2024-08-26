@@ -574,6 +574,7 @@ namespace SharpPulsar
             var requestId = reid.Id;
             var cmd = Commands.NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
             var op = OpForVoidCallBack.Create(cmd, callback, _conf, requestId, "NewAddSubscriptionToTxn");
+            
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
                 pendingRequests.TryAdd(requestId, op);
