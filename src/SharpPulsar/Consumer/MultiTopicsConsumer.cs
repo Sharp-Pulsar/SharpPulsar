@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
+using Google.Protobuf.Collections;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
@@ -26,6 +27,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using static Google.Protobuf.Compiler.CodeGeneratorResponse.Types;
 using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using InvalidMessageException = SharpPulsar.Exceptions.PulsarClientException.InvalidMessageException;
@@ -85,7 +87,7 @@ namespace SharpPulsar.Consumer
         private ICancelable _partitionsAutoUpdateTimeout = null;
 
         private readonly IConsumerStatsRecorder /*MultiTopicConsumerStatsRecorder<T>*/ _stats;
-        private readonly IActorRef _unAckedMessageTracker;
+        //private readonly IActorRef _unAckedMessageTracker;
         private readonly ConsumerConfigurationData<T> _internalConfig;
 
         private readonly IMessageIdAdv _startMessageId;
@@ -140,8 +142,8 @@ namespace SharpPulsar.Consumer
             AllTopicPartitionsNumber = 0;
             _startMessageId  = (IMessageIdAdv)startMessageId;// != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
             _startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
-
-            if (conf.AckTimeout != TimeSpan.Zero)
+            //_unAckedMessageTracker = UnAckedMessageTracker;
+            /*if (conf.AckTimeout != TimeSpan.Zero)
             {
                 if (conf.AckTimeoutRedeliveryBackoff != null)
                 {
@@ -155,7 +157,7 @@ namespace SharpPulsar.Consumer
             else
             {
                 _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled<T>.Prop(), "UnAckedMessageTrackerDisabled");
-            }
+            }*/
 
             _internalConfig = InternalConsumerConfig;
             _stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) :  ConsumerStatsDisabled.Instance;
@@ -211,6 +213,7 @@ namespace SharpPulsar.Consumer
         {
             return Props.Create(() => new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture));
         }
+        
         internal void Ready()
         {
             Receive<SendState>(_ =>
@@ -676,7 +679,7 @@ namespace SharpPulsar.Consumer
             var receivedFuture = NextPendingReceive();
             if (receivedFuture != null)
             {
-                _unAckedMessageTracker.Tell(new Add(topicMessage.MessageId, topicMessage.RedeliveryCount));
+                UnAckedMessageTracker.Tell(new Add(topicMessage.MessageId, topicMessage.RedeliveryCount));
                 CompletePendingReceive(receivedFuture, topicMessage);
             }
             else if (EnqueueMessageAndCheckBatchReceive(topicMessage) && HasPendingBatchReceive())
@@ -688,7 +691,7 @@ namespace SharpPulsar.Consumer
         }
         protected internal override void MessageProcessed(IMessage<T> msg)
         {
-            _unAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
+            UnAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
             DecreaseIncomingMessageSize(msg);
             //ResumeReceivingFromPausedConsumersIfNeeded();
         }
@@ -760,7 +763,7 @@ namespace SharpPulsar.Consumer
                         message = null;
                         return InternalReceive();
                     }*/
-                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                    UnAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                     message = BeforeConsume(message);
                 }
                 ResumeReceivingFromPausedConsumersIfNeeded();
@@ -802,7 +805,7 @@ namespace SharpPulsar.Consumer
                             return InternalReceive(TimeSpan.FromMilliseconds(timeoutInNanos - executionTime));
                         }
                     }*/
-                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                    UnAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                     message = BeforeConsume(message);
                 }
                 ResumeReceivingFromPausedConsumersIfNeeded();
@@ -894,7 +897,7 @@ namespace SharpPulsar.Consumer
                 {
                     DecreaseIncomingMessageSize(message);
                     //CheckState(Message is TopicMessageImpl);
-                    _unAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
+                    UnAckedMessageTracker.Tell(new Add(message.MessageId, message.RedeliveryCount));
                     ResumeReceivingFromPausedConsumersIfNeeded();
                     result.SetResult(message);
                 }
@@ -1030,7 +1033,7 @@ namespace SharpPulsar.Consumer
 
                 var innerId = topicMessageId.MessageId;
                 consumer.Tell(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl), Sender);
-                _unAckedMessageTracker.Tell(new Remove(topicMessageId));
+                UnAckedMessageTracker.Tell(new Remove(topicMessageId));
             }
         }
 
@@ -1064,7 +1067,7 @@ namespace SharpPulsar.Consumer
                 {
                     var consumer = _consumers.GetValueOrNull(t.Key);
                     consumer.Tell(new AcknowledgeWithTxnMessages(t.Value, properties, txn));
-                    messageIdList.ForEach(x => _unAckedMessageTracker.Tell(new Remove(x)));
+                    messageIdList.ForEach(x => UnAckedMessageTracker.Tell(new Remove(x)));
                 });
             }
         }
@@ -1096,7 +1099,7 @@ namespace SharpPulsar.Consumer
             {
                 var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
                 consumer.Tell(new ReconsumeLaterMessage<T>(message, delayTime), Sender);
-                _unAckedMessageTracker.Tell(new Remove(topicMessageId));
+                UnAckedMessageTracker.Tell(new Remove(topicMessageId));
             }
             return null;
         }
@@ -1183,8 +1186,8 @@ namespace SharpPulsar.Consumer
                     --AllTopicPartitionsNumber;
                 }
                 RemoveTopic(topicName);
-                if (_unAckedMessageTracker.Path.Name == "UnAckedTopicMessageTracker")
-                    _unAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
+                if (UnAckedMessageTracker.Path.Name == "UnAckedTopicMessageTracker")
+                    UnAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
 
                 _log.Info($"[{topicName}] [{Subscription}] [{ConsumerName}] Unsubscribed Topics Consumer, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
             }
@@ -1198,9 +1201,9 @@ namespace SharpPulsar.Consumer
 
         private void CleanupMultiConsumer()
         {
-            if (_unAckedMessageTracker != null)
+            if (UnAckedMessageTracker != null)
             {
-                _unAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(500));
+                UnAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(500));
             }
             if (_partitionsAutoUpdateTimeout != null)
             {
@@ -1213,7 +1216,7 @@ namespace SharpPulsar.Consumer
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
-                _unAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(100));
+                UnAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(100));
             }
             State.ConnectionState = HandlerState.State.Closing;
 
@@ -1228,7 +1231,7 @@ namespace SharpPulsar.Consumer
                 await c.GracefulStop(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
             });
             State.ConnectionState = HandlerState.State.Closed;
-            _unAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(100));
+            UnAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(100));
             _log.Info($"[{Topic}] [{Subscription}] Closed Topics Consumer");
             _client.Tell(new CleanupConsumer(Self));
 
@@ -1286,7 +1289,7 @@ namespace SharpPulsar.Consumer
                 consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
             });
             ClearIncomingMessages();
-            _unAckedMessageTracker.Tell(Clear.Instance);
+            UnAckedMessageTracker.Tell(Clear.Instance);
             ResumeReceivingFromPausedConsumersIfNeeded();
         }
 
@@ -1330,7 +1333,7 @@ namespace SharpPulsar.Consumer
             }
             _consumers.Values.ForEach(c => c.Tell(new SeekMessageId(targetMessageId)));
 
-            _unAckedMessageTracker.Tell(Clear.Instance);
+            UnAckedMessageTracker.Tell(Clear.Instance);
             ClearIncomingMessages();
             await Task.CompletedTask;
         }
@@ -1413,13 +1416,13 @@ namespace SharpPulsar.Consumer
             }
         }
 
-        internal virtual IActorRef UnAckedMessageTracker
+        /*internal virtual IActorRef UnAckedMessageTracker
         {
             get
             {
-                return _unAckedMessageTracker;
+                return UnAckedMessageTracker;
             }
-        }
+        }*/
 
         private void RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
         {
@@ -1651,8 +1654,8 @@ namespace SharpPulsar.Consumer
             }
             RemoveTopic(topicName);
 
-            if (_unAckedMessageTracker.Path.Name == "UnAckedTopicMessageTracker")
-                _unAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
+            if (UnAckedMessageTracker.Path.Name == "UnAckedTopicMessageTracker")
+                UnAckedMessageTracker.Tell(new RemoveTopicMessages(topicName));
 
             _log.Info($"[{topicName}] [{Subscription}] [{ConsumerName}] Removed Topics Consumer, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
 

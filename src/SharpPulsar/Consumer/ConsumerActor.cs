@@ -229,8 +229,8 @@ namespace SharpPulsar.Consumer
             }
             _seekStatus = SeekStatus.NOT_STARTED;
             _duringSeek = false;
-
-            if (conf.AckTimeout.TotalMilliseconds > 0)
+            _unAckedMessageTracker = UnAckedMessageTracker;
+            /*if (conf.AckTimeout.TotalMilliseconds > 0)
             {
                 if (conf.AckTimeoutRedeliveryBackoff != null)
                 {
@@ -244,7 +244,7 @@ namespace SharpPulsar.Consumer
             else
             {
                 _unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled<T>.Prop(), "UnAckedMessageTrackerDisabled");
-            }
+            }*/
 
             _negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, _self, UnAckedChunckedMessageIdSequenceMap));
             // Create msgCrypto if not created already

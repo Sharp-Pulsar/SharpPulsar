@@ -14,6 +14,7 @@ using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Client;
+using SharpPulsar.Consumer;
 
 namespace SharpPulsar
 {
@@ -37,8 +38,11 @@ namespace SharpPulsar
         private ClientConfigurationData _conf;
         private readonly IActorRef _generator;
         private IActorRef _clientCnxUsedForWatcherRegistration;
-        public TopicListWatcherActor(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
+        private IActorRef _patternConsumerUpdateQueue;
+        private IActorRef _recheckTopicsChangeAfterReconnect;
+        public TopicListWatcherActor(IActorRef patternConsumerUpdateQueue, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
         {
+            _patternConsumerUpdateQueue = patternConsumerUpdateQueue;   
             _self = Self;
             _lookupDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + conf.LookupTimeout.TotalMilliseconds);
             _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(conf, state, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
@@ -52,12 +56,13 @@ namespace SharpPulsar
            _watcherFuture = watcherFuture;
             _conf = conf;
             _generator = idGenerator;
+            _recheckTopicsChangeAfterReconnect = Context.Parent;
             Handle();
             GrabCnx();
         }
-        public static Props Prop(IActorRef client, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
+        public static Props Prop(IActorRef patternConsumerUpdateQueue, IActorRef idGenerator, ClientConfigurationData conf, string topicsPattern, long watcherId, NamespaceName @namespace, string topicsHash, HandlerState state, TaskCompletionSource<IActorRef> watcherFuture)
         {
-            return Props.Create(() => new TopicListWatcherActor(client, idGenerator, conf, topicsPattern, watcherId, @namespace, topicsHash, state, watcherFuture));
+            return Props.Create(() => new TopicListWatcherActor(patternConsumerUpdateQueue, idGenerator, conf, topicsPattern, watcherId, @namespace, topicsHash, state, watcherFuture));
         }
         private void GrabCnx()
         {
@@ -77,13 +82,14 @@ namespace SharpPulsar
                 }
 
             });
-            Receive<Close>(_ =>
+            ReceiveAsync<Close>(async _ =>
             {
-               Sender.Tell(Close());
+                var ask = await Close();
+               Sender.Tell(ask);
             });
             Receive<HandleWatchTopicUpdate>(update =>
             {
-                HandleCommandWatchTopicUpdate(update.Update, Sender);
+                HandleCommandWatchTopicUpdate(update.Update);
             });
             Receive<ConnectionClosed>(ctx =>
             {
@@ -141,6 +147,7 @@ namespace SharpPulsar
                     return;
                 }
                 ResetBackoff();
+                _recheckTopicsChangeAfterReconnect.Tell(RecheckTopicsChangeAfterReconnect.Instance);
                 _watcherFuture.SetResult(_self);
             }
             catch (Exception e) 
@@ -154,7 +161,8 @@ namespace SharpPulsar
                 _log.Warning($"[Topic][{HandlerName}] Failed to subscribe to topic on 'remoteAddress'");
                 if (e.InnerException is PulsarClientException && PulsarClientException.IsRetriableError(e.InnerException) && DateTimeHelper.CurrentUnixTimeMillis() < _createWatcherDeadline)
                 {
-                    ReconnectLater(e.InnerException);
+                    _watcherFuture.SetException(new PulsarClientException(e));
+                    //ReconnectLater(e.InnerException);
                 }
                 else if (!_watcherFuture.Task.IsCompleted)
                 {
@@ -163,7 +171,13 @@ namespace SharpPulsar
                 }
                 else
                 {
-                    ReconnectLater(e);
+                    // watcher was subscribed and connected, but we got some error, keep trying
+                    _watcherFuture.SetException(new PulsarClientException(e));
+                    //ReconnectLater(e);
+                }
+                if(_watcherFuture.Task.IsCompleted)
+                {
+                    _watcherFuture = null;
                 }
             }
             
@@ -293,18 +307,10 @@ namespace SharpPulsar
             }
         }
 
-        private void HandleCommandWatchTopicUpdate(CommandWatchTopicUpdate update, IActorRef sender)
+        private void HandleCommandWatchTopicUpdate(CommandWatchTopicUpdate update)
         {
-            IList<string> deleted = update.DeletedTopics;
-            if (deleted.Count > 0)
-            {
-               sender.Tell(new TopicsRemoved(deleted));
-            }
-            IList<string> added = update.NewTopics;
-            if (added.Count > 0)
-            {
-                sender.Tell(new TopicsAdded(added));
-            }
+            _patternConsumerUpdateQueue.Tell(new AppendTopicsRemovedOp(update.DeletedTopics));
+            _patternConsumerUpdateQueue.Tell(new AppendTopicsAddedOp(update.NewTopics));
         }
     }
 }

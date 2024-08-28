@@ -12,6 +12,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Protocol;
 using SharpPulsar.Stats.Consumer.Api;
+using SharpPulsar.Tracker;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -87,7 +88,8 @@ namespace SharpPulsar.Consumer
         private readonly string _topic;
         protected internal readonly TaskCompletionSource<IActorRef> SubscribeFuture;
         protected internal long ConsumerEpoch;
-        internal readonly IScheduler Scheduler;
+        protected internal readonly IScheduler Scheduler;
+        protected internal readonly IActorRef UnAckedMessageTracker;
         public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             _self = Self;
@@ -142,7 +144,21 @@ namespace SharpPulsar.Consumer
             {
                 BatchReceivePolicy = BatchReceivePolicy.DefaultPolicy;
             }
-
+            if (conf.AckTimeout != TimeSpan.Zero)
+            {
+                if (conf.AckTimeoutRedeliveryBackoff != null)
+                {
+                    UnAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageRedeliveryTracker<T>.Prop(Self, UnAckedChunckedMessageIdSequenceMap, conf), "UnAckedTopicMessageRedeliveryTracker");
+                }
+                else
+                {
+                    UnAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker<T>.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf), "UnAckedTopicMessageTracker");
+                }
+            }
+            else
+            {
+                UnAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled<T>.Prop(), "UnAckedMessageTrackerDisabled");
+            }
             _stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), Self, SendState.Instance, ActorRefs.NoSender);
             InitReceiverQueueSize();
 

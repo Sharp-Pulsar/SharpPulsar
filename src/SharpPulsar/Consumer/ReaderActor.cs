@@ -1,4 +1,6 @@
 ﻿using Akka.Actor;
+using Avro.Util;
+using DotNetty.Common.Utilities;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
@@ -41,10 +43,18 @@ namespace SharpPulsar.Consumer
         public ReaderActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             _generator = idGenerator;
-            var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
-            if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
+            string subscription;
+            if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionName))
             {
-                subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
+                subscription = readerConfiguration.SubscriptionName;
+            }
+            else
+            {
+                subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+                if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
+                {
+                    subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
+                }
             }
 
             var consumerConfiguration = new ConsumerConfigurationData<T>();
@@ -65,8 +75,8 @@ namespace SharpPulsar.Consumer
             // disable the batch receive timer for the ConsumerImpl instance wrapped by the ReaderImpl
             consumerConfiguration.BatchReceivePolicy = _disabledBatchReceivePolicy;
 
-            if (readerConfiguration.StartMessageId != null)
-                consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;
+            /*if (readerConfiguration.StartMessageId != null)
+                consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;*/
 
 
             if (readerConfiguration.ReaderName != null)

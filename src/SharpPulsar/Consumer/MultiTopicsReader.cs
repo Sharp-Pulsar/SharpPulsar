@@ -78,8 +78,8 @@ namespace SharpPulsar.Consumer
                 var readerListener = readerConfiguration.ReaderListener;
                 consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(Self, readerListener);
             }
-            if (readerConfiguration.StartMessageId != null)
-                consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;
+            /*if (readerConfiguration.StartMessageId != null)
+                consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;*/
 
             if (readerConfiguration.ReaderName != null)
             {
