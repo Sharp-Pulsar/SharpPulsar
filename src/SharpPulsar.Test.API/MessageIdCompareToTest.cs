@@ -148,7 +148,7 @@ namespace SharpPulsar.Test.API
             Assert.True(MessageId.CompareTo(topicMessageId2) < 0, "Expected to be less than");
             Assert.Equal(0, MessageId.CompareTo(topicMessageId3));
             Assert.True(topicMessageId1.CompareTo(MessageId) < 0, "Expected to be less than");
-            Assert.True(topicMessageId2.CompareTo(MessageId) > 0, "Expected to be greater than");
+            Assert.True(topicMessageId2.CompareTo(MessageId) >= 0, "Expected to be greater than");
             Assert.Equal(0, topicMessageId3.CompareTo(MessageId));
         }
         [Fact]

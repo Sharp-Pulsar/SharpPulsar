@@ -8,6 +8,7 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utility;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
@@ -149,11 +150,28 @@ namespace SharpPulsar.Consumer
             {
                 _consumer.Forward(m);
             });
+            ReceiveAsync<GetLastMessageIds>(async m =>
+            {
+                try
+                {
+                    var lmsid = await LastMessageIds();
+                    Sender.Tell(lmsid);
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
+            });
         }
         public static Props Prop(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             return Props.Create(() => new MultiTopicsReader<T>(state, client, lookup, cnxPool, idGenerator, readerConfiguration, schema, clientConfigurationData, subscribeFuture));
         }
+        private async ValueTask<AskResponse> LastMessageIds()
+        {
+            return await _consumer.Ask<AskResponse>(GetLastMessageIds.Instance).ConfigureAwait(false);
+        }
+
         private async ValueTask SubscribeToTopic(Subscribe sub)
         {
             try

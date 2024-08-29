@@ -13,6 +13,16 @@ namespace SharpPulsar.Messages.Consumer
         /// 
         public static GetLastMessageId Instance = new GetLastMessageId();
     }
+    public readonly record struct GetLastMessageIds
+    {
+        /// <summary>
+        /// When ConsumerActor receives this message
+        /// the last messageid for that consumer is added into the BlockCollection<IMessageId> of that consumer
+        /// to be consumed at the front end
+        /// </summary>
+        /// 
+        public static GetLastMessageIds Instance = new GetLastMessageIds();
+    }
     public readonly record struct NullMessageId : IMessageId
     {
         public Exception Exception { get; }

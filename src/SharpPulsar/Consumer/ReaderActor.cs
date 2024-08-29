@@ -149,6 +149,10 @@ namespace SharpPulsar.Consumer
             {
                 _consumer.Forward(m);
             });
+            Receive<GetLastMessageIds>(g =>
+            {
+                _consumer.Forward(g);
+            });
         }
 
         public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)

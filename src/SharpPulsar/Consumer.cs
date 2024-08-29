@@ -13,6 +13,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using SharpPulsar.TransactionImpl;
+using SharpPulsar.Consumer;
 
 namespace SharpPulsar
 {
@@ -44,8 +45,9 @@ namespace SharpPulsar
         public IConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
         public async ValueTask<IConsumerStats> StatsAsync()
             => await _consumerActor.Ask<IConsumerStats>(GetStats.Instance).ConfigureAwait(false);
-
+        
         public IMessageId LastMessageId => LastMessageIdAsync().GetAwaiter().GetResult();
+        
         public async ValueTask<IMessageId> LastMessageIdAsync()
             => await _consumerActor.Ask<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
 
@@ -547,6 +549,17 @@ namespace SharpPulsar
             // Notify the garbage collector
             // about the cleaning event
             GC.SuppressFinalize(this);
+        }
+
+        public IList<ITopicMessageId> LastMessageIds() => LastMessageIdsAsync().GetAwaiter().GetResult();
+
+        public async ValueTask<IList<ITopicMessageId>> LastMessageIdsAsync()
+        {
+            var response = await _consumerActor.Ask<AskResponse>(GetLastMessageIds.Instance).ConfigureAwait(false);
+            if (response.Failed)
+                throw response.Exception;
+
+            return response.ConvertTo<List<ITopicMessageId>>();
         }
     }
 }

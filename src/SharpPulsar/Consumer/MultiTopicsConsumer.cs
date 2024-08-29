@@ -443,6 +443,18 @@ namespace SharpPulsar.Consumer
                     Sender.Tell(new AskResponse(ex));
                 }
             });
+            ReceiveAsync<GetLastMessageIds>(async m =>
+            {
+                try
+                {
+                    var lmsid = await LastMessageIds();
+                    Sender.Tell(new AskResponse(lmsid));
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(ex));
+                }
+            });
             Receive<ICumulative>(message =>
             {
                 switch (message)
@@ -1821,6 +1833,27 @@ namespace SharpPulsar.Consumer
                 multiMessageId.Add(t, messageId);
             }
             return new MultiMessageId(multiMessageId);
+        }
+        private async ValueTask<List<ITopicMessageId>> LastMessageIds()
+        {
+            var list = new List<ITopicMessageId>();
+            var multiMessageId = new Dictionary<string, IMessageId>();
+            foreach (var v in _consumers.Values)
+            {
+                try
+                {
+                    var ask = await v.Ask<AskResponse>(GetLastMessageIds.Instance).ConfigureAwait(false);
+                    var ids = (IList<ITopicMessageId>)ask.Data;
+                    foreach(var s in ids)
+                        list.Add(s);    
+                }
+                catch (Exception e)
+                {
+                    _log.Warning($"Exception when topic {e} getLastMessageId.");
+                }
+
+            }
+            return list;
         }
 
         internal static bool IsIllegalMultiTopicsMessageId(IMessageId messageId)

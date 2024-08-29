@@ -5,6 +5,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SharpPulsar
@@ -43,6 +44,15 @@ namespace SharpPulsar
                 throw response.Exception;
 
             return response.ConvertTo<bool>();
+        }
+        public List<ITopicMessageId> LastMessageIds() => LastMessageIdsAsync().GetAwaiter().GetResult();
+        public async ValueTask<List<ITopicMessageId>> LastMessageIdsAsync()
+        {
+            var response = await _readerActor.Ask<AskResponse>(GetLastMessageIds.Instance).ConfigureAwait(false);
+            if (response.Failed)
+                throw response.Exception;
+
+            return response.ConvertTo<List<ITopicMessageId>>();
         }
 
         public bool HasReachedEndOfTopic() => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();

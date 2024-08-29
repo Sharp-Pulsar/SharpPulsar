@@ -812,6 +812,19 @@ namespace SharpPulsar.Consumer
                     _replyTo.Tell(nul);
                 }
             });
+            ReceiveAsync<GetLastMessageIds>(async m =>
+            {
+            try
+            {
+                _replyTo = Sender;
+                var lmsid = await LastMessageIds();
+                _replyTo.Tell(new AskResponse(lmsid));
+            }
+            catch (Exception ex)
+            {
+                _replyTo.Tell( new AskResponse(ex));
+                }
+            });
             Receive<GetStats>(m =>
             {
                 try
@@ -2964,6 +2977,17 @@ namespace SharpPulsar.Consumer
 
             return await InternalGetLastMessageIdAsync(backoff, (long)opTimeoutMs.TotalMilliseconds);
         }
+        private async ValueTask<IList<ITopicMessageId>> LastMessageIds()
+        {
+            var msgId = await LastMessageId();
+            var t = new List<ITopicMessageId>
+            {
+                new TopicMessageId(Topic, (IMessageIdAdv)msgId)
+            };
+;
+            return t;
+        }
+
         private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageIdAsync(Backoff backoff, long remainingTim)
         {
             ///todo: add response to queue, where there is a retry, add something in the queue so that client knows we are 

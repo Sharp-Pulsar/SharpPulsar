@@ -45,6 +45,9 @@ namespace SharpPulsar.Interfaces
         /// <param name="cur"> current message value </param>
         /// <returns> True if it needs to keep the previous message and ignore the current message. Otherwise, False. </returns>
         bool ShouldKeepLeft(T prev, T cur);
+        void HandleSkippedMessage(string key, T cur)
+        {
+        }
 
         static ITopicCompactionStrategy<T> Load(string topicCompactionStrategyClassName)
         {
