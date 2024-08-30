@@ -1172,7 +1172,8 @@ namespace SharpPulsar.Client
         }
         private void RegisterTransactionMetaStoreHandler(long transactionMetaStoreId, IActorRef handler)
         {
-            _transactionMetaStoreHandlers.Add(transactionMetaStoreId, handler);
+            if(!_transactionMetaStoreHandlers.ContainsKey(transactionMetaStoreId))
+                  _transactionMetaStoreHandlers.Add(transactionMetaStoreId, handler);
         }
         private void RemoveProducer(long producerId)
         {

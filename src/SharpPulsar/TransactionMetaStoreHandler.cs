@@ -17,6 +17,7 @@ using SharpPulsar.Messages.Consumer;
 using Akka.Util.Internal;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Client;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -41,7 +42,7 @@ namespace SharpPulsar
     /// <summary>
     /// Handler for transaction meta store.
     /// </summary>
-    internal class TransactionMetaStoreHandler : ReceiveActor, IWithUnboundedStash
+    internal class TransactionMetaStoreHandler : ReceiveActor, IWithUnboundedStash, IWithTimers
     {
         private readonly long _transactionCoordinatorId;
         private readonly IActorRef _connectionHandler;
@@ -70,18 +71,19 @@ namespace SharpPulsar
         }
 
         private readonly ILoggingAdapter _log;
-        private ICancelable _requestTimeout;
+       // private ICancelable _requestTimeout;
         private readonly ClientConfigurationData _conf;
-        private readonly IScheduler _scheduler;
+        //private readonly IScheduler _scheduler;
         private readonly TaskCompletionSource<object> _connectFuture;
 
         public IStash Stash { get; set; }
+        public ITimerScheduler Timers { get; set; }
 
         public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf, TaskCompletionSource<object> completionSource)
         {
             _context = Context;
             _generator = idGenerator;
-            _scheduler = Context.System.Scheduler;
+            //_scheduler = Context.System.Scheduler;
             _conf = conf;
             _self = Self;
             _log = Context.System.Log;
@@ -90,7 +92,8 @@ namespace SharpPulsar
             _transactionCoordinatorId = transactionCoordinatorId;
             _timeoutQueue = new ConcurrentQueue<RequestTime>();
             //_blockIfReachMaxPendingOps = true;
-            _requestTimeout = _scheduler.ScheduleTellOnceCancelable(conf.OperationTimeout, Self, RunRequestTimeout.Instance, Nobody.Instance);
+            Timers.StartSingleTimer(RunRequestTimeout.Instance, RunRequestTimeout.Instance, conf.OperationTimeout);
+            //_requestTimeout = _scheduler.ScheduleTellOnceCancelable(conf.OperationTimeout, Self, RunRequestTimeout.Instance, Nobody.Instance);
 
             _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(_conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(_conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(100)).Create(), Self), "TransactionMetaStoreHandler");
             _connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
@@ -127,34 +130,35 @@ namespace SharpPulsar
             Receive<NewTxn>(t =>
             {
                 _replyTo = Sender;
-                _invokeArg = new object[] { t.TxnRequestTimeoutMs };
+                _invokeArg = [t.TxnRequestTimeoutMs];
 
                 GetCnxAndRequestId(() => { return NewTransaction(_invokeArg); });
             });
             Receive<AddPublishPartitionToTxn>(p =>
             {
                 _replyTo = Sender;
-                _invokeArg = new object[] { p.TxnID, p.Topics, Sender };
+                _invokeArg = [p.TxnID, p.Topics, Sender];
                 GetCnxAndRequestId(() => { return AddPublishPartitionToTxn(_invokeArg); });
             });
             Receive<AbortTxnID>(a =>
             {
                 _replyTo = Sender;
-                _invokeArg = new object[] { a.TxnID, Sender, TxnAction.Abort };
+                _invokeArg = [a.TxnID, Sender, TxnAction.Abort];
                 GetCnxAndRequestId(() => { return EndTxn(_invokeArg); });
             });
             Receive<CommitTxnID>(c =>
             {
                 _replyTo = Sender;
-                _invokeArg = new object[] { c.TxnID, Sender, TxnAction.Commit };
+                _invokeArg = [c.TxnID, Sender, TxnAction.Commit];
                 GetCnxAndRequestId(() => { return EndTxn(_invokeArg); });
             });
             Receive<AddSubscriptionToTxn>(s =>
             {
                 _replyTo = Sender;
-                _invokeArg = new object[] { s.TxnID, s.Subscriptions };
+                _invokeArg = [s.TxnID, s.Subscriptions];
                 GetCnxAndRequestId(() => { return AddSubscriptionToTxn(_invokeArg); });
             });
+            
             Stash?.UnstashAll();
         }
         private void GetCnxAndRequestId(Func<Task<object>> action)
@@ -285,12 +289,10 @@ namespace SharpPulsar
             {
                 _state.ConnectionState = HandlerState.State.Closed;
                 FailPendingRequest();
-                pendingRequests.Clear();
+                //pendingRequests.Clear();
                 return;
             }
             _clientCnx = cnx;
-            _connectionHandler.Tell(new SetCnx(cnx));
-            cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, _self));
             var protocolVersionResponse = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance).ConfigureAwait(false);
             var protocolVersion = protocolVersionResponse.Version;
             if (protocolVersion > ((int)ProtocolVersion.V18))
@@ -302,18 +304,16 @@ namespace SharpPulsar
                 if (!response.Failed)
                 {
                     _log.Info($"Transaction coordinator client connect success! tcId : {_transactionCoordinatorId}");
-                    if (!_state.ChangeToReadyState())
+                    if (await RegisterToConnection(cnx))
                     {
-                        _state.ConnectionState = HandlerState.State.Closed;
-                        await cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-                        _connectFuture.TrySetResult(null);
+                        _connectionHandler.Tell(ResetBackoff.Instance);
+                        pendingRequests.ForEach(async r => await CheckStateAndSendRequest(r.Value));
                     }
 
                     if (!_connectFuture.Task.IsCompletedSuccessfully)
                     {
                         _connectFuture.TrySetResult(null);
                     }
-                    _connectionHandler.Tell(ResetBackoff.Instance);
                 }
                 else
                 {
@@ -326,17 +326,34 @@ namespace SharpPulsar
                     }
                     else
                     {
-                        _connectionHandler.Tell(new ReconnectLater(response.Exception));
+                        _connectFuture.TrySetException(response.Exception); 
+                        //_connectionHandler.Tell(new ReconnectLater(response.Exception));
                     }
                 }
             }
             else
             {
-                if (!_state.ChangeToReadyState())
-                {
-                    await cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-                    _connectFuture.TrySetResult(null);
-                }
+                _log.Warning($"Can not connect to the transaction coordinator because the protocol version {protocolVersion} is "
+                                + "lower than 19");
+                await RegisterToConnection(cnx);
+                _connectFuture.TrySetResult(null);
+            }
+        }
+        private async ValueTask<bool> RegisterToConnection(IActorRef cnx)
+        {
+            if (_state.ChangeToReadyState())
+            {
+                _connectionHandler.Tell(new SetCnx(cnx));
+                cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, _self));
+                _connectFuture.TrySetResult(null);
+                return true;
+            }
+            else
+            {
+                //_state = HandlerState.State;
+                await cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+                _connectFuture.TrySetException(new InvalidOperationException("Failed to change the state from " + _state + " to Ready"));
+                return false;
             }
         }
 
@@ -433,6 +450,7 @@ namespace SharpPulsar
                     }
                     _log.Error($"Got {BaseCommand.Type.NewTxn.GetType().Name} for request {requestId} error {error}");
                 }
+               // OnResponse(op);
             });
         }
         private bool CheckIfNeedRetryByError<T>(ServerError error, string Message, OpBase<T> op)
@@ -554,6 +572,7 @@ namespace SharpPulsar
 
                     _log.Error($"{BaseCommand.Type.AddPartitionToTxn} for request {requestId} error {error} with txnID {txnID}.");
                 }
+                OnResponse(op);
             });
         }
 
@@ -744,7 +763,7 @@ namespace SharpPulsar
                                 break;
                         }
 
-                        OnResponse(op);
+                        //OnResponse(op);
                     }
                     else
                     {
@@ -785,6 +804,7 @@ namespace SharpPulsar
                     OnResponse(op);
                 }
             });
+            pendingRequests.Clear();
         }
 
         private TransactionCoordinatorClientException GetExceptionByServerError(ServerError serverError, string msg)
@@ -802,14 +822,8 @@ namespace SharpPulsar
             }
         }
 
-
-
         private void RunRequestTime()
         {
-            if (_requestTimeout.IsCancellationRequested)
-            {
-                return;
-            }
             TimeSpan timeToWaitMs;
             if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)
             {
@@ -851,7 +865,8 @@ namespace SharpPulsar
                     timeToWaitMs = TimeSpan.FromMilliseconds(diff);
                 }
             }
-            _requestTimeout = _scheduler.ScheduleTellOnceCancelable(timeToWaitMs, _self, RunRequestTimeout.Instance, Nobody.Instance);
+            Timers.StartSingleTimer(RunRequestTimeout.Instance, RunRequestTimeout.Instance, timeToWaitMs);
+            //_requestTimeout = _scheduler.ScheduleTellOnceCancelable(timeToWaitMs, _self, RunRequestTimeout.Instance, Nobody.Instance);
         }
 
         private void HandleConnectionClosed(IActorRef cnx)

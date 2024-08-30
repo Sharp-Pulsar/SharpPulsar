@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -26,8 +28,6 @@ namespace SharpPulsar.TransactionImpl
     public class TxnID
     {
 
-        public const long SerialVersionUID = 0L;
-
         /*
 		 * The most significant 64 bits of this TxnID.
 		 *
@@ -42,15 +42,41 @@ namespace SharpPulsar.TransactionImpl
 		 */
         public readonly long LeastSigBits;
 
+        
+        [NonSerialized]
+        public readonly int HashCode;
+
+        
+        [NonSerialized]
+        public readonly string TxnStr;
+
+
         public TxnID(long mostSigBits, long leastSigBits)
         {
             LeastSigBits = leastSigBits;
             MostSigBits = mostSigBits;
+            HashCode = (mostSigBits, leastSigBits).GetHashCode();
+            TxnStr = "(" + mostSigBits + "," + leastSigBits + ")";
+
+        }
+        public override bool Equals(object obj)
+        {
+            if (obj is TxnID)
+            {
+                var other = (TxnID)obj;
+                return MostSigBits == other.MostSigBits && LeastSigBits == other.LeastSigBits;
+            }
+
+            return false;
+        }
+        public override int GetHashCode()
+        {
+            return HashCode;
         }
 
         public override string ToString()
         {
-            return "(" + MostSigBits + "," + LeastSigBits + ")";
+            return TxnStr;
         }
     }
 

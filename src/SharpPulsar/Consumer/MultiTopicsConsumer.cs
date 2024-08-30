@@ -181,7 +181,7 @@ namespace SharpPulsar.Consumer
                 return;
             }
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames.ToList()), "Topics is empty or invalid.");
-            foreach (var t in conf.TopicNames)
+            /*foreach (var t in conf.TopicNames)
             {
                 try
                 {
@@ -203,8 +203,8 @@ namespace SharpPulsar.Consumer
                     //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
                     subscribeFuture.TrySetException(ex);
                 }
-            }
-            /*Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+            }*/
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
             {
                 foreach (var t in conf.TopicNames)
                 {
@@ -229,7 +229,7 @@ namespace SharpPulsar.Consumer
                         subscribeFuture.TrySetException(ex);
                     }
                 }
-            });*/
+            });
             Ready();
         }
         public static Props Prop(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
