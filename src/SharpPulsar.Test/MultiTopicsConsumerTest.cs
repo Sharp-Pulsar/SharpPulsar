@@ -140,13 +140,7 @@ namespace SharpPulsar.Test
 
             var topic3 = "persistent://public/default/topic3" + Guid.NewGuid();
             IList<string> topics = new List<string> { topic, topic2, topic3 };
-            var builder = new ReaderConfigBuilder<string>()
-                .Topics(topics)
-                .StartMessageId(IMessageId.Earliest)
-
-                .ReaderName("my-reader");
-
-            var reader = await _client.NewReaderAsync(ISchema<object>.String, builder);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
+            
             // create producer and send msg
             IList<Producer<string>> producerList = new List<Producer<string>>();
             foreach (var topicName in topics)
@@ -167,7 +161,15 @@ namespace SharpPulsar.Test
                     messages.Add(msg);
                 }
             }
-            // receive messagesS
+            // receive messages
+            var builder = new ReaderConfigBuilder<string>()
+                .Topics(topics)
+                .StartMessageId(IMessageId.Earliest)
+
+                .ReaderName("my-reader");
+
+            var reader = await _client.NewReaderAsync(ISchema<object>.String, builder);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
+            await Task.Delay(1000);
             var message = await reader.ReadNextAsync(TimeSpan.FromSeconds(1));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             while (message != null)
             {

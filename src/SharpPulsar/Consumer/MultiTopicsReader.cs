@@ -146,22 +146,18 @@ namespace SharpPulsar.Consumer
             {
                 _consumer.Forward(m);
             });
+            Receive<GetLastMessageIds>(m =>
+            {
+                _consumer.Forward(m);
+            });
             ReceiveAny(m =>
             {
                 _consumer.Forward(m);
             });
-            ReceiveAsync<GetLastMessageIds>(async m =>
+            /*Receive<GetLastMessageIds>(m =>
             {
-                try
-                {
-                    var lmsid = await LastMessageIds();
-                    Sender.Tell(lmsid);
-                }
-                catch (Exception ex)
-                {
-                    Sender.Tell(new AskResponse(ex));
-                }
-            });
+                _consumer.Forward(m);
+            });*/
         }
         public static Props Prop(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
         {

@@ -962,8 +962,9 @@ namespace SharpPulsar.Consumer
             if (HasParentConsumer)
             {
                 //IncomingMessages.Post(o);
-                Context.Parent.Tell(new ReceivedMessage<T>(o));
-                _log.Info($"Pushed message with SequenceId {o.SequenceId} (topic:{Topic}) to consumer parent");
+                var parent = Context.Parent;
+                parent.Tell(new ReceivedMessage<T>(o));
+                _log.Info($"Pushed message with SequenceId {o.SequenceId} (PARENT: {parent.Path}) (topic:{Topic}) to consumer parent");
 
             }
             else
