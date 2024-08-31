@@ -116,7 +116,16 @@ namespace SharpPulsar.Table
             readerBuilder.CryptoFailureAction(_conf.CryptoFailureAction);
 
             _reader = _client.NewReader(_schema, readerBuilder);
-            Receive<ForEachAction<T>>(a => ForEachAndListen(a.Action));
+            
+            Receive<TableData>(_ => 
+            { 
+                Sender.Tell(_data.ToImmutableDictionary()); 
+            });
+            //
+            Receive<Action<string, T>>(a => 
+            { 
+                _listeners.Add(a); 
+            });
             Receive<StartMessage>(_ =>
             {
                 _replyTo = Sender;
@@ -200,6 +209,7 @@ namespace SharpPulsar.Table
                                 try
                                 {
                                     listener(key, cur);
+                                    _log.Info($"Table view listener raised => {key}:{cur}");
                                 }
                                 catch (Exception t)
                                 {
@@ -261,25 +271,6 @@ namespace SharpPulsar.Table
            
         }
 
-        private void ForEach(Action<string, T> action)
-		{
-			_data.ForEach(kv=> action(kv.Key, kv.Value));
-		}
-
-		private void ForEachAndListen(Action<string, T> action)
-		{
-			// Ensure we iterate over all the existing entry _and_ start the listening from the exact next message
-			try
-			{				
-				// Execute the action over existing entries
-				ForEach(action);
-
-				_listeners.Add(action);
-			}
-			finally
-			{
-			}
-		}
         protected override void PostStop()
         {
             base.PostStop();

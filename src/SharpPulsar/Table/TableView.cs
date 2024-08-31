@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Routing;
+using Akka.Util.Internal;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Table.Messages;
 
@@ -26,9 +29,16 @@ namespace SharpPulsar.Table
 
         public void ForEachAndListen(Action<string, T> action)
         {
-            _tableViewActor.Tell(new ForEachAction<T>(action));
+            try
+            {
+                var data = _tableViewActor.Ask<ImmutableDictionary<string, T>>(TableData.Instance).GetAwaiter().GetResult();
+                data.ForEach(kv => action(kv.Key, kv.Value));
+                _tableViewActor.Tell(action);
+            }
+            finally { }
+           
         }
-
+        
         public virtual int Size()
         {            
             //return _data.Count();
