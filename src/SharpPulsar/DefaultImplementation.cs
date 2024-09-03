@@ -10,7 +10,6 @@ using NodaTime;
 using SharpPulsar.Shared;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Interfaces.Schema;
-using SharpPulsar.Protocol.Extension;
 using System.IO;
 
 /// <summary>

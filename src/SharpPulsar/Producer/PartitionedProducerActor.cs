@@ -191,11 +191,14 @@ namespace SharpPulsar.Producer
         }
         private async Task CloseAsync()
         {
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+            if (state == State.Closing || state == State.Closed)
             {
                 return;
             }
-            State.ConnectionState = HandlerState.State.Closing;
+
+            HandlerstateActor.Tell(new SetState(State.Closing));
+            //State.ConnectionState = HandlerState.State.Closing;
 
             if (_partitionsAutoUpdateTimeout != null)
             {
@@ -243,23 +246,24 @@ namespace SharpPulsar.Producer
         }
         private void ConnectionState(TaskCompletionSource<IMessageId> callback)
         {
-            switch (State.ConnectionState)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            switch (state)
             {
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
+                case State.Ready:
+                case State.Connecting:
                     break; // Ok
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
+                case State.Closing:
+                case State.Closed:
                     callback.TrySetException(new PulsarClientException.AlreadyClosedException("Producer already closed"));
                     return;
-                case HandlerState.State.Terminated:
+                case State.Terminated:
                     callback.TrySetException(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
                     return;
-                case HandlerState.State.ProducerFenced:
+                case State.ProducerFenced:
                     callback.TrySetException(new PulsarClientException.ProducerFencedException("Producer was fenced"));
                     return;
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
+                case State.Failed:
+                case State.Uninitialized:
                     callback.TrySetException(new PulsarClientException.NotConnectedException());
                     return;
             }
@@ -284,7 +288,8 @@ namespace SharpPulsar.Producer
                     _producer.TryAdd((int)producerId, producer);
                     var routee = Routee.FromActorRef(producer);
                     _router.Tell(new AddRoutee(routee));
-                    State.ConnectionState = HandlerState.State.Ready;
+                    HandlerstateActor.Tell(new SetState(State.Ready));
+                    //State.ConnectionState = HandlerState.State.Ready;
                 }
                 catch (Exception ex)
                 {
@@ -298,11 +303,12 @@ namespace SharpPulsar.Producer
                     {
                         _log.Error($"[{Topic}] Could not close internal producer. partitionIndex: {partition}: {e}");
                     }
-                    State.ConnectionState = HandlerState.State.Failed;
+                    HandlerstateActor.Tell(new SetState(State.Failed));
+                    //State.ConnectionState = HandlerState.State.Failed;
 
                 }
-
-                if (State.ConnectionState == HandlerState.State.Failed)
+                var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                if (state == State.Failed)
                 {
                     return; //new PulsarClientException.NotConnectedException();
                 }

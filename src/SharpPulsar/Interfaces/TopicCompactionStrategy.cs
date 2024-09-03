@@ -1,35 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpPulsar.Interfaces
 {
-	/// <summary>
-	/// Defines a custom strategy to compact messages in a topic.
-	/// This strategy can be passed to Topic Compactor and Table View to compact messages in a custom way.
-	/// 
-	/// Examples:
-	/// 
-	/// TopicCompactionStrategy strategy = new MyTopicCompactionStrategy();
-	/// 
-	/// // Run topic compaction by the compaction strategy.
-	/// // While compacting messages for each key,
-	/// //   it will choose messages only if TopicCompactionStrategy.shouldKeepLeft(prev, cur) returns false.
-	/// StrategicTwoPhaseCompactor compactor = new StrategicTwoPhaseCompactor(...);
-	/// compactor.compact(topic, strategy);
-	/// 
-	/// // Run table view by the compaction strategy.
-	/// // While updating messages in the table view <key,value> map,
-	/// //   it will choose messages only if TopicCompactionStrategy.shouldKeepLeft(prev, cur) returns false.
-	/// TableView tableView = pulsar.getClient().newTableViewBuilder(strategy.getSchema())
-	///                 .topic(topic)
-	///                 .loadConf(Map.of(
-	///                         "topicCompactionStrategyClassName", strategy.getClass().getCanonicalName()))
-	///                 .create();
-	/// </summary>
-	public interface ITopicCompactionStrategy<T>
+    /// <summary>
+    /// Defines a custom strategy to compact messages in a topic.
+    /// This strategy can be passed to Topic Compactor and Table View to compact messages in a custom way.
+    /// 
+    /// Examples:
+    /// 
+    /// TopicCompactionStrategy strategy = new MyTopicCompactionStrategy();
+    /// 
+    /// // Run topic compaction by the compaction strategy.
+    /// // While compacting messages for each key,
+    /// //   it will choose messages only if TopicCompactionStrategy.shouldKeepLeft(prev, cur) returns false.
+    /// StrategicTwoPhaseCompactor compactor = new StrategicTwoPhaseCompactor(...);
+    /// compactor.compact(topic, strategy);
+    /// 
+    /// // Run table view by the compaction strategy.
+    /// // While updating messages in the table view <key,value> map,
+    /// //   it will choose messages only if TopicCompactionStrategy.shouldKeepLeft(prev, cur) returns false.
+    /// TableView tableView = pulsar.getClient().newTableViewBuilder(strategy.getSchema())
+    ///                 .topic(topic)
+    ///                 .loadConf(Map.of(
+    ///                         "topicCompactionStrategyClassName", strategy.getClass().getCanonicalName()))
+    ///                 .create();
+    /// </summary>
+    public interface ITopicCompactionStrategy<T>
     {
 
         /// <summary>

@@ -17,7 +17,6 @@ using SharpPulsar.Messages.Consumer;
 using Akka.Util.Internal;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Client;
-using Org.BouncyCastle.Asn1.Ocsp;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -45,8 +44,8 @@ namespace SharpPulsar
     internal class TransactionMetaStoreHandler : ReceiveActor, IWithUnboundedStash, IWithTimers
     {
         private readonly long _transactionCoordinatorId;
-        private readonly IActorRef _connectionHandler;
-        private readonly HandlerState _state;
+        private IActorRef _connectionHandler;
+        private IActorRef _state;
         private readonly IActorRef _generator;
         private object[] _invokeArg;
         private IActorRef _replyTo;
@@ -75,12 +74,18 @@ namespace SharpPulsar
         private readonly ClientConfigurationData _conf;
         //private readonly IScheduler _scheduler;
         private readonly TaskCompletionSource<object> _connectFuture;
+        private IActorRef _lookup;
+        private IActorRef _pool;
+        private string _topic;
 
         public IStash Stash { get; set; }
         public ITimerScheduler Timers { get; set; }
 
         public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf, TaskCompletionSource<object> completionSource)
         {
+            _lookup = lookup;
+            _pool = cnxPool;
+            _topic = topic;
             _context = Context;
             _generator = idGenerator;
             //_scheduler = Context.System.Scheduler;
@@ -88,15 +93,17 @@ namespace SharpPulsar
             _self = Self;
             _log = Context.System.Log;
             _connectFuture = completionSource;
-            _state = new HandlerState(lookup, cnxPool, topic, Context.System, "Transaction meta store handler [" + _transactionCoordinatorId + "]");
             _transactionCoordinatorId = transactionCoordinatorId;
             _timeoutQueue = new ConcurrentQueue<RequestTime>();
+            _state = Context.ActorOf(HandlerStateActor.Prop(_lookup, _pool, _topic, "Transaction meta store handler [" + _transactionCoordinatorId + "]"));
+
+            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(_conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(_conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(100)).Create(), Self), "TransactionMetaStoreHandler");
+            _connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
+
             //_blockIfReachMaxPendingOps = true;
             Timers.StartSingleTimer(RunRequestTimeout.Instance, RunRequestTimeout.Instance, conf.OperationTimeout);
             //_requestTimeout = _scheduler.ScheduleTellOnceCancelable(conf.OperationTimeout, Self, RunRequestTimeout.Instance, Nobody.Instance);
 
-            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(_conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(_conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(100)).Create(), Self), "TransactionMetaStoreHandler");
-            _connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
             Listening();
         }
         private void Listening()
@@ -285,9 +292,12 @@ namespace SharpPulsar
         private async ValueTask HandleConnectionOpened(IActorRef cnx)
         {
             _log.Info($"Transaction meta handler with transaction coordinator id {_transactionCoordinatorId} connection opened.");
-            if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)
+            
+            var state = await _state.Ask<State>(GetState.Instance);
+            if (state == State.Closing || state == State.Closed)
             {
-                _state.ConnectionState = HandlerState.State.Closed;
+                _state.Tell(new SetState(State.Closed));
+                ///_state.ConnectionState = HandlerState.State.Closed;
                 FailPendingRequest();
                 //pendingRequests.Clear();
                 return;
@@ -318,10 +328,11 @@ namespace SharpPulsar
                 else
                 {
                     _log.Error($"Transaction coordinator client connect fail! tcId : {_transactionCoordinatorId}. Cause: {response.Exception}");
-                    if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed
+                    if (state == State.Closing || state == State.Closed
                             || response.Exception is PulsarClientException.NotAllowedException)
                     {
-                        _state.ConnectionState = HandlerState.State.Closed;
+                        _state.Tell(new SetState(State.Closed));
+                        //_state.ConnectionState = HandlerState.State.Closed;
                         await cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
                     }
                     else
@@ -341,7 +352,8 @@ namespace SharpPulsar
         }
         private async ValueTask<bool> RegisterToConnection(IActorRef cnx)
         {
-            if (_state.ChangeToReadyState())
+            var tf = await _state.Ask<bool>(ChangeToReadyState.Instance);
+            if (tf)
             {
                 _connectionHandler.Tell(new SetCnx(cnx));
                 cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, _self));
@@ -457,7 +469,8 @@ namespace SharpPulsar
         {
             if (error == ServerError.TransactionCoordinatorNotFound)
             {
-                if (_state.ConnectionState != HandlerState.State.Connecting)
+                var state = _state.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+                if (state != State.Connecting)
                 {
                     _connectionHandler.Tell(new ReconnectLater(new CoordinatorNotFoundException(Message)));
                 }
@@ -703,9 +716,10 @@ namespace SharpPulsar
         }
         private async Task<bool> CheckStateAndSendRequest(OpBase<object> op)
         {
-            switch (_state.ConnectionState)
+            var state = await _state.Ask<State>(GetState.Instance);
+            switch (state)
             {
-                case HandlerState.State.Ready:
+                case State.Ready:
                     if (_clientCnx != null)
                     {
                         var response = await _clientCnx.Ask<object>(new Payload(op.Cmd, op.RequestId, op.Method));
@@ -770,15 +784,15 @@ namespace SharpPulsar
                         _log.Error("The cnx was null when the TC handler was ready", new NullReferenceException());
                     }
                     return true;
-                case HandlerState.State.Connecting:
+                case State.Connecting:
                     return true;
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
+                case State.Closing:
+                case State.Closed:
                     op.Callback.TrySetException(new MetaStoreHandlerNotReadyException("Transaction meta store handler for tcId " + _transactionCoordinatorId + " is closing or closed."));
                     OnResponse(op);
                     return false;
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
+                case State.Failed:
+                case State.Uninitialized:
                     op.Callback.TrySetException(new MetaStoreHandlerNotReadyException("Transaction meta store handler for tcId " + _transactionCoordinatorId + " not connected."));
                     OnResponse(op);
                     return false;
@@ -825,7 +839,8 @@ namespace SharpPulsar
         private void RunRequestTime()
         {
             TimeSpan timeToWaitMs;
-            if (_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)
+            var state = _state.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state == State.Closing || state == State.Closed)
             {
                 return;
             }

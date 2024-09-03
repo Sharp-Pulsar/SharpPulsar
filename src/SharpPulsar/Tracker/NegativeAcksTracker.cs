@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Util.Internal;
-using SharpPulsar.Batch;
 using SharpPulsar.Configuration;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Interfaces;

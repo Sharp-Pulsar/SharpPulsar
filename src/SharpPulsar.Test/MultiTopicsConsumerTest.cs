@@ -8,7 +8,6 @@ using SharpPulsar.Test.Fixture;
 using System.Threading.Tasks;
 using SharpPulsar.Interfaces;
 using Xunit;
-using SharpPulsar.Messages;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -20,7 +20,6 @@ using Akka.Util.Internal;
 using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.TransactionImpl;
 using static SharpPulsar.Protocol.Proto.CommandAck;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

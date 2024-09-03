@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
@@ -8,7 +7,6 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utility;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;

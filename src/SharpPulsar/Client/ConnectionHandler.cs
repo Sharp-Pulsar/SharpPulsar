@@ -2,7 +2,6 @@
 using SharpPulsar.Exceptions;
 using System;
 using System.Threading.Tasks;
-using State = SharpPulsar.HandlerState.State;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Naming;
@@ -14,7 +13,7 @@ namespace SharpPulsar.Client
     {
         private IActorRef _clientCnx = null;
 
-        private readonly HandlerState _state;
+        //private readonly IActorRef _state;
         private readonly ClientConfigurationData _conf;
         private readonly Backoff _backoff;
         private long _epoch = 0L;
@@ -24,15 +23,17 @@ namespace SharpPulsar.Client
         private ICancelable _cancelable;
         private readonly IActorContext _actorContext;
         private IActorRef _sender;
+        private HandlerAll _state;
 
-        public ConnectionHandler(ClientConfigurationData conf, HandlerState state, Backoff backoff, IActorRef connection)
+        public ConnectionHandler(ClientConfigurationData conf, IActorRef state, Backoff backoff, IActorRef connection)
         {
-            _state = state;
+            //_state = state;
             _connection = connection;
             _backoff = backoff;
             _log = Context.GetLogger();
             _actorContext = Context;
             _conf = conf;
+            _state = state.Ask<HandlerAll>(GetAll.Instance).GetAwaiter().GetResult();
             Listening();
         }
         private void Listening()
@@ -104,7 +105,7 @@ namespace SharpPulsar.Client
             if (!ValidStateForReconnection)
             {
                 // Ignore connection closed when we are shutting down
-                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
+                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.State})");
                 _sender.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception("Invalid State For Reconnection"))));
             }
             await LookupConnection();
@@ -143,7 +144,7 @@ namespace SharpPulsar.Client
                 _connection.Tell(new Status.Failure(exception));
             }
 
-            var state = _state.ConnectionState;
+            var state = _state.State;
             if (state == State.Uninitialized || state == State.Connecting || state == State.Ready)
             {
                 ReconnectLater(exception);
@@ -160,12 +161,12 @@ namespace SharpPulsar.Client
             _clientCnx = null;
             if (!ValidStateForReconnection)
             {
-                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
+                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.State})");
                 return;
             }
             var delayMs = _backoff.Next();
             _log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Could not get connection to broker: {exception.Message} -- Will try again in {delayMs / 1000.0} s");
-            _state.ConnectionState = State.Connecting;
+            _state.State = State.Connecting;
             _cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(delayMs), Self, new GrabCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after connection was closed"), reply);
         }
 
@@ -175,11 +176,11 @@ namespace SharpPulsar.Client
             _clientCnx = null;
             if (!ValidStateForReconnection)
             {
-                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
+                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.State})");
                 return;
             }
             var delayMs = _backoff.Next();
-            _state.ConnectionState = State.Connecting;
+            _state.State = State.Connecting;
             //_log.Info("[{}] [{}] Closed connection -- Will try again in {} s", _state.Topic, _state.HandlerName, cnx.Channel()delayMs / 1000.0);
             _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Closed connection -- Will try again in {delayMs / 1000.0} s");
             _cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(delayMs), Self, new GrabCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after timeout"), _connection);
@@ -190,7 +191,7 @@ namespace SharpPulsar.Client
         {
             _backoff.Reset();
         }
-        public static Props Prop(ClientConfigurationData conf, HandlerState state, Backoff backoff, IActorRef connection)
+        public static Props Prop(ClientConfigurationData conf, IActorRef state, Backoff backoff, IActorRef connection)
         {
             return Props.Create(() => new ConnectionHandler(conf, state, backoff, connection));
         }
@@ -204,7 +205,7 @@ namespace SharpPulsar.Client
         {
             get
             {
-                var state = _state.ConnectionState;
+                var state = _state.State;
                 switch (state)
                 {
                     case State.Uninitialized:

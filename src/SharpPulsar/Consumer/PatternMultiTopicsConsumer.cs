@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
 using App.Metrics.Concurrency;
-using DotNetty.Common.Utilities;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
@@ -14,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
@@ -85,7 +83,7 @@ namespace SharpPulsar.Consumer
                 try
                 {
                     var watcherId = idGenerator.Ask<long>(NewTopicListWatcherId.Instance).GetAwaiter().GetResult();
-                    _watcher = _context.ActorOf(TopicListWatcherActor.Prop(_updateTaskQueue, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, State, tcs));
+                    _watcher = _context.ActorOf(TopicListWatcherActor.Prop(_updateTaskQueue, idGenerator, clientConfiguration, _topicsPattern.ToString(), watcherId, _namespaceName, topicsHash, HandlerstateActor, tcs));
 
                 }
                 catch (Exception ex)
@@ -145,7 +143,8 @@ namespace SharpPulsar.Consumer
         private void RecheckTopicsChangeAfterReconnect()
         {
             // Skip if closed or the task has been cancelled.
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state == State.Closing || state == State.Closed)
             {
                 return;
             }

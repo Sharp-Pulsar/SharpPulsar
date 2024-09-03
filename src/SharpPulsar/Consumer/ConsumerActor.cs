@@ -173,7 +173,7 @@ namespace SharpPulsar.Consumer
         {
         }
 
-        public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, schema, subscribeFuture)
+        public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(client, stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, schema, subscribeFuture)
         {
             Self.Path.WithUid(consumerId);
             Paused = conf.StartPaused;
@@ -284,7 +284,7 @@ namespace SharpPulsar.Consumer
                 _metadata = new Dictionary<string, string>(conf.Properties).ToImmutableDictionary();
             }
 
-            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder()
+            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, HandlerstateActor, new BackoffBuilder()
                 .SetInitialTime(TimeSpan.FromMilliseconds(clientConfiguration.InitialBackoffIntervalMs))
                 .SetMax(TimeSpan.FromMilliseconds(clientConfiguration.MaxBackoffIntervalMs))
                 .SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
@@ -394,12 +394,14 @@ namespace SharpPulsar.Consumer
         {
             try
             {
+                var state = await HandlerstateActor.Ask<State>(GetState.Instance);
                 _previousExceptions.Clear();
                 _maxMessageSize = (int)c.MaxMessageSize;
                 _protocolVersion = c.ProtocolVersion;
-                if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                if (state == State.Closing || state == State.Closed)
                 {
-                    State.ConnectionState = HandlerState.State.Closed;
+                    state = await HandlerstateActor.Ask<State>(new GetAndUpdateState(State.Closed));
+                    //State.ConnectionState = HandlerState.State.Closed;
                     CloseConsumerTasks();
                     DeregisterFromClientCnx();
                     _client.Tell(new CleanupConsumer(Self));
@@ -471,13 +473,15 @@ namespace SharpPulsar.Consumer
 
                 if (result is CommandSuccessResponse _)
                 {
-                    if (State.ChangeToReadyState())
+                    var tf = await HandlerstateActor.Ask<bool>(ChangeToReadyState.Instance);
+                    if (tf)
                     {
                         ConsumerIsReconnectedToBroker(_clientCnx, currentSize);
                     }
                     else
                     {
-                        State.ConnectionState = HandlerState.State.Closed;
+                        state = await HandlerstateActor.Ask<State>(new GetAndUpdateState(State.Closed));
+                        //State.ConnectionState = HandlerState.State.Closed;
                         DeregisterFromClientCnx();
                         _client.Tell(new CleanupConsumer(_self));
                         //await _clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
@@ -497,7 +501,8 @@ namespace SharpPulsar.Consumer
                     {
                         DeregisterFromClientCnx();
                         var e = response.Exception;
-                        if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                        var state1 = await HandlerstateActor.Ask<State>(GetState.Instance);
+                        if (state1 == State.Closing || state1 == State.Closed)
                         {
                             await _clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
                             SubscribeFuture.TrySetException(new PulsarClientException("Consumer is in a closing state"));
@@ -505,7 +510,8 @@ namespace SharpPulsar.Consumer
                         }
                         else if (!SubscribeFuture.Task.IsCompleted)
                         {
-                            State.ConnectionState = HandlerState.State.Closed;
+                            state = await HandlerstateActor.Ask<State>(new GetAndUpdateState(State.Closed));
+                            //State.ConnectionState = HandlerState.State.Closed;
                             CloseConsumerTasks();
                             SubscribeFuture.TrySetException(Wrap(e, $"Failed to subscribe the topic {_topicName} with subscription name {Subscription} when connecting to the broker"));
 
@@ -514,7 +520,8 @@ namespace SharpPulsar.Consumer
                         else if (e is TopicDoesNotExistException)
                         {
                             var msg = $"[{Topic}][{Subscription}] Closed consumer because topic does not exist anymore";
-                            State.ConnectionState = HandlerState.State.Failed;
+                            state = await HandlerstateActor.Ask<State>(new GetAndUpdateState(State.Failed));
+                            //State.ConnectionState = HandlerState.State.Failed;
                             CloseConsumerTasks();
                             _client.Tell(new CleanupConsumer(Self));
                             _log.Warning(msg);
@@ -594,9 +601,10 @@ namespace SharpPulsar.Consumer
             {
                 _receives.Enqueue((Sender, receive));
             });
-            Receive<SendState>(_ =>
+            ReceiveAsync<SendState>(async _ =>
             {
-                StateActor.Tell(new SetConumerState(State.ConnectionState));
+                var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                StateActor.Tell(new SetConumerState(state));
             });
 
             Receive<AckTimeoutSend>(ack =>
@@ -613,8 +621,9 @@ namespace SharpPulsar.Consumer
             });
             ReceiveAsync<Close>(async c =>
             {
+                var state = await HandlerstateActor.Ask<State>(GetState.Instance);
                 _replyTo = Sender;
-                if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                if (state == State.Closing || state == State.Closed)
                 {
                     CloseConsumerTasks();
                     FailPendingReceive();
@@ -623,14 +632,15 @@ namespace SharpPulsar.Consumer
                 if (!Connected())
                 {
                     _log.Info($"[{Topic}] [{Subscription}] Closed Consumer (not connected)");
-                    State.ConnectionState = HandlerState.State.Closed;
+                    HandlerstateActor.Tell(new SetState(State.Closed));
+                    //State.ConnectionState = HandlerState.State.Closed;
                     CloseConsumerTasks();
                     DeregisterFromClientCnx();
                     _client.Tell(new CleanupConsumer(Self));
                     FailPendingReceive();
                 }
-
-                State.ConnectionState = HandlerState.State.Closing;
+                HandlerstateActor.Tell(new SetState(State.Closing));
+                //State.ConnectionState = HandlerState.State.Closing;
 
                 CloseConsumerTasks();
 
@@ -666,9 +676,10 @@ namespace SharpPulsar.Consumer
                 var cleared = ClearIncomingMessagesAndGetMessageNumber();
                 Sender.Tell(new IncomingMessagesCleared(cleared));
             });
-            Receive<GetHandlerState>(_ =>
+            ReceiveAsync<GetHandlerState>(async _ =>
             {
-                Sender.Tell(new AskResponse(State.ConnectionState));
+                var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                Sender.Tell(new AskResponse(state));
             });
             Receive<GetIncomingMessageSize>(_ =>
             {
@@ -1080,7 +1091,8 @@ namespace SharpPulsar.Consumer
 
         internal override void Unsubscribe(bool force)
         {
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new AlreadyClosedException("AlreadyClosedException: Consumer was already closed");
             }
@@ -1088,7 +1100,8 @@ namespace SharpPulsar.Consumer
             {
                 if (Connected())
                 {
-                    State.ConnectionState = HandlerState.State.Closing;
+                    HandlerstateActor.Tell(new SetState(State.Closing));
+                    //State.ConnectionState = HandlerState.State.Closing;
                     var res = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
                     var requestId = res.Id;
                     var unsubscribe = Commands.NewUnsubscribe(_consumerId, requestId, force);
@@ -1098,7 +1111,8 @@ namespace SharpPulsar.Consumer
                     DeregisterFromClientCnx();
                     _client.Tell(new CleanupConsumer(Self));
                     _log.Info($"[{Topic}][{Subscription}] Successfully unsubscribed from topic");
-                    State.ConnectionState = HandlerState.State.Closed;
+                    HandlerstateActor.Tell(new SetState(State.Closed));
+                    //State.ConnectionState = HandlerState.State.Closed;
                 }
                 else
                 {
@@ -1138,10 +1152,11 @@ namespace SharpPulsar.Consumer
         protected internal override void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
             Condition.CheckArgument(messageId is MessageId);
-            if (State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state != State.Ready && state != State.Connecting)
             {
                 Stats.IncrementNumAcksFailed();
-                var exception = new PulsarClientException("Consumer not ready. State: " + State);
+                var exception = new PulsarClientException("Consumer not ready. State: " + state);
                 if (AckType.Individual.Equals(ackType))
                 {
                     OnAcknowledge(messageId, exception);
@@ -1168,10 +1183,11 @@ namespace SharpPulsar.Consumer
             {
                 Condition.CheckArgument(messageId is MessageId);
             }
-            if (State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state != State.Ready && state != State.Connecting)
             {
                 Stats.IncrementNumAcksFailed();
-                var exception = new PulsarClientException("Consumer not ready. State: " + State);
+                var exception = new PulsarClientException("Consumer not ready. State: " + state);
                 if (AckType.Individual.Equals(ackType))
                 {
                     OnAcknowledge(messageIdList, exception);
@@ -1207,10 +1223,11 @@ namespace SharpPulsar.Consumer
             }
             
             Condition.CheckArgument(messageId is MessageId);
-            if (State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state != State.Ready && state != State.Connecting)
             {
                 Stats.IncrementNumAcksFailed();
-                var exception = new PulsarClientException("Consumer not ready. State: " + State);
+                var exception = new PulsarClientException("Consumer not ready. State: " + state);
                 if (AckType.Individual.Equals(ackType))
                 {
                     OnAcknowledge(messageId, exception);
@@ -1475,7 +1492,8 @@ namespace SharpPulsar.Consumer
                 exception.SetPreviousExceptions(_previousExceptions);
                 if (SubscribeFuture.TrySetException(exception))
                 {
-                    State.ConnectionState = HandlerState.State.Failed;
+                    HandlerstateActor.Tell(new SetState(State.Failed));
+                    //State.ConnectionState = HandlerState.State.Failed;
                     string msg;
                     if (nonRetriableError)
                     {
@@ -1501,7 +1519,8 @@ namespace SharpPulsar.Consumer
         private void CleanupAtClose(Exception exception)
         {
             _log.Info($"[{Topic}] [{Subscription}] Closed consumer");
-            State.ConnectionState = HandlerState.State.Closed;
+            HandlerstateActor.Tell(new SetState(State.Closed));
+            //State.ConnectionState = HandlerState.State.Closed;
             CloseConsumerTasks();
             DeregisterFromClientCnx();
             _client.Tell(new CleanupConsumer(Self));
@@ -2136,7 +2155,8 @@ namespace SharpPulsar.Consumer
             }
             catch (Exception e)
             {
-                if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState.State.Closed)
+                var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+                if (state != State.Closing && state != State.Closed)
                 {
                     Stats.IncrementNumReceiveFailed();
                     throw Unwrap(e);
@@ -2156,7 +2176,8 @@ namespace SharpPulsar.Consumer
             }
             catch (Exception e)
             {
-                if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState.State.Closed)
+                var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+                if (state != State.Closing && state != State.Closed)
                 {
                     Stats.IncrementNumBatchReceiveFailed();
                     throw Unwrap(e);
@@ -2530,7 +2551,8 @@ namespace SharpPulsar.Consumer
 
         internal override bool Connected()
         {
-            return _clientCnx != null && State.ConnectionState == HandlerState.State.Ready;
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            return _clientCnx != null && state == State.Ready;
         }
 
         internal virtual int PartitionIndex
@@ -2560,6 +2582,7 @@ namespace SharpPulsar.Consumer
             // prevent use old cnx to send redeliverUnacknowledgedMessages to a old broker
             var cnx = _clientCnx;
             var protocolVersion = _protocolVersion;
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             if (Connected() && protocolVersion >= (int)ProtocolVersion.V2)
             {
                 var currentSize = IncomingMessages.Count;
@@ -2587,7 +2610,7 @@ namespace SharpPulsar.Consumer
             }
             else
             {
-                if (cnx == null || State.ConnectionState == HandlerState.State.Connecting)
+                if (cnx == null || state == State.Connecting)
                 {
                     _log.Warning($"[{Self}] Client Connection needs to be established for redelivery of unacknowledged messages");
                 }
@@ -2655,7 +2678,8 @@ namespace SharpPulsar.Consumer
                 }
                 return;
             }
-            if (cnx == null || State.ConnectionState == HandlerState.State.Connecting)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (cnx == null || state == State.Connecting)
             {
                 _log.Warning($"[{Self}] Client Connection needs to be established for redelivery of unacknowledged messages");
             }
@@ -2853,7 +2877,8 @@ namespace SharpPulsar.Consumer
         }
         private bool SeekCheckState(string seekBy)
         {
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}");
 
@@ -2966,8 +2991,9 @@ namespace SharpPulsar.Consumer
         }
         private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageIdAsync()
         {
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
 
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
             }

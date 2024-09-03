@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Builder;
-using SharpPulsar.Table;
 using SharpPulsar.TransactionImpl;
 using System;
 using System.Collections.Generic;

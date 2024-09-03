@@ -13,7 +13,6 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using SharpPulsar.TransactionImpl;
-using SharpPulsar.Consumer;
 
 namespace SharpPulsar
 {
@@ -364,8 +363,8 @@ namespace SharpPulsar
         public async ValueTask SeekAsync(IMessageId messageId)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.ConvertTo<HandlerState.State>();
-            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            var state = askForState.ConvertTo<State>();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {Topic} to the message {messageId}");
 
@@ -389,8 +388,8 @@ namespace SharpPulsar
         public async ValueTask SeekAsync(long timestamp)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.ConvertTo<HandlerState.State>();
-            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            var state = askForState.ConvertTo<State>();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new Exception($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {Topic} to the timestamp {timestamp:D}");
 

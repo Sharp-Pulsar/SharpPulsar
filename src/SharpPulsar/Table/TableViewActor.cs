@@ -3,19 +3,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Util.Internal;
 using App.Metrics.Concurrency;
-using Avro.Generic;
-using Avro.Util;
 using SharpPulsar.Builder;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Table.Messages;
 /// <summary>
@@ -209,7 +204,7 @@ namespace SharpPulsar.Table
                                 try
                                 {
                                     listener(key, cur);
-                                    _log.Info($"Table view listener raised => {key}:{cur}");
+                                    //_log.Info($"Table view listener raised => {key}:{cur}");
                                 }
                                 catch (Exception t)
                                 {

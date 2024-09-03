@@ -19,7 +19,6 @@
 
 using System.Text.Json;
 using SharpPulsar.Batch;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Test.API
 {

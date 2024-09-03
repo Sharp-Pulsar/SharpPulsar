@@ -80,8 +80,8 @@ namespace SharpPulsar
         public async ValueTask SeekAsync(IMessageId messageId)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.ConvertTo<HandlerState.State>();
-            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            var state = askForState.ConvertTo<State>();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new PulsarClientException.AlreadyClosedException($"The consumer was already closed when seeking the subscription of the topic {Topic} to the message {messageId}");
 
@@ -101,8 +101,8 @@ namespace SharpPulsar
         public async ValueTask SeekAsync(long timestamp)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.ConvertTo<HandlerState.State>();
-            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            var state = askForState.ConvertTo<State>();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new Exception($"The reader was already closed when seeking the subscription of the topic {Topic} to the timestamp {timestamp:D}");
 

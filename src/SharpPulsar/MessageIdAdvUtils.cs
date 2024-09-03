@@ -1,11 +1,10 @@
 ﻿using System.Collections;
-using SharpPulsar.Batch;
 using SharpPulsar.Interfaces;
 
 
 namespace SharpPulsar
 {
-    
+
     public class MessageIdAdvUtils
     {
 

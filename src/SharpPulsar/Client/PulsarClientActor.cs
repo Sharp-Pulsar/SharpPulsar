@@ -79,6 +79,10 @@ namespace SharpPulsar.Client
             {
                 Sender.Tell(new TcClient(_tcClient));
             });
+            Receive<ClientConfiguration>(_ =>
+            {
+                Sender.Tell(new ClientConfiguration(_conf));
+            });
         }
 
         private ClientConfigurationData Auth
@@ -143,5 +147,13 @@ namespace SharpPulsar.Client
 
 
     }
-
+    public record struct ClientConfiguration
+    {
+        public static ClientConfiguration Instance = new ClientConfiguration(); 
+        public ClientConfigurationData Configuration { get; }  
+        public ClientConfiguration(ClientConfigurationData configuration)
+        {
+            Configuration = configuration;  
+        }
+    }
 }

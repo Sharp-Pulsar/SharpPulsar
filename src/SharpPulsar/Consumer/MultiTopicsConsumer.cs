@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
-using Google.Protobuf.Collections;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
@@ -18,7 +17,6 @@ using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
-using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using System;
 using System.Collections.Concurrent;
@@ -27,7 +25,6 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using static Google.Protobuf.Compiler.CodeGeneratorResponse.Types;
 using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using InvalidMessageException = SharpPulsar.Exceptions.PulsarClientException.InvalidMessageException;
@@ -122,7 +119,7 @@ namespace SharpPulsar.Consumer
         {
             return Props.Create(() => new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
         }
-        public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), schema, subscribeFuture)
+        public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(client, stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), schema, subscribeFuture)
         {
             _context = Context;
             _generator = idGenerator;
@@ -176,7 +173,8 @@ namespace SharpPulsar.Consumer
             }
             if (conf.TopicNames.Count == 0)
             {
-                State.ConnectionState = HandlerState.State.Ready;
+                HandlerstateActor.Tell(new SetState(State.Ready));
+                //State.ConnectionState = HandlerState.State.Ready;
                 subscribeFuture.TrySetResult(Self);
                 return;
             }
@@ -215,7 +213,8 @@ namespace SharpPulsar.Consumer
                         {
                             MaxReceiverQueueSize = AllTopicPartitionsNumber;
                         }
-                        State.ConnectionState = HandlerState.State.Ready;
+                        HandlerstateActor.Tell(new SetState(State.Ready));
+                        //State.ConnectionState = HandlerState.State.Ready;
                         StartReceivingMessages(_consumers.Values.ToList());
                         _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
 
@@ -239,9 +238,10 @@ namespace SharpPulsar.Consumer
         
         internal void Ready()
         {
-            Receive<SendState>(_ =>
+            ReceiveAsync<SendState>(async _ =>
             {
-                StateActor.Tell(new SetConumerState(State.ConnectionState));
+                var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                StateActor.Tell(new SetConumerState(state));
             });
             Receive<BatchReceive>(batch =>
             {
@@ -598,14 +598,15 @@ namespace SharpPulsar.Consumer
             {
                 _log.Info($"MultiTopicConsumer `int` {i}");
             });
-            Receive<string>(s => 
+            ReceiveAsync<string>(async s => 
             {
                 switch (s)
                 {
                     case "OnTopicsExtended":
                         try
                         {
-                            if (State.ConnectionState != HandlerState.State.Ready)
+                            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                            if (state != State.Ready)
                             {
                                 return;
                             }
@@ -666,12 +667,12 @@ namespace SharpPulsar.Consumer
 
         private void StartReceivingMessages(IList<IActorRef> newConsumers)
         {
-            
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             if (_log.IsDebugEnabled)
             {
-                _log.Debug($"[{Topic}] startReceivingMessages for {newConsumers.Count} new consumers in topics consumer, state: {State.ConnectionState}");
+                _log.Debug($"[{Topic}] startReceivingMessages for {newConsumers.Count} new consumers in topics consumer, state: {state}");
             }
-            if (State.ConnectionState == HandlerState.State.Ready)
+            if (state == State.Ready)
             {
                 newConsumers.ForEach(consumer =>
                 {
@@ -859,7 +860,8 @@ namespace SharpPulsar.Consumer
             }
             catch (Exception e)
             {
-                if (State.ConnectionState != HandlerState.State.Closing && State.ConnectionState != HandlerState.State.Closed)
+                var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+                if (state != State.Closing && state != State.Closed)
                 {
                     Stats.IncrementNumBatchReceiveFailed();
                     throw Unwrap(e);
@@ -964,8 +966,8 @@ namespace SharpPulsar.Consumer
                 return;
 
             }
-
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+            if (state == State.Closing || state == State.Closed)
             {
                 var ex = new AlreadyClosedException("Topics Consumer was already closed");
                 _log.Error($"{ex}");
@@ -1043,8 +1045,8 @@ namespace SharpPulsar.Consumer
         {
             Condition.CheckArgument(messageId is TopicMessageId);
             var topicMessageId = (TopicMessageId)messageId;
-
-            if (State.ConnectionState != HandlerState.State.Ready)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state != State.Ready)
             {
                 Sender.Tell(new AskResponse(new PulsarClientException("Consumer already closed")));
             }
@@ -1080,7 +1082,8 @@ namespace SharpPulsar.Consumer
             }
             else
             {
-                if (State.ConnectionState != HandlerState.State.Ready)
+                var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+                if (state != State.Ready)
                 {
                     throw new PulsarClientException("Consumer already closed");
                 }
@@ -1112,7 +1115,8 @@ namespace SharpPulsar.Consumer
             var messageId = message.MessageId;
             Condition.CheckArgument(messageId is TopicMessageId);
             var topicMessageId = (TopicMessageId)messageId;
-            if (State.ConnectionState != HandlerState.State.Ready)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state != State.Ready)
             {
                 throw new PulsarClientException("Consumer already closed");
 
@@ -1159,26 +1163,30 @@ namespace SharpPulsar.Consumer
 
         internal override void Unsubscribe(bool force)
         {
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new AlreadyClosedException("AlreadyClosedException: Consumer was already closed");
             }
 
-            State.ConnectionState = HandlerState.State.Closing;
+            HandlerstateActor.Tell(new SetState(State.Closing));
+            //State.ConnectionState = HandlerState.State.Closing;
             var futureList = _consumers.Values.Select(async consumer => await consumer.Ask<AskResponse>(new Unsubscribe(force))).ToList();
             try
             {
                 // Wait for all the tasks to finish.
                 Task.WaitAll(futureList.ToArray());
 
-                State.ConnectionState = HandlerState.State.Closed;
+                HandlerstateActor.Tell(new SetState(State.Closed));
+                //State.ConnectionState = HandlerState.State.Closed;
                 CleanupMultiConsumer();
                 _log.Error($"[{Topic}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer");
                 FailPendingReceive();
             }
             catch (Exception e)
             {
-                State.ConnectionState = HandlerState.State.Failed;
+                HandlerstateActor.Tell(new SetState(State.Failed));
+                //State.ConnectionState = HandlerState.State.Failed;
                 _log.Error($"[{Topic}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {e.InnerException}");
                 throw e.InnerException;
             }
@@ -1188,7 +1196,8 @@ namespace SharpPulsar.Consumer
         {
             Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
 
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new AlreadyClosedException("Topics Consumer was already closed");
             }
@@ -1228,7 +1237,8 @@ namespace SharpPulsar.Consumer
             }
             catch (Exception ex)
             {
-                State.ConnectionState = HandlerState.State.Failed;
+                HandlerstateActor.Tell(new SetState(State.Failed));
+               // State.ConnectionState = HandlerState.State.Failed;
                 _log.Error($"[{topicName}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {ex}");
                 throw;
             }
@@ -1249,11 +1259,13 @@ namespace SharpPulsar.Consumer
         }
         internal void Close()
         {
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state == State.Closing || state == State.Closed)
             {
                 UnAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(100));
             }
-            State.ConnectionState = HandlerState.State.Closing;
+            HandlerstateActor.Tell(new SetState(State.Closing));
+            //State.ConnectionState = HandlerState.State.Closing;
 
             if (_partitionsAutoUpdateTimeout != null)
             {
@@ -1265,7 +1277,9 @@ namespace SharpPulsar.Consumer
                 _ = await c.Ask<AskResponse>(Messages.Requests.Close.Instance).ConfigureAwait(false);
                 await c.GracefulStop(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
             });
-            State.ConnectionState = HandlerState.State.Closed;
+
+            HandlerstateActor.Tell(new SetState(State.Closed));
+            //State.ConnectionState = HandlerState.State.Closed;
             UnAckedMessageTracker.GracefulStop(TimeSpan.FromMilliseconds(100));
             _log.Info($"[{Topic}] [{Subscription}] Closed Topics Consumer");
             _client.Tell(new CleanupConsumer(Self));
@@ -1662,7 +1676,8 @@ namespace SharpPulsar.Consumer
         {
             Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
 
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new AlreadyClosedException("Topics Consumer was already closed");
             }

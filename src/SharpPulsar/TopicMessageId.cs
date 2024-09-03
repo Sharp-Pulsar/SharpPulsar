@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Batch;
-using SharpPulsar.Interfaces;
-using System;
+﻿using SharpPulsar.Interfaces;
 using System.Collections;
 
 /// <summary>
@@ -23,7 +21,7 @@ using System.Collections;
 /// </summary>
 namespace SharpPulsar
 {
-	public class TopicMessageId : IMessageIdAdv, ITopicMessageId
+    public class TopicMessageId : IMessageIdAdv, ITopicMessageId
 	{
 
 		/// <summary>

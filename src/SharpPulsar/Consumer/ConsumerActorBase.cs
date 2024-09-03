@@ -84,14 +84,16 @@ namespace SharpPulsar.Consumer
         protected internal ICancelable BatchReceiveTimeout = null;
         protected internal readonly IActorRef StateActor;
         private readonly ICancelable _stateUpdater;
-        protected internal HandlerState State;
+        protected internal IActorRef HandlerstateActor;
         private readonly string _topic;
         protected internal readonly TaskCompletionSource<IActorRef> SubscribeFuture;
         protected internal long ConsumerEpoch;
         protected internal readonly IScheduler Scheduler;
         protected internal readonly IActorRef UnAckedMessageTracker;
-        public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
+        protected internal readonly IActorRef Client;
+        public ConsumerActorBase(IActorRef client, IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
         {
+            Client = client;
             _self = Self;
             SubscribeFuture = subscribeFuture;
             if (conf.Interceptors != null && conf.Interceptors.Count > 0)
@@ -99,7 +101,7 @@ namespace SharpPulsar.Consumer
             StateActor = stateActor;
             _topic = topic;
             _consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
-            State = new HandlerState(lookup, connectionPool, topic, Context.System, _consumerName);
+            HandlerstateActor = Context.ActorOf(HandlerStateActor.Prop(lookup, connectionPool, topic, _consumerName));
             _log = Context.GetLogger();
             MaxReceiverQueueSize = receiverQueueSize;
             _subscription = conf.SubscriptionName;
@@ -395,19 +397,19 @@ namespace SharpPulsar.Consumer
 
         protected void VerifyConsumerState()
         {
-            var state = State.ConnectionState;
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             switch (state)
             {
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
+                case State.Ready:
+                case State.Connecting:
                     break; // Ok
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
+                case State.Closing:
+                case State.Closed:
                     throw new AlreadyClosedException("Consumer already closed");
-                case HandlerState.State.Terminated:
+                case State.Terminated:
                     throw new TopicTerminatedException("Topic was terminated");
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
+                case State.Failed:
+                case State.Uninitialized:
                     throw new NotConnectedException();
                 default:
                     break;
@@ -750,10 +752,11 @@ namespace SharpPulsar.Consumer
 
         private void DoPendingBatchReceiveTask(TimeSpan timeout)
         {
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             long timeToWaitMs;
             var hasPendingReceives = false;
             // If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            if (state == State.Closing || state == State.Closed)
             {
                 return;
             }
@@ -978,7 +981,7 @@ namespace SharpPulsar.Consumer
     }
     internal class ConsumerStateActor : ReceiveActor
     {
-        private HandlerState.State _state;
+        private State _state;
         public ConsumerStateActor()
         {
             Receive<SetConumerState>(m =>
@@ -997,8 +1000,8 @@ namespace SharpPulsar.Consumer
     }
     internal class SetConumerState
     {
-        public HandlerState.State State { get; }
-        public SetConumerState(HandlerState.State state)
+        public State State { get; }
+        public SetConumerState(State state)
         {
             State = state;
         }
