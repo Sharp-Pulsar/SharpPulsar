@@ -728,6 +728,18 @@ namespace SharpPulsar.Protocol.Proto
         public void ResetSupportsTopicWatchers() => __pbn__SupportsTopicWatchers = null;
         private bool? __pbn__SupportsTopicWatchers;
 
+
+        [global::ProtoBuf.ProtoMember(5, Name = @"supports_get_partitioned_metadata_without_auto_creation")]
+        [global::System.ComponentModel.DefaultValue(false)]
+        public bool SupportsGetPartitionedMetadataWithoutAutoCreation
+        {
+            get => __pbn__SupportsGetPartitionedMetadataWithoutAutoCreation ?? false;
+            set => __pbn__SupportsGetPartitionedMetadataWithoutAutoCreation = value;
+        }
+        public bool ShouldSerializeSupportsGetPartitionedMetadataWithoutAutoCreation() => __pbn__SupportsGetPartitionedMetadataWithoutAutoCreation != null;
+        public void ResetSupportsGetPartitionedMetadataWithoutAutoCreation() => __pbn__SupportsGetPartitionedMetadataWithoutAutoCreation = null;
+        private bool? __pbn__SupportsGetPartitionedMetadataWithoutAutoCreation;
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -1087,6 +1099,16 @@ namespace SharpPulsar.Protocol.Proto
         public void ResetOriginalAuthMethod() => __pbn__OriginalAuthMethod = null;
         private string __pbn__OriginalAuthMethod;
 
+        [global::ProtoBuf.ProtoMember(6, Name = @"metadata_auto_creation_enabled")]
+        [global::System.ComponentModel.DefaultValue(true)]
+        public bool MetadataAutoCreationEnabled
+        {
+            get => __pbn__MetadataAutoCreationEnabled ?? true;
+            set => __pbn__MetadataAutoCreationEnabled = value;
+        }
+        public bool ShouldSerializeMetadataAutoCreationEnabled() => __pbn__MetadataAutoCreationEnabled != null;
+        public void ResetMetadataAutoCreationEnabled() => __pbn__MetadataAutoCreationEnabled = null;
+        private bool? __pbn__MetadataAutoCreationEnabled;
     }
 
     [global::ProtoBuf.ProtoContract()]

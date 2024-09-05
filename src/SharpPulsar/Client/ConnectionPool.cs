@@ -109,9 +109,14 @@ namespace SharpPulsar.Client
         /// <param name="physicalAddress">
         ///            the real address where the TCP connection should be made </param>
         /// <returns> a future that will produce the ClientCnx object </returns>
-        private async ValueTask<ConnectionOpened> GetConnection(DnsEndPoint address, int randomKey)
+        private async ValueTask<ConnectionOpened> GetConnection(DnsEndPoint address)
         {
-            return await GetConnection(address, address, randomKey);
+            if (_maxConnectionsPerHosts == 0)
+            {
+                return await GetConnection(address, address, -1);
+            }
+            return await GetConnection(address, address, SignSafeMod(Random.Next(), _maxConnectionsPerHosts));
+            //return await GetConnection(address, address, -1);
         }
         private async ValueTask<ConnectionOpened> GetConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int randomKey)
         {
@@ -129,6 +134,14 @@ namespace SharpPulsar.Client
                 return await CreateConnection(logicalAddress, physicalAddress, randomKey);
             }
             return await CreateConnection(logicalAddress, physicalAddress, randomKey);
+        }
+        public int GenRandomKeyToSelectCon()
+        {
+            if (_maxConnectionsPerHosts == 0)
+            {
+                return -1;
+            }
+            return SignSafeMod(Random.Next(), _maxConnectionsPerHosts);
         }
         private async ValueTask<ConnectionOpened> CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int connectionKey)
         {

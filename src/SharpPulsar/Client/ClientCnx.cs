@@ -66,7 +66,7 @@ namespace SharpPulsar.Client
         private readonly TlsHostnameVerifier _hostnameVerifier;
 
         //private ICancelable _timeoutTask;
-
+        private bool _supportsGetPartitionedMetadataWithoutAutoCreation;
         private readonly ICancelable _sendPing = default;
         private readonly IActorRef _parent;
         private readonly IScheduler _scheduler;
@@ -221,6 +221,10 @@ namespace SharpPulsar.Client
             {
                 RemoveConsumer(m.ConsumerId);
             });
+            Receive<IsSupportsGetPartitionedMetadataWithoutAutoCreation>(_ => 
+            { 
+                Sender.Tell(_supportsGetPartitionedMetadataWithoutAutoCreation);
+            });
             Receive<SendPing>(m =>
             {
                 _sendMessage.Tell(new SendMessage(_pong));
@@ -341,7 +345,7 @@ namespace SharpPulsar.Client
             // set remote protocol version to the correct version before we complete the connection future
             //if(connected.FeatureFlags != null)
             _supportsTopicWatchers = connected.FeatureFlags.SupportsTopicWatchers;
-
+            _supportsGetPartitionedMetadataWithoutAutoCreation = connected.FeatureFlags.SupportsGetPartitionedMetadataWithoutAutoCreation;
             _protocolVersion = connected.ProtocolVersion;
             _state = State.Ready;
             _connectionFuture.TrySetResult(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
@@ -1350,5 +1354,9 @@ namespace SharpPulsar.Client
     internal sealed class SendPing
     {
         public static SendPing Instance = new SendPing();
+    }
+    internal record struct IsSupportsGetPartitionedMetadataWithoutAutoCreation()
+    {
+        internal static IsSupportsGetPartitionedMetadataWithoutAutoCreation Instance = new IsSupportsGetPartitionedMetadataWithoutAutoCreation();
     }
 }

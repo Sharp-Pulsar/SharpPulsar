@@ -6,13 +6,17 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Messages.Consumer;
+using DotNetty.Common.Utilities;
 
 namespace SharpPulsar.Client
 {
     public class ConnectionHandler : ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _clientCnx = null;
+        private bool _duringConnect = false;
+        protected int _randomKeyForSelectConnection;
 
+        private bool _useProxy;
         //private readonly IActorRef _state;
         private readonly ClientConfigurationData _conf;
         private readonly Backoff _backoff;

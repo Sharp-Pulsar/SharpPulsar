@@ -26,22 +26,22 @@ namespace SharpPulsar
         private readonly IActorRef _connectionPool;
         private readonly string _topic;
         private readonly string _name;
-        // readonly IActorRef _client;
+        private readonly IActorRef _client;
         
         
         private State _state;
-        public HandlerStateActor(/*IActorRef client,*/ IActorRef lookup, IActorRef connectionPool, string topic, string name)
+        public HandlerStateActor(IActorRef client, IActorRef lookup, IActorRef connectionPool, string topic, string name)
         {
-            //_client = client;
+            _client = client;
             _connectionPool = connectionPool;
             _lookup = lookup;
             _topic = topic;
             _state = State.Uninitialized;
             _name = name;
-            /*Receive<SetRedirectedCluster>(set =>
+            Receive<SetRedirectedCluster>(set =>
             {
                 SetRedirectedClusterURI(set.ServiceUrl, set.ServiceUrlTls);
-            });*/
+            });
             Receive<ChangeToReadyState>(set =>
             {
                 var b = ChangeToReadyState();
@@ -72,10 +72,10 @@ namespace SharpPulsar
                 _state = update.State;  
                 Sender.Tell(_state);
             });
-            /*Receive<GetClient>(_ =>
+            Receive<GetClient>(_ =>
             {
                 Sender.Tell(_client);
-            });*/
+            });
             Receive<Lookup>(_ =>
             {
                 Sender.Tell(_lookup);
@@ -90,15 +90,15 @@ namespace SharpPulsar
             });
 
         }
-        public static Props Prop(IActorRef lookup, IActorRef connectionPool, string topic, string name)
+        public static Props Prop(IActorRef client, IActorRef lookup, IActorRef connectionPool, string topic, string name)
         {
-            return Props.Create(() => new HandlerStateActor(lookup, connectionPool, topic, name));
+            return Props.Create(() => new HandlerStateActor(client, lookup, connectionPool, topic, name));
         }
-        /*private void SetRedirectedClusterURI(string serviceUrl, string serviceUrlTls)
+        private void SetRedirectedClusterURI(string serviceUrl, string serviceUrlTls)
         {
             string url = _client.Ask<ClientConfiguration>(ClientConfiguration.Instance).GetAwaiter().GetResult().Configuration.UseTls && string.IsNullOrWhiteSpace(serviceUrlTls) ? serviceUrlTls : serviceUrl;
             _redirectedClusterURI = new Uri(url);
-        }*/
+        }
         private bool ChangeToReadyState()
         {
             if (_state == State.Ready)

@@ -752,11 +752,13 @@ namespace SharpPulsar.Protocol
 			return Serializer.Serialize(producer.ToBaseCommand());			
 		}
 
-		public static ReadOnlySequence<byte> NewPartitionMetadataRequest(string topic, long requestId)
+		public static ReadOnlySequence<byte> NewPartitionMetadataRequest(string topic, long requestId, bool metadataAutoCreationEnabled = true)
 		{
             var partitionMetadata = new CommandPartitionedTopicMetadata
             {
-                Topic = topic, RequestId = (ulong) requestId
+                Topic = topic, 
+                RequestId = (ulong) requestId,
+                MetadataAutoCreationEnabled = metadataAutoCreationEnabled   
             };
             return Serializer.Serialize(partitionMetadata.ToBaseCommand());
 			

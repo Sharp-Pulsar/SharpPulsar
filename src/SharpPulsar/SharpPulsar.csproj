@@ -58,6 +58,7 @@
     <PackageReference Include="System.Threading.Tasks.Dataflow" />
     <PackageReference Include="zlib.net-mutliplatform" />
     <PackageReference Include="ZstdNet" />
+    <PackageReference Include="OpenTelemetry.Api" />
   </ItemGroup>
 
   <ItemGroup>

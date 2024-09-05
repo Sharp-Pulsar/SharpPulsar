@@ -81,7 +81,7 @@ namespace SharpPulsar
         public IStash Stash { get; set; }
         public ITimerScheduler Timers { get; set; }
 
-        public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf, TaskCompletionSource<object> completionSource)
+        public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf, TaskCompletionSource<object> completionSource)
         {
             _lookup = lookup;
             _pool = cnxPool;
@@ -172,9 +172,9 @@ namespace SharpPulsar
         {
             action();
         }
-        public static Props Prop(long transactionCoordinatorId, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf, TaskCompletionSource<object> connectFuture)
+        public static Props Prop(long transactionCoordinatorId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf, TaskCompletionSource<object> connectFuture)
         {
-            return Props.Create(() => new TransactionMetaStoreHandler(transactionCoordinatorId, lookup, cnxPool, idGenerator, topic, conf, connectFuture));
+            return Props.Create(() => new TransactionMetaStoreHandler(transactionCoordinatorId, client, lookup, cnxPool, idGenerator, topic, conf, connectFuture));
         }
         private Task<object> EndTxn(object[] args)
         {

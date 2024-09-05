@@ -28,6 +28,7 @@ using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Utils;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar
@@ -251,7 +252,7 @@ namespace SharpPulsar
             IActorRef cnsr = Nobody.Instance;
             try
             {
-                var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
+                var metadata = await GetPartitionedTopicMetadata(topic, true, false).ConfigureAwait(false);
                 if (_log.IsDebugEnabled)
                 {
                     _log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
@@ -355,7 +356,7 @@ namespace SharpPulsar
                     return null;
             }
         }
-        private async ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string topic)
+        private async ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string topic, bool metadataAutoCreationEnabled, bool useFallbackForNonPIP344Brokers)
         {
             var future = new TaskCompletionSource<PartitionedTopicMetadata>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -363,10 +364,11 @@ namespace SharpPulsar
             {
                 var topicName = TopicName.Get(topic);
                 var opTimeoutMs = Conf.LookupTimeoutMs;
-                var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(Conf.InitialBackoffIntervalMs))
+                var backoff = new BackoffBuilder()
+                    .SetInitialTime(TimeSpan.FromMilliseconds(Conf.InitialBackoffIntervalMs))
                     .SetMandatoryStop(TimeSpan.FromMilliseconds(opTimeoutMs * 2))
                     .SetMax(TimeSpan.FromMilliseconds(Conf.InitialBackoffIntervalMs)).Create();
-                await GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, future, new List<Exception>());
+                await GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, future, new List<Exception>(), metadataAutoCreationEnabled, useFallbackForNonPIP344Brokers);
 
             }
             catch (ArgumentException e)
@@ -375,11 +377,11 @@ namespace SharpPulsar
             }
             return future.Task.GetAwaiter().GetResult();
         }
-        private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future, IList<Exception> previousExceptions)
+        private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future, IList<Exception> previousExceptions, bool metadataAutoCreationEnabled, bool useFallbackForNonPIP344Brokers)
         {
 
             var startTime = NanoTime();
-            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName, metadataAutoCreationEnabled, useFallbackForNonPIP344Brokers));
             if (result.Failed)
             {
                 var remaining = -1 * TimeSpan.FromMilliseconds(NanoTime() + startTime);
@@ -395,7 +397,7 @@ namespace SharpPulsar
 
                 previousExceptions.Add(result.Exception);
                 var time = (long)(remaining - TimeSpan.FromMilliseconds(nextDelay)).TotalMilliseconds;
-                await GetPartitionedTopicMetadata(topicName, backoff, time, future, previousExceptions);
+                await GetPartitionedTopicMetadata(topicName, backoff, time, future, previousExceptions, metadataAutoCreationEnabled, useFallbackForNonPIP344Brokers );
                 return;
             }
 
@@ -553,7 +555,7 @@ namespace SharpPulsar
             try
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
+                var metadata = await GetPartitionedTopicMetadata(topic, true, false).ConfigureAwait(false);
                 if (_log.IsDebugEnabled)
                 {
                     _log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
@@ -710,19 +712,58 @@ namespace SharpPulsar
             }
             return await CreateProducer(topic, conf, schema, interceptors).ConfigureAwait(false);
         }
+        private TaskCompletionSource<int> CheckPartitions(string topic, bool forceNoPartitioned, string producerNameForLog)
+        {
+            var checkPartitions = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            try
+            {
+                var metadata = GetPartitionedTopicMetadata(topic, !forceNoPartitioned, true).GetAwaiter().GetResult();
+                if (forceNoPartitioned && metadata.Partitions > 0)
+                {
+                    var errorMsg = string.Format("Can not create the producer[{0}] for the topic[{1}] that contains {2}" + " partitions b,ut the producer does not support for a partitioned topic.", producerNameForLog, topic, metadata.Partitions);
+                    _log.Error(errorMsg);
+                    checkPartitions.TrySetException(new PulsarClientException.NotConnectedException(errorMsg));
+                }
+                else
+                {
+                    checkPartitions.TrySetResult(metadata.Partitions);
+                }
+            }
+            catch (Exception ex) 
+            {
+                Exception actEx = new PulsarClientException(ex);
+                if (forceNoPartitioned && actEx is PulsarClientException.NotFoundException || actEx is PulsarClientException.TopicDoesNotExistException)
+                {
+                    checkPartitions.TrySetResult(0);
+                }
+                else
+                {
+                    checkPartitions.TrySetException(ex);
+                }
+                return null;
+
+            }
+            return checkPartitions;
+        }
 
         private async ValueTask<object> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
         {
-            var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
+            var check = CheckPartitions(topic, false,  conf.ProducerName);
+            var task = check.Task;
+            var partitions = task.Result;
+            if (task.IsFaulted)
+            {
+                _log.Error(task.Exception.ToString());
+            }
             if (_log.IsDebugEnabled)
             {
-                _log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
+                _log.Debug($"[{topic}] Received topic metadata. partitions: {partitions}");
             }
-            if (metadata.Partitions > 0)
+            if (partitions > 0)
             {
                 var tcs = new TaskCompletionSource<ConcurrentDictionary<int, IActorRef>>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                var partitionActor = _actorSystem.ActorOf(PartitionedProducerActor<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, null, tcs));
+                var partitionActor = _actorSystem.ActorOf(PartitionedProducerActor<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, partitions, schema, interceptors, _clientConfigurationData, null, tcs));
 
                 try
                 {
@@ -788,9 +829,9 @@ namespace SharpPulsar
                 return false;
             }
         }
-        public async ValueTask<IList<string>> GetPartitionsForTopicAsync(string topic)
+        public async ValueTask<IList<string>> GetPartitionsForTopicAsync(string topic, bool metadataAutoCreationEnabled)
         {
-            var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
+            var metadata = await GetPartitionedTopicMetadata(topic, metadataAutoCreationEnabled, false).ConfigureAwait(false);
             if (metadata.Partitions > 0)
             {
                 var topicName = TopicName.Get(topic);

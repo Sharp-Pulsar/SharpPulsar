@@ -19,6 +19,8 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.ServiceName;
 using Mode = SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Mode;
 using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
+using SharpPulsar.Client;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -74,28 +76,39 @@ namespace SharpPulsar
             _operationTimeout = operationTimeout;
             _connectionPool = connectionPool;
             _timeCnx = timeCnx;
+
+            Receive<SetClient>(c => { });
+            Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
+            ReceiveAsync<GetBroker>(async broke => await GetBroker(broke));
+            ReceiveAsync<GetPartitionedTopicMetadata>(async p => await PartitionedTopicMetadata(p));
+            ReceiveAsync<GetSchema>(async s => await Schema(s));
+            ReceiveAsync<GetTopicsUnderNamespace>(async t =>
+            {
+                _replyTo = Sender;
+                _getTopicsUnderNamespace = t;
+                await TopicsUnderNamespaceAsync();
+
+                Become(GetTopicsUnderNamespace);
+            });
             UpdateServiceUrl(serviceUrl);
+            /*
+             LatencyHistogram histo = client.instrumentProvider().newLatencyHistogram("pulsar.client.lookup.duration",
+                "Duration of lookup operations", null,
+                Attributes.builder().put("pulsar.lookup.transport-type", "binary").build());
+        histoGetBroker = histo.withAttributes(Attributes.builder().put("pulsar.lookup.type", "topic").build());
+        histoGetTopicMetadata =
+                histo.withAttributes(Attributes.builder().put("pulsar.lookup.type", "metadata").build());
+        histoGetSchema = histo.withAttributes(Attributes.builder().put("pulsar.lookup.type", "schema").build());
+        histoListTopics = histo.withAttributes(Attributes.builder().put("pulsar.lookup.type", "list-topics").build());
+             */
         }
         private void UpdateServiceUrl(string serviceUrl)
         {
             _serviceNameResolver.UpdateServiceUrl(serviceUrl);
             //Sender.Tell(0);
-            Become(Awaiting);
-        }
-        private async ValueTask Broke(GetBroker broker)
-        {
-            try
-            {
-                _replyTo = Sender;
-                await GetCnxAndRequestId();
-                await GetBroker(broker);
-            }
-            catch (Exception e)
-            {
-                _replyTo.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
-            }
             //Become(Awaiting);
         }
+        
         private async ValueTask PartitionedTopicMetadata(GetPartitionedTopicMetadata p)
         {
             try
@@ -152,7 +165,7 @@ namespace SharpPulsar
         {
             Receive<SetClient>(c => { });
             Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
-            ReceiveAsync<GetBroker>(async broke => await Broke(broke));
+            ReceiveAsync<GetBroker>(async broke => await GetBroke(broke.TopicName));
             ReceiveAsync<GetPartitionedTopicMetadata>(async p => await PartitionedTopicMetadata(p));
             ReceiveAsync<GetSchema>(async s => await Schema(s));
             ReceiveAsync<GetTopicsUnderNamespace>(async t =>
@@ -163,78 +176,47 @@ namespace SharpPulsar
 
                 Become(GetTopicsUnderNamespace);
             });
+            Receive<SetFindBroker>(async set => await FindBroker(set.Topic, set.RedirectCount, set.Address, set.Authoritative, set.Sender));
         }
         private async ValueTask GetBroker(GetBroker broker)
         {
             var socketAddress = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
-            var askResponse = await NewLookup(broker.TopicName);
-            if (askResponse.Failed)
-            {
-                _replyTo.Tell(askResponse);
-                return;
-            }
-
-            var data = askResponse.ConvertTo<LookupDataResult>();
-            var br = broker;
-            if (data.Error != ServerError.UnknownError)
-            {
-                _log.Warning($"[{br.TopicName}] failed to send lookup request: {data.Error}:{data.ErrorMessage}");
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Warning($"[{br.TopicName}] Lookup response exception> {data.Error}:{data.ErrorMessage}");
-                }
-                _replyTo.Tell(new AskResponse(new PulsarClientException(new Exception($"Lookup is not found: {data.Error}:{data.ErrorMessage}"))));
-            }
-            else
-            {
-                Uri uri = null;
-                try
-                {
-                    if (_useTls)
-                    {
-                        uri = new Uri(data.BrokerUrlTls);
-                    }
-                    else
-                    {
-                        var serviceUrl = data.BrokerUrl;
-                        uri = new Uri(serviceUrl);
-                    }
-                    var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
-                    if (data.Redirect)
-                    {
-                        await GetCnxAndRequestId(responseBrokerAddress);
-                        await RedirectedGetBroker(br.TopicName, 1, responseBrokerAddress, data.Authoritative);
-                    }
-                    else
-                    {
-                        var response = data.ProxyThroughServiceUrl ?
-                            new GetBrokerResponse(responseBrokerAddress, socketAddress) :
-                            new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
-                        _replyTo.Tell(new AskResponse(response));
-                    }
-                }
-                catch (Exception parseUrlException)
-                {
-                    _log.Warning($"[{br.TopicName}] invalid url {uri}");
-                    _replyTo.Tell(new AskResponse(new PulsarClientException(parseUrlException)));
-                }
-            }
-
+            await FindBroker(broker.TopicName, 0, socketAddress, false);
         }
-        private async ValueTask RedirectedGetBroker(TopicName topic, int redirectCount, DnsEndPoint address, bool authoritative)
+        private async ValueTask FindBroker(TopicName topic, int redirectCount, DnsEndPoint address, bool authoritative, IActorRef sender = null)
         {
+            IActorRef replyTo = null;
+            if(sender == null)
+                replyTo = Sender;   
+            else
+                replyTo = sender;
+
             var socketAddress = address ?? _serviceNameResolver.ResolveHost().ToDnsEndPoint();
             if (_maxLookupRedirects > 0 && redirectCount > _maxLookupRedirects)
             {
                 var err = new Exception("LookupException: Too many redirects: " + _maxLookupRedirects);
                 _log.Error(err.ToString());
-                _replyTo.Tell(new AskResponse(new PulsarClientException(err)));
+                
+                replyTo.Tell(new AskResponse(new PulsarClientException(err)));
                 return;
             }
             var askResponse = await NewLookup(topic, authoritative);
             if (askResponse.Failed)
             {
-                _replyTo.Tell(askResponse);
+                replyTo.Tell(askResponse);
+                // lookup failed
+                if (redirectCount > 0)
+                {
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{topic}] lookup redirection failed ({redirectCount}) : {askResponse.Exception.Message}");
+                    }
+                }
+                else
+                {
+                    _log.Warning($"[{topic}] lookup failed : {askResponse.Exception.Message}");
+                }
+
                 return;
             }
             var data = askResponse.ConvertTo<LookupDataResult>();
@@ -245,7 +227,7 @@ namespace SharpPulsar
                 {
                     _log.Warning($"[{topic}] Lookup response exception> {data.Error}:{data.ErrorMessage}");
                 }
-                _replyTo.Tell(new AskResponse(new PulsarClientException(new Exception($"Lookup is not found: {data.Error}:{data.ErrorMessage}"))));
+                replyTo.Tell(new AskResponse(new PulsarClientException(new Exception($"Lookup is not found: {data.Error}:{data.ErrorMessage}"))));
 
             }
             else
@@ -253,6 +235,7 @@ namespace SharpPulsar
                 Uri uri = null;
                 try
                 {
+                    // (1) build response broker-address
                     if (_useTls)
                     {
                         uri = new Uri(data.BrokerUrlTls);
@@ -263,23 +246,25 @@ namespace SharpPulsar
                         uri = new Uri(serviceUrl);
                     }
                     var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
+
+                    // (2) redirect to given address if response is: redirect
                     if (data.Redirect)
                     {
                         await GetCnxAndRequestId(responseBrokerAddress);
-                        await RedirectedGetBroker(topic, redirectCount + 1, responseBrokerAddress, data.Authoritative);
+                        Self.Tell(new SetFindBroker(topic, redirectCount + 1, responseBrokerAddress, data.Authoritative, replyTo));
                     }
                     else
                     {
                         var response = data.ProxyThroughServiceUrl ?
                             new GetBrokerResponse(responseBrokerAddress, socketAddress) :
                             new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
-                        _replyTo.Tell(new AskResponse(response));
+                        replyTo.Tell(new AskResponse(response));
                     }
                 }
                 catch (Exception parseUrlException)
                 {
                     _log.Warning($"[{topic}] invalid url {uri}");
-                    _replyTo.Tell(new AskResponse(new PulsarClientException(parseUrlException)));
+                    replyTo.Tell(new AskResponse(new PulsarClientException(parseUrlException)));
                 }
             }
         }
@@ -327,55 +312,36 @@ namespace SharpPulsar
         /// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
         /// 
         /// </summary>
-        private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, TimeSpan opTimeout)
-        {
-            _topicName = topicName;
-            await PartitionedTopicMetadata(topicName, opTimeout);
-        }
-    
         
-        private void GetPartitionedTopicMetadata()
+        private async ValueTask PartitionedTopicMetadata(TopicName topicName, bool metadataAutoCreationEnabled, bool useFallbackForNonPIP344Brokers)
         {
-            ReceiveAsync<bool>(async l =>
-            {
-                await PartitionedTopicMetadata(_topicName, _opTime);
-            });
-            Receive<AskResponse>(l =>
-            {
-                _replyTo.Tell(l);
+            var finalAutoCreationEnabled = metadataAutoCreationEnabled;
+            var autoCreation = await _clientCnx.Ask<bool>(IsSupportsGetPartitionedMetadataWithoutAutoCreation.Instance);
 
-                Stash.UnstashAll();
-                Become(Awaiting);
-            });
-            ReceiveAny(s => Stash.Stash());
-        }
-        private async ValueTask PartitionedTopicMetadata(TopicName topicName, TimeSpan opTimeout)
-        {
-            var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
+            if (!metadataAutoCreationEnabled && !autoCreation)
+            {
+                if (useFallbackForNonPIP344Brokers)
+                {
+                    _log.Info($"[{topicName}] Using original behavior of getPartitionedTopicMetadata(topic) in "
+                            + "getPartitionedTopicMetadata(topic, false) "
+                            + "since the target broker does not support PIP-344 and fallback is enabled.");
+                    finalAutoCreationEnabled = true;
+                }
+                else
+                {
+                    Sender.Tell(new AskResponse(new NotSupportedException($"The feature of getting partitions without auto-creation is not supported by the broker  Please upgrade the broker to version that supports PIP-344 to resolve this "
+                                    + $"issue.{autoCreation}")));
+                    return;
+                }
+            }
+
+            _topicName = topicName;
+            var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId, metadataAutoCreationEnabled);
             var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
             var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
             if (askResponse.Failed)
             {
-
-                Become(GetPartitionedTopicMetadata);
-                var e = askResponse.Exception;
-                var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), opTimeout.TotalMilliseconds);
-
-                var isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
-                if (nextDelay <= 0 || isLookupThrottling)
-                {
-                    _self.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(e)));
-                    _log.Error(e.ToString());
-                    _getPartitionedTopicMetadataBackOff = null;
-                }
-                else
-                {
-                    _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e?.Message}");
-                    _opTime = opTimeout - TimeSpan.FromMilliseconds(nextDelay);
-                    var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
-                    _requestId = id.Id;
-                    _self.Tell(askResponse.Failed);
-                }
+                Sender.Tell(askResponse);
                 return;
             }
             var data = askResponse.ConvertTo<LookupDataResult>();
@@ -383,15 +349,15 @@ namespace SharpPulsar
             if (data?.Error != ServerError.UnknownError)
             {
                 _log.Warning($"[{topicName}] failed to get Partitioned metadata : {data.Error}:{data.ErrorMessage}");
-                _replyTo.Tell(new AskResponse(new PartitionedTopicMetadata(0)));
+                Sender.Tell(new AskResponse(new PartitionedTopicMetadata(0)));
             }
             else
             {
-                _replyTo.Tell(new AskResponse(new PartitionedTopicMetadata(data.Partitions)));
+                Sender.Tell(new AskResponse(new PartitionedTopicMetadata(data.Partitions)));
             }
-            _getPartitionedTopicMetadataBackOff = null;
+            //_getPartitionedTopicMetadataBackOff = null;
             
-            Stash?.UnstashAll();
+            //Stash?.UnstashAll();
             //Become(Awaiting);
         }
         private async ValueTask GetSchema(TopicName topicName, byte[] version)
@@ -539,5 +505,6 @@ namespace SharpPulsar
 			Namespace = nsn;
 			OpTimeOutMs = opTimeout;
 		}
-	}
+    }
+    internal record struct SetFindBroker(TopicName Topic, int RedirectCount, DnsEndPoint Address, bool Authoritative, IActorRef Sender);
 }

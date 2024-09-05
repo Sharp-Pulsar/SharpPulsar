@@ -116,10 +116,35 @@ namespace SharpPulsar.Configuration
 		public string ConsumerName { get; set; }
 
 		public string SubscriptionName { get; set; }
-		public string SingleTopic
+
+        private IList<TopicConsumerConfigurationData> _topicConfigurations = new List<TopicConsumerConfigurationData>();
+
+        public TopicConsumerConfigurationData GetMatchingTopicConfiguration(string topicName)
+        {
+            return _topicConfigurations.Where(topicConf => topicConf.GetTopicNameMatcher().Matches(topicName)).Count() > 0 
+                ? _topicConfigurations.First() 
+                : TopicConsumerConfigurationData.OfTopicName(topicName, this);
+        }
+
+        public  IList<TopicConsumerConfigurationData> TopicConfigurations
+        {
+            set
+            {
+                Condition.CheckArgument(value != null, "topicConfigurations should not be null.");
+                _topicConfigurations = value;
+            }
+        }
+
+        public string SingleTopic
 		{
-			get => TopicNames.Count == 1 ? TopicNames.First() : string.Empty;
+			//get => TopicNames.Count == 1 ? TopicNames.First() : string.Empty;
             set => TopicNames = new HashSet<string> {value};
+            get
+            {
+                Condition.CheckArgument(TopicNames.Count == 1, "topicNames needs to be = 1");
+                return TopicNames.First();
+            }
+
         }
 
     }

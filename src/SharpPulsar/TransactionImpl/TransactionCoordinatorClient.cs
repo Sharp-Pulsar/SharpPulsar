@@ -48,7 +48,7 @@ namespace SharpPulsar.TransactionImpl
         private IActorRef _replyTo;
         private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
         private IUntypedActorContext _context;
-        public TransactionCoordinatorClient(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
+        public TransactionCoordinatorClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
         {
             _context = Context;
             _cnxPool = cnxPool;
@@ -147,9 +147,9 @@ namespace SharpPulsar.TransactionImpl
                     tc.TrySetResult(_handlers.Count);
             });
         }
-        public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
+        public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
         {
-            return Props.Create(() => new TransactionCoordinatorClient(lookup, cnxPool, idGenerator, conf, tcs));
+            return Props.Create(() => new TransactionCoordinatorClient(client, lookup, cnxPool, idGenerator, conf, tcs));
         }
         private string GetTCAssignTopicName(int partition)
         {
