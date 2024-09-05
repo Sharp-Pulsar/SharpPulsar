@@ -67,10 +67,6 @@ namespace SharpPulsar
             _lookup.Tell(new SetClient(_client));
         }
 
-        public IList<string> GetPartitionsForTopic(string topic)
-        {
-            throw new NotImplementedException();
-        }
         private ISchemaInfoProvider NewSchemaProvider(string topicName)
         {
             return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _log, _lookup);
@@ -860,6 +856,11 @@ namespace SharpPulsar
             }
             catch { }
 
+        }
+
+        public IList<string> GetPartitionsForTopic(string topic, bool metadataAutoCreationEnabled)
+        {
+            throw new NotImplementedException();
         }
         #endregion
     }

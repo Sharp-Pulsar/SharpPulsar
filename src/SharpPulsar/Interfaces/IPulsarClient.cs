@@ -3,6 +3,7 @@ using SharpPulsar.TransactionImpl;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -335,8 +336,22 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a future that will yield a list of the topic partitions or <seealso cref="PulsarClientException"/> if there was any
 		///         error in the operation.
 		/// @since 2.3.0 </returns>
-		IList<string> GetPartitionsForTopic(string topic);
-		ValueTask<IList<string>> GetPartitionsForTopicAsync(string topic);
+		IList<string> GetPartitionsForTopic(string topic, bool metadataAutoCreationEnabled);
+
+        /// <summary>
+        /// 1. Get the partitions if the topic exists. Return "[{partition-0}, {partition-1}....{partition-n}}]" if a
+        ///   partitioned topic exists; return "[{topic}]" if a non-partitioned topic exists. </summary>
+        /// 2. When {<param name="metadataAutoCreationEnabled">} is "false", neither the partitioned topic nor non-partitioned
+        ///   topic does not exist. You will get an <seealso cref="PulsarClientException.NotFoundException"/> or a
+        ///   <seealso cref="PulsarClientException.TopicDoesNotExistException"/>.
+        ///  2-1. You will get a <seealso cref="PulsarClientException.NotSupportedException"/> with metadataAutoCreationEnabled=false
+        ///    on an old broker version which does not support getting partitions without partitioned metadata auto-creation. </param>
+        /// 3. When {<param name="metadataAutoCreationEnabled">} is "true," it will trigger an auto-creation for this topic(using
+        ///   the default topic auto-creation strategy you set for the broker), and the corresponding result is returned.
+        ///   For the result, see case 1.
+        /// @version 3.3.0. </param>
+
+        ValueTask<IList<string>> GetPartitionsForTopicAsync(string topic, bool metadataAutoCreationEnabled);
 
 
 		/// <summary>
