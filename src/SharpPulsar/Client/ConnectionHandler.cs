@@ -7,13 +7,17 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Messages.Consumer;
 using DotNetty.Common.Utilities;
+using SharpPulsar.Messages.Client;
+using Akka.Util;
+using SharpPulsar.ServiceName;
+using System.Security.Policy;
 
 namespace SharpPulsar.Client
 {
-    public class ConnectionHandler : ReceiveActor, IWithUnboundedStash
+    public class ConnectionHandler : ReceiveActor, IWithTimers
     {
         private IActorRef _clientCnx = null;
-        private bool _duringConnect = false;
+        private AtomicBoolean _duringConnect = new AtomicBoolean(false);
         protected int _randomKeyForSelectConnection;
 
         private bool _useProxy;
@@ -27,8 +31,9 @@ namespace SharpPulsar.Client
         private ICancelable _cancelable;
         private readonly IActorContext _actorContext;
         private IActorRef _sender;
-        private HandlerAll _state;
-
+        private IActorRef _state;
+        private HandlerAll _Allstate;
+        
         public ConnectionHandler(ClientConfigurationData conf, IActorRef state, Backoff backoff, IActorRef connection)
         {
             //_state = state;
@@ -37,7 +42,7 @@ namespace SharpPulsar.Client
             _log = Context.GetLogger();
             _actorContext = Context;
             _conf = conf;
-            _state = state.Ask<HandlerAll>(GetAll.Instance).GetAwaiter().GetResult();
+            _state = state;// state.Ask<HandlerAll>(GetAll.Instance).GetAwaiter().GetResult();
             Listening();
         }
         private void Listening()
@@ -46,8 +51,13 @@ namespace SharpPulsar.Client
             {
                 _log.Info(g.Message);
                 ++_epoch;
-                _sender = Sender;
-                await GrabCnx();
+                await GrabCnx(Sender);
+            });
+            ReceiveAsync<GrabRec>(async g =>
+            {
+                _log.Info(g.GrabCnx.Message);
+                ++_epoch;
+                await GrabCnx(g.ReplyTo);
             });
             Receive<ReconnectLater>(g =>
             {
@@ -95,46 +105,87 @@ namespace SharpPulsar.Client
                     _ = child.GracefulStop(TimeSpan.FromMilliseconds(100));
                 ConnectionClosed(c.ClientCnx);
             });
-            Stash?.UnstashAll();
         }
-        private async ValueTask GrabCnx()
+        private async ValueTask GrabCnx(IActorRef sender)
         {
+            var state = await _state.Ask<HandlerAll>(GetAll.Instance);
+            if (!_duringConnect.CompareAndSet(false, true))
+            {
+                _log.Info($"[{state.Topic}] [{state.HandlerName}] Skip grabbing the connection since there is a pending connection");
+                sender.Tell(new AskResponse(ConnectionAlreadySet.Instance));
+                return;
+            }
+
             if (_clientCnx != null)
             {
-                _log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Client cnx already set, ignoring reconnection request");
-                Sender.Tell(new AskResponse(ConnectionAlreadySet.Instance));
+                _log.Warning($"[{state.Topic}] [{state.HandlerName}] Client cnx already set, ignoring reconnection request");
+                sender.Tell(new AskResponse(ConnectionAlreadySet.Instance));
                 return;
             }
 
             if (!ValidStateForReconnection)
             {
                 // Ignore connection closed when we are shutting down
-                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.State})");
-                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception("Invalid State For Reconnection"))));
+                _log.Info($"[{state.Topic}] [{state.HandlerName}] Ignoring reconnection request (state: {state.State})");
+                sender.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception("Invalid State For Reconnection"))));
+                return; 
             }
-            await LookupConnection();
+            await LookupConnection(state, sender);
         }
-        private async ValueTask LookupConnection()
+        private async ValueTask LookupConnection(HandlerAll state, IActorRef sender)
         {
-            var topicName = TopicName.Get(_state.Topic);
-            var askResponse = await _state.Lookup.Ask<AskResponse>(new GetBroker(topicName));
+            if (state.RedirectedClusterURI != null)
+            {
+                if (string.IsNullOrWhiteSpace(state.Topic))
+                {
+                    var c = await state.ConnectionPool
+                        .Ask<AskResponse>(new GetConnection(state.RedirectedClusterURI.ToDnsEndPoint(), state.RedirectedClusterURI.ToDnsEndPoint()));
+                    if (c.Failed)
+                    {
+                        _log.Warning($"[{state.Topic}] [{state.HandlerName}] Exception thrown while getting connection: {c.Exception}");
+                        ReconnectLater(c.Exception);
+                        return;
+                    }
+                    sender.Tell(c);
+                    return;
+                }
+            }
+            else if (string.IsNullOrWhiteSpace(state.Topic))
+            {
+                var sUrl = await state.Lookup.Ask<Uri>(GetResolvedHost.Instance);
+                var connect1 = await state.ConnectionPool.Ask<AskResponse>(new GetConnection(sUrl.ToDnsEndPoint()));
+                if (connect1.Failed)
+                {
+                    _log.Warning($"[{state.Topic}] [{state.HandlerName}] Exception thrown while getting connection: {connect1.Exception}");
+                    ReconnectLater(connect1.Exception);
+                    return;
+                }
+                sender.Tell(connect1);
+                return;
+            }
+            
+            var topicName = TopicName.Get(state.Topic);
+            var askResponse = await state.Lookup.Ask<AskResponse>(new GetBroker(topicName));
             if (askResponse.Failed)
             {
-                _sender.Tell(askResponse);
+                sender.Tell(askResponse);
                 return;
             }
 
             var broker = askResponse.ConvertTo<GetBrokerResponse>();
-            var connect = await _state.ConnectionPool.Ask<AskResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+            var connect = await state.ConnectionPool.Ask<AskResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
             if (connect.Failed)
             {
-                _log.Error(connect.Exception.ToString());
+                _log.Warning($"[{state.Topic}] [{state.HandlerName}] Exception thrown while getting connection: {connect.Exception}");
+                ReconnectLater(connect.Exception);
+                return;
             }
-            _sender.Tell(connect);
+            sender.Tell(connect);
         }
         private void HandleConnectionError(Exception exception)
         {
-            _log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Error connecting to broker: {exception.Message}");
+            var state = _state.Ask<HandlerAll>(GetAll.Instance).GetAwaiter().GetResult();
+            _log.Warning($"[{state.Topic}] [{state.HandlerName}] Error connecting to broker: {exception.Message}");
             if (exception is PulsarClientException clientException)
             {
                 _connection.Tell(new ConnectionFailed(clientException));
@@ -148,15 +199,13 @@ namespace SharpPulsar.Client
                 _connection.Tell(new Status.Failure(exception));
             }
 
-            var state = _state.State;
-            if (state == State.Uninitialized || state == State.Connecting || state == State.Ready)
-            {
-                ReconnectLater(exception);
-            }
+            ReconnectLater(exception);
         }
 
         private void ReconnectLater(Exception exception, IActorRef sender = null)
         {
+            _duringConnect.GetAndSet(false);
+            var state = _state.Ask<HandlerAll>(GetAll.Instance).GetAwaiter().GetResult();
             var reply = sender ?? _connection;
             var children = Context.GetChildren();
             foreach (var child in children)
@@ -165,29 +214,42 @@ namespace SharpPulsar.Client
             _clientCnx = null;
             if (!ValidStateForReconnection)
             {
-                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.State})");
+                _log.Info($"[{state.Topic}] [{state.HandlerName}] Ignoring reconnection request (state: {state.State})");
                 return;
             }
             var delayMs = _backoff.Next();
-            _log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Could not get connection to broker: {exception.Message} -- Will try again in {delayMs / 1000.0} s");
-            _state.State = State.Connecting;
-            _cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(delayMs), Self, new GrabCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after connection was closed"), reply);
+            _log.Warning($"[{state.Topic}] [{state.HandlerName}] Could not get connection to broker: {exception.Message} -- Will try again in {delayMs / 1000.0} s");
+            var change = _state.Ask<bool>(ChangeToConnecting.Instance).GetAwaiter().GetResult();
+            if (change)
+            {
+                _log.Info($"[{state.Topic}] [{state.HandlerName}] Reconnecting after connection was closed");
+                Timers.StartSingleTimer(GrabRec.Instance, 
+                    new GrabRec(new GrabCnx($"[{state.Topic}] [{state.HandlerName}] Reconnecting after connection was closed"), reply), TimeSpan.FromMilliseconds(delayMs));
+            }
+            else
+                _log.Info($"[{state.Topic}] [{state.HandlerName}] Ignoring reconnection request (state: {state.State})");
+            //_state.State = State.Connecting;
+            //_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(delayMs), Self, new GrabCnx($"[{state.Topic}] [{state.HandlerName}] Reconnecting after connection was closed"), reply);
         }
 
         private void ConnectionClosed(IActorRef cnx)
         {
+            var state = _state.Ask<HandlerAll>(GetAll.Instance).GetAwaiter().GetResult();
             LastConnectionClosedTimestamp = DateTimeHelper.CurrentUnixTimeMillis();
             _clientCnx = null;
             if (!ValidStateForReconnection)
             {
-                _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.State})");
+                _log.Info($"[{state.Topic}] [{state.HandlerName}] Ignoring reconnection request (state: {state.State})");
                 return;
             }
             var delayMs = _backoff.Next();
-            _state.State = State.Connecting;
+            state.StateActor.Tell(new SetState(State.Connecting));
+            //_state.State = State.Connecting;
             //_log.Info("[{}] [{}] Closed connection -- Will try again in {} s", _state.Topic, _state.HandlerName, cnx.Channel()delayMs / 1000.0);
-            _log.Info($"[{_state.Topic}] [{_state.HandlerName}] Closed connection -- Will try again in {delayMs / 1000.0} s");
-            _cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(delayMs), Self, new GrabCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after timeout"), _connection);
+            _log.Info($"[{state.Topic}] [{state.HandlerName}] Closed connection -- Will try again in {delayMs / 1000.0} s");
+            Timers.StartSingleTimer(GrabRec.Instance,
+                    new GrabRec(new GrabCnx($"[{state.Topic}] [{state.HandlerName}] Reconnecting after timeout"), _connection), TimeSpan.FromMilliseconds(delayMs));
+            //_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(delayMs), Self, new GrabCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after timeout"), _connection);
 
         }
 
@@ -209,7 +271,7 @@ namespace SharpPulsar.Client
         {
             get
             {
-                var state = _state.State;
+                var state = _state.Ask<HandlerAll>(GetAll.Instance).GetAwaiter().GetResult().State;
                 switch (state)
                 {
                     case State.Uninitialized:
@@ -229,7 +291,11 @@ namespace SharpPulsar.Client
             }
         }
 
-        public IStash Stash { get; set; }
+        public ITimerScheduler Timers { get; set; }
+        internal record struct GrabRec(GrabCnx GrabCnx, IActorRef ReplyTo)
+        {
+            internal static GrabRec Instance { get; } = new GrabRec();  
+        }
     }
 
 }

@@ -97,7 +97,9 @@ namespace SharpPulsar
             _timeoutQueue = new ConcurrentQueue<RequestTime>();
             _state = Context.ActorOf(HandlerStateActor.Prop(_lookup, _pool, _topic, "Transaction meta store handler [" + _transactionCoordinatorId + "]"));
 
-            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(_conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(_conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(100)).Create(), Self), "TransactionMetaStoreHandler");
+            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder())
+                .SetInitialTime(TimeSpan.FromMilliseconds(_conf.InitialBackoffIntervalMs))
+                .SetMax(TimeSpan.FromMilliseconds(_conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(100)).Create(), Self), "TransactionMetaStoreHandler");
             _connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
 
             //_blockIfReachMaxPendingOps = true;

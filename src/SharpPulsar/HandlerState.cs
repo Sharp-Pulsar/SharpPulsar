@@ -42,6 +42,10 @@ namespace SharpPulsar
             {
                 SetRedirectedClusterURI(set.ServiceUrl, set.ServiceUrlTls);
             });
+            Receive<GetRedirectedCluster>(_ =>
+            {
+                Sender.Tell(_redirectedClusterURI);
+            });
             Receive<ChangeToReadyState>(set =>
             {
                 var b = ChangeToReadyState();
@@ -86,7 +90,7 @@ namespace SharpPulsar
             });
             Receive<GetAll>(_ =>
             {
-                Sender.Tell(new HandlerAll(_state, _topic, _name, _lookup, _connectionPool));
+                Sender.Tell(new HandlerAll(Self, _state, _topic, _name, _lookup, _connectionPool, _redirectedClusterURI));
             });
 
         }
@@ -151,6 +155,10 @@ namespace SharpPulsar
     {
         public static SetRedirectedCluster Instance = new SetRedirectedCluster();
     }
+    public record struct GetRedirectedCluster()
+    {
+        public static GetRedirectedCluster Instance = new GetRedirectedCluster();
+    }
     public record struct ChangeToRegisteringSchemaState
     {
         public static ChangeToRegisteringSchemaState Instance  = new ChangeToRegisteringSchemaState();
@@ -185,5 +193,5 @@ namespace SharpPulsar
     {
         public static GetAll Instance = new GetAll();
     }
-    public record struct HandlerAll(State State, string Topic, string HandlerName, IActorRef Lookup, IActorRef ConnectionPool);
+    public record struct HandlerAll(IActorRef StateActor, State State, string Topic, string HandlerName, IActorRef Lookup, IActorRef ConnectionPool, Uri RedirectedClusterURI);
 }

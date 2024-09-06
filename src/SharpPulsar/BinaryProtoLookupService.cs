@@ -21,6 +21,7 @@ using Mode = SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Mode;
 using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
 using SharpPulsar.Client;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using DotNetty.Common.Utilities;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -56,6 +57,9 @@ namespace SharpPulsar
         private IActorRef _clientCnx;
         private readonly ILoggingAdapter _log;
         private long _requestId = -1;
+        private bool _duringConnect = false;
+        private int _randomKeyForSelectConnection;
+
         public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout, TimeSpan timeCnx)
         {
             _log = Context.GetLogger();
@@ -69,6 +73,13 @@ namespace SharpPulsar
 
             Receive<SetClient>(c => { });
             Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
+            Receive<GetUpdateServiceUrl>(u =>
+            {
+                UpdateServiceUrl(u.ServiceUrl);
+                Sender.Tell(GetServiceUrl());
+            });
+            Receive<GetServiceUrl>(_ => Sender.Tell(GetServiceUrl()));
+            Receive<GetResolvedHost>(_ => Sender.Tell(ResolveHost()));
             ReceiveAsync<GetBroker>(async broke =>
             {
                 try
@@ -130,7 +141,15 @@ namespace SharpPulsar
             //Sender.Tell(0);
             //Become(Awaiting);
         }
-        
+        public string GetServiceUrl()
+        {
+            return _serviceNameResolver.ServiceUrl;
+        }
+       
+        public Uri ResolveHost()
+        {
+            return _serviceNameResolver.ResolveHost();
+        }
         private async ValueTask Schema(GetSchema s)
         {
             try

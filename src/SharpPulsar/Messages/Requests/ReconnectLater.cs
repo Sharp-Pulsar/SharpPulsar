@@ -107,6 +107,7 @@ namespace SharpPulsar.Messages.Requests
     }
     public readonly record struct GrabCnx
     {
+        public static GrabCnx Instance = new GrabCnx();    
         public string Message { get; }
         public GrabCnx(string message)
         {

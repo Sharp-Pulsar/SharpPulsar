@@ -122,7 +122,7 @@ namespace SharpPulsar
             }
             var clientConf = conf.ClientConfigurationData;
 
-            var cnxPool = actorSystem.ActorOf(Client.ConnectionPool.Prop(clientConf)/*, "ConnectionPool"*/);
+            var cnxPool = actorSystem.ActorOf(Client.ConnectionPool.Prop(clientConf), $"ConnectionPool-{Guid.NewGuid()}");
             _actorRefs.Add(cnxPool);
             var generator = actorSystem.ActorOf(IdGeneratorActor.Prop()/*, "IdGenerator"*/);
             _actorRefs.Add(generator);
