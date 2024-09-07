@@ -45,11 +45,13 @@ namespace SharpPulsar.TransactionImpl
         private readonly IActorRef _generator;
         private readonly IActorRef _lookup;
         private readonly IActorRef _cnxPool;
+        private readonly IActorRef _client;
         private IActorRef _replyTo;
         private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
         private IUntypedActorContext _context;
         public TransactionCoordinatorClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
         {
+            _client = client;
             _context = Context;
             _cnxPool = cnxPool;
             _lookup = lookup;
@@ -80,12 +82,12 @@ namespace SharpPulsar.TransactionImpl
         {
             var retryCount = 0;
             _state = TransactionCoordinatorClientState.Starting;
-            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign, true, false));
             while (result.Failed && retryCount < 10)
             {
                 _log.Error(result.Exception.ToString());
                 _log.Info("Transaction coordinator not started...retrying");
-                result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+                result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign, true, false));
                 retryCount++;
             }
             
@@ -110,7 +112,7 @@ namespace SharpPulsar.TransactionImpl
                     {
                         var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
                         connectFutureList.Add(tcs.Task);
-                        var handler = _context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData, tcs), $"handler_{i}");
+                        var handler = _context.ActorOf(TransactionMetaStoreHandler.Prop(i, _client, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData, tcs), $"handler_{i}");
                         _handlers.Add(handler);
                         _handlerMap.Add(i, handler);
                     }
@@ -129,7 +131,7 @@ namespace SharpPulsar.TransactionImpl
                 {
                     var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
                     connectFutureList.Add(tcs.Task);
-                    var handler = _context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData, tcs), $"handler_{0}");
+                    var handler = _context.ActorOf(TransactionMetaStoreHandler.Prop(0, _client, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData, tcs), $"handler_{0}");
                     var ask = tcs.Task;
                     _handlers.Add(handler);
                     _handlerMap.Add(0, handler);

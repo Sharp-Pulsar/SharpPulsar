@@ -18,4 +18,5 @@ namespace SharpPulsar.Messages
             TCClient = tcClient;
         }
     }
+    public readonly record struct SetTcClient(IActorRef TCClient);
 }

@@ -28,7 +28,6 @@ using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Utils;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar
@@ -37,7 +36,7 @@ namespace SharpPulsar
     {
         private readonly IActorRef _client;
         internal IActorRef Client { get { return _client; } }
-        private readonly IActorRef _transactionCoordinatorClient;
+        private  IActorRef _transactionCoordinatorClient;
         private readonly ClientConfigurationData _clientConfigurationData;
         private readonly ActorSystem _actorSystem;
         private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
@@ -48,16 +47,20 @@ namespace SharpPulsar
         internal IActorRef Lookup { get { return _lookup; } }
         private readonly IActorRef _generator;
         internal IActorRef Generator { get { return _generator; } }
-        public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
+        public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem)
         {
             _generator = idGenerator;
             _client = client;
             _clientConfigurationData = clientConfiguration;
             _actorSystem = actorSystem;
-            _transactionCoordinatorClient = transactionCoordinatorClient;
             _log = actorSystem.Log;
             _lookup = lookup;
             _cnxPool = cnxPool;
+        }
+
+        public void TransactionCoordinatorClient(IActorRef tcClient)
+        {
+            _transactionCoordinatorClient = tcClient;
         }
 
         public void ReloadLookUp()

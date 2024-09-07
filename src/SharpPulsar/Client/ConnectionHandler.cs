@@ -76,6 +76,7 @@ namespace SharpPulsar.Client
             });
             Receive<ConnectionOpened>(m =>
             {
+                _duringConnect.GetAndSet(false);
                 _connection.Tell(m);
             });
             Receive<ConnectionFailed>(m =>
@@ -143,12 +144,14 @@ namespace SharpPulsar.Client
                     if (c.Failed)
                     {
                         _log.Warning($"[{state.Topic}] [{state.HandlerName}] Exception thrown while getting connection: {c.Exception}");
-                        ReconnectLater(c.Exception);
+                        ReconnectLater(c.Exception, sender);
                         return;
                     }
                     sender.Tell(c);
                     return;
                 }
+                await TopicLookup(state, sender);
+                return;
             }
             else if (string.IsNullOrWhiteSpace(state.Topic))
             {
@@ -157,13 +160,17 @@ namespace SharpPulsar.Client
                 if (connect1.Failed)
                 {
                     _log.Warning($"[{state.Topic}] [{state.HandlerName}] Exception thrown while getting connection: {connect1.Exception}");
-                    ReconnectLater(connect1.Exception);
+                    ReconnectLater(connect1.Exception, sender);
                     return;
                 }
                 sender.Tell(connect1);
                 return;
             }
-            
+
+            await TopicLookup(state, sender);
+        }
+        private async ValueTask TopicLookup(HandlerAll state, IActorRef sender)
+        {
             var topicName = TopicName.Get(state.Topic);
             var askResponse = await state.Lookup.Ask<AskResponse>(new GetBroker(topicName));
             if (askResponse.Failed)
@@ -177,7 +184,7 @@ namespace SharpPulsar.Client
             if (connect.Failed)
             {
                 _log.Warning($"[{state.Topic}] [{state.HandlerName}] Exception thrown while getting connection: {connect.Exception}");
-                ReconnectLater(connect.Exception);
+                ReconnectLater(connect.Exception, sender);
                 return;
             }
             sender.Tell(connect);
@@ -199,10 +206,10 @@ namespace SharpPulsar.Client
                 _connection.Tell(new Status.Failure(exception));
             }
 
-            ReconnectLater(exception);
+            ReconnectLater(exception, Sender);
         }
 
-        private void ReconnectLater(Exception exception, IActorRef sender = null)
+        private void ReconnectLater(Exception exception, IActorRef sender)
         {
             _duringConnect.GetAndSet(false);
             var state = _state.Ask<HandlerAll>(GetAll.Instance).GetAwaiter().GetResult();

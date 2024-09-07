@@ -976,7 +976,7 @@ namespace SharpPulsar.Consumer
                 return;
             }
 
-            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.Get(topicName), true, false));
             if (result.Failed)
             {
                 var error = $"[{fullTopicName}] Failed to get partitioned topic metadata: {result.Exception}";
@@ -1763,7 +1763,7 @@ namespace SharpPulsar.Consumer
 
             var oldPartitionNumber = PartitionedTopics.GetValueOrNull(topic);
             var topicName = TopicName.Get(topic);
-            _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName))
+            _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName, true, false))
                 .ContinueWith(async task =>
                 {
                     var result = task.Result;

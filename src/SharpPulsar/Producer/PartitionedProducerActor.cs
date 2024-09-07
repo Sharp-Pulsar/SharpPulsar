@@ -379,7 +379,7 @@ namespace SharpPulsar.Producer
                 }
                 var topicName = TopicName.Get(_outerInstance.Topic);
 
-                var result = await _outerInstance._lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+                var result = await _outerInstance._lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName, true, false));
 
                 if (result.Failed)
                 {

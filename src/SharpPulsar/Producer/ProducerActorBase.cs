@@ -71,7 +71,7 @@ namespace SharpPulsar.Producer
             }
             var pName = ProducerName().GetAwaiter().GetResult();
             //State = new HandlerState(lookup, cnxPool, topic, Context.System, pName);
-            HandlerstateActor = Context.ActorOf(HandlerStateActor.Prop(lookup, cnxPool, topic, pName));
+            HandlerstateActor = Context.ActorOf(HandlerStateActor.Prop(client, lookup, cnxPool, topic, pName));
         }
 
         protected internal virtual string Topic

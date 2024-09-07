@@ -95,7 +95,7 @@ namespace SharpPulsar
             _connectFuture = completionSource;
             _transactionCoordinatorId = transactionCoordinatorId;
             _timeoutQueue = new ConcurrentQueue<RequestTime>();
-            _state = Context.ActorOf(HandlerStateActor.Prop(_lookup, _pool, _topic, "Transaction meta store handler [" + _transactionCoordinatorId + "]"));
+            _state = Context.ActorOf(HandlerStateActor.Prop(client, _lookup, _pool, _topic, "Transaction meta store handler [" + _transactionCoordinatorId + "]"));
 
             _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder())
                 .SetInitialTime(TimeSpan.FromMilliseconds(_conf.InitialBackoffIntervalMs))

@@ -1248,7 +1248,7 @@ namespace SharpPulsar.Consumer
             {
                 if (_retryLetterProducer == null)
                 {
-                    var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
+                    var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System);
                     var builder = new ProducerConfigBuilder<T>()
                     .Topic(_deadLetterPolicy.RetryLetterTopic)
                     .EnableBatching(false)
@@ -2805,7 +2805,7 @@ namespace SharpPulsar.Consumer
                        .ProducerName($"{Topic}-DLQ")
                        .EnableBatching(false)
                        .EnableChunking(true);
-                var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
+                var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System);
 
                 _deadLetterProducer = client.NewProducer(ISchema<byte>.AutoProduceBytes(Schema), builder);
 

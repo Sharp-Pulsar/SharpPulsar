@@ -14,7 +14,7 @@ using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.Client
 {
-    public class ConnectionPool : ReceiveActor, IWithUnboundedStash
+    public class ConnectionPool : ReceiveActor
     {
         private class Key
         {
@@ -87,7 +87,7 @@ namespace SharpPulsar.Client
             {
                 Sender.Tell(new GetPoolSizeResponse(PoolSize));
             });
-            Stash?.UnstashAll();
+            
         }
         public static Props Prop(ClientConfigurationData conf)
         {
@@ -225,8 +225,6 @@ namespace SharpPulsar.Client
                 return _pool.Values.Select(x => x.Values.Count).Sum();
             }
         }
-
-        public IStash Stash { get; set; }
 
         private int SignSafeMod(long dividend, int divisor)
         {

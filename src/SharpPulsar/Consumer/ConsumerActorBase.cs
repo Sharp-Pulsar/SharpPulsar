@@ -101,7 +101,7 @@ namespace SharpPulsar.Consumer
             StateActor = stateActor;
             _topic = topic;
             _consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
-            HandlerstateActor = Context.ActorOf(HandlerStateActor.Prop(lookup, connectionPool, topic, _consumerName));
+            HandlerstateActor = Context.ActorOf(HandlerStateActor.Prop(client, lookup, connectionPool, topic, _consumerName));
             _log = Context.GetLogger();
             MaxReceiverQueueSize = receiverQueueSize;
             _subscription = conf.SubscriptionName;
