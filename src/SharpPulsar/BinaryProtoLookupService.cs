@@ -70,7 +70,7 @@ namespace SharpPulsar
             _operationTimeout = operationTimeout;
             _connectionPool = connectionPool;
             _timeCnx = timeCnx;
-
+            _generator = idGenerator;   
             Receive<SetClient>(c => { });
             Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
             Receive<GetUpdateServiceUrl>(u =>
