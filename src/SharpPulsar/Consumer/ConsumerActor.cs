@@ -569,6 +569,9 @@ namespace SharpPulsar.Consumer
                     _possibleSendToDeadLetterTopicMessages.Remove(s.MessageId);
                 }
             });
+            Receive<ConnectionAlreadySet>(o => {
+                _log.Info($"ConnectionAlreadySet: {o.ClientCnx}");
+            });
             Receive<RemoveMessagesTill>(s =>
             {
                 _unAckedMessageTracker.Tell(s, Sender);

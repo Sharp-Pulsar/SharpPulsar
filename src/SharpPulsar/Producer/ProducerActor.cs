@@ -2,6 +2,7 @@
 using Akka.Util;
 using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;
+using SharpPulsar.Admin.v2;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Client;
@@ -338,6 +339,10 @@ namespace SharpPulsar.Producer
                     return;
                 }
                 await ConnectionOpened(response.ConvertTo<ConnectionOpened>());
+            });
+            Receive<ConnectionAlreadySet>(o => 
+            {
+                _log.Info($"ConnectionAlreadySet: {o.ClientCnx}");
             });
             Receive<AckReceived>(a =>
             {

@@ -119,6 +119,9 @@ namespace SharpPulsar
                 var o = askResponse.ConvertTo<ConnectionOpened>();
                 await HandleConnectionOpened(o.ClientCnx);
             });
+            Receive<ConnectionAlreadySet>(o => {
+                _log.Info($"ConnectionAlreadySet: {o.ClientCnx}");
+            });
             ReceiveAsync<ConnectionOpened>(async o => {
                 await HandleConnectionOpened(o.ClientCnx);
             });

@@ -1,4 +1,8 @@
 ﻿
+using System;
+using System.ComponentModel.DataAnnotations;
+using Org.BouncyCastle.Crypto.Modes.Gcm;
+using SharpPulsar.Admin.v2;
 using SharpPulsar.Exceptions;
 
 namespace SharpPulsar.Messages.Consumer
@@ -23,6 +27,18 @@ namespace SharpPulsar.Messages.Consumer
         public T ConvertTo<T>()
         {
             return (T)Data;
+        }
+        public (T1, T2) ConvertTo<T1,T2>()
+        {
+            try
+            {
+                return ((T1)Data, default);
+            }
+            catch
+            {
+
+                return (default, (T2)Data);
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Util.Internal;
@@ -142,7 +143,12 @@ namespace SharpPulsar.Table
             
             ReceiveAsync<RefeshData>(async _ => await RefreshAsync());
             //Keys.ToHashSet(); 
-            Receive<TableDataSize>(_ => Sender.Tell(_data.Count()));
+            Receive<TableDataSize>(_ => 
+            {
+                var size = _data.Count();
+                Sender.Tell(size);
+                _log.Info($"Table view size: {size}");
+            });
             Receive<TableDataEmpty>(_ => Sender.Tell(_data.Count() == 0));
             Receive<TableDataKey>(get => {
 
@@ -196,6 +202,7 @@ namespace SharpPulsar.Table
                             else
                             {
                                 _data.TryAdd(key, cur);
+                                _log.Info($"Table {key}");
                             }
 
 
@@ -204,7 +211,7 @@ namespace SharpPulsar.Table
                                 try
                                 {
                                     listener(key, cur);
-                                    //_log.Info($"Table view listener raised => {key}:{cur}");
+                                    _log.Info($"Table view listener raised => {key}:{cur}: size {_data.Count()}");
                                 }
                                 catch (Exception t)
                                 {

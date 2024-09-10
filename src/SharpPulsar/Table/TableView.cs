@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Routing;
 using Akka.Util.Internal;
 using SharpPulsar.Interfaces;
 
@@ -76,16 +77,19 @@ namespace SharpPulsar.Table
             return _tableViewActor.Ask<ISet<string>>(TableDataKeySet.Instance).GetAwaiter().GetResult();
             //return _data.Keys.ToHashSet();
         }
-
+        public void Listen(Action<string, T> action)
+        {
+            _tableViewActor.Tell(action);
+        }
         public virtual ICollection<T> Values()
         {
             return _tableViewActor.Ask<ICollection<T>>(TableDataValues.Instance).GetAwaiter().GetResult();
         }
 
-        public async ValueTask RefreshAsync()
+        public void RefreshAsync()
         {
             //RefeshData
-            var s = await _tableViewActor.Ask<bool>(RefeshData.Instance);
+            _tableViewActor.Tell(RefeshData.Instance);
             //throw new NotImplementedException();
         }
 

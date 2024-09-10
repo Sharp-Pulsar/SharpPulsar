@@ -113,14 +113,14 @@ namespace SharpPulsar.Client
             if (!_duringConnect.CompareAndSet(false, true))
             {
                 _log.Info($"[{state.Topic}] [{state.HandlerName}] Skip grabbing the connection since there is a pending connection");
-                sender.Tell(new AskResponse(ConnectionAlreadySet.Instance));
+                sender.Tell(new ConnectionAlreadySet(_clientCnx));
                 return;
             }
 
             if (_clientCnx != null)
             {
                 _log.Warning($"[{state.Topic}] [{state.HandlerName}] Client cnx already set, ignoring reconnection request");
-                sender.Tell(new AskResponse(ConnectionAlreadySet.Instance));
+                sender.Tell(new ConnectionAlreadySet(_clientCnx));
                 return;
             }
 

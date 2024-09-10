@@ -33,33 +33,12 @@ namespace SharpPulsar.Configuration
     /// </summary>
     public sealed class ConfigurationDataUtils
 	{
-
-		public static ObjectMapper Create()
-		{
-			return new ObjectMapper();
-		}
-
-        public class FastThreadLocalAnonymousInnerClass : FastThreadLocal<ObjectMapper>
-		{
-			public ObjectMapper InitialValue()
-			{
-				return Create();
-			}
-		}
-
-		public static ObjectMapper ThreadLocal { get; } = new FastThreadLocalAnonymousInnerClass().InitialValue();
-
-        private ConfigurationDataUtils()
-		{
-		}
-
 		public static object LoadData(IDictionary<string, object> config, object existingData)
 		{
-			var mapper = ThreadLocal;
 			try
 			{
                 var existingConfigJson = JsonSerializer.Serialize(existingData);
-				var existingConfig = (Dictionary<string, object>)mapper.ReadValue(existingConfigJson, typeof(Dictionary<string, object>));
+                var existingConfig = JsonSerializer.Deserialize<Dictionary<string, object>>(existingConfigJson);// mapper.ReadValue(existingConfigJson, typeof(Dictionary<string, object>));
 				IDictionary<string, object> newConfig = new Dictionary<string, object>();
 				existingConfig.ToList().ForEach(x=> newConfig[x.Key] = x.Value);
 				config.ToList().ForEach(x => newConfig[x.Key] = x.Value);
@@ -69,20 +48,20 @@ namespace SharpPulsar.Configuration
                 {
                     if (fullName.Contains("ProducerConfigurationData"))
                     {
-                        return (ProducerConfigurationData)mapper.ReadValue(configJson, typeof(ProducerConfigurationData));
+                        return JsonSerializer.Deserialize<ProducerConfigurationData>(configJson); //(ProducerConfigurationData)mapper.ReadValue(configJson, typeof(ProducerConfigurationData));
                     }
 					else if (fullName.Contains("ClientConfigurationData"))
                     {
-                        return (ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData), ClientConfigurationDataOptions(JsonSerializer.Serialize(newConfig["Authentication"]), mapper));
-					}
+                        return JsonSerializer.Deserialize<ClientConfigurationData>(configJson); // (ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData), ClientConfigurationDataOptions(JsonSerializer.Serialize(newConfig["Authentication"]), mapper));
+                    }
 					else if (fullName.Contains("TableViewConfigurationData"))
                     {
-                        return (TableViewConfigurationData)mapper.ReadValue(configJson, typeof(TableViewConfigurationData));
-					}
+                        return JsonSerializer.Deserialize<TableViewConfigurationData>(configJson); // mapper.ReadValue(configJson, typeof(Dictionary<string, object>));
+                    }
                     else
                     {
-						return (ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData));
-					}
+						return JsonSerializer.Deserialize<ClientConfigurationData>(configJson); //(ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData));
+                    }
                 }
                 throw new NullReferenceException("ConfigurationData is null");
 			}

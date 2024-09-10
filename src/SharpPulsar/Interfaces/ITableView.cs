@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -108,7 +109,7 @@ namespace SharpPulsar.Interfaces
         /// Both y=2 or y=3 are possible. Therefore, different readers may receive different values,
         /// but all values will be equal to or newer than the data refreshed from the last call to the refresh method.
         /// </summary>
-        ValueTask RefreshAsync();
+        void RefreshAsync();
 
         /// <summary>
         /// Refresh the table view with the latest data in the topic, ensuring that all subsequent reads are based on
@@ -116,6 +117,8 @@ namespace SharpPulsar.Interfaces
         /// </summary>
         /// <exception cref="PulsarClientException"> if there is any error refreshing the table view. </exception>
         //void Refresh();
+
+        void Listen(Action<string, T> action);
 
     }
 

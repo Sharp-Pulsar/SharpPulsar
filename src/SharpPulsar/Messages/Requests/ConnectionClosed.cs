@@ -41,10 +41,7 @@ namespace SharpPulsar.Messages.Requests
            Message = message;
         }
     }
-    public readonly record struct ConnectionAlreadySet
-    {
-        public static ConnectionAlreadySet Instance = new ConnectionAlreadySet();
-    }
+    public readonly record struct ConnectionAlreadySet(IActorRef ClientCnx);
     public readonly record struct Connect
     {
         public static Connect Instance = new Connect();
