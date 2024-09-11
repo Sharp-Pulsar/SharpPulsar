@@ -81,6 +81,10 @@ namespace SharpPulsar.Client.Internal
             _logger = Context.GetLogger();
 
             _targetServerName = hostName;
+            Connecting();
+        }
+        private void Connecting()
+        {
             ReceiveAsync<Connect>(async _ =>
             {
                 var host = _server.Host;
@@ -181,90 +185,98 @@ namespace SharpPulsar.Client.Internal
                 _start = true;
             });*/
 
-            ReceiveAsync<Start>(async _ =>
+            Receive<Start>(_ =>
             {
-                try
+                Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
                 {
-                    _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
-
-                    while (_start)
-                    {                        
-                        var result = await _pipeReader.ReadAsync().ConfigureAwait(false);
-
-                        var buffer = result.Buffer;
-                        var length = (int)buffer.Length;
-                        if (length >= 8)
-                        {
-                            using var stream = new MemoryStream(buffer.ToArray());
-                            using var reader = new BinaryReader(stream);
-                            // Wire format
-                            // [TOTAL_SIZE] [CMD_SIZE] [CMD] [BROKER_ENTRY_METADATA_MAGIC_NUMBER] [BROKER_ENTRY_METADATA_SIZE] [BROKER_ENTRY_METADATA] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
-                            // | 4 bytes  | |4 bytes | |CMD_SIZE|
-
-                            var frameSize = reader.ReadInt32().IntFromBigEndian();
-                            var totalSize = frameSize + 4;
-                            if (length >= totalSize)
-                            {
-                                var consumed = buffer.GetPosition(totalSize);
-                                var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
-                                if (command.type == BaseCommand.Type.Message)
-                                {
-                                    BrokerEntryMetadata brokerEntryMetadata = null;
-                                    var brokerEntryMetadataPosition = stream.Position;
-                                    var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
-                                    if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
-                                    {
-                                        brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-                                    }
-                                    else
-                                        //we need to rewind to the brokerEntryMetadataPosition
-                                        stream.Seek(brokerEntryMetadataPosition, SeekOrigin.Begin);
-
-                                    var magicNumber = (uint)reader.ReadInt16().Int16FromBigEndian();
-                                    var hasMagicNumber = magicNumber == 3585;
-                                    var messageCheckSum = (uint)reader.ReadInt32().IntFromBigEndian();
-
-                                    var metadataOffset = stream.Position;
-                                    var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-                                    var payloadOffset = stream.Position;
-                                    var metadataLength = (int)(payloadOffset - metadataOffset);
-                                    var payloadLength = totalSize - (int)payloadOffset;
-                                    var payload = reader.ReadBytes(payloadLength);
-                                    stream.Seek(metadataOffset, SeekOrigin.Begin);
-                                    var calculatedCheckSum = (uint)CRC32C.Get(0u, stream, metadataLength + payloadLength);
-                                    var hasValidCheckSum = messageCheckSum == calculatedCheckSum;
-                                    _client.Tell(new Reader(command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
-                                    //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
-                                }
-                                else
-                                {
-                                    _client.Tell(new Reader(command, null, null, ReadOnlySequence<byte>.Empty, false, false));
-                                }
-                                if (result.IsCompleted)
-                                    _pipeReader.AdvanceTo(buffer.Start, buffer.End);
-                                else
-                                    _pipeReader.AdvanceTo(consumed);
-                            }
-
-                        }
-                        //await Task.Delay(TimeSpan.FromMilliseconds(100));
-                    }
-                }
-                catch (IOException e)
-                {
-                    _logger.Error($"[SocketClientActor] {e.Message} [_pipeReader.ReadAsync()]");
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error(ex.ToString());
-                }
-                finally
-                {
-                    await _pipeReader.CompleteAsync().ConfigureAwait(false);
-                }
+                    await Started();
+                });
+                Become(Connected);
             });
         }
+        private void Connected() { }
+        private async ValueTask Started()
+        {
+            try
+            {
+                _logger.Info("Running on thread: " + Thread.CurrentThread.ManagedThreadId);
 
+                while (_start)
+                {
+                    var result = await _pipeReader.ReadAsync().ConfigureAwait(false);
+
+                    var buffer = result.Buffer;
+                    var length = (int)buffer.Length;
+                    if (length >= 8)
+                    {
+                        using var stream = new MemoryStream(buffer.ToArray());
+                        using var reader = new BinaryReader(stream);
+                        // Wire format
+                        // [TOTAL_SIZE] [CMD_SIZE] [CMD] [BROKER_ENTRY_METADATA_MAGIC_NUMBER] [BROKER_ENTRY_METADATA_SIZE] [BROKER_ENTRY_METADATA] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
+                        // | 4 bytes  | |4 bytes | |CMD_SIZE|
+
+                        var frameSize = reader.ReadInt32().IntFromBigEndian();
+                        var totalSize = frameSize + 4;
+                        if (length >= totalSize)
+                        {
+                            var consumed = buffer.GetPosition(totalSize);
+                            var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
+                            if (command.type == BaseCommand.Type.Message)
+                            {
+                                BrokerEntryMetadata brokerEntryMetadata = null;
+                                var brokerEntryMetadataPosition = stream.Position;
+                                var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
+                                if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
+                                {
+                                    brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                }
+                                else
+                                    //we need to rewind to the brokerEntryMetadataPosition
+                                    stream.Seek(brokerEntryMetadataPosition, SeekOrigin.Begin);
+
+                                var magicNumber = (uint)reader.ReadInt16().Int16FromBigEndian();
+                                var hasMagicNumber = magicNumber == 3585;
+                                var messageCheckSum = (uint)reader.ReadInt32().IntFromBigEndian();
+
+                                var metadataOffset = stream.Position;
+                                var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                var payloadOffset = stream.Position;
+                                var metadataLength = (int)(payloadOffset - metadataOffset);
+                                var payloadLength = totalSize - (int)payloadOffset;
+                                var payload = reader.ReadBytes(payloadLength);
+                                stream.Seek(metadataOffset, SeekOrigin.Begin);
+                                var calculatedCheckSum = (uint)CRC32C.Get(0u, stream, metadataLength + payloadLength);
+                                var hasValidCheckSum = messageCheckSum == calculatedCheckSum;
+                                _client.Tell(new Reader(command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
+                                //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
+                            }
+                            else
+                            {
+                                _client.Tell(new Reader(command, null, null, ReadOnlySequence<byte>.Empty, false, false));
+                            }
+                            if (result.IsCompleted)
+                                _pipeReader.AdvanceTo(buffer.Start, buffer.End);
+                            else
+                                _pipeReader.AdvanceTo(consumed);
+                        }
+
+                    }
+                    //await Task.Delay(TimeSpan.FromMilliseconds(100));
+                }
+            }
+            catch (IOException e)
+            {
+                _logger.Error($"[SocketClientActor] {e.Message} [_pipeReader.ReadAsync()]");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+            }
+            finally
+            {
+                await _pipeReader.CompleteAsync().ConfigureAwait(false);
+            }
+        }
         private async Task<Stream> GetStream(DnsEndPoint endPoint)
         {
             try
@@ -411,8 +423,8 @@ namespace SharpPulsar.Client.Internal
                 //_socketkCancellable.Cancel();   
                 _start = false;
                 cancellation?.Cancel();
-                _pipeReader?.Complete();
-                _pipeWriter?.Complete();
+                _pipeReader?.CancelPendingRead();
+                _pipeWriter?.CancelPendingFlush();
                 _socket.Shutdown(SocketShutdown.Both);
                 _socket?.Close(1000);
             }
@@ -422,6 +434,11 @@ namespace SharpPulsar.Client.Internal
             }
             _logger.Info("connection close complete....");
             base.PostStop();
+        }
+        protected override void Unhandled(object message)
+        {
+            //base.Unhandled(message);
+            _logger.Info($"SocketClientActor:::::::Unhandled {message}");
         }
         internal readonly record struct Connect
         {
