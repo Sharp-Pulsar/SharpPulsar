@@ -926,7 +926,7 @@ namespace SharpPulsar.Consumer
                     _replyTo.Tell(new AskResponse(Unwrap(ex)));
                 }
             });
-            Receive<RedeliverUnacknowledgedMessages>(m =>
+            Receive<RedeliverUnacknowledgedMessages>(_ =>
             {
                 RedeliverUnacknowledgedMessages();
                 Sender.Tell(new AskResponse());

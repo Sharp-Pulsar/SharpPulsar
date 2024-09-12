@@ -352,6 +352,15 @@ namespace SharpPulsar
                 throw ask.Exception;
         }
 
+        public void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
+            => RedeliverUnacknowledgedMessagesAsync(messageIds).ConfigureAwait(false);
+        public async ValueTask RedeliverUnacknowledgedMessagesAsync(ISet<IMessageId> messageIds)
+        {
+            var ask = await _consumerActor.Ask<AskResponse>(new RedeliverUnacknowledgedMessageIds(messageIds))
+                .ConfigureAwait(false);
+            if (ask.Failed)
+                throw ask.Exception;
+        }
         public void Resume()
         {
             _consumerActor.Tell(Messages.Consumer.Resume.Instance);
