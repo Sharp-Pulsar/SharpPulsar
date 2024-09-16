@@ -42,8 +42,9 @@ namespace SharpPulsar.Producer
         protected internal MultiSchemaMode _multiSchemaMode = MultiSchemaMode.Auto;
         protected internal IActorRef Client;
         protected internal readonly ClientConfigurationData ClientConfiguration;
-        protected internal HandlerState State;
+        //protected internal HandlerState State;
         private readonly string _topic;
+        protected internal IActorRef HandlerstateActor;
         protected internal TaskCompletionSource<IActorRef> ProducerCreatedFuture;
 
         protected ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
@@ -69,8 +70,8 @@ namespace SharpPulsar.Producer
                 _multiSchemaMode = MultiSchemaMode.Disabled;
             }
             var pName = ProducerName().GetAwaiter().GetResult();
-            State = new HandlerState(lookup, cnxPool, topic, Context.System, pName);
-
+            //State = new HandlerState(lookup, cnxPool, topic, Context.System, pName);
+            HandlerstateActor = Context.ActorOf(HandlerStateActor.Prop(client, lookup, cnxPool, topic, pName));
         }
 
         protected internal virtual string Topic

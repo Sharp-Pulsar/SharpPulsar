@@ -33,12 +33,12 @@ using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
 {
-    public class UnAckedMessageTracker<T>:ReceiveActor, IWithUnboundedStash
+    public class UnAckedMessageTracker<T>:ReceiveActor, IWithUnboundedStash, IWithTimers
     {
         internal readonly ConcurrentDictionary<IMessageId, HashSet<IMessageId>> MessageIdPartitionMap;
         public ArrayDeque<HashSet<IMessageId>> TimePartitions { get; }
         private readonly ILoggingAdapter _log;
-        private ICancelable _timeout;
+        //private ICancelable _timeout;
         internal readonly IActorRef Consumer;
         protected internal readonly long AckTimeout;
         protected internal readonly long TickDuration;
@@ -64,8 +64,8 @@ namespace SharpPulsar.Tracker
                 {
                     TimePartitions.Add(new HashSet<IMessageId>());
                 }
-
-                _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(AckTimeout), Self, RunJob.Instance, ActorRefs.NoSender);
+                Timers.StartSingleTimer(RunJob.Instance, RunJob.Instance, TimeSpan.FromMilliseconds(AckTimeout));
+                //_timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(AckTimeout), Self, RunJob.Instance, ActorRefs.NoSender);
             }
             else
             {
@@ -117,8 +117,18 @@ namespace SharpPulsar.Tracker
             {
                 RedeliverMessages();
             });
-            Receive<bool>(c => { });
-            Receive<string>(s => { });
+            Receive<bool>(c => 
+            {
+                _log.Info($"UnAckedMessageTracker `bool` {c}");
+            });
+            Receive<string>(s => 
+            {
+                _log.Info($"UnAckedMessageTracker `string` {s}");
+            });
+            Receive<int>(i => 
+            {
+                _log.Info($"UnAckedMessageTracker `int` {i}");
+            });
         }
         internal virtual void RedeliverMessages()
         {
@@ -147,7 +157,8 @@ namespace SharpPulsar.Tracker
             {
                 try
                 {
-                    _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(AckTimeout), Self, RunJob.Instance, ActorRefs.NoSender);
+                    Timers.StartSingleTimer(RunJob.Instance, RunJob.Instance, TimeSpan.FromMilliseconds(AckTimeout));
+                    //_timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(AckTimeout), Self, RunJob.Instance, ActorRefs.NoSender);
                 }
                 catch
                 {
@@ -285,10 +296,12 @@ namespace SharpPulsar.Tracker
         }
 
         public IStash Stash { get; set; }
+        public ITimerScheduler Timers { get; set ; }
 
         protected override void PostStop()
         {
-            _timeout?.Cancel();
+            Timers!.Cancel(RunJob.Instance);
+            //_timeout?.Cancel();
             Clear();
         }
 

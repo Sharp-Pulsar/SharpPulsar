@@ -31,6 +31,22 @@ namespace SharpPulsar.Messages.Requests
             RemovedTopics = removedTopics.ToImmutableList();
         }
     }
+    public readonly record struct AppendTopicsRemovedOp
+    {
+        public ImmutableList<string> DeletedTopics { get; }
+        public AppendTopicsRemovedOp(ICollection<string> deletedTopics)
+        {
+            DeletedTopics = deletedTopics.ToImmutableList();
+        }
+    }
+    public readonly record struct AppendTopicsAddedOp
+    {
+        public ImmutableList<string> NewTopics { get; }
+        public AppendTopicsAddedOp(ICollection<string> newTopics)
+        {
+            NewTopics = newTopics.ToImmutableList();
+        }
+    }
     public readonly record struct TopicsAdded
     {
         public ImmutableList<string> AddedTopics { get; }
@@ -91,6 +107,7 @@ namespace SharpPulsar.Messages.Requests
     }
     public readonly record struct GrabCnx
     {
+        public static GrabCnx Instance = new GrabCnx();    
         public string Message { get; }
         public GrabCnx(string message)
         {

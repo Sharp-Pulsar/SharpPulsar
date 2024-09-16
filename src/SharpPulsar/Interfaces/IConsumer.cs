@@ -961,18 +961,36 @@ namespace SharpPulsar.Interfaces
 
 
         /// <summary>
-        /// Get the last message id available available for consume.
+        /// Get the last message id available for consume.
         /// </summary>
-        /// <returns> the last message id. </returns>
-        /// 
+        /// <returns> the last message id.
+        /// @apiNote If the consumer is a multi-topics consumer, the returned value cannot be used anywhere. </returns>
+        /// @deprecated Use <seealso cref="Consumer.getLastMessageIds()"/> instead. 
+        [Obsolete("Use <seealso cref=\"LastMessageIds()\"/> instead.")]
+
         IMessageId LastMessageId { get; }
 
         /// <summary>
-        /// Get the last message id available available for consume.
-        /// </summary>
-        /// <returns> the last message id. </returns>
-        /// 
+		/// Get the last message id available for consume.
+		/// </summary>
+		/// <returns> a future that can be used to track the completion of the operation. </returns>
+		/// @deprecated Use <seealso cref="Consumer.getLastMessageIdsAsync()"/>} instead. 
+		[Obsolete("Use <seealso cref=\"LastMessageIdsAsync()\"/>} instead.")]
+
         ValueTask<IMessageId> LastMessageIdAsync();
+        /// <summary>
+        /// Get all the last message id of the topics the consumer subscribed.
+        /// </summary>
+        /// <returns> the list of TopicMessageId instances of all the topics that the consumer subscribed </returns>
+        /// <exception cref="PulsarClientException"> if failed to get last message id.
+        /// @apiNote It's guaranteed that the owner topic of each TopicMessageId in the returned list is different from owner
+        ///   topics of other TopicMessageId instances </exception>
+        IList<ITopicMessageId> LastMessageIds();
+
+        /// <summary>
+        /// The asynchronous version of <seealso cref="Consumer.LastMessageIds()"/>.
+        /// </summary>
+        ValueTask<IList<ITopicMessageId>> LastMessageIdsAsync();
 
         /// <returns> Whether the consumer is connected to the broker </returns>
         bool Connected { get; }

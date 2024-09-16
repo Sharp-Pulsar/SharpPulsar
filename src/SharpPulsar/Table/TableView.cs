@@ -1,22 +1,20 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Routing;
+using Akka.Util.Internal;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Table.Messages;
 
 namespace SharpPulsar.Table
 {
     public class TableView<T> : ITableView<T>
     {
-        private readonly ConcurrentDictionary<string, T> _data;
         private IActorRef _tableViewActor;
-        public TableView(IActorRef tableViewActor, ConcurrentDictionary<string, T> data)
+        public TableView(IActorRef tableViewActor)
         {
             _tableViewActor = tableViewActor;  
-            _data = data;   
         }
         public async Task CloseAsync()
         {
@@ -30,47 +28,74 @@ namespace SharpPulsar.Table
 
         public void ForEachAndListen(Action<string, T> action)
         {
-            _tableViewActor.Tell(new ForEachAction<T>(action));
+            try
+            {
+                var data = _tableViewActor.Ask<ImmutableDictionary<string, T>>(TableData.Instance).GetAwaiter().GetResult();
+                data.ForEach(kv => action(kv.Key, kv.Value));
+                _tableViewActor.Tell(action);
+            }
+            finally { }
+           
         }
-
+        
         public virtual int Size()
-        {
-            return _data.Count();
+        {            
+            //return _data.Count();
+            return _tableViewActor.Ask<int>(TableDataSize.Instance).GetAwaiter().GetResult();
         }
 
         public virtual bool Empty
         {
             get
             {
-                return _data.Count() == 0;
+                //return _data.Count() == 0;
+                return _tableViewActor.Ask<bool>(TableDataEmpty.Instance).GetAwaiter().GetResult();
             }
         }
 
         public bool ContainsKey(string key)
         {
-            return _data.ContainsKey(key);
+            //TableDataKey
+            //return _data.ContainsKey(key);
+            return _tableViewActor.Ask<bool>(new TableDataKey(key)).GetAwaiter().GetResult();
         }
 
         public virtual T Get(string key)
         {
-            _data.TryGetValue(key, out var v);
-            return v;
+            return _tableViewActor.Ask<T>(new TableDataGet(key)).GetAwaiter().GetResult();
         }
 
         public ISet<KeyValuePair<string, T>> EntrySet()
         {
-            return _data.Select(kv => new KeyValuePair<string, T>(kv.Key, kv.Value)).ToHashSet();
+            return _tableViewActor.Ask<ISet<KeyValuePair<string, T>>>(TableDataEntrySet.Instance).GetAwaiter().GetResult();
+            //return _data.Select(kv => new KeyValuePair<string, T>(kv.Key, kv.Value)).ToHashSet();
         }
 
         public virtual ISet<string> KeySet()
         {
-            return _data.Keys.ToHashSet();
+            
+            return _tableViewActor.Ask<ISet<string>>(TableDataKeySet.Instance).GetAwaiter().GetResult();
+            //return _data.Keys.ToHashSet();
         }
-
+        public void Listen(Action<string, T> action)
+        {
+            _tableViewActor.Tell(action);
+        }
         public virtual ICollection<T> Values()
         {
-            return _data.Values;
+            return _tableViewActor.Ask<ICollection<T>>(TableDataValues.Instance).GetAwaiter().GetResult();
         }
 
+        public void RefreshAsync()
+        {
+            //RefeshData
+            _tableViewActor.Tell(RefeshData.Instance);
+            //throw new NotImplementedException();
+        }
+
+    }
+    public class AskTable<T>
+    {
+        
     }
 }

@@ -24,5 +24,17 @@ namespace SharpPulsar.Messages.Consumer
         {
             return (T)Data;
         }
+        public (T1, T2) ConvertTo<T1,T2>()
+        {
+            try
+            {
+                return ((T1)Data, default);
+            }
+            catch
+            {
+
+                return (default, (T2)Data);
+            }
+        }
     }
 }

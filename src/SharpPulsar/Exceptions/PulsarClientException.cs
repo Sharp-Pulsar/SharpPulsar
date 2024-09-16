@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Runtime.Serialization;
 using System.Text;
 
 /// <summary>
@@ -1051,15 +1049,11 @@ namespace SharpPulsar.Exceptions
             {
                 return (PulsarClientException)t;
             }
-            else if (t is Exception)
-            {
-                throw (RuntimeException)t;
-            }
 
             // Unwrap the exception to keep the same exception type but a stack trace that includes the application calling
             // site
             Exception cause = t.InnerException;
-            string msg = cause.Message;
+            string msg = cause != null?  cause.Message: t.Message;
             PulsarClientException newException;
             if (cause is TimeoutException)
             {

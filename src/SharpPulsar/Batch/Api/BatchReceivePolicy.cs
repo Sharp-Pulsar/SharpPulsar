@@ -1,7 +1,4 @@
 ﻿using System;
-using DotNetty.Common.Utilities;
-using SharpPulsar.TimeUnit;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -23,32 +20,32 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace SharpPulsar.Batch.Api
 {
 
-	/// <summary>
-	/// Configuration for message batch receive <seealso cref="ConsumerActor.batchReceive()"/> <seealso cref="ConsumerActor.batchReceiveAsync()"/>.
-	/// 
-	/// <para>Batch receive policy can limit the number and bytes of messages in a single batch, and can specify a timeout
-	/// for waiting for enough messages for this batch.
-	/// 
-	/// </para>
-	/// <para>This batch receive will be completed as long as any one of the
-	/// conditions(has enough number of messages, has enough of Size of messages, wait timeout) is met.
-	/// 
-	/// </para>
-	/// <para>Examples:
-	/// 1.If set maxNumMessages = 10, maxSizeOfMessages = 1MB and without timeout, it
-	/// means <seealso cref="ConsumerActor.batchReceive()"/> will always wait until there is enough messages.
-	/// 2.If set maxNumberOfMessages = 0, maxNumBytes = 0 and timeout = 100ms, it
-	/// means <seealso cref="ConsumerActor.batchReceive()"/> will waiting for 100ms whether or not there is enough messages.
-	/// 
-	/// </para>
-	/// <para>Note:
-	/// Must specify messages limitation(maxNumMessages, maxNumBytes) or wait timeout.
-	/// Otherwise, <seealso cref="Messages"/> ingest <seealso cref="Message"/> will never end.
-	/// 
-	/// @since 2.4.1
-	/// </para>
-	/// </summary>
-	[Serializable]
+    /// <summary>
+    /// Configuration for message batch receive <seealso cref="ConsumerActor.batchReceive()"/> <seealso cref="ConsumerActor.batchReceiveAsync()"/>.
+    /// 
+    /// <para>Batch receive policy can limit the number and bytes of messages in a single batch, and can specify a timeout
+    /// for waiting for enough messages for this batch.
+    /// 
+    /// </para>
+    /// <para>This batch receive will be completed as long as any one of the
+    /// conditions(has enough number of messages, has enough of Size of messages, wait timeout) is met.
+    /// 
+    /// </para>
+    /// <para>Examples:
+    /// 1.If set maxNumMessages = 10, maxSizeOfMessages = 1MB and without timeout, it
+    /// means <seealso cref="ConsumerActor.batchReceive()"/> will always wait until there is enough messages.
+    /// 2.If set maxNumberOfMessages = 0, maxNumBytes = 0 and timeout = 100ms, it
+    /// means <seealso cref="ConsumerActor.batchReceive()"/> will waiting for 100ms whether or not there is enough messages.
+    /// 
+    /// </para>
+    /// <para>Note:
+    /// Must specify messages limitation(maxNumMessages, maxNumBytes) or wait timeout.
+    /// Otherwise, <seealso cref="Messages"/> ingest <seealso cref="Message"/> will never end.
+    /// 
+    /// @since 2.4.1
+    /// </para>
+    /// </summary>
+    [Serializable]
 	public class BatchReceivePolicy
 	{
 

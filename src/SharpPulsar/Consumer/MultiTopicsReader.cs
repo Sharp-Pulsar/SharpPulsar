@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
@@ -78,8 +77,8 @@ namespace SharpPulsar.Consumer
                 var readerListener = readerConfiguration.ReaderListener;
                 consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(Self, readerListener);
             }
-            if (readerConfiguration.StartMessageId != null)
-                consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;
+            /*if (readerConfiguration.StartMessageId != null)
+                consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;*/
 
             if (readerConfiguration.ReaderName != null)
             {
@@ -145,15 +144,28 @@ namespace SharpPulsar.Consumer
             {
                 _consumer.Forward(m);
             });
+            Receive<GetLastMessageIds>(m =>
+            {
+                _consumer.Forward(m);
+            });
             ReceiveAny(m =>
             {
                 _consumer.Forward(m);
             });
+            /*Receive<GetLastMessageIds>(m =>
+            {
+                _consumer.Forward(m);
+            });*/
         }
         public static Props Prop(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
         {
             return Props.Create(() => new MultiTopicsReader<T>(state, client, lookup, cnxPool, idGenerator, readerConfiguration, schema, clientConfigurationData, subscribeFuture));
         }
+        private async ValueTask<AskResponse> LastMessageIds()
+        {
+            return await _consumer.Ask<AskResponse>(GetLastMessageIds.Instance).ConfigureAwait(false);
+        }
+
         private async ValueTask SubscribeToTopic(Subscribe sub)
         {
             try

@@ -5,7 +5,8 @@ using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Client
 {
-    public record struct GetPartitionedTopicMetadata(TopicName TopicName);
+    public record struct GetPartitionedTopicMetadata(TopicName TopicName, bool MetadataAutoCreationEnabled,
+                                             bool UseFallbackForNonPIP344Brokers);
     public record struct GetPartitionsForTopic(string TopicName);
     public record struct PartitionsForTopic(IList<string> topics)
     {

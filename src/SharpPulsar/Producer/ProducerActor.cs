@@ -2,6 +2,7 @@
 using Akka.Util;
 using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;
+using SharpPulsar.Admin.v2;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Client;
@@ -22,7 +23,6 @@ using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Precondition;
-using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Schemas;
@@ -64,7 +64,7 @@ using TimeoutException = SharpPulsar.Exceptions.PulsarClientException.TimeoutExc
 namespace SharpPulsar.Producer
 {
 
-    internal class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash
+    internal class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash, IWithTimers
     {
         private bool InstanceFieldsInitialized = false;
 
@@ -106,7 +106,7 @@ namespace SharpPulsar.Producer
 
         // Variable is used through the atomic updater
         private long _msgIdGenerator;
-        private ICancelable _sendTimeout;
+        //private ICancelable _sendTimeout;
         private readonly long _createProducerTimeout;
         private readonly IBatchMessageContainerBase<T> _batchMessageContainer;
         private readonly OpSendMsgQueue _pendingMessages;
@@ -266,11 +266,14 @@ namespace SharpPulsar.Producer
 
             if (conf.SendTimeoutMs.TotalMilliseconds > 0)
             {
-                _sendTimeout = _scheduler.ScheduleTellOnceCancelable(conf.SendTimeoutMs, Self, RunSendTimeout.Instance, ActorRefs.NoSender);
+                Timers.StartSingleTimer(RunSendTimeout.Instance, RunSendTimeout.Instance, conf.SendTimeoutMs);
+                //_sendTimeout = _scheduler.ScheduleTellOnceCancelable(conf.SendTimeoutMs, Self, RunSendTimeout.Instance, ActorRefs.NoSender);
             }
 
             _lookupDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.LookupTimeout.TotalMilliseconds);
-            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(clientConfiguration.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(clientConfiguration.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
+            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, HandlerstateActor, 
+                new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(clientConfiguration.InitialBackoffIntervalMs))
+                .SetMax(TimeSpan.FromMilliseconds(clientConfiguration.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
 
             _createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + (long)clientConfiguration.OperationTimeout.TotalMilliseconds;
             if (conf.BatchingEnabled)
@@ -337,6 +340,10 @@ namespace SharpPulsar.Producer
                 }
                 await ConnectionOpened(response.ConvertTo<ConnectionOpened>());
             });
+            Receive<ConnectionAlreadySet>(o => 
+            {
+                _log.Info($"ConnectionAlreadySet: {o.ClientCnx}");
+            });
             Receive<AckReceived>(a =>
             {
                 AckReceived(a);
@@ -355,9 +362,10 @@ namespace SharpPulsar.Producer
                 _replyTo = Sender;
                 try
                 {
-                    var currentState = State.GetAndUpdateState(State.ConnectionState == HandlerState.State.Closed ? HandlerState.State.Closed : HandlerState.State.Closing);
-
-                    if (currentState == HandlerState.State.Closed || currentState == HandlerState.State.Closing)
+                    var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                    var currentState = await HandlerstateActor.Ask<State>(new GetAndUpdateState(state == State.Closed ? State.Closed : State.Closing));
+                    
+                    if (currentState == State.Closed || currentState == State.Closing)
                     {
                         _replyTo.Tell(new AskResponse());
                         return;
@@ -367,7 +375,7 @@ namespace SharpPulsar.Producer
                     _stats.CancelStatsTimeout();
 
                     var cnx = Cnx();
-                    if (cnx == null || currentState != HandlerState.State.Ready)
+                    if (cnx == null || currentState != State.Ready)
                     {
                         _log.Info("[{}] [{}] Closed Producer (not connected)", Topic, _producerName);
                         CloseAndClearPendingMessages();
@@ -534,7 +542,8 @@ namespace SharpPulsar.Producer
                      var ex = request.Exception;
                      _log.Error($"[{Topic}] [{_producerName}] Failed to create producer: {ex}");
                      _cnx.Tell(new RemoveProducer(_producerId));
-                     if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                     var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                     if (state == State.Closing || state == State.Closed)
                      {
                          //cx.Tell(PoisonPill.Instance);
                          //_replyTo.Tell(new AskResponse(ex));
@@ -584,7 +593,8 @@ namespace SharpPulsar.Producer
                      }
                      if (ex is TopicTerminatedException)
                      {
-                         State.ConnectionState = HandlerState.State.Terminated;
+                         HandlerstateActor.Tell(new SetState(State.Terminated));
+                         //State.ConnectionState = HandlerState.State.Terminated;
                          FailPendingMessages(_cnx, ex);
                          ProducerCreatedFuture.TrySetException(ex);
                          CloseProducerTasks();
@@ -592,7 +602,8 @@ namespace SharpPulsar.Producer
                      }
                      else if (ex is ProducerFencedException)
                      {
-                         State.ConnectionState = HandlerState.State.ProducerFenced;
+                         HandlerstateActor.Tell(new SetState(State.ProducerFenced));
+                         //State.ConnectionState = HandlerState.State.ProducerFenced;
                          FailPendingMessages(_cnx, ex);
                          ProducerCreatedFuture.TrySetException(ex);
                          CloseProducerTasks();
@@ -605,14 +616,15 @@ namespace SharpPulsar.Producer
                      }
                      else
                      {
-                         State.ConnectionState = HandlerState.State.Failed;
+                         HandlerstateActor.Tell(new SetState(State.Failed));
+                         //State.ConnectionState = HandlerState.State.Failed;
                          Client.Tell(new CleanupProducer(Self));
                          ProducerCreatedFuture.TrySetException(new Exception());
-                         var timeout = _sendTimeout;
-                         if (timeout != null)
+                         //var timeout = _sendTimeout;
+                         if (Timers != null)
                          {
-                             timeout.Cancel();
-                             _sendTimeout = null;
+                             Timers.Cancel(RunSendTimeout.Instance);
+                             //_sendTimeout = null;
                          }
                      }
                  }
@@ -632,9 +644,11 @@ namespace SharpPulsar.Producer
 
                          if (_schemaVersion.HasValue)
                              SchemaCache.Add(SchemaHash.Of(Schema), _schemaVersion.Value);
-                         if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+
+                         var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                         if (state == State.Closing || state == State.Closed)
                          {
-                             _log.Info($"[{Topic}] [{producerName}] State:{State.ConnectionState}, poisoning {_cnx.Path} to death. Becoming 'Connection'");
+                             _log.Info($"[{Topic}] [{producerName}] State:{state}, poisoning {_cnx.Path} to death. Becoming 'Connection'");
                              _cnx.Tell(new RemoveProducer(_producerId));
                              _cnx.Tell(PoisonPill.Instance);
                              return;
@@ -700,7 +714,8 @@ namespace SharpPulsar.Producer
                     {
                         _log.Info($"[{Topic}] Producer creation failed for producer {_producerId} after producerTimeout");
                     }
-                    State.ConnectionState = HandlerState.State.Failed;
+                    HandlerstateActor.Tell(new SetState(State.Failed));
+                    //State.ConnectionState = HandlerState.State.Failed;
                     Client.Tell(new CleanupProducer(_self));
                 }
             }
@@ -716,7 +731,8 @@ namespace SharpPulsar.Producer
         }
         private async ValueTask RunBatchTask()
         {
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+            if (state == State.Closing || state == State.Closed)
             {
                 return;
             }
@@ -1138,7 +1154,8 @@ namespace SharpPulsar.Producer
 
         private async ValueTask TryRegisterSchema(Message<T> msg, SendCallback<T> callback, long expectedCnxEpoch)
         {
-            if (!State.ChangeToRegisteringSchemaState())
+            var tf = await HandlerstateActor.Ask<bool>(ChangeToRegisteringSchemaState.Instance);
+            if (!tf)
             {
                 return;
             }
@@ -1305,27 +1322,28 @@ namespace SharpPulsar.Producer
 
         private bool IsValidProducerState(SendCallback<T> callback, long sequenceId)
         {
-            switch (State.ConnectionState)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            switch (state)
             {
-                case HandlerState.State.Ready:
+                case State.Ready:
                 // OK
-                case HandlerState.State.Connecting:
+                case State.Connecting:
                 // We are OK to queue the messages on the client, it will be sent to the broker once we get the connection
-                case HandlerState.State.RegisteringSchema:
+                case State.RegisteringSchema:
                     // registering schema
                     return true;
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
+                case State.Closing:
+                case State.Closed:
                     callback.SendComplete(new AlreadyClosedException("Producer already closed", sequenceId));
                     return false;
-                case HandlerState.State.ProducerFenced:
+                case State.ProducerFenced:
                     callback.SendComplete(new ProducerFencedException("Producer was fenced"));
                     return false;
-                case HandlerState.State.Terminated:
+                case State.Terminated:
                     callback.SendComplete(new TopicTerminatedException("Topic was terminated", sequenceId));
                     return false;
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
+                case State.Failed:
+                case State.Uninitialized:
                 default:
                     callback.SendComplete(new NotConnectedException(sequenceId));
                     return false;
@@ -1343,10 +1361,10 @@ namespace SharpPulsar.Producer
         }
         protected override void PostStop()
         {
-            if (_sendTimeout != null)
+            if (Timers != null)
             {
-                _sendTimeout.Cancel();
-                _sendTimeout = null;
+                Timers.Cancel(RunSendTimeout.Instance);
+                //_sendTimeout = null;
             }
 
             if (_batchTimerTask != null)
@@ -1363,7 +1381,8 @@ namespace SharpPulsar.Producer
         }
         private void CloseAndClearPendingMessages()
         {
-            State.ConnectionState = HandlerState.State.Closed;
+            HandlerstateActor.Tell(new SetState(State.Closed));
+            //State.ConnectionState = HandlerState.State.Closed;
             Client.Tell(new CleanupProducer(_self));
             PulsarClientException Ex = new AlreadyClosedException($"The producer {_producerName} of the topic {Topic} was already closed when closing the producers");
             // Use null for cnx to ensure that the pending messages are failed immediately
@@ -1384,7 +1403,8 @@ namespace SharpPulsar.Producer
         {
             get
             {
-                if (State.ConnectionState == HandlerState.State.Ready)
+                var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+                if (state == State.Ready)
                 {
                     ;
                     return Cnx();
@@ -1422,8 +1442,9 @@ namespace SharpPulsar.Producer
 
         public virtual void Terminated(IActorRef cnx)
         {
-            var previousState = State.GetAndUpdateState(State.ConnectionState == HandlerState.State.Closed ? HandlerState.State.Closed : HandlerState.State.Terminated);
-            if (previousState != HandlerState.State.Terminated && previousState != HandlerState.State.Closed)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            var previousState = HandlerstateActor.Ask<State>(new GetAndUpdateState(state == State.Closed ? State.Closed : State.Terminated)).GetAwaiter().GetResult();
+            if (previousState != State.Terminated && previousState != State.Closed)
             {
                 _log.Info($"[{Topic}] [{_producerName}] The topic has been terminated");
 
@@ -1693,7 +1714,8 @@ namespace SharpPulsar.Producer
 
         private async ValueTask ResendMessages(IActorRef cnx, long expectedEpoch)
         {
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+            if (state == State.Closing || state == State.Closed)
             {
                 cnx.Tell(Close.Instance);
                 return;
@@ -1705,8 +1727,8 @@ namespace SharpPulsar.Producer
                 {
                     _log.Debug($"[{Topic}] [{_producerName}] No pending messages to resend {messagesToResend}");
                 }
-
-                if (State.ChangeToReadyState())
+                var tf = await HandlerstateActor.Ask<bool>(ChangeToReadyState.Instance);
+                if (tf)
                 {
                     ProducerCreatedFuture.TrySetResult(_self);
                     ScheduleBatchFlushTask(0);
@@ -1724,14 +1746,15 @@ namespace SharpPulsar.Producer
         /// </summary>
         private void Run()
         {
-            if (_sendTimeout.IsCancellationRequested)
+            /*if (_sendTimeout.IsCancellationRequested)
             {
                 return;
-            }
+            }*/
 
             long timeToWaitMs;
             // If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (state == State.Closing || state == State.Closed)
             {
                 return;
             }
@@ -1784,7 +1807,8 @@ namespace SharpPulsar.Producer
                     timeToWaitMs = (long)diff;
                 }
             }
-            _sendTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), _self, RunSendTimeout.Instance, ActorRefs.NoSender);
+            Timers.StartSingleTimer(RunSendTimeout.Instance, RunSendTimeout.Instance, TimeSpan.FromMilliseconds(timeToWaitMs));
+            //_sendTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), _self, RunSendTimeout.Instance, ActorRefs.NoSender);
 
         }
 
@@ -1805,10 +1829,10 @@ namespace SharpPulsar.Producer
         private void CloseProducerTasks()
         {
 
-            if (_sendTimeout != null)
+            if (Timers != null)
             {
-                _sendTimeout.Cancel();
-                _sendTimeout = null;
+                Timers.Cancel(RunSendTimeout.Instance);
+                //_sendTimeout = null;
             }
 
             if (_keyGeneratorTask != null && !_keyGeneratorTask.IsCancellationRequested)
@@ -1828,7 +1852,8 @@ namespace SharpPulsar.Producer
         // must acquire semaphore before calling
         private void MaybeScheduleBatchFlushTask()
         {
-            if (_batchFlushTask != null || State.ConnectionState != HandlerState.State.Ready)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            if (_batchFlushTask != null || state != State.Ready)
             {
                 return;
             }
@@ -1840,7 +1865,7 @@ namespace SharpPulsar.Producer
         {
             if (_cnx != null && BatchMessagingEnabled)
             {
-                try { _batchFlushTask.Cancel(); } catch { }
+                try { _batchFlushTask!.Cancel(); } catch { }
                 _batchFlushTask = null;
                 _batchFlushTask = _scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(batchingDelayMicros), async () => await BatchFlushTask());
             }
@@ -1853,7 +1878,8 @@ namespace SharpPulsar.Producer
             }
 
             // If we're not ready, don't schedule another flush and don't try to send.
-            if (State.ConnectionState != HandlerState.State.Ready)
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+            if (state != State.Ready)
             {
                 return;
             }
@@ -2026,7 +2052,8 @@ namespace SharpPulsar.Producer
                 op.UpdateSentTimestamp();
                 _stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
             }
-            if (!State.ChangeToReadyState())
+            var tf = await HandlerstateActor.Ask<bool>(ChangeToReadyState.Instance);
+            if (!tf)
             {
                 // Producer was closed while reconnecting, close the connection to make sure the broker
                 // drops the producer on its side
@@ -2108,6 +2135,8 @@ namespace SharpPulsar.Producer
             }
 
         }
+
+        public ITimerScheduler Timers { get; set; }
 
         protected internal override async ValueTask<string> ProducerName()
         {

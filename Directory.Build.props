@@ -8,7 +8,7 @@
     <AppMetricsConcurrencyVersion>4.3.0</AppMetricsConcurrencyVersion>
     <AvroSchemaGeneratorVersion>2.10.0</AvroSchemaGeneratorVersion>
     <DotNettyCommonVersion>0.7.6</DotNettyCommonVersion>
-    <GoogleProtobufVersion>3.27.3</GoogleProtobufVersion>
+    <GoogleProtobufVersion>3.28.0</GoogleProtobufVersion>
     <IdentityModelVersion>7.0.0</IdentityModelVersion>
     <JsonSubTypesVersion>2.0.1</JsonSubTypesVersion>
     <K4osCompressionLZ4Version>1.3.8</K4osCompressionLZ4Version>
@@ -38,7 +38,7 @@
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemTextJsonVersion>8.0.4</SystemTextJsonVersion>
     <SystemThreadingTasksDataflowVersion>8.0.1</SystemThreadingTasksDataflowVersion>
-    <zlibnetmutliplatformVersion>1.0.7</zlibnetmutliplatformVersion>
+    <zlibnetmutliplatformVersion>1.0.8</zlibnetmutliplatformVersion>
     <ZstdNetVersion>1.4.5</ZstdNetVersion>
   </PropertyGroup>
 </Project>

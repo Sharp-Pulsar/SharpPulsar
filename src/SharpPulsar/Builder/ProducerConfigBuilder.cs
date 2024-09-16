@@ -22,7 +22,6 @@ using SharpPulsar.Builder;
 using SharpPulsar.Extension;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Compression;
-using DotNetty.Common.Utilities;
 using SharpPulsar.Crypto;
 using SharpPulsar.Precondition;
 

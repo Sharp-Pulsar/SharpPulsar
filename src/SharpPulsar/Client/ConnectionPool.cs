@@ -14,15 +14,22 @@ using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.Client
 {
-    public class ConnectionPool : ReceiveActor, IWithUnboundedStash
+    public class ConnectionPool : ReceiveActor
     {
+        private class Key
+        {
+            internal Uri LogicalAddress;
+            internal Uri PhysicalAddress;
+            internal int RandomKey;
+        }
+
         private readonly Dictionary<EndPoint, Dictionary<int, ConnectionOpened>> _pool;
 
         private readonly ClientConfigurationData _clientConfig;
         private readonly int _maxConnectionsPerHosts;
         private readonly ILoggingAdapter _log;
         private readonly IActorContext _context;
-        private int _randomKey;
+        //private int _randomKey;
         private DnsEndPoint _logicalEndpoint;
         public ConnectionPool(ClientConfigurationData conf)
         {
@@ -43,19 +50,19 @@ namespace SharpPulsar.Client
                 try
                 {
                     ConnectionOpened connection;
-                    _randomKey = SignSafeMod(Random.Next(), _maxConnectionsPerHosts);
+                   var randomKey = GenRandomKeyToSelectCon();
                     _logicalEndpoint = g.LogicalEndPoint;
                     if (g.LogicalEndPoint != null && g.PhusicalEndPoint == null)
                     {
-                        connection = await GetConnection(g.LogicalEndPoint, _randomKey);
+                        connection = await GetConnection(g.LogicalEndPoint, randomKey);
                     }
                     else if (g.LogicalEndPoint != null && g.PhusicalEndPoint != null)
                     {
-                        connection = await GetConnection(g.LogicalEndPoint, g.PhusicalEndPoint, _randomKey);
+                        connection = await GetConnection(g.LogicalEndPoint, g.PhusicalEndPoint, randomKey);
                     }
                     else
                     {
-                        connection = await GetConnection(g.LogicalEndPoint, _randomKey);
+                        connection = await GetConnection(g.LogicalEndPoint, randomKey);
                     }
                     sender.Tell(new AskResponse(connection));
                 }
@@ -80,7 +87,7 @@ namespace SharpPulsar.Client
             {
                 Sender.Tell(new GetPoolSizeResponse(PoolSize));
             });
-            Stash?.UnstashAll();
+            
         }
         public static Props Prop(ClientConfigurationData conf)
         {
@@ -111,14 +118,19 @@ namespace SharpPulsar.Client
         /// <returns> a future that will produce the ClientCnx object </returns>
         private async ValueTask<ConnectionOpened> GetConnection(DnsEndPoint address, int randomKey)
         {
+            if (_maxConnectionsPerHosts == 0)
+            {
+                return await GetConnection(address, address, randomKey);
+            }
             return await GetConnection(address, address, randomKey);
+            //return await GetConnection(address, address, -1);
         }
         private async ValueTask<ConnectionOpened> GetConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int randomKey)
         {
             if (_maxConnectionsPerHosts == 0)
             {
                 // Disable pooling
-                return await CreateConnection(logicalAddress, physicalAddress, -1);
+                return await CreateConnection(logicalAddress, physicalAddress, randomKey);
             }
 
             if (_pool.TryGetValue(logicalAddress, out var cnx))
@@ -130,7 +142,15 @@ namespace SharpPulsar.Client
             }
             return await CreateConnection(logicalAddress, physicalAddress, randomKey);
         }
-        private async ValueTask<ConnectionOpened> CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int connectionKey)
+        public int GenRandomKeyToSelectCon()
+        {
+            if (_maxConnectionsPerHosts == 0)
+            {
+                return -1;
+            }
+            return SignSafeMod(Random.Next(), _maxConnectionsPerHosts);
+        }
+        private async ValueTask<ConnectionOpened> CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int randomKey)
         {
             var cnx = ActorRefs.NoSender;
             try
@@ -144,16 +164,16 @@ namespace SharpPulsar.Client
                 if (!logicalAddress.Equals(physicalAddress))
                     targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
                 var tcs = new TaskCompletionSource<ConnectionOpened>(TaskCreationOptions.RunContinuationsAsynchronously);
-                cnx = _context.ActorOf(ClientCnx.Prop(_clientConfig, physicalAddress, tcs, targetBroker), $"{targetBroker}{connectionKey}".ToAkkaNaming());
+                cnx = _context.ActorOf(ClientCnx.Prop(_clientConfig, physicalAddress, tcs, targetBroker), $"{targetBroker}{randomKey}".ToAkkaNaming());
                 var connection = await tcs.Task;
 
                 if (_pool.TryGetValue(_logicalEndpoint, out _))
                 {
-                    _pool[_logicalEndpoint][_randomKey] = connection;
+                    _pool[_logicalEndpoint][randomKey] = connection;
                 }
                 else
                 {
-                    _pool.Add(_logicalEndpoint, new Dictionary<int, ConnectionOpened> { { _randomKey, connection } });
+                    _pool.Add(_logicalEndpoint, new Dictionary<int, ConnectionOpened> { { randomKey, connection } });
                 }
 
                 return connection;
@@ -205,8 +225,6 @@ namespace SharpPulsar.Client
                 return _pool.Values.Select(x => x.Values.Count).Sum();
             }
         }
-
-        public IStash Stash { get; set; }
 
         private int SignSafeMod(long dividend, int divisor)
         {

@@ -44,8 +44,9 @@ namespace SharpPulsar
         public IConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
         public async ValueTask<IConsumerStats> StatsAsync()
             => await _consumerActor.Ask<IConsumerStats>(GetStats.Instance).ConfigureAwait(false);
-
+        
         public IMessageId LastMessageId => LastMessageIdAsync().GetAwaiter().GetResult();
+        
         public async ValueTask<IMessageId> LastMessageIdAsync()
             => await _consumerActor.Ask<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
 
@@ -351,6 +352,15 @@ namespace SharpPulsar
                 throw ask.Exception;
         }
 
+        public void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
+            => RedeliverUnacknowledgedMessagesAsync(messageIds).ConfigureAwait(false);
+        public async ValueTask RedeliverUnacknowledgedMessagesAsync(ISet<IMessageId> messageIds)
+        {
+            var ask = await _consumerActor.Ask<AskResponse>(new RedeliverUnacknowledgedMessageIds(messageIds))
+                .ConfigureAwait(false);
+            if (ask.Failed)
+                throw ask.Exception;
+        }
         public void Resume()
         {
             _consumerActor.Tell(Messages.Consumer.Resume.Instance);
@@ -362,8 +372,8 @@ namespace SharpPulsar
         public async ValueTask SeekAsync(IMessageId messageId)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.ConvertTo<HandlerState.State>();
-            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            var state = askForState.ConvertTo<State>();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {Topic} to the message {messageId}");
 
@@ -387,8 +397,8 @@ namespace SharpPulsar
         public async ValueTask SeekAsync(long timestamp)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.ConvertTo<HandlerState.State>();
-            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            var state = askForState.ConvertTo<State>();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new Exception($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {Topic} to the timestamp {timestamp:D}");
 
@@ -547,6 +557,17 @@ namespace SharpPulsar
             // Notify the garbage collector
             // about the cleaning event
             GC.SuppressFinalize(this);
+        }
+
+        public IList<ITopicMessageId> LastMessageIds() => LastMessageIdsAsync().GetAwaiter().GetResult();
+
+        public async ValueTask<IList<ITopicMessageId>> LastMessageIdsAsync()
+        {
+            var response = await _consumerActor.Ask<AskResponse>(GetLastMessageIds.Instance).ConfigureAwait(false);
+            if (response.Failed)
+                throw response.Exception;
+
+            return response.ConvertTo<List<ITopicMessageId>>();
         }
     }
 }

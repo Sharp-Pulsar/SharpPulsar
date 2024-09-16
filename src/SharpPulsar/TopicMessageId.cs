@@ -1,6 +1,5 @@
-﻿using SharpPulsar.Batch;
-using SharpPulsar.Interfaces;
-using System;
+﻿using SharpPulsar.Interfaces;
+using System.Collections;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,20 +21,26 @@ using System;
 /// </summary>
 namespace SharpPulsar
 {
-	public class TopicMessageId : IMessageId
+    public class TopicMessageId : IMessageIdAdv, ITopicMessageId
 	{
 
 		/// <summary>
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
 		
-		private readonly string _topicPartitionName;
+		private readonly string _ownerTopic;
 		private readonly string _topicName;
-		public readonly IMessageId InnerMessageId;
+        private readonly IMessageIdAdv _msgId;
+        public TopicMessageId(string topic, IMessageIdAdv msgId)
+        {
+            _ownerTopic = topic;
+            _msgId = msgId;
+            _topicName = "";
+        }
 
-		public TopicMessageId(string topicPartitionName, string topicName, IMessageId messageId)
+        public TopicMessageId(string topicPartitionName, string topicName, IMessageId messageId)
 		{
-			this.InnerMessageId = messageId;
-			_topicPartitionName = topicPartitionName;
+			_msgId = (IMessageIdAdv)messageId;
+			_ownerTopic = topicPartitionName;
 			_topicName = topicName;
 		}
 
@@ -47,36 +52,51 @@ namespace SharpPulsar
         /// <summary>
 		/// Get the topic name which contains partition part for this message. </summary>
 		/// <returns> the topic name which contains Partition part </returns>
-		public  string TopicPartitionName => _topicPartitionName;
+		public  string TopicPartitionName => _ownerTopic;
+
+        public long LedgerId => _msgId.LedgerId;
+
+        public long EntryId => _msgId.EntryId;
+
+        public string OwnerTopic => _ownerTopic;
+
+        public int PartitionIndex => _msgId.PartitionIndex;
+
+        public int BatchIndex => _msgId.BatchIndex; 
+
+        public int BatchSize => _msgId.BatchSize;   
+
+        public BitArray AckSet => _msgId.AckSet; 
+
+        public IMessageIdAdv FirstChunkMessageId => _msgId.FirstChunkMessageId;
+
+        public IMessageIdAdv MessageId => _msgId;
 
 
         public byte[] ToByteArray()
 		{
-			return InnerMessageId.ToByteArray();
-		}
+            return _msgId.ToByteArray();
+        }
 
-		public override int GetHashCode()
+        public override int GetHashCode()
 		{
-			return HashCode.Combine(_topicPartitionName, InnerMessageId);
+            return _msgId.GetHashCode();
 		}
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is TopicMessageId))
-			{
-				return false;
-			}
-			var other = (TopicMessageId) obj;
-			return Equals(TopicPartitionName, other.TopicPartitionName) && Equals(InnerMessageId, other.InnerMessageId);
-		}
+            return _msgId.Equals(obj);
+        }
 
 		public int CompareTo(IMessageId o)
 		{
-			var m = InnerMessageId as BatchMessageId;
-			if (m != null)
-				return m.CompareTo(o);
-			return ((MessageId)InnerMessageId).CompareTo(o);
+            return _msgId.CompareTo(o);
 		}
-	}
+        public override string ToString()
+        {
+            return _msgId.ToString();
+        }
+
+    }
 
 }

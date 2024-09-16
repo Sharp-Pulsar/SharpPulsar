@@ -9,6 +9,7 @@ using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Builder;
 using SharpPulsar.Common.Compression;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -61,8 +62,8 @@ namespace SharpPulsar.Configuration
 		public TimeSpan SendTimeoutMs { get; set; } = TimeSpan.FromMilliseconds(30000);
         public MessageRoutingMode MessageRoutingMode { get; set; } = MessageRoutingMode.RoundRobinMode;
 		public HashingScheme HashingScheme { get; set; } = HashingScheme.JavaStringHash;
-
-		public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;
+        public bool NonPartitionedTopicExpected { get; set; } = false;  
+        public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;
         public IMessageRouter CustomMessageRouter { get; set; } = null;
 		public bool ChunkingEnabled { get; set; } = false;
         public int ChunkMaxMessageSize { get; set; } = -1;

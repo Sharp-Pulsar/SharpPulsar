@@ -42,7 +42,7 @@ using SharpPulsar.Messages;
 /// </summary>
 namespace SharpPulsar.Producer
 {
-    internal class PartitionedProducerActor<T> : ProducerActorBase<T>
+    internal class PartitionedProducerActor<T> : ProducerActorBase<T>, IWithTimers
     {
 
         private readonly TaskCompletionSource<ConcurrentDictionary<int, IActorRef>> _producers;
@@ -56,7 +56,7 @@ namespace SharpPulsar.Producer
         private TopicMetadata _topicMetadata;
 
         // timeout related to auto check and subscribe partition increasement
-        private ICancelable _partitionsAutoUpdateTimeout = null;
+       // private ICancelable _partitionsAutoUpdateTimeout = null;
         private ValueTask _partitionsAutoUpdateFuture;
         private readonly ILoggingAdapter _log;
         private readonly IActorContext _context;
@@ -101,7 +101,8 @@ namespace SharpPulsar.Producer
             if (conf.AutoUpdatePartitions)
             {
                 _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
-                _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
+                Timers.StartSingleTimer(ExtendTopics.Instance, ExtendTopics.Instance, TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds));
+                //_partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
 
             Receive<GetProducers>(_ =>
@@ -191,17 +192,20 @@ namespace SharpPulsar.Producer
         }
         private async Task CloseAsync()
         {
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+            if (state == State.Closing || state == State.Closed)
             {
                 return;
             }
-            State.ConnectionState = HandlerState.State.Closing;
 
-            if (_partitionsAutoUpdateTimeout != null)
+            HandlerstateActor.Tell(new SetState(State.Closing));
+            //State.ConnectionState = HandlerState.State.Closing;
+
+            /*if (_partitionsAutoUpdateTimeout != null)
             {
                 //_partitionsAutoUpdateTimeout.Cancel();
                 //_partitionsAutoUpdateTimeout = null;
-            }
+            }*/
             await Task.CompletedTask;
         }
         internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<IMessageId> callback)
@@ -243,23 +247,24 @@ namespace SharpPulsar.Producer
         }
         private void ConnectionState(TaskCompletionSource<IMessageId> callback)
         {
-            switch (State.ConnectionState)
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
+            switch (state)
             {
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
+                case State.Ready:
+                case State.Connecting:
                     break; // Ok
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
+                case State.Closing:
+                case State.Closed:
                     callback.TrySetException(new PulsarClientException.AlreadyClosedException("Producer already closed"));
                     return;
-                case HandlerState.State.Terminated:
+                case State.Terminated:
                     callback.TrySetException(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
                     return;
-                case HandlerState.State.ProducerFenced:
+                case State.ProducerFenced:
                     callback.TrySetException(new PulsarClientException.ProducerFencedException("Producer was fenced"));
                     return;
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
+                case State.Failed:
+                case State.Uninitialized:
                     callback.TrySetException(new PulsarClientException.NotConnectedException());
                     return;
             }
@@ -284,7 +289,8 @@ namespace SharpPulsar.Producer
                     _producer.TryAdd((int)producerId, producer);
                     var routee = Routee.FromActorRef(producer);
                     _router.Tell(new AddRoutee(routee));
-                    State.ConnectionState = HandlerState.State.Ready;
+                    HandlerstateActor.Tell(new SetState(State.Ready));
+                    //State.ConnectionState = HandlerState.State.Ready;
                 }
                 catch (Exception ex)
                 {
@@ -298,11 +304,12 @@ namespace SharpPulsar.Producer
                     {
                         _log.Error($"[{Topic}] Could not close internal producer. partitionIndex: {partition}: {e}");
                     }
-                    State.ConnectionState = HandlerState.State.Failed;
+                    HandlerstateActor.Tell(new SetState(State.Failed));
+                    //State.ConnectionState = HandlerState.State.Failed;
 
                 }
-
-                if (State.ConnectionState == HandlerState.State.Failed)
+                var state = await HandlerstateActor.Ask<State>(GetState.Instance);
+                if (state == State.Failed)
                 {
                     return; //new PulsarClientException.NotConnectedException();
                 }
@@ -327,7 +334,7 @@ namespace SharpPulsar.Producer
 
         protected override void PostStop()
         {
-            _partitionsAutoUpdateTimeout?.Cancel();
+            Timers?.Cancel(ExtendTopics.Instance);
 
             base.PostStop();
         }
@@ -350,6 +357,9 @@ namespace SharpPulsar.Producer
                 return "partition-producer";
             }
         }
+
+        public ITimerScheduler Timers { get; set; }
+
         internal class TopicsPartitionChangedListener : IPartitionsChangedListener
         {
             private readonly PartitionedProducerActor<T> _outerInstance;
@@ -369,7 +379,7 @@ namespace SharpPulsar.Producer
                 }
                 var topicName = TopicName.Get(_outerInstance.Topic);
 
-                var result = await _outerInstance._lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+                var result = await _outerInstance._lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName, true, false));
 
                 if (result.Failed)
                 {
@@ -490,7 +500,8 @@ namespace SharpPulsar.Producer
             finally
             {
                 // schedule the next re-check task
-                _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(Conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
+                Timers.StartSingleTimer(ExtendTopics.Instance, ExtendTopics.Instance, TimeSpan.FromSeconds(Conf.AutoUpdatePartitionsIntervalSeconds));
+                //_partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(Conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
         }
         protected internal override long LastDisconnectedTimestamp()

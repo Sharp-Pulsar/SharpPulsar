@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -158,7 +159,8 @@ namespace SharpPulsar.Interfaces
         /// <param name="function">
         /// @return </param>
         ValueTask SeekAsync(Func<string, object> function);
-
+        List<ITopicMessageId> LastMessageIds();
+        ValueTask<List<ITopicMessageId>> LastMessageIdsAsync();
     }
 
 }

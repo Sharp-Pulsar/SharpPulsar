@@ -1,16 +1,17 @@
 ﻿using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Batch;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
 {
     public class UnAckedChunckedMessageIdSequenceMap: ReceiveActor
     {
-        private readonly Dictionary<MessageId, MessageId[]> _unAckedChunckedMessageIdSequenceMap;
+        private readonly Dictionary<IMessageIdAdv, MessageId[]> _unAckedChunckedMessageIdSequenceMap;
         public UnAckedChunckedMessageIdSequenceMap()
         {
-            _unAckedChunckedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
+            _unAckedChunckedMessageIdSequenceMap = new Dictionary<IMessageIdAdv, MessageId[]>();
             Receive<UnAckedChunckedMessageIdSequenceMapCmd>(r =>
             {
                 var ids = new List<MessageId>();
@@ -22,7 +23,7 @@ namespace SharpPulsar.Tracker
                     if (msgId is BatchMessageId id)
                         msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
                     else if (msgId is TopicMessageId tmid)
-                        msgid = (MessageId)tmid.InnerMessageId;
+                        msgid = (MessageId)tmid.MessageId;
                     else
                         msgid = (MessageId)msgId;
 

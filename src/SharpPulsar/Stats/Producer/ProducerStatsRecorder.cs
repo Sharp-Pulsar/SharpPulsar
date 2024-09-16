@@ -31,7 +31,7 @@ using SharpPulsar.Interfaces;
 namespace SharpPulsar.Stats.Producer
 {
 
-    public sealed class ProducerStatsRecorder : IProducerStatsRecorder
+    public class ProducerStatsRecorder : IProducerStatsRecorder
     {
         internal ICancelable StatTimeout { get; set; }
         private long _oldTime;
@@ -52,14 +52,31 @@ namespace SharpPulsar.Stats.Producer
         private static readonly NumberFormatInfo ThroughputFormat = new NumberFormatInfo();
         internal static List<double> Latency = new List<double>(256);
 
+
         public double SendMsgsRate { get; set; }
         public double SendBytesRate { get; set; }
         private double[] _latencyPctValues;
-
+        private AtomicDouble _ds;
+        private AtomicDouble _batchSizeDs;
+        private AtomicDouble _msgSizeDs;
         private readonly ILoggingAdapter _log;
 
-        private static readonly double[] Percentiles = { 0.5, 0.75, 0.95, 0.99, 0.999, 1.0 };
 
+        private static readonly double[] Percentiles = { 0.5, 0.75, 0.95, 0.99, 0.999, 1.0 };
+        public ProducerStatsRecorder()
+        {
+            _numMsgsSent = new StripedLongAdder();
+            _numBytesSent = new StripedLongAdder();
+            _numSendFailed = new StripedLongAdder();
+            _numAcksReceived = new StripedLongAdder();
+            _totalMsgsSent = new StripedLongAdder();
+            _totalBytesSent = new StripedLongAdder();
+            _totalSendFailed = new StripedLongAdder();
+            _totalAcksReceived = new StripedLongAdder();
+            _ds = new AtomicDouble(256);
+            _batchSizeDs = new AtomicDouble(256);
+            _msgSizeDs = new AtomicDouble(256);
+        }
         public ProducerStatsRecorder(ActorSystem system, string producerName, string topic, long pendingQueueSize)
         {
             _system = system;

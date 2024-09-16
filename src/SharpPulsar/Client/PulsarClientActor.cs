@@ -48,14 +48,13 @@ namespace SharpPulsar.Client
         private readonly ISet<IActorRef> _consumers;
         private readonly DateTime _clientClock;
 
-        private readonly IActorRef _tcClient;
-        public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator, IActorRef lookup, IActorRef idGenerator)
+        private  IActorRef _tcClient;
+        public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef lookup, IActorRef idGenerator)
         {
             if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl))
             {
                 throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
             }
-            _tcClient = txnCoordinator;
             _log = Context.GetLogger();
             Auth = conf;
             _conf = conf;
@@ -75,9 +74,17 @@ namespace SharpPulsar.Client
             Receive<GetClientState>(_ => Sender.Tell((int)_state));
             Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
             Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
+            Receive<SetTcClient>(t =>
+            {
+                _tcClient = t.TCClient;
+            });
             Receive<GetTcClient>(_ =>
             {
                 Sender.Tell(new TcClient(_tcClient));
+            });
+            Receive<ClientConfiguration>(_ =>
+            {
+                Sender.Tell(new ClientConfiguration(_conf));
             });
         }
 
@@ -143,5 +150,13 @@ namespace SharpPulsar.Client
 
 
     }
-
+    public record struct ClientConfiguration
+    {
+        public static ClientConfiguration Instance = new ClientConfiguration(); 
+        public ClientConfigurationData Configuration { get; }  
+        public ClientConfiguration(ClientConfigurationData configuration)
+        {
+            Configuration = configuration;  
+        }
+    }
 }

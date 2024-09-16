@@ -24,14 +24,14 @@ using static SharpPulsar.Client.Internal.SocketClientActor;
 
 namespace SharpPulsar.Client
 {
-    internal sealed class ClientCnx : ReceiveActor, IWithUnboundedStash
+    internal sealed class ClientCnx : ReceiveActor, IWithUnboundedStash, IWithTimers
     {
         private readonly IActorRef _socketClient;
         private readonly IAuthentication _authentication;
         private State _state;
         private readonly IActorRef _self;
         private IActorRef _sendMessage;
-        private IActorRef _sender;
+        //private IActorRef _sender;
 
         private readonly Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)>();
         // LookupRequests that waiting in client side.
@@ -65,8 +65,8 @@ namespace SharpPulsar.Client
 
         private readonly TlsHostnameVerifier _hostnameVerifier;
 
-        private ICancelable _timeoutTask;
-
+        //private ICancelable _timeoutTask;
+        private bool _supportsGetPartitionedMetadataWithoutAutoCreation;
         private readonly ICancelable _sendPing = default;
         private readonly IActorRef _parent;
         private readonly IScheduler _scheduler;
@@ -113,8 +113,8 @@ namespace SharpPulsar.Client
             try
             {
                 _sendMessage = await _socketClient.Ask<IActorRef>(SocketClientActor.Connect.Instance);
-                _timeoutTask = _scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
-
+               // _timeoutTask = _scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
+                Timers.StartSingleTimer("0", RequestTimeout.Instance, _operationTimeout);
                 //_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
 
                 if (string.IsNullOrWhiteSpace(_proxyToTargetBrokerAddress))
@@ -151,7 +151,7 @@ namespace SharpPulsar.Client
 
             Receive<Payload>(p =>
             {
-                _sender = Sender;
+                //_sender = Sender;
                 switch (p.Command)
                 {
                     case "NewLookup":
@@ -221,6 +221,10 @@ namespace SharpPulsar.Client
             {
                 RemoveConsumer(m.ConsumerId);
             });
+            Receive<IsSupportsGetPartitionedMetadataWithoutAutoCreation>(_ => 
+            { 
+                Sender.Tell(_supportsGetPartitionedMetadataWithoutAutoCreation);
+            });
             Receive<SendPing>(m =>
             {
                 _sendMessage.Tell(new SendMessage(_pong));
@@ -235,7 +239,7 @@ namespace SharpPulsar.Client
             });
             Receive<SendRequestWithId>(r =>
             {
-                _sender = Sender;
+                //_sender = Sender;
                 SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
             });
             Receive<RemoteEndpointProtocolVersion>(r =>
@@ -269,7 +273,8 @@ namespace SharpPulsar.Client
             _producers.Clear();
             _consumers.Clear();
             _topicListWatchers.Clear();
-            _timeoutTask?.Cancel(true);
+            Timers.Cancel(RequestTimeout.Instance);
+            //_timeoutTask?.Cancel(true);
         }
 
         private void NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
@@ -279,7 +284,8 @@ namespace SharpPulsar.Client
         protected override void PostStop()
         {
             OnDisconnected();
-            _timeoutTask?.Cancel();
+            Timers.Cancel(RequestTimeout.Instance);
+            //_timeoutTask?.Cancel();
             _sendPing?.Cancel();
             //_subscriber.Dispose();
             base.PostStop();
@@ -339,7 +345,7 @@ namespace SharpPulsar.Client
             // set remote protocol version to the correct version before we complete the connection future
             //if(connected.FeatureFlags != null)
             _supportsTopicWatchers = connected.FeatureFlags.SupportsTopicWatchers;
-
+            _supportsGetPartitionedMetadataWithoutAutoCreation = connected.FeatureFlags.SupportsGetPartitionedMetadataWithoutAutoCreation;
             _protocolVersion = connected.ProtocolVersion;
             _state = State.Ready;
             _connectionFuture.TrySetResult(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
@@ -667,7 +673,7 @@ namespace SharpPulsar.Client
         // caller of this method needs to be protected under pendingLookupRequestSemaphore
         private void AddPendingLookupRequests(long requestId, ReadOnlySequence<byte> message)
         {
-            _pendingRequests.Add(requestId, (message, _sender));
+            _pendingRequests.Add(requestId, (message, Sender));
         }
 
         private bool RemovePendingLookupRequest(long requestId, out IActorRef actor)
@@ -743,7 +749,7 @@ namespace SharpPulsar.Client
             }
             else
             {
-                _sender?.Tell(response);
+                Sender?.Tell(response);
                 _log.Warning($"Received unknown request id from server: {error.RequestId}");
             }
         }
@@ -778,6 +784,7 @@ namespace SharpPulsar.Client
         }
 
         public IStash Stash { get; set; }
+        public ITimerScheduler Timers { get; set; }
 
         private void NewLookup(ReadOnlySequence<byte> request, long requestId)
         {
@@ -789,7 +796,7 @@ namespace SharpPulsar.Client
             }
             catch (Exception ex)
             {
-                _sender.Tell(PulsarClientException.Unwrap(ex));
+                Sender.Tell(PulsarClientException.Unwrap(ex));
             }
         }
 
@@ -861,14 +868,14 @@ namespace SharpPulsar.Client
             try
             {
                 _sendMessage.Tell(new SendMessage(requestMessage));
-                _pendingRequests.Add(requestId, (requestMessage, _sender));
+                _pendingRequests.Add(requestId, (requestMessage, Sender));
 
                 _requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId, requestType));
                 return true;
             }
             catch (Exception ex)
             {
-                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
             }
             return false;
         }
@@ -878,11 +885,11 @@ namespace SharpPulsar.Client
             {
                 _sendMessage.Tell(new SendMessage(requestMessage));
                 if (requestId >= 0)
-                    _pendingRequests.Add(requestId, (requestMessage, _sender));
+                    _pendingRequests.Add(requestId, (requestMessage, Sender));
             }
             catch (Exception ex)
             {
-                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
             }
 
         }
@@ -1169,7 +1176,8 @@ namespace SharpPulsar.Client
         }
         private void RegisterTransactionMetaStoreHandler(long transactionMetaStoreId, IActorRef handler)
         {
-            _transactionMetaStoreHandlers.Add(transactionMetaStoreId, handler);
+            if(!_transactionMetaStoreHandlers.ContainsKey(transactionMetaStoreId))
+                  _transactionMetaStoreHandlers.Add(transactionMetaStoreId, handler);
         }
         private void RemoveProducer(long producerId)
         {
@@ -1180,27 +1188,35 @@ namespace SharpPulsar.Client
         {
             _consumers.Remove(consumerId);
         }
+        private long _reqId = 0;
         private void CheckRequestTimeout()
         {
+
             while (!_requestTimeoutQueue.IsEmpty)
             {
                 var req = _requestTimeoutQueue.TryPeek(out var request);
+                
                 if (!req || DateTimeHelper.CurrentUnixTimeMillis() - request.CreationTimeMs < _operationTimeout.TotalMilliseconds)
                 {
                     // if there is no request that is timed out then exit the loop
                     break;
                 }
-                if (_requestTimeoutQueue.TryDequeue(out request))
+                if (!_requestTimeoutQueue.TryDequeue(out request))
                 {
-                    if (_pendingRequests.Remove(request.RequestId, out var val))
-                    {
-                        var timeoutMessage = $"{request.RequestId} {request.RequestType.Description} timedout after ms {_operationTimeout.TotalMilliseconds}";
-                        _log.Warning(timeoutMessage);
-                        val.Requester.Tell(new AskResponse(new PulsarClientException(new Exception(timeoutMessage))));
-                    }
+                    // the request has been removed by another thread
+                    continue;
                 }
+                if (_pendingRequests.Remove(request.RequestId, out var val))
+                {
+                    var timeoutMessage = $"{request.RequestId} {request.RequestType.Description} timedout after ms {_operationTimeout.TotalMilliseconds}";
+                    //_log.Warning(timeoutMessage);
+                    //_log.Info(val.Requester.Path.ToString());
+                    val.Requester.Tell(new AskResponse(new PulsarClientException(new Exception(timeoutMessage))));
+                }
+                _reqId = request.RequestId + 1;    
             }
-            _timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, Self, RequestTimeout.Instance, ActorRefs.NoSender);
+            Timers.StartSingleTimer($"{_reqId}", RequestTimeout.Instance, _operationTimeout);
+            //_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
         }
         public ReadOnlySequence<byte> NewConnectCommand()
@@ -1338,5 +1354,9 @@ namespace SharpPulsar.Client
     internal sealed class SendPing
     {
         public static SendPing Instance = new SendPing();
+    }
+    internal record struct IsSupportsGetPartitionedMetadataWithoutAutoCreation()
+    {
+        internal static IsSupportsGetPartitionedMetadataWithoutAutoCreation Instance = new IsSupportsGetPartitionedMetadataWithoutAutoCreation();
     }
 }

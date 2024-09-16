@@ -20,7 +20,6 @@ using Akka.Util.Internal;
 using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.TransactionImpl;
 using static SharpPulsar.Protocol.Proto.CommandAck;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -753,11 +752,13 @@ namespace SharpPulsar.Protocol
 			return Serializer.Serialize(producer.ToBaseCommand());			
 		}
 
-		public static ReadOnlySequence<byte> NewPartitionMetadataRequest(string topic, long requestId)
+		public static ReadOnlySequence<byte> NewPartitionMetadataRequest(string topic, long requestId, bool metadataAutoCreationEnabled = true)
 		{
             var partitionMetadata = new CommandPartitionedTopicMetadata
             {
-                Topic = topic, RequestId = (ulong) requestId
+                Topic = topic, 
+                RequestId = (ulong) requestId,
+                MetadataAutoCreationEnabled = metadataAutoCreationEnabled   
             };
             return Serializer.Serialize(partitionMetadata.ToBaseCommand());
 			
@@ -1327,8 +1328,11 @@ namespace SharpPulsar.Protocol
 		{
 			return peerVersion >= (int)ProtocolVersion.V12;
 		}
-
-		public static bool PeerSupportAvroSchemaAvroFormat(int peerVersion)
+        public static bool PeerSupportsCarryAutoConsumeSchemaToBroker(int peerVersion)
+        {
+            return peerVersion >= (int)ProtocolVersion.V21;
+        }
+        public static bool PeerSupportAvroSchemaAvroFormat(int peerVersion)
 		{
 			return peerVersion >= (int)ProtocolVersion.V13;
 		}

@@ -12,6 +12,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Protocol;
 using SharpPulsar.Stats.Consumer.Api;
+using SharpPulsar.Tracker;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -83,13 +84,16 @@ namespace SharpPulsar.Consumer
         protected internal ICancelable BatchReceiveTimeout = null;
         protected internal readonly IActorRef StateActor;
         private readonly ICancelable _stateUpdater;
-        protected internal HandlerState State;
+        protected internal IActorRef HandlerstateActor;
         private readonly string _topic;
         protected internal readonly TaskCompletionSource<IActorRef> SubscribeFuture;
         protected internal long ConsumerEpoch;
-        internal readonly IScheduler Scheduler;
-        public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
+        protected internal readonly IScheduler Scheduler;
+        protected internal readonly IActorRef UnAckedMessageTracker;
+        protected internal readonly IActorRef Client;
+        public ConsumerActorBase(IActorRef client, IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
         {
+            Client = client;
             _self = Self;
             SubscribeFuture = subscribeFuture;
             if (conf.Interceptors != null && conf.Interceptors.Count > 0)
@@ -97,7 +101,7 @@ namespace SharpPulsar.Consumer
             StateActor = stateActor;
             _topic = topic;
             _consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
-            State = new HandlerState(lookup, connectionPool, topic, Context.System, _consumerName);
+            HandlerstateActor = Context.ActorOf(HandlerStateActor.Prop(client, lookup, connectionPool, topic, _consumerName));
             _log = Context.GetLogger();
             MaxReceiverQueueSize = receiverQueueSize;
             _subscription = conf.SubscriptionName;
@@ -142,7 +146,21 @@ namespace SharpPulsar.Consumer
             {
                 BatchReceivePolicy = BatchReceivePolicy.DefaultPolicy;
             }
-
+            if (conf.AckTimeout != TimeSpan.Zero)
+            {
+                if (conf.AckTimeoutRedeliveryBackoff != null)
+                {
+                    UnAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageRedeliveryTracker<T>.Prop(Self, UnAckedChunckedMessageIdSequenceMap, conf), "UnAckedTopicMessageRedeliveryTracker");
+                }
+                else
+                {
+                    UnAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker<T>.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf), "UnAckedTopicMessageTracker");
+                }
+            }
+            else
+            {
+                UnAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled<T>.Prop(), "UnAckedMessageTrackerDisabled");
+            }
             _stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), Self, SendState.Instance, ActorRefs.NoSender);
             InitReceiverQueueSize();
 
@@ -379,19 +397,19 @@ namespace SharpPulsar.Consumer
 
         protected void VerifyConsumerState()
         {
-            var state = State.ConnectionState;
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             switch (state)
             {
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
+                case State.Ready:
+                case State.Connecting:
                     break; // Ok
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
+                case State.Closing:
+                case State.Closed:
                     throw new AlreadyClosedException("Consumer already closed");
-                case HandlerState.State.Terminated:
+                case State.Terminated:
                     throw new TopicTerminatedException("Topic was terminated");
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
+                case State.Failed:
+                case State.Uninitialized:
                     throw new NotConnectedException();
                 default:
                     break;
@@ -654,7 +672,7 @@ namespace SharpPulsar.Consumer
             {
                 return;
             }
-            NotifyPendingBatchReceivedCallBack(opBatchReceive);
+            NotifyPendingBatchReceivedCallBack(opBatchReceive.Future);
         }
 
         private bool HasNextBatchReceive()
@@ -684,17 +702,35 @@ namespace SharpPulsar.Consumer
             return opBatchReceive;
         }
 
-        protected internal void NotifyPendingBatchReceivedCallBack(OpBatchReceive opBatchReceive)
+        protected internal void NotifyPendingBatchReceivedCallBack(TaskCompletionSource<IMessages<T>> batchReceiveFuture)
         {
             var messages = NewMessages;
-            while (IncomingMessages.TryReceive(out var msg) && messages.CanAdd(msg))
+            IncomingMessages.TryReceive(out var msg);
+            string topicName = null;
+            while (msg != null && messages.CanAdd(msg))
             {
+                // one batch receive request only can receive the same topic partition
+                // messages to ensure cumulative ack is not lost.
+                if (!BatchReceivePolicy.IsMessagesFromMultiTopicsEnabled())
+                {
+                    // get the first message's `topicName` to check if
+                    // the following message peeked is the same topic message.
+                    if (messages.Size() == 1)
+                    {
+                        topicName = messages.MessageList()[0].Topic;
+                    }
+                    // if the peeked message is not the same topic as the first message, return the batch receive result
+                    if (topicName != null && !topicName.Equals(msg.Topic))
+                    {
+                        break;
+                    }
+                }
                 MessageProcessed(msg);
                 var interceptMsg = BeforeConsume(msg);
                 messages.Add(interceptMsg);
             }
 
-            CompletePendingBatchReceive(opBatchReceive.Future, messages);
+            CompletePendingBatchReceive(batchReceiveFuture, messages);
         }
 
         protected internal virtual void CompletePendingBatchReceive(TaskCompletionSource<IMessages<T>> future, IMessages<T> messages)
@@ -716,10 +752,11 @@ namespace SharpPulsar.Consumer
 
         private void DoPendingBatchReceiveTask(TimeSpan timeout)
         {
+            var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             long timeToWaitMs;
             var hasPendingReceives = false;
             // If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            if (state == State.Closing || state == State.Closed)
             {
                 return;
             }
@@ -928,8 +965,9 @@ namespace SharpPulsar.Consumer
             if (HasParentConsumer)
             {
                 //IncomingMessages.Post(o);
-                Context.Parent.Tell(new ReceivedMessage<T>(o));
-                _log.Info($"Pushed message with SequenceId {o.SequenceId} (topic:{Topic}) to consumer parent");
+                var parent = Context.Parent;
+                parent.Tell(new ReceivedMessage<T>(o));
+                _log.Info($"Pushed message with SequenceId {o.SequenceId} (PARENT: {parent.Path}) (topic:{Topic}) to consumer parent");
 
             }
             else
@@ -943,7 +981,7 @@ namespace SharpPulsar.Consumer
     }
     internal class ConsumerStateActor : ReceiveActor
     {
-        private HandlerState.State _state;
+        private State _state;
         public ConsumerStateActor()
         {
             Receive<SetConumerState>(m =>
@@ -962,8 +1000,8 @@ namespace SharpPulsar.Consumer
     }
     internal class SetConumerState
     {
-        public HandlerState.State State { get; }
-        public SetConumerState(HandlerState.State state)
+        public State State { get; }
+        public SetConumerState(State state)
         {
             State = state;
         }

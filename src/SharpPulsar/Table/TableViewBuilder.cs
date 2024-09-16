@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Akka.Actor;
@@ -64,8 +63,7 @@ namespace SharpPulsar.Table
 
 		public virtual async ValueTask<ITableView<T>> CreateAsync()
 		{
-            var data = new ConcurrentDictionary<string, T>();
-            var actor = _client.ActorSystem.ActorOf(TableViewActor<T>.Prop(_client, _schema, _conf, data));
+            var actor = _client.ActorSystem.ActorOf(TableViewActor<T>.Prop(_client, _schema, _conf));
             // await Task.Delay(TimeSpan.FromSeconds(5));
             var response = await actor.Ask<AskResponse>(StartMessage.Instance);
             if (response.Failed)
@@ -73,7 +71,7 @@ namespace SharpPulsar.Table
                 await actor.GracefulStop(TimeSpan.FromSeconds(1));
                 throw response.Exception;
             }
-            return new TableView<T>(actor, data);
+            return new TableView<T>(actor);
 		}
 
 		public virtual ITableViewBuilder<T> Topic(string topic)

@@ -31,7 +31,7 @@ namespace SharpPulsar.Tracker
     internal class UnAckedMessageRedeliveryTracker<T> : UnAckedMessageTracker<T>
     {
         private readonly ILoggingAdapter _log = default;
-        private ICancelable _timeout;
+        //private ICancelable _timeout;
         protected internal readonly Dictionary<UnackMessageIdWrapper, HashSet<UnackMessageIdWrapper>> RedeliveryMessageIdPartitionMap;
         protected internal readonly ArrayDeque<HashSet<UnackMessageIdWrapper>> RedeliveryTimePartitions;
         private readonly IScheduler _scheduler = default;
@@ -51,7 +51,8 @@ namespace SharpPulsar.Tracker
             {
                 RedeliveryTimePartitions.AddLast(new HashSet<UnackMessageIdWrapper>());
             }
-            _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TickDuration), Self, RunJob.Instance, ActorRefs.NoSender);
+            Timers.StartSingleTimer(RunJob.Instance, RunJob.Instance, TimeSpan.FromMilliseconds(TickDuration));
+            //_timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TickDuration), Self, RunJob.Instance, ActorRefs.NoSender);
            // Timeout = Client.Timer().newTimeout(new TimerTaskAnonymousInnerClass(this, Client, ConsumerBase), this.TickDurationInMs, TimeUnit.MILLISECONDS);
 
         }
@@ -75,7 +76,8 @@ namespace SharpPulsar.Tracker
             }
             finally
             {
-                _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TickDuration), Self, RunJob.Instance, ActorRefs.NoSender);
+                Timers.StartSingleTimer(RunJob.Instance, RunJob.Instance, TimeSpan.FromMilliseconds(TickDuration));
+                //_timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TickDuration), Self, RunJob.Instance, ActorRefs.NoSender);
             }
             MessageIds.Clear();
             var messagesToRedeliver = new HashSet<IMessageId>();
@@ -99,7 +101,8 @@ namespace SharpPulsar.Tracker
             {
                 try
                 {
-                    _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(AckTimeout), Self, RunJob.Instance, ActorRefs.NoSender);
+                    Timers.StartSingleTimer(RunJob.Instance, RunJob.Instance, TimeSpan.FromMilliseconds(AckTimeout));
+                    //_timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(AckTimeout), Self, RunJob.Instance, ActorRefs.NoSender);
                 }
                 catch
                 {

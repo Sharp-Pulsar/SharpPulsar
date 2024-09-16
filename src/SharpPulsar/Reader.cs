@@ -5,6 +5,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SharpPulsar
@@ -44,6 +45,15 @@ namespace SharpPulsar
 
             return response.ConvertTo<bool>();
         }
+        public List<ITopicMessageId> LastMessageIds() => LastMessageIdsAsync().GetAwaiter().GetResult();
+        public async ValueTask<List<ITopicMessageId>> LastMessageIdsAsync()
+        {
+            var response = await _readerActor.Ask<AskResponse>(GetLastMessageIds.Instance).ConfigureAwait(false);
+            if (response.Failed)
+                throw response.Exception;
+
+            return response.ConvertTo<List<ITopicMessageId>>();
+        }
 
         public bool HasReachedEndOfTopic() => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> HasReachedEndOfTopicAsync()
@@ -70,8 +80,8 @@ namespace SharpPulsar
         public async ValueTask SeekAsync(IMessageId messageId)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.ConvertTo<HandlerState.State>();
-            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            var state = askForState.ConvertTo<State>();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new PulsarClientException.AlreadyClosedException($"The consumer was already closed when seeking the subscription of the topic {Topic} to the message {messageId}");
 
@@ -91,8 +101,8 @@ namespace SharpPulsar
         public async ValueTask SeekAsync(long timestamp)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.ConvertTo<HandlerState.State>();
-            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            var state = askForState.ConvertTo<State>();
+            if (state == State.Closing || state == State.Closed)
             {
                 throw new Exception($"The reader was already closed when seeking the subscription of the topic {Topic} to the timestamp {timestamp:D}");
 
