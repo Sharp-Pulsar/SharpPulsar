@@ -24,7 +24,7 @@ using static SharpPulsar.Client.Internal.SocketClientActor;
 
 namespace SharpPulsar.Client
 {
-    internal sealed class ClientCnx : ReceiveActor, IWithUnboundedStash, IWithTimers
+    internal sealed class ClientCnx : ReceiveActor, IWithTimers
     {
         private readonly IActorRef _socketClient;
         private readonly IAuthentication _authentication;

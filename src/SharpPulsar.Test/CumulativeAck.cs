@@ -472,7 +472,7 @@ namespace SharpPulsar.Test
                 for (var i = 0; i < messageCnt; i++)
                 {
                     var msg = consumer.Receive(TimeSpan.FromMicroseconds(5000));
-                    _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+                    _output.WriteLine($"[1] receive msgId: {msg.MessageId}, count : {i}");
                     await consumer.AcknowledgeAsync(msg.MessageId, txn);
                     receivedMessageCount++;
                 }
@@ -493,7 +493,7 @@ namespace SharpPulsar.Test
                     if (message != null)
                     {
                         await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
-                        _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                        _output.WriteLine($"[1] receive msgId: {message.MessageId}, count: {i}");
                     }
                     
                 }
@@ -512,6 +512,7 @@ namespace SharpPulsar.Test
         }
 
         [Fact(Skip = "TxnAckTestSharedSub")]
+        //[Fact]
         public async Task TxnAckTestSharedSub()
         {
             var normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
@@ -548,11 +549,11 @@ namespace SharpPulsar.Test
                     var msg = await consumer.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                     if(msg != null)
                     {
-                        _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+                        _output.WriteLine($"[1] receive msgId: {msg.MessageId}, count : {i}");
                         await consumer.AcknowledgeAsync(msg.MessageId, txn);
                         receivedMessageCount++;
                     }
-                    
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                 }
 
                 // the messages are pending ack state and can't be received
@@ -571,10 +572,10 @@ namespace SharpPulsar.Test
                     if(message != null)
                     {
                         await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
-                        _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                        _output.WriteLine($"[2] receive msgId: {message.MessageId}, count: {i}");
                         receivedMessageCount++;
                     }
-                    
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                 }
 
                 // 2) ack committed by a new txn
