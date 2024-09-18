@@ -71,58 +71,6 @@ namespace SharpPulsar
             _connectionPool = connectionPool;
             _timeCnx = timeCnx;
             _generator = idGenerator;   
-            Receive<SetClient>(c => { });
-            Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
-            Receive<GetUpdateServiceUrl>(u =>
-            {
-                UpdateServiceUrl(u.ServiceUrl);
-                Sender.Tell(GetServiceUrl());
-            });
-            Receive<GetServiceUrl>(_ => Sender.Tell(GetServiceUrl()));
-            Receive<GetResolvedHost>(_ => Sender.Tell(ResolveHost()));
-            ReceiveAsync<GetBroker>(async broke =>
-            {
-                try
-                {
-                    await GetCnxAndRequestId();
-                    await GetBroker(broke);
-                }
-                catch (Exception ex)
-                {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-                }
-            });
-            ReceiveAsync<GetPartitionedTopicMetadata>(async p => 
-            {
-                try
-                {
-                    await GetCnxAndRequestId();
-                    await PartitionedTopicMetadata(p.TopicName, p.MetadataAutoCreationEnabled, p.UseFallbackForNonPIP344Brokers);
-                }
-                catch (Exception e)
-                {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
-                    //Become(Awaiting);
-                }
-            });
-            ReceiveAsync<GetSchema>(async s => await Schema(s));
-            ReceiveAsync<GetTopicsUnderNamespace>(async t =>
-            {
-                await GetCnxAndRequestId();
-                await TopicsUnderNamespaceAsync(t);
-            });
-            ReceiveAsync<SetFindBroker>(async set =>
-            {
-                await GetCnxAndRequestId(set.Address);
-                await FindBroker(set.Topic, set.RedirectCount, set.Address, set.Authoritative, set.Sender);
-            });
-            ReceiveAsync<SetTopicsUnderNamespace>(async set =>
-            {
-                await GetCnxAndRequestId();
-                _log.Warning($"Retrying 'GetTopicsUnderNamespace' after {set.NextDelay} ms delay with requestid '{_requestId}'");
-                await TopicsUnderNamespace(set.Ns, set.Backoff, set.Mode, set.TopicsPattern, set.TopicsHash, set.OpTimeout, set.Sender);
-            });
-            
             UpdateServiceUrl(serviceUrl);
             /*
              LatencyHistogram histo = client.instrumentProvider().newLatencyHistogram("pulsar.client.lookup.duration",
@@ -139,7 +87,70 @@ namespace SharpPulsar
         {
             _serviceNameResolver.UpdateServiceUrl(serviceUrl);
             //Sender.Tell(0);
-            //Become(Awaiting);
+            Become(PublicCommands);
+        }
+        private void PublicCommands()
+        {
+
+            Receive<SetClient>(c => { });
+            Receive<UpdateServiceUrl>(u => UpdateServiceUrl(u.ServiceUrl));
+            Receive<GetUpdateServiceUrl>(u =>
+            {
+                UpdateServiceUrl(u.ServiceUrl);
+                Sender.Tell(GetServiceUrl());
+            });
+            Receive<GetServiceUrl>(_ => Sender.Tell(GetServiceUrl()));
+            Receive<GetResolvedHost>(_ => Sender.Tell(ResolveHost()));
+            ReceiveAsync<GetBroker>(async broke =>
+            {
+                try
+                {
+                    await GetCnxAndRequestId();
+                    Become(PrivateCommands);
+                    await GetBroker(broke);
+                }
+                catch (Exception ex)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                }
+            });
+            ReceiveAsync<GetPartitionedTopicMetadata>(async p =>
+            {
+                try
+                {
+                    await GetCnxAndRequestId();
+                    await PartitionedTopicMetadata(p.TopicName, p.MetadataAutoCreationEnabled, p.UseFallbackForNonPIP344Brokers);
+                }
+                catch (Exception e)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
+                    //Become(Awaiting);
+                }
+            });
+            ReceiveAsync<GetSchema>(async s => await Schema(s));
+            ReceiveAsync<GetTopicsUnderNamespace>(async t =>
+            {
+                await GetCnxAndRequestId();
+                Become(PrivateCommands);
+                await TopicsUnderNamespaceAsync(t);
+            });
+           
+
+        }
+        private void PrivateCommands()
+        {
+            ReceiveAsync<SetFindBroker>(async set =>
+            {
+                await GetCnxAndRequestId(set.Address);
+                await FindBroker(set.Topic, set.RedirectCount, set.Address, set.Authoritative, set.Sender);
+            });
+            ReceiveAsync<SetTopicsUnderNamespace>(async set =>
+            {
+                await GetCnxAndRequestId();
+                _log.Warning($"Retrying 'GetTopicsUnderNamespace' after {set.NextDelay} ms delay with requestid '{_requestId}'");
+                await TopicsUnderNamespace(set.Ns, set.Backoff, set.Mode, set.TopicsPattern, set.TopicsHash, set.OpTimeout, set.Sender);
+            });
+            ReceiveAny(s => Stash.Stash());
         }
         public string GetServiceUrl()
         {
@@ -171,13 +182,12 @@ namespace SharpPulsar
                 var opTimeout = _operationTimeout;
                 var backOff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(opTimeout.Multiply(2)).SetMax(TimeSpan.FromMinutes(1)).Create();
                 
-                await TopicsUnderNamespace(t.Namespace, backOff, t.Mode, t.TopicsPattern, t.TopicsHash, opTimeout, Sender);
-
+                await TopicsUnderNamespace(t.Namespace, backOff, t.Mode, t.TopicsPattern, t.TopicsHash, opTimeout, Sender);                
             }
             catch (Exception e)
             {
                 Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
-                
+                Become(PublicCommands);
             }
         }
         private async ValueTask TopicsUnderNamespace(NamespaceName ns, Backoff backoff, Mode mode, string topicsPattern, string topicsHash, TimeSpan opTimeout, IActorRef sender)
@@ -212,6 +222,7 @@ namespace SharpPulsar
                 if (ex.Message == "Unable to write data to the transport connection: An established connection was aborted by the software in your host machine..")
                 {
                     sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                    UnstashAll();
                     return;
                 }
                 var nextDelay = Math.Min(backoff.Next(), opTimeout.TotalMilliseconds);
@@ -236,8 +247,15 @@ namespace SharpPulsar
                     Timers.StartSingleTimer(SetTopicsUnderNamespace.Instance, 
                         new SetTopicsUnderNamespace(ns, backoff, mode, topicsPattern, topicsHash, _opTime, sender, nextDelay), TimeSpan.FromMilliseconds(nextDelay));
                     //_self.Tell(false);
+                    return;
                 }
             }
+            UnstashAll();
+        }
+        private void UnstashAll()
+        {
+            Stash?.UnstashAll();
+            Become(PublicCommands);
         }
         private async ValueTask GetBroker(GetBroker broker)
         {
@@ -259,6 +277,7 @@ namespace SharpPulsar
                 _log.Error(err.ToString());
                 
                 replyTo.Tell(new AskResponse(new PulsarClientException(err)));
+                UnstashAll();
                 return;
             }
             var askResponse = await NewLookup(topic, authoritative);
@@ -277,7 +296,7 @@ namespace SharpPulsar
                 {
                     _log.Warning($"[{topic}] lookup failed : {askResponse.Exception.Message}");
                 }
-
+                UnstashAll();
                 return;
             }
             var data = askResponse.ConvertTo<LookupDataResult>();
@@ -312,6 +331,7 @@ namespace SharpPulsar
                     if (data.Redirect)
                     {                        
                         Self.Tell(new SetFindBroker(topic, redirectCount + 1, responseBrokerAddress, data.Authoritative, replyTo));
+                        return;
                     }
                     else
                     {
@@ -327,6 +347,7 @@ namespace SharpPulsar
                     replyTo.Tell(new AskResponse(new PulsarClientException(parseUrlException)));
                 }
             }
+            UnstashAll();
         }
         private async ValueTask GetCnxAndRequestId()
         {
