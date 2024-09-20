@@ -88,7 +88,7 @@ namespace SharpPulsar
 		/// <summary>
 		/// This method is called when the message send to the broker has been acknowledged, or when sending the record fails
 		/// before it gets send to the broker.
-		/// This method calls <seealso cref="ProducerInterceptor.onSendAcknowledgement(Producer, Message, MessageId, System.Exception)"/> method for
+		/// This method calls <seealso cref="ProducerInterceptor.onSendAcknowledgement(Producer, Message, MessageIdAdv, System.Exception)"/> method for
 		/// each interceptor.
 		/// 
 		/// This method does not throw exceptions. Exceptions thrown by any of interceptor methods are caught and ignored.

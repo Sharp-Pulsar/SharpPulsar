@@ -24,16 +24,16 @@ namespace SharpPulsar
 {
 
     [Serializable]
-    public class ChunkMessageId : MessageId, IMessageId
+    public class ChunkMessageId : MessageIdAdv, IMessageId
     {
-        private MessageId _firstChunkMsgId;
+        private MessageIdAdv _firstChunkMsgId;
 
-        public ChunkMessageId(MessageId firstChunkMsgId, MessageId lastChunkMsgId) : base(lastChunkMsgId.LedgerId, lastChunkMsgId.EntryId, lastChunkMsgId.PartitionIndex)
+        public ChunkMessageId(MessageIdAdv firstChunkMsgId, MessageIdAdv lastChunkMsgId) : base(lastChunkMsgId.LedgerId, lastChunkMsgId.EntryId, lastChunkMsgId.PartitionIndex)
         {
             _firstChunkMsgId = firstChunkMsgId;
         }
 
-        public virtual MessageId FirstChunkMessageId
+        public virtual MessageIdAdv FirstChunkMessageId
         {
             get
             {
@@ -41,7 +41,7 @@ namespace SharpPulsar
             }
         }
 
-        public virtual MessageId LastChunkMessageId
+        public virtual MessageIdAdv LastChunkMessageId
         {
             get
             {
@@ -62,7 +62,7 @@ namespace SharpPulsar
 
             // write first chunk message id
             msgId.FirstChunkMessageId = msgId;
-            _firstChunkMsgId = new MessageId(-1, -1, 0);
+            _firstChunkMsgId = new MessageIdAdv(-1, -1, 0);
 
             return FirstChunkMessageId.ToByteArray();
         }

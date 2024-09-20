@@ -38,7 +38,7 @@ namespace SharpPulsar.EventSource.Trino.Tagged
             _message = message;
             _toMessageId = message.ToMessageId;
             _lastEventMessageId = _message.FromMessageId;
-            _partitionIndex = ((MessageId)MessageIdUtils.GetMessageId(message.FromMessageId)).PartitionIndex;
+            _partitionIndex = ((MessageIdAdv)MessageIdUtils.GetMessageId(message.FromMessageId)).PartitionIndex;
             _queryRange = message.ToMessageId - message.FromMessageId;
             FirstQuery(isLive);
         }
@@ -47,8 +47,8 @@ namespace SharpPulsar.EventSource.Trino.Tagged
             try
             {
                 var max = _message.ToMessageId - _message.FromMessageId;
-                var start = (MessageId)MessageIdUtils.GetMessageId(_message.FromMessageId);
-                var end = (MessageId)MessageIdUtils.GetMessageId(_message.ToMessageId);
+                var start = (MessageIdAdv)MessageIdUtils.GetMessageId(_message.FromMessageId);
+                var end = (MessageIdAdv)MessageIdUtils.GetMessageId(_message.ToMessageId);
                 var query = $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where __partition__ = {_partitionIndex} AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint '{start.LedgerId}' AND bigint '{end.LedgerId}' AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint '{start.EntryId}' AND bigint '{end.EntryId}' AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {_queryRange}";
                 var options = _message.Options;
                 options.Catalog = "pulsar";
@@ -75,8 +75,8 @@ namespace SharpPulsar.EventSource.Trino.Tagged
                 if (max > 0)
                 {
 
-                    var start = (MessageId)MessageIdUtils.GetMessageId(_lastEventMessageId);
-                    var end = (MessageId)MessageIdUtils.GetMessageId(_currentOffset);
+                    var start = (MessageIdAdv)MessageIdUtils.GetMessageId(_lastEventMessageId);
+                    var end = (MessageIdAdv)MessageIdUtils.GetMessageId(_currentOffset);
                     var query =
                         $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where __partition__ = {_partitionIndex} AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint '{start.LedgerId}' AND bigint '{end.LedgerId}' AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint '{start.EntryId + 1}' AND bigint '{end.EntryId}' AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {_queryRange}";
                     var options = _message.Options;
@@ -108,7 +108,7 @@ namespace SharpPulsar.EventSource.Trino.Tagged
                 {
                     var msgData = c.Data.ElementAt(i);
                     var msg = msgData["__message_id__"].ToString().Trim('(', ')').Split(',').Select(int.Parse).ToArray();
-                    var messageId = MessageIdUtils.GetOffset(new MessageId(msg[0], msg[1], msg[2]));
+                    var messageId = MessageIdUtils.GetOffset(new MessageIdAdv(msg[0], msg[1], msg[2]));
                     if (messageId <= _toMessageId)
                     {
                         var eventMessage = new EventEnvelope(msgData, messageId, _topicName.ToString());
@@ -141,7 +141,7 @@ namespace SharpPulsar.EventSource.Trino.Tagged
                 {
                     var msgData = c.Data.ElementAt(i);
                     var msg = msgData["__message_id__"].ToString().Trim('(', ')').Split(',').Select(int.Parse).ToArray();
-                    var messageId = MessageIdUtils.GetOffset(new MessageId(msg[0], msg[1], msg[2]));
+                    var messageId = MessageIdUtils.GetOffset(new MessageIdAdv(msg[0], msg[1], msg[2]));
 
                     var eventMessage = new EventEnvelope(msgData, messageId, _topicName.ToString());
                     _buffer.Post(eventMessage);

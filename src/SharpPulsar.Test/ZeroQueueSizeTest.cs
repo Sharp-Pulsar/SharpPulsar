@@ -245,7 +245,7 @@ namespace SharpPulsar.Test
 			//await Task.Delay(10000);
 			//Assert.True(latch.Value.Wait(TimeSpan.FromSeconds(2)), "Timed out waiting for message listener acks");
 
-			//await consumer.UnsubscribeAsync();//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
+			await consumer.UnsubscribeAsync();//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
             await producer.CloseAsync();//;//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030 https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
         public async Task InitializeAsync()

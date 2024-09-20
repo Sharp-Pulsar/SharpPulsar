@@ -32,19 +32,19 @@ namespace SharpPulsar
         private BrokerEntryMetadata _brokerEntryMetadata;
         private MessageMetadata _messageMetadata;
         private SingleMessageMetadata _singleMessageMetadata;
-        private MessageId _messageId;
+        private MessageIdAdv _messageId;
         private int _redeliveryCount;
         private long _consumerEpoch;
         private BatchMessageAcker _acker;
         private BitSet _ackBitSet;
-        private Func<MessageId, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, long, IMessage<T>> _asSingleMessage;
-        private Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageId, ISchema<T>, bool, BitSet, BatchMessageAcker, int, long, IMessage<T>> _newSingleMessage;
+        private Func<MessageIdAdv, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, long, IMessage<T>> _asSingleMessage;
+        private Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageIdAdv, ISchema<T>, bool, BitSet, BatchMessageAcker, int, long, IMessage<T>> _newSingleMessage;
         private Func<MessageMetadata, bool> _isBatch;
 
-        public static MessagePayloadContext<T> Get(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, MessageId messageId, int redeliveryCount, IList<long> ackSet, long consumerEpoch, 
+        public static MessagePayloadContext<T> Get(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, MessageIdAdv messageId, int redeliveryCount, IList<long> ackSet, long consumerEpoch, 
             Func<MessageMetadata, bool> isbacth, 
-            Func<MessageId, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, long, IMessage<T>> asSingleMessage,
-            Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageId, ISchema<T>, bool, BitSet, BatchMessageAcker, int, long, IMessage<T>> newSingleMessage)
+            Func<MessageIdAdv, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, long, IMessage<T>> asSingleMessage,
+            Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageIdAdv, ISchema<T>, bool, BitSet, BatchMessageAcker, int, long, IMessage<T>> newSingleMessage)
         {
             var context = new MessagePayloadContext<T>
             {

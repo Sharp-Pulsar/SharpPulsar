@@ -71,7 +71,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                     var partitionTopic = TopicName.Get(topic).GetPartition(i);
                     var partitionName = partitionTopic.ToString();
                     var msgId = GetMessageId();
-                    var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, new MessageId(msgId.LedgerId, msgId.EntryId, i),
+                    var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, new MessageIdAdv(msgId.LedgerId, msgId.EntryId, i),
                         (int)(_message.ToMessageId - _message.FromMessageId));
                     var child = Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, false,_message.Tag, _schema));
                     Context.Watch(child);
@@ -85,16 +85,16 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                 Context.Watch(child);
             }
         }
-        private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, MessageId messageId, int permits)
+        private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, MessageIdAdv messageId, int permits)
         {
             readerConfiguration.TopicName = topic;
             readerConfiguration.StartMessageId = messageId;
             readerConfiguration.ReceiverQueueSize = permits;
             return readerConfiguration;
         }
-        private MessageId GetMessageId()
+        private MessageIdAdv GetMessageId()
         {
-            return (MessageId)MessageIdUtils.GetMessageId(_message.FromMessageId);
+            return (MessageIdAdv)MessageIdUtils.GetMessageId(_message.FromMessageId);
         }
         public static Props Prop(CurrentEventsByTag<T> message, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {

@@ -373,9 +373,9 @@ namespace Tutorials
 
             });
         }
-        private static async ValueTask<List<MessageId>> PublishMessages(string topic, int count, string message, PulsarClient client)
+        private static async ValueTask<List<MessageIdAdv>> PublishMessages(string topic, int count, string message, PulsarClient client)
         {
-            var keys = new List<MessageId>();
+            var keys = new List<MessageIdAdv>();
             var builder = new ProducerConfigBuilder<byte[]>()
                 .Topic(topic);
             var producer = await client.NewProducerAsync(builder);

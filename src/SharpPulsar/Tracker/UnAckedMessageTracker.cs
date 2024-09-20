@@ -119,15 +119,15 @@ namespace SharpPulsar.Tracker
             });
             Receive<bool>(c => 
             {
-                _log.Info($"UnAckedMessageTracker `bool` {c}");
+                //_log.Info($"UnAckedMessageTracker `bool` {c}");
             });
             Receive<string>(s => 
             {
-                _log.Info($"UnAckedMessageTracker `string` {s}");
+                //_log.Info($"UnAckedMessageTracker `string` {s}");
             });
             Receive<int>(i => 
             {
-                _log.Info($"UnAckedMessageTracker `int` {i}");
+                //_log.Info($"UnAckedMessageTracker `int` {i}");
             });
         }
         internal virtual void RedeliverMessages()
@@ -174,7 +174,7 @@ namespace SharpPulsar.Tracker
         }
         internal async ValueTask AddChunkedMessageIdsAndRemoveFromSequenceMap(IMessageId messageId, ISet<IMessageId> messageIds, IActorRef unack)
         {            
-            if (messageId is MessageId)
+            if (messageId is MessageIdAdv)
             {
                 UnAckedChunckedMessageIdSequenceMapCmdResponse? chunkedMsgIds = await Unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId })); ;
                 if (chunkedMsgIds != null && chunkedMsgIds?.MessageIds.Length > 0)
@@ -329,12 +329,12 @@ namespace SharpPulsar.Tracker
 
     public readonly record struct UnAckedChunckedMessageIdSequenceMapCmdResponse
     {
-        public UnAckedChunckedMessageIdSequenceMapCmdResponse(MessageId[] messageIds)
+        public UnAckedChunckedMessageIdSequenceMapCmdResponse(MessageIdAdv[] messageIds)
         {
             MessageIds = messageIds;
         }
 
-        public MessageId[] MessageIds { get; }
+        public MessageIdAdv[] MessageIds { get; }
     }
 
     public readonly record struct AckTimeoutSend

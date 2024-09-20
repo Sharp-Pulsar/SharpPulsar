@@ -114,14 +114,14 @@ namespace SharpPulsar.Test
             await consumer1.RedeliverUnacknowledgedMessagesAsync(messageIds);
             _output.WriteLine($"MessageIds: [{messageIds.Count}]");
             //await Task.Delay(1000);
-            MessageId lastMsgId = null;
+            MessageIdAdv lastMsgId = null;
             var count = 1;
             for (var i = 0; i < totalMsgs / 2; i++)
             {
                 var message = (Message<byte[]>)await consumer1.ReceiveAsync(TimeSpan.FromMicroseconds(5000));
                 if (message != null)
                 {
-                    var msgId = (MessageId)message.MessageId;
+                    var msgId = (MessageIdAdv)message.MessageId;
                     if (lastMsgId != null)
                     {
                         Assert.True(lastMsgId.LedgerId <= msgId.LedgerId, "lastMsgId: " + lastMsgId + " -- msgId: " + msgId);

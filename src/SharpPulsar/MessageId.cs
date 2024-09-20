@@ -28,18 +28,18 @@ using SharpPulsar.Protocol.Proto;
 /// </summary>
 namespace SharpPulsar
 {
-    public class MessageId : IMessageIdAdv
+    public class MessageIdAdv : IMessageIdAdv
 	{
 		private  readonly long _ledgerId;
 		private readonly long _entryId;
 		private readonly int _partitionIndex;
 
 		// Private constructor used only for json deserialization
-		private MessageId() : this(-1, -1, -1)
+		private MessageIdAdv() : this(-1, -1, -1)
 		{
 		}
 
-		public MessageId(long ledgerId, long entryId, int partitionIndex)
+		public MessageIdAdv(long ledgerId, long entryId, int partitionIndex)
 		{
 			_ledgerId = ledgerId;
 			_entryId = entryId;
@@ -79,7 +79,7 @@ namespace SharpPulsar
 
             MessageIdData idData = builder;
 
-			MessageId messageId;
+			MessageIdAdv messageId;
             if (idData.BatchIndex >= 0)
             {
                 if (idData.BatchSize > 0)
@@ -95,13 +95,13 @@ namespace SharpPulsar
             {
                 var firstChunkIdData = idData.FirstChunkMessageId;
                 messageId = new ChunkMessageId(
-                        new MessageId((long)firstChunkIdData.ledgerId, (long)firstChunkIdData.entryId,
+                        new MessageIdAdv((long)firstChunkIdData.ledgerId, (long)firstChunkIdData.entryId,
                                 firstChunkIdData.Partition),
-                        new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition));
+                        new MessageIdAdv((long)idData.ledgerId, (long)idData.entryId, idData.Partition));
             }
             else
             {
-                messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
+                messageId = new MessageIdAdv((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
             }
             
 
@@ -136,7 +136,7 @@ namespace SharpPulsar
             }
             else
             {
-                messageId = new MessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
+                messageId = new MessageIdAdv((long)idData.ledgerId, (long)idData.entryId, idData.Partition);
             }
 			if (idData.Partition > -1 && topicName != null)
 			{
@@ -175,7 +175,7 @@ namespace SharpPulsar
             return msgId;
         }
 
-        public static MessageId ConvertToMessageId(IMessageId messageId)
+        public static MessageIdAdv ConvertToMessageId(IMessageId messageId)
 		{
 			/*if (messageId is BatchMessageId batch)
 			{
@@ -194,13 +194,13 @@ namespace SharpPulsar
             {
                 if (messageId is TopicMessageId topic) 
                 {
-                    return (MessageId)topic.MessageId;
+                    return (MessageIdAdv)topic.MessageId;
                 } 
                 else
                 {
                     try
                     {
-                        return (MessageId)IMessageId.FromByteArray(messageId.ToByteArray());
+                        return (MessageIdAdv)IMessageId.FromByteArray(messageId.ToByteArray());
                     }
                     catch (IOException)
                     {
@@ -209,7 +209,7 @@ namespace SharpPulsar
                 }
             }
             
-            return (MessageId)messageId;
+            return (MessageIdAdv)messageId;
         }
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
 		public virtual byte[] ToByteArray(int batchIndex, int batchSize)
@@ -249,7 +249,7 @@ namespace SharpPulsar
 
 				return ord;
 			}
-			if (o is MessageId other)
+			if (o is MessageIdAdv other)
             {
                 var ledgerCompare = _ledgerId.CompareTo(other.LedgerId);
                 if (ledgerCompare != 0)

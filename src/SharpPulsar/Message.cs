@@ -92,20 +92,20 @@ namespace SharpPulsar
         }
 
         // Constructor for incoming message
-        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
+        internal Message(string topic, MessageIdAdv messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
         {
         }
 
-        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0, false, Commands.DefaultConsumerEpoch)
+        internal Message(string topic, MessageIdAdv messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0, false, Commands.DefaultConsumerEpoch)
         {
         }
-        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
+        internal Message(string topic, MessageIdAdv messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
         {
             //_metadata = new MessageMetadata();
             Init(this, topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage, consumerEpoch);
         }
 
-        public static Message<T> Create(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
+        public static Message<T> Create(string topic, MessageIdAdv messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
         {
             if (pooledMessage)
             {
@@ -136,7 +136,7 @@ namespace SharpPulsar
             Init(this, topic, batchMessageIdImpl, batchMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, keepMessageInDirectMemory, consumerEpoch);
         }
         
-        internal static void Init(Message<T> msg, string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage, long consumerEpoch)
+        internal static void Init(Message<T> msg, string topic, MessageIdAdv messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage, long consumerEpoch)
         {
             Init(msg, topic, null, msgMetadata, null, payload, encryptionCtx, cnx, schema, redeliveryCount, poolMessage, consumerEpoch);
             msg._messageId = messageId;
@@ -239,7 +239,7 @@ namespace SharpPulsar
             }
             else
             {
-                _messageId = new MessageId(ledgerId, entryId, -1);
+                _messageId = new MessageIdAdv(ledgerId, entryId, -1);
             }
             _topic = topic;
             _cnx = null;
@@ -624,7 +624,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public void SetMessageId(MessageId messageId)
+		public void SetMessageId(MessageIdAdv messageId)
 		{
 			MessageId = messageId;
 		}

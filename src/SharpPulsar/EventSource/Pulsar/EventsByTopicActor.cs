@@ -61,7 +61,7 @@ namespace SharpPulsar.EventSource.Pulsar
                     var partitionTopic = TopicName.Get(topic).GetPartition(i);
                     var partitionName = partitionTopic.ToString();
                     var msgId = GetMessageId();
-                    var newMsgId = new MessageId(msgId.LedgerId, msgId.EntryId, i);
+                    var newMsgId = new MessageIdAdv(msgId.LedgerId, msgId.EntryId, i);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, newMsgId, (int)(_message.ToMessageId - _message.FromMessageId));
                     Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, true, _schema));                    
                 }
@@ -73,7 +73,7 @@ namespace SharpPulsar.EventSource.Pulsar
                 Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, true, _schema));
             }
         }
-        private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, MessageId msgId, int permits)
+        private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, MessageIdAdv msgId, int permits)
         {
             readerConfiguration.TopicName = topic;
             readerConfiguration.StartMessageId = msgId;
@@ -81,9 +81,9 @@ namespace SharpPulsar.EventSource.Pulsar
             return readerConfiguration;
         }
 
-        private MessageId GetMessageId()
+        private MessageIdAdv GetMessageId()
         {
-            return (MessageId)MessageIdUtils.GetMessageId(_message.FromMessageId);
+            return (MessageIdAdv)MessageIdUtils.GetMessageId(_message.FromMessageId);
         }
         public static Props Prop(EventsByTopic<T> message, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {

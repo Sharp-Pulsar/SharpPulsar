@@ -59,12 +59,12 @@ namespace SharpPulsar.Test
             var unack = _client.ActorSystem.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(unack, consumer.ConsumerActor, consumer.ConsumerActor/*dummy*/, 1, consumer.ConsumerActor, conf));
 
-            var msg1 = new MessageId(5, 1, 0);
-            var msg2 = new MessageId(5, 2, 0);
-            var msg3 = new MessageId(5, 3, 0);
-            var msg4 = new MessageId(5, 4, 0);
-            var msg5 = new MessageId(5, 5, 0);
-            var msg6 = new MessageId(5, 6, 0);
+            var msg1 = new MessageIdAdv(5, 1, 0);
+            var msg2 = new MessageIdAdv(5, 2, 0);
+            var msg3 = new MessageIdAdv(5, 3, 0);
+            var msg4 = new MessageIdAdv(5, 4, 0);
+            var msg5 = new MessageIdAdv(5, 5, 0);
+            var msg6 = new MessageIdAdv(5, 6, 0);
             var isDuplicate = await tracker.Ask<bool>(new IsDuplicate(msg1));
             Assert.False(isDuplicate);
             tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>()));
@@ -134,17 +134,18 @@ namespace SharpPulsar.Test
         public async Task TestImmediateAckingTracker()
         {
             
-            var builder = new ConsumerConfigBuilder<byte[]>();
-            builder.AcknowledgmentGroupTime(TimeSpan.Zero);
-            builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
-            builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
+            var builder = new ConsumerConfigBuilder<byte[]>()
+            .AcknowledgmentGroupTime(TimeSpan.Zero)
+            .IsAckReceiptEnabled(false)
+            .Topic($"TestAckTracker-{Guid.NewGuid()}")
+            .SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
             var conf = builder.ConsumerConfigurationData;
             var consumer = await _client.NewConsumerAsync(builder);
             var unack = _client.ActorSystem.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(unack, consumer.ConsumerActor, consumer.ConsumerActor/*dummy*/, 1, consumer.ConsumerActor, conf));
 
-            var msg1 = new MessageId(5, 1, 0);
-            var msg2 = new MessageId(5, 2, 0);
+            var msg1 = new MessageIdAdv(5, 1, 0);
+            var msg2 = new MessageIdAdv(5, 2, 0);
 
             var isDuplicate = await tracker.Ask<bool>(new IsDuplicate(msg1));
             Assert.False(isDuplicate);
@@ -178,12 +179,12 @@ namespace SharpPulsar.Test
             var unack = _client.ActorSystem.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(unack, consumer.ConsumerActor, consumer.ConsumerActor/*dummy*/, 1, consumer.ConsumerActor, conf));
 
-            var msg1 = new MessageId(5, 1, 0);
-            var msg2 = new MessageId(5, 2, 0);
-            var msg3 = new MessageId(5, 3, 0);
-            var msg4 = new MessageId(5, 4, 0);
-            var msg5 = new MessageId(5, 5, 0);
-            var msg6 = new MessageId(5, 6, 0);
+            var msg1 = new MessageIdAdv(5, 1, 0);
+            var msg2 = new MessageIdAdv(5, 2, 0);
+            var msg3 = new MessageIdAdv(5, 3, 0);
+            var msg4 = new MessageIdAdv(5, 4, 0);
+            var msg5 = new MessageIdAdv(5, 5, 0);
+            var msg6 = new MessageIdAdv(5, 6, 0);
 
             var isDuplicate = await tracker.Ask<bool>(new IsDuplicate(msg1));
             Assert.False(isDuplicate);

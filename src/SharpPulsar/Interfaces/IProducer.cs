@@ -53,8 +53,8 @@ namespace SharpPulsar.Interfaces
 		///             if the message was not correctly received by the system within the timeout period </exception>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-		MessageId Send(T message);
-		ValueTask<MessageId> SendAsync(T message);
+		MessageIdAdv Send(T message);
+		ValueTask<MessageIdAdv> SendAsync(T message);
 
 		
 		/// <summary>

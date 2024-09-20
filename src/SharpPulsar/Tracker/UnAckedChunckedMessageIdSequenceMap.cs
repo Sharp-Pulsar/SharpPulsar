@@ -8,24 +8,24 @@ namespace SharpPulsar.Tracker
 {
     public class UnAckedChunckedMessageIdSequenceMap: ReceiveActor
     {
-        private readonly Dictionary<IMessageIdAdv, MessageId[]> _unAckedChunckedMessageIdSequenceMap;
+        private readonly Dictionary<IMessageIdAdv, MessageIdAdv[]> _unAckedChunckedMessageIdSequenceMap;
         public UnAckedChunckedMessageIdSequenceMap()
         {
-            _unAckedChunckedMessageIdSequenceMap = new Dictionary<IMessageIdAdv, MessageId[]>();
+            _unAckedChunckedMessageIdSequenceMap = new Dictionary<IMessageIdAdv, MessageIdAdv[]>();
             Receive<UnAckedChunckedMessageIdSequenceMapCmd>(r =>
             {
-                var ids = new List<MessageId>();
+                var ids = new List<MessageIdAdv>();
                 var cmd = r.Command;
                 var messageIds = r.MessageId;
                 foreach (var msgId in messageIds)
                 {
-                    MessageId msgid;
+                    MessageIdAdv msgid;
                     if (msgId is BatchMessageId id)
-                        msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
+                        msgid = new MessageIdAdv(id.LedgerId, id.EntryId, id.PartitionIndex);
                     else if (msgId is TopicMessageId tmid)
-                        msgid = (MessageId)tmid.MessageId;
+                        msgid = (MessageIdAdv)tmid.MessageId;
                     else
-                        msgid = (MessageId)msgId;
+                        msgid = (MessageIdAdv)msgId;
 
                     if (cmd == UnAckedCommand.Remove)
                     {
@@ -60,10 +60,10 @@ namespace SharpPulsar.Tracker
 
     public sealed class AddMessageIds
     {
-        public MessageId MessageId { get; }
-        public MessageId[] MessageIds { get; }
+        public MessageIdAdv MessageId { get; }
+        public MessageIdAdv[] MessageIds { get; }
 
-        public AddMessageIds(MessageId id, MessageId[] ids)
+        public AddMessageIds(MessageIdAdv id, MessageIdAdv[] ids)
         {
             MessageId = id;
             MessageIds = ids;

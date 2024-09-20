@@ -105,20 +105,20 @@ namespace SharpPulsar
         }
         internal IActorRef GetProducer => _producerActor;
 
-        public MessageId Send(T message)
+        public MessageIdAdv Send(T message)
         {
             return SendAsync(message).GetAwaiter().GetResult();
         }
-        public async ValueTask<MessageId> SendAsync(T message)
+        public async ValueTask<MessageIdAdv> SendAsync(T message)
         {
             return await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
         }
 
-        public MessageId Send<TK, TV>(T message)
+        public MessageIdAdv Send<TK, TV>(T message)
         {
             return SendAsync<TK, TV>(message).GetAwaiter().GetResult();
         }
-        public async ValueTask<MessageId> SendAsync<TK, TV>(T message)
+        public async ValueTask<MessageIdAdv> SendAsync<TK, TV>(T message)
         {
             return await NewMessage().Value<TK, TV>(message).SendAsync().ConfigureAwait(false);
         }

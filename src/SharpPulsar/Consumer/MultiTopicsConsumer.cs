@@ -592,11 +592,11 @@ namespace SharpPulsar.Consumer
             });
             Receive<bool>(c =>
             {
-                _log.Info($"MultiTopicConsumer `bool` {c}");
+                //_log.Info($"MultiTopicConsumer `bool` {c}");
             });
             Receive<int>(i =>
             {
-                _log.Info($"MultiTopicConsumer `int` {i}");
+                //_log.Info($"MultiTopicConsumer `int` {i}");
             });
             ReceiveAsync<string>(async s => 
             {
@@ -1375,7 +1375,7 @@ namespace SharpPulsar.Consumer
         }
         internal override async ValueTask Seek(IMessageId messageId)
         {
-            var targetMessageId = MessageId.ConvertToMessageId(messageId);
+            var targetMessageId = MessageIdAdv.ConvertToMessageId(messageId);
             if (targetMessageId == null || IsIllegalMultiTopicsMessageId(messageId))
             {
                 throw new PulsarClientException("Illegal messageId, messageId can only be earliest/latest");
