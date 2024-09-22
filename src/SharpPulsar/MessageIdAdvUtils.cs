@@ -74,12 +74,12 @@ namespace SharpPulsar
                 return (IMessageIdAdv)messageId;
             }
             IMessageIdAdv msgId = (IMessageIdAdv)messageId;
-            return new MessageId(msgId.LedgerId, msgId.EntryId, msgId.PartitionIndex);
+            return new MessageIdAdv(msgId.LedgerId, msgId.EntryId, msgId.PartitionIndex);
         }
 
         internal static IMessageIdAdv prevMessageId(IMessageIdAdv msgId)
         {
-            return new MessageId(msgId.LedgerId, msgId.EntryId - 1, msgId.PartitionIndex);
+            return new MessageIdAdv(msgId.LedgerId, msgId.EntryId - 1, msgId.PartitionIndex);
         }
     }
 

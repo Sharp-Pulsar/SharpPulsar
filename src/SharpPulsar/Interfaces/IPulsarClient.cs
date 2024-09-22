@@ -154,13 +154,13 @@ namespace SharpPulsar.Interfaces
         /// Create a topic reader builder with no schema (<seealso cref="ISchema{T}.Bytes"/>) to read from the specified topic.
         /// 
         /// <para>The Reader provides a low-level abstraction that allows for manual positioning in the topic, without using a
-        /// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(MessageId)"/>
+        /// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(MessageIdAdv)"/>
         /// that can either be:
         /// <ul>
-        /// <li><seealso cref="MessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
-        /// <li><seealso cref="MessageId.latest"/>: Start reading from end of the topic. The first message read will be the one
+        /// <li><seealso cref="MessageIdAdv.earliest"/>: Start reading from the earliest message available in the topic</li>
+        /// <li><seealso cref="MessageIdAdv.latest"/>: Start reading from end of the topic. The first message read will be the one
         /// published <b>*after*</b> the creation of the builder</li>
-        /// <li><seealso cref="MessageId"/>: Position the reader on a particular message. The first message read will be the one
+        /// <li><seealso cref="MessageIdAdv"/>: Position the reader on a particular message. The first message read will be the one
         /// immediately <b>*after*</b> the specified message</li>
         /// </ul>
         /// 
@@ -195,7 +195,7 @@ namespace SharpPulsar.Interfaces
 		/// Create a topic reader builder with a specific <seealso cref="Schema"/>) to read from the specified topic.
 		/// 
 		/// <para>The Reader provides a low-level abstraction that allows for manual positioning in the topic, without using a
-		/// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(MessageId)"/> that can either
+		/// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(MessageIdAdv)"/> that can either
 		/// be:
 		/// <ul>
 		/// <li><seealso cref="IMessageId.Earliest"/>: Start reading from the earliest message available in the topic</li>

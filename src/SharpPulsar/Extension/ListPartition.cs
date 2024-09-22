@@ -8,10 +8,10 @@ namespace SharpPulsar.Extension
 {
     internal static class ListPartition
     {
-        public static IEnumerable<IList<MessageId>> PartitionMessageId(this IList<IMessageId> source, int chunkSize)
+        public static IEnumerable<IList<MessageIdAdv>> PartitionMessageId(this IList<IMessageId> source, int chunkSize)
         {
             return source
-                .Select((x, i) => new { Index = i, Value = (MessageId)x })
+                .Select((x, i) => new { Index = i, Value = (MessageIdAdv)x })
                 .GroupBy(x => x.Index / chunkSize)
                 .Select(x => x.Select(v => v.Value).ToList())
                 .ToList();
@@ -23,10 +23,10 @@ namespace SharpPulsar.Extension
                 .Select(x => x.Select(v => v).ToList())
                 .ToList();
         }
-        public static List<List<MessageId>> PartitionMessageId(this ISet<IMessageId> source, int chunkSize)
+        public static List<List<MessageIdAdv>> PartitionMessageId(this ISet<IMessageId> source, int chunkSize)
         {
             return source
-                .Select((x, i) => new { Index = i, Value = (MessageId)x })
+                .Select((x, i) => new { Index = i, Value = (MessageIdAdv)x })
                 .GroupBy(x => chunkSize)
                 .Select(x => x.Select(v => v.Value).ToList())
                 .ToList();

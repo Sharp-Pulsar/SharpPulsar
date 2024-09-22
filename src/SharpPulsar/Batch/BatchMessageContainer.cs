@@ -225,9 +225,9 @@ namespace SharpPulsar.Batch
 		}
         private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, IMessageId messageId, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
-            if (messageId is MessageId)
+            if (messageId is MessageIdAdv)
             {
-                return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
+                return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType.Crc32C, ((MessageIdAdv)messageId).LedgerId, ((MessageIdAdv)messageId).EntryId, msgMetadata, compressedPayload);
             }
             else
             {

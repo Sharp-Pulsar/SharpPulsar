@@ -117,10 +117,10 @@ namespace SharpPulsar.Interfaces
         /// <summary>
         /// The initial reader positioning is done by specifying a message id. The options are:
         /// <ul>
-        /// <li><seealso cref="MessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
-        /// <li><seealso cref="MessageId.latest"/>: Start reading from end of the topic. The first message read will be the one
+        /// <li><seealso cref="MessageIdAdv.earliest"/>: Start reading from the earliest message available in the topic</li>
+        /// <li><seealso cref="MessageIdAdv.latest"/>: Start reading from end of the topic. The first message read will be the one
         /// published <b>*after*</b> the creation of the builder</li>
-        /// <li><seealso cref="MessageId"/>: Position the reader on a particular message. The first message read will be the one
+        /// <li><seealso cref="MessageIdAdv"/>: Position the reader on a particular message. The first message read will be the one
         /// immediately <b>*after*</b> the specified message</li>
         /// </ul>
         /// 
@@ -145,9 +145,9 @@ namespace SharpPulsar.Interfaces
         IReaderBuilder<T> StartMessageFromRollbackDuration(TimeSpan rollbackDuration);
 
         /// <summary>
-        /// Set the reader to include the given position of <seealso cref="IReaderBuilder.startMessageId(MessageId)"/>
+        /// Set the reader to include the given position of <seealso cref="IReaderBuilder.startMessageId(MessageIdAdv)"/>
         /// 
-        /// <para>This configuration option also applies for any cursor reset operation like <seealso cref="Reader.seek(MessageId)"/>.
+        /// <para>This configuration option also applies for any cursor reset operation like <seealso cref="Reader.seek(MessageIdAdv)"/>.
         /// 
         /// </para>
         /// </summary>

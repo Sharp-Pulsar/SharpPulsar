@@ -34,7 +34,7 @@ namespace SharpPulsar
                 BatchIndex = batchMessageId.BatchIndex;
                 PartitionIndex = batchMessageId.PartitionIndex;
             }
-            else if (messageId is MessageId msgId)
+            else if (messageId is MessageIdAdv msgId)
             {
                 LedgerId = msgId.LedgerId;
                 EntryId = msgId.EntryId;

@@ -31,8 +31,8 @@ namespace SharpPulsar.Test.API
         [Fact]
         public virtual void TestEqual()
         {
-            var MessageId1 = new MessageId(123L, 345L, 567);
-            var MessageId2 = new MessageId(123L, 345L, 567);
+            var MessageId1 = new MessageIdAdv(123L, 345L, 567);
+            var MessageId2 = new MessageIdAdv(123L, 345L, 567);
 
             var batchMessageId1 = new BatchMessageId(234L, 345L, 456, 567);
             var batchMessageId2 = new BatchMessageId(234L, 345L, 456, 567);
@@ -43,10 +43,10 @@ namespace SharpPulsar.Test.API
         [Fact]
         public virtual void TestGreaterThan()
         {
-            var MessageId1 = new MessageId(124L, 345L, 567);
-            var MessageId2 = new MessageId(123L, 345L, 567);
-            var MessageId3 = new MessageId(123L, 344L, 567);
-            var MessageId4 = new MessageId(123L, 344L, 566);
+            var MessageId1 = new MessageIdAdv(124L, 345L, 567);
+            var MessageId2 = new MessageIdAdv(123L, 345L, 567);
+            var MessageId3 = new MessageIdAdv(123L, 344L, 567);
+            var MessageId4 = new MessageIdAdv(123L, 344L, 566);
 
             var batchMessageId1 = new BatchMessageId(235L, 345L, 456, 567);
             var batchMessageId2 = new BatchMessageId(234L, 346L, 456, 567);
@@ -75,10 +75,10 @@ namespace SharpPulsar.Test.API
         [Fact]
         public virtual void TestLessThan()
         {
-            var MessageId1 = new MessageId(124L, 345L, 567);
-            var MessageId2 = new MessageId(123L, 345L, 567);
-            var MessageId3 = new MessageId(123L, 344L, 567);
-            var MessageId4 = new MessageId(123L, 344L, 566);
+            var MessageId1 = new MessageIdAdv(124L, 345L, 567);
+            var MessageId2 = new MessageIdAdv(123L, 345L, 567);
+            var MessageId3 = new MessageIdAdv(123L, 344L, 567);
+            var MessageId4 = new MessageIdAdv(123L, 344L, 566);
 
             var batchMessageId1 = new BatchMessageId(235L, 345L, 456, 567);
             var batchMessageId2 = new BatchMessageId(234L, 346L, 456, 567);
@@ -107,7 +107,7 @@ namespace SharpPulsar.Test.API
         [Fact]
         public virtual void TestCompareDifferentType()
         {
-            var MessageId = new MessageId(123L, 345L, 567);
+            var MessageId = new MessageIdAdv(123L, 345L, 567);
             var batchMessageId1 = new BatchMessageId(123L, 345L, 566, 789);
             var batchMessageId2 = new BatchMessageId(123L, 345L, 567, 789);
             var batchMessageId3 = new BatchMessageId(MessageId);
@@ -121,7 +121,7 @@ namespace SharpPulsar.Test.API
         [Fact]
         public virtual void CompareToSymmetricTest()
         {
-            var simpleMessageId = new MessageId(123L, 345L, 567);
+            var simpleMessageId = new MessageIdAdv(123L, 345L, 567);
             // batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
             var batchMessageId1 = new BatchMessageId(123L, 345L, 567, -1);
             var batchMessageId2 = new BatchMessageId(123L, 345L, 567, 1);
@@ -140,7 +140,7 @@ namespace SharpPulsar.Test.API
         [Fact]
         public virtual void TestMessageIdCompareToTopicMessageId()
         {
-            var MessageId = new MessageId(123L, 345L, 567);
+            var MessageId = new MessageIdAdv(123L, 345L, 567);
             var topicMessageId1 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(123L, 345L, 566, 789));
             var topicMessageId2 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(123L, 345L, 567, 789));
             var topicMessageId3 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(MessageId));
@@ -157,8 +157,8 @@ namespace SharpPulsar.Test.API
             var MessageId1 = new BatchMessageId(123L, 345L, 567, 789);
             var MessageId2 = new BatchMessageId(123L, 345L, 567, 0);
             var MessageId3 = new BatchMessageId(123L, 345L, 567, -1);
-            var topicMessageId1 = new TopicMessageId("test-topic-partition-0", "test-topic", new MessageId(123L, 345L, 566));
-            var topicMessageId2 = new TopicMessageId("test-topic-partition-0", "test-topic", new MessageId(123L, 345L, 567));
+            var topicMessageId1 = new TopicMessageId("test-topic-partition-0", "test-topic", new MessageIdAdv(123L, 345L, 566));
+            var topicMessageId2 = new TopicMessageId("test-topic-partition-0", "test-topic", new MessageIdAdv(123L, 345L, 567));
             Assert.True(MessageId1.CompareTo(topicMessageId1) > 0, "Expected to be greater than");
             Assert.True(MessageId1.CompareTo(topicMessageId2) > 0, "Expected to be greater than");
             Assert.True(MessageId2.CompareTo(topicMessageId2) > 0, "Expected to be greater than");
@@ -187,9 +187,9 @@ namespace SharpPulsar.Test.API
 
             // 1 item
             var topic1 = "topicName1";
-            var MessageId1 = new MessageId(123L, 345L, 567);
-            var MessageId2 = new MessageId(123L, 345L, 567);
-            var MessageId3 = new MessageId(345L, 456L, 567);
+            var MessageId1 = new MessageIdAdv(123L, 345L, 567);
+            var MessageId2 = new MessageIdAdv(123L, 345L, 567);
+            var MessageId3 = new MessageIdAdv(345L, 456L, 567);
 
             var item1 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId1 } });
             var item2 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId2 } });
@@ -263,9 +263,9 @@ namespace SharpPulsar.Test.API
 
             // 1 item
             var topic1 = "topicName1";
-            var MessageId1 = new MessageId(123L, 345L, 567);
-            var MessageId2 = new MessageId(123L, 345L, 567);
-            var MessageId3 = new MessageId(345L, 456L, 567);
+            var MessageId1 = new MessageIdAdv(123L, 345L, 567);
+            var MessageId2 = new MessageIdAdv(123L, 345L, 567);
+            var MessageId3 = new MessageIdAdv(345L, 456L, 567);
 
             var item1 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId1 } });
             var item2 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId2 } });

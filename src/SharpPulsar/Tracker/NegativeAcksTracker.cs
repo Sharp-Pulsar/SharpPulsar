@@ -99,7 +99,7 @@ namespace SharpPulsar.Tracker
             if (Timers != null)
             {
                 Timers!.Cancel(Trigger.Instance);
-                Timers = null;  
+                //Timers = null;  
                // _timeout.Cancel();
                 //_timeout = null;
             }
@@ -120,7 +120,7 @@ namespace SharpPulsar.Tracker
             if(_nackedMessages.Count == 0)
             {
                 Timers!.Cancel(Trigger.Instance);
-                Timers = null;
+                //Timers = null;
                 //_timeout?.Cancel();
                 //_timeout = null;
                 return;
@@ -177,13 +177,13 @@ namespace SharpPulsar.Tracker
 
             _nackedMessages[MessageIdAdvUtils.DiscardBatch(messageId)] = DateTimeHelper.CurrentUnixTimeMillis() + backoffNs;
 
-            if (Timers == null)
-            {
+            //if (Timers == null)
+            //{
                 // Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
                 // nack immediately following the current one will be batched into the same redeliver request.
-                Timers.StartSingleTimer(Trigger.Instance, Trigger.Instance, _timerIntervalMs);
+            Timers.StartSingleTimer(Trigger.Instance, Trigger.Instance, _timerIntervalMs);
                 //_timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
-            }
+            //}
         }
 
         

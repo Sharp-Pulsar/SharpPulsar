@@ -1239,9 +1239,9 @@ namespace SharpPulsar.Producer
         private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, IMessageId messageId, MessageMetadata msgMetadata, byte[] compressedPayload)
         {
             _log.Info($"Send message with {_producerName}:{producerId}");
-            if (messageId is MessageId)
+            if (messageId is MessageIdAdv)
             {
-                return NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageId)messageId).LedgerId, ((MessageId)messageId).EntryId, msgMetadata, compressedPayload);
+                return NewSend(producerId, sequenceId, numMessages, ChecksumType, ((MessageIdAdv)messageId).LedgerId, ((MessageIdAdv)messageId).EntryId, msgMetadata, compressedPayload);
             }
             else
             {
@@ -1679,11 +1679,11 @@ namespace SharpPulsar.Producer
             {
                 if (op.ChunkId == 0)
                 {
-                    op.ChunkedMessageCtx.FirstChunkMessageId = new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
+                    op.ChunkedMessageCtx.FirstChunkMessageId = new MessageIdAdv(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
                 }
                 else if (op.ChunkId == op.TotalChunks - 1)
                 {
-                    op.ChunkedMessageCtx.LastChunkMessageId = new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
+                    op.ChunkedMessageCtx.LastChunkMessageId = new MessageIdAdv(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
                     op.MessageId = op.ChunkedMessageCtx.ChunkMessageId;
                 }
             }
@@ -2178,8 +2178,8 @@ namespace SharpPulsar.Producer
 
         internal class ChunkedMessageCtx
         {
-            protected internal MessageId FirstChunkMessageId;
-            protected internal MessageId LastChunkMessageId;
+            protected internal MessageIdAdv FirstChunkMessageId;
+            protected internal MessageIdAdv LastChunkMessageId;
             protected internal int TotalChunks = -1;
 
             public virtual ChunkMessageId ChunkMessageId
@@ -2427,7 +2427,7 @@ namespace SharpPulsar.Producer
             {
                 if (Msg != null)
                 {
-                    Msg.SetMessageId(new MessageId(ledgerId, entryId, partitionIndex));
+                    Msg.SetMessageId(new MessageIdAdv(ledgerId, entryId, partitionIndex));
                 }
                 else
                 {

@@ -54,7 +54,7 @@ namespace SharpPulsar.Test.API
             var batchMsgId2 = new BatchMessageId(1, 1, 1, 1);
             var batchMsgId3 = new BatchMessageId(0, 0, 0, 1);
             var batchMsgId4 = new BatchMessageId(0, 0, 0, -1);
-            var msgId = new MessageId(0, 0, 0);
+            var msgId = new MessageIdAdv(0, 0, 0);
 
             Assert.True(batchMsgId1.Equals(batchMsgId1));
             Assert.False(batchMsgId1.Equals(batchMsgId2));

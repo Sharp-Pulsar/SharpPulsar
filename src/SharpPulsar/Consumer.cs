@@ -537,7 +537,7 @@ namespace SharpPulsar
             {
                 return;
             }
-            if (seekPosition is MessageId msgId)
+            if (seekPosition is MessageIdAdv msgId)
             {
                 await SeekAsync(msgId).ConfigureAwait(false);
                 return;

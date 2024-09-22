@@ -102,9 +102,9 @@ namespace SharpPulsar.Test
             await consumer.CloseAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
         }
 
-        private async Task<List<MessageId>> PublishMessages(string topic, int count, string message)
+        private async Task<List<MessageIdAdv>> PublishMessages(string topic, int count, string message)
         {
-            var keys = new List<MessageId>();
+            var keys = new List<MessageIdAdv>();
             var builder = new ProducerConfigBuilder<byte[]>()
                 .Topic(topic);
             var producer = await _client.NewProducerAsync(builder);

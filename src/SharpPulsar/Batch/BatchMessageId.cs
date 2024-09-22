@@ -21,7 +21,7 @@ using SharpPulsar.Interfaces;
 /// </summary>
 namespace SharpPulsar.Batch
 {
-    public class BatchMessageId : MessageId
+    public class BatchMessageId : MessageIdAdv
 	{
         private const int NoBatch = -1;
         public int BatchIndex { get; }
@@ -68,7 +68,7 @@ namespace SharpPulsar.Batch
                 return Compare(other);
             }
 
-            if (o is MessageId id)
+            if (o is MessageIdAdv id)
             {
                 int res = base.CompareTo(id);
                 if (res == 0 && BatchIndex > NoBatch)
@@ -100,7 +100,7 @@ namespace SharpPulsar.Batch
                 return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex && BatchSize == other1.BatchSize;
 			}
 
-            if (obj is MessageId other)
+            if (obj is MessageIdAdv other)
             {
                 return LedgerId == other.LedgerId && EntryId == other.EntryId && PartitionIndex == other.PartitionIndex && BatchIndex == NoBatch;
             }
@@ -136,9 +136,9 @@ namespace SharpPulsar.Batch
 
         public virtual int BatchSize => Acker.BatchSize;
 
-        public virtual MessageId PrevBatchMessageId()
+        public virtual MessageIdAdv PrevBatchMessageId()
 		{
-			return new MessageId(LedgerId, EntryId - 1, PartitionIndex);
+			return new MessageIdAdv(LedgerId, EntryId - 1, PartitionIndex);
 		}
 
         private int Compare(BatchMessageId m)

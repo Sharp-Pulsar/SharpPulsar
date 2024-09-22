@@ -17,7 +17,7 @@ namespace SharpPulsar.Test.API
         [InlineData(39, 5)]
         public void TestId(long ledger, long entry)
         {
-            var id = new MessageId(ledger, entry, -1);
+            var id = new MessageIdAdv(ledger, entry, -1);
             var offset = MessageIdUtils.GetOffset(id);
             var id1 = MessageIdUtils.GetMessageId(offset);
             Assert.Equal(id, id1);

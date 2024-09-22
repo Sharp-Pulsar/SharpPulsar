@@ -40,6 +40,7 @@ namespace SharpPulsar.Configuration
         public TimeSpan AutoUpdatePartitionsInterval { get; set; } = TimeSpan.FromSeconds(5);
 		public IMessageCrypto MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
+        public int MaxAcknowledgmentGroupSize { get; set; } = 1000;
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor<T>> Interceptors { get; set; }

@@ -29,7 +29,7 @@ namespace SharpPulsar.Messages.Consumer
 
     }
 
-    public record struct GetLastMessageIdResponse(IMessageId LastMessageId, MessageId MarkDeletePosition);
+    public record struct GetLastMessageIdResponse(IMessageId LastMessageId, MessageIdAdv MarkDeletePosition);
    
     public record struct MarkDeletePosition(long LedgerId, long EntryId, int Partition, int BatchIndex, int BatchSize, List<long> AckSets);
     

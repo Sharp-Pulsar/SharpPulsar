@@ -78,7 +78,7 @@ namespace SharpPulsar.Test
             var size = await tracker.Ask<long>(Size.Instance);//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.Equal(0, size);
 
-            var mid = new MessageId(1L, 1L, -1);
+            var mid = new MessageIdAdv(1L, 1L, -1);
             var added = await tracker.Ask<bool>(new Add(mid));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
             Assert.True(added);
             added = await tracker.Ask<bool>(new Add(mid));//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
@@ -172,7 +172,8 @@ namespace SharpPulsar.Test
             // There should be no more messages
             //Assert.Null(nu);
             await producer.CloseAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
-            await consumer.CloseAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
+            await consumer.UnsubscribeAsync();//.ConfigureAwait(false); https://xunit.net/xunit.analyzers/rules/xUnit1030
+            await consumer.CloseAsync();
         }
         public async Task InitializeAsync()
         {

@@ -4,7 +4,7 @@ using System.Collections;
 namespace SharpPulsar.Interfaces
 {  
     /// <summary>
-     /// The <seealso cref="MessageId"/> interface provided for advanced users.
+     /// The <seealso cref="MessageIdAdv"/> interface provided for advanced users.
      /// <para>
      /// All built-in MessageId implementations should be able to be cast to MessageIdAdv.
      /// </para>

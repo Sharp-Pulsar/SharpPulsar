@@ -172,16 +172,16 @@ namespace SharpPulsar.Test
 
             Assert.True(receivedCount > 0);
         }
-        private async Task<ISet<MessageId>> PublishMessages(string topic, int count)
+        private async Task<ISet<MessageIdAdv>> PublishMessages(string topic, int count)
         {
-            var ids = new HashSet<MessageId>();
+            var ids = new HashSet<MessageIdAdv>();
             var builder = new ProducerConfigBuilder<DataOpEx>()
                 .Topic(topic);
             var producer = await _client.NewProducerAsync(AvroSchema<DataOpEx>.Of(typeof(DataOpEx)), builder);
             for (var i = 0; i < count; i++)
             {
                 var key = "key" + i;
-                MessageId id = null;
+                MessageIdAdv id = null;
                 if (i % 2 == 0)
                     id = await producer.NewMessage().Key(key).Property("twitter", "mestical").Value(new DataOpEx { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).SendAsync();
                 else

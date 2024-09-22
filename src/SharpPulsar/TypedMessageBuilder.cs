@@ -80,11 +80,11 @@ namespace SharpPulsar
 			_metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
 		}
-		public MessageId Send()
+		public MessageIdAdv Send()
 		{
 			return SendAsync().GetAwaiter().GetResult();
 		}
-		public async ValueTask<MessageId> SendAsync()
+		public async ValueTask<MessageIdAdv> SendAsync()
 		{
             try
             {
@@ -105,7 +105,7 @@ namespace SharpPulsar
                 if (response == null)
                     return null;
 
-                return (MessageId)response;
+                return (MessageIdAdv)response;
             }
             catch
             {

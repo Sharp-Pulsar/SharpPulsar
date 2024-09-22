@@ -53,12 +53,12 @@ namespace SharpPulsar
 
 		public static IMessageId NewMessageIdFromByteArray(byte[] data)
 		{
-			return MessageId.FromByteArray(data);
+			return MessageIdAdv.FromByteArray(data);
 		}
 
 		public static IMessageId NewMessageIdFromByteArrayWithTopic(byte[] data, string topicName)
 		{
-			return MessageId.FromByteArrayWithTopic(data, topicName);
+			return MessageIdAdv.FromByteArrayWithTopic(data, topicName);
 		}
 
 		public static IAuthentication NewAuthenticationToken(string token)
