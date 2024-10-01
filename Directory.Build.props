@@ -1,14 +1,14 @@
 
 <Project>
   <PropertyGroup>
-    <AkkaVersion>1.5.27.1</AkkaVersion>
+    <AkkaVersion>1.5.29</AkkaVersion>
     <AkkaLoggerSerilogVersion>1.5.25</AkkaLoggerSerilogVersion>
     <SerilogSinksFileVersion>6.0.0</SerilogSinksFileVersion>
     <ApacheAvroVersion>1.12.0</ApacheAvroVersion>
     <AppMetricsConcurrencyVersion>4.3.0</AppMetricsConcurrencyVersion>
     <AvroSchemaGeneratorVersion>2.10.0</AvroSchemaGeneratorVersion>
     <DotNettyCommonVersion>0.7.6</DotNettyCommonVersion>
-    <GoogleProtobufVersion>3.28.0</GoogleProtobufVersion>
+    <GoogleProtobufVersion>3.28.2</GoogleProtobufVersion>
     <IdentityModelVersion>7.0.0</IdentityModelVersion>
     <JsonSubTypesVersion>2.0.1</JsonSubTypesVersion>
     <K4osCompressionLZ4Version>1.3.8</K4osCompressionLZ4Version>
@@ -20,7 +20,7 @@
     <NagerPublicSuffixVersion>3.3.0</NagerPublicSuffixVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NitoAsyncExVersion>5.1.2</NitoAsyncExVersion>
-    <NodaTimeVersion>3.1.11</NodaTimeVersion>
+    <NodaTimeVersion>3.1.12</NodaTimeVersion>
     <DocfxVersion>2.67.5</DocfxVersion>
     <NSwagApiDescriptionClientVersion>14.1.0</NSwagApiDescriptionClientVersion>
     <OpenTelemetryVersion>1.9.0</OpenTelemetryVersion>
