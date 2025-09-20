@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SharpPulsar.API\SharpPulsar.API.csproj" />
+    <ProjectReference Include="..\SharpPulsar.Extension\SharpPulsar.Extension.csproj" />
+    <ProjectReference Include="..\SharpPulsar.Protocol.Extension\SharpPulsar.Protocol.Extension.csproj" />
+    <ProjectReference Include="..\SharpPulsar.Shared\SharpPulsar.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,5 +1,5 @@
 ﻿using Akka.Util;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.API.Schema;
 using System;
 using System.Collections.Generic;
 

@@ -70,12 +70,19 @@
     <None Include="readme.txt" pack="true" PackagePath=".">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <ProjectReference Include="..\..\SharpPulsar.API\SharpPulsar.API.csproj" />
+    <ProjectReference Include="..\..\SharpPulsar.Common\SharpPulsar.Common.csproj" />
+    <ProjectReference Include="..\..\SharpPulsar.Shared\SharpPulsar.Shared.csproj" />
     <ProjectReference Include="..\SharpPulsar.Admin\SharpPulsar.Admin.csproj" />
     <ProjectReference Include="..\SharpPulsar.TimeUnit\SharpPulsar.TimeUnit.csproj" />
     <ProjectReference Include="..\SharpPulsar.Trino\SharpPulsar.Trino.csproj" />
     <None Update="SharpPulsar.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Extension\" />
   </ItemGroup>
 
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">

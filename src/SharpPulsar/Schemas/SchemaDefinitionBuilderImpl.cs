@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Avro.Generic;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.API.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
