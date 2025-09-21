@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace SharpPulsar.Shared
 {
@@ -96,6 +92,10 @@ namespace SharpPulsar.Shared
         {
             return stream.Position;
         }
+        public long ArrayOffset() 
+        {  
+            return stream.Position; 
+        }  
 
         public ByteBuffer Position(long newPosition)
         {
@@ -112,7 +112,14 @@ namespace SharpPulsar.Shared
         {
             return this.Remaining() > 0;
         }
-
+        public byte[] ToArray()
+        {
+            return stream.ToArray();
+        }
+        public bool HasArray()
+        {
+            return ToArray().Length > 0;
+        }
         public int Get()
         {
             return stream.ReadByte();
@@ -121,6 +128,12 @@ namespace SharpPulsar.Shared
         public ByteBuffer Get(byte[] dst, int offset, int length)
         {
             stream.Read(dst, offset, length);
+            return this;
+        }
+
+        public ByteBuffer Get(byte[] dst)
+        {
+            stream.Read(dst);
             return this;
         }
 

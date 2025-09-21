@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NodaTime" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SharpPulsar.Shared\SharpPulsar.Shared.csproj" />
   </ItemGroup>
 

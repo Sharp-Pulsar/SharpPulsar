@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System;
-using System.Collections.Generic;
+﻿
 using System.Runtime.InteropServices;
 using SharpPulsar.API.Schema;
 using SharpPulsar.Shared;
+using NodaTime;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -78,7 +73,7 @@ namespace SharpPulsar.API.Internal
 
         ISchema<long> NewLongSchema();
 
-        ISchema<bool> newBooleanSchema();
+        ISchema<bool> NewBoolSchema();
 
         ISchema<ByteBuffer> NewByteBufferSchema();
 
@@ -98,7 +93,7 @@ namespace SharpPulsar.API.Internal
 
         ISchema<LocalTime> NewLocalTimeSchema();
 
-        ISchema<DateTime> NewLocalDateTimeSchema();
+        ISchema<LocalDateTime> NewLocalDateTimeSchema();
 
         ISchema<T> NewAvroSchema<T>(ISchemaDefinition<T> schemaDefinition);
 
@@ -221,9 +216,9 @@ namespace SharpPulsar.API.Internal
             {
                 return null;
             }
-            if (byteBuffer.HasArray() && byteBuffer.arrayOffset() == 0 && byteBuffer.array().length == byteBuffer.remaining())
+            if (byteBuffer.HasArray() && byteBuffer.ArrayOffset() == 0 && byteBuffer.ToArray().Length == byteBuffer.Remaining())
             {
-                return byteBuffer.array();
+                return byteBuffer.ToArray();
             }
             // Direct buffer is not backed by array and it needs to be read from direct memory
             byte[] array = new byte[byteBuffer.Remaining()];

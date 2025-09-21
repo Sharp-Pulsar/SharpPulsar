@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Exceptions
+namespace SharpPulsar.Shared.Exceptions
 {
 	/// <summary>
 	/// Schema serialization exception.
