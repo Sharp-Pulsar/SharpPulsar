@@ -2,12 +2,14 @@
 using System.Buffers;
 using SharpPulsar.Shared;
 using AuthData = SharpPulsar.Common.Protocol.Proto.AuthData;
+using Type = SharpPulsar.Common.Protocol.Proto.Schema.Type;
+using Schema = SharpPulsar.Common.Protocol.Proto.Schema;
 using System.Text;
 using KeySharedMode = SharpPulsar.Common.Protocol.Proto.KeySharedMode;
 using SharpPulsar.Common;
-using Serializer = SharpPulsar.Helpers.Serializer;
 using static SharpPulsar.Common.Protocol.Proto.CommandAck;
 using SharpPulsar.API.Schema;
+using SharpPulsar.Common.Helpers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -650,19 +652,19 @@ namespace SharpPulsar.Protocol.Schema
 		{
 			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, Common.ProducerAccessMode.Shared, null, isTxnEnabled, null);
 		}
-        private static Proto.Schema.Type GetSchemaType(SchemaType type)
+        private static Type GetSchemaType(SchemaType type)
 		{
 			if (type.Value < 0)
 			{
-				return Proto.Schema.Type.None;
+				return Type.None;
 			}
 			else
 			{
-				return Enum.GetValues(typeof(Proto.Schema.Type)).Cast<Proto.Schema.Type>().ToList()[type.Value];
+				return Enum.GetValues(typeof(Type)).Cast<Type>().ToList()[type.Value];
 			}
 		}
 
-		public static SchemaType GetSchemaType(Proto.Schema.Type type)
+		public static SchemaType GetSchemaType(Type type)
 		{
 			if (type < 0)
 			{
@@ -687,9 +689,9 @@ namespace SharpPulsar.Protocol.Schema
 			}
 		}
 
-        private static Proto.Schema ConvertSchema(ISchemaInfo SchemaInfo)
+        private static Common.Protocol.Proto.Schema ConvertSchema(ISchemaInfo SchemaInfo)
         {
-            var schema = new Proto.Schema
+            var schema = new Common.Protocol.Proto.Schema
             {
                 Name = SchemaInfo.Name,
                 SchemaData = SchemaInfo.Schema,
@@ -1329,34 +1331,34 @@ namespace SharpPulsar.Protocol.Schema
 		{
 			return peerVersion >= (int)ProtocolVersion.V15;
 		}
-        private static Proto.ProducerAccessMode ConvertProducerAccessMode(Common.ProducerAccessMode accessMode)
+        private static Common.Protocol.Proto.ProducerAccessMode ConvertProducerAccessMode(Common.ProducerAccessMode accessMode)
         {
             switch (accessMode)
             {
                 case Common.ProducerAccessMode.Exclusive:
-                    return Proto.ProducerAccessMode.Exclusive;
+                    return Common.Protocol.Proto.ProducerAccessMode.Exclusive;
                 case Common.ProducerAccessMode.Shared:
-                    return Proto.ProducerAccessMode.Shared;
+                    return Common.Protocol.Proto.ProducerAccessMode.Shared;
                 case Common.ProducerAccessMode.WaitForExclusive:
-                    return Proto.ProducerAccessMode.WaitForExclusive;
+                    return Common.Protocol.Proto.ProducerAccessMode.WaitForExclusive;
                 case Common.ProducerAccessMode.ExclusiveWithFencing:
-                    return Proto.ProducerAccessMode.ExclusiveWithFencing;
+                    return Common.Protocol.Proto.ProducerAccessMode.ExclusiveWithFencing;
                 default:
                     throw new ArgumentException("Unknown access mode: " + accessMode);
             }
         }
 
-        public static Common.ProducerAccessMode ConvertProducerAccessMode(Proto.ProducerAccessMode accessMode)
+        public static Common.ProducerAccessMode ConvertProducerAccessMode(Common.Protocol.Proto.ProducerAccessMode accessMode)
         {
             switch (accessMode)
             {
-                case Proto.ProducerAccessMode.Exclusive:
+                case Common.Protocol.Proto.ProducerAccessMode.Exclusive:
                     return Common.ProducerAccessMode.Exclusive;
-                case Proto.ProducerAccessMode.Shared:
+                case Common.Protocol.Proto.ProducerAccessMode.Shared:
                     return Common.ProducerAccessMode.Shared;
-                case Proto.ProducerAccessMode.WaitForExclusive:
+                case Common.Protocol.Proto.ProducerAccessMode.WaitForExclusive:
                     return Common.ProducerAccessMode.WaitForExclusive;
-                case Proto.ProducerAccessMode.ExclusiveWithFencing:
+                case Common.Protocol.Proto.ProducerAccessMode.ExclusiveWithFencing:
                     return Common.ProducerAccessMode.ExclusiveWithFencing;
                 default:
                     throw new ArgumentException("Unknown access mode: " + accessMode);

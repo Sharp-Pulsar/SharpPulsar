@@ -5,7 +5,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
+    
+  <ItemGroup>
+    <PackageReference Include="K4os.Compression.LZ4" />
+    <PackageReference Include="SharpZipLib" />
+    <PackageReference Include="Snappy.Standard" />
+    <PackageReference Include="zlib.net-mutliplatform" />
+    <PackageReference Include="ZstdNet" />
+    <PackageReference Include="protobuf-net" />
+    <PackageReference Include="Google.Protobuf" />
+  </ItemGroup>
+    
   <ItemGroup>
     <ProjectReference Include="..\SharpPulsar.API\SharpPulsar.API.csproj" />
     <ProjectReference Include="..\SharpPulsar.Shared\SharpPulsar.Shared.csproj" />

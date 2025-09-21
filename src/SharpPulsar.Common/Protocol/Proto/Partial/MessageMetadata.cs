@@ -251,13 +251,13 @@
 			{
 				switch(value)
 				{
-					case Common.Enum.CompressionType.LZ4:
+					case Enum.CompressionType.LZ4:
 						return CompressionType.Lz4;
-					case Common.Enum.CompressionType.SNAPPY:
+					case Enum.CompressionType.SNAPPY:
 						return CompressionType.Snappy;
-					case Common.Enum.CompressionType.ZLIB:
+					case Enum.CompressionType.ZLIB:
 						return CompressionType.Zlib;
-					case Common.Enum.CompressionType.ZSTD:
+					case Enum.CompressionType.ZSTD:
 						return CompressionType.Zstd;
 					default:
 						return CompressionType.None;
