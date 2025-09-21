@@ -55,6 +55,7 @@ namespace SharpPulsar.Common.Protocol.Proto
             LocalDateTime = 19,
             ProtobufNative = 20,
             AutoConsume = 21,
+            External = 22 
         }
 
     }
@@ -432,6 +433,25 @@ namespace SharpPulsar.Common.Protocol.Proto
         public void ResetNullPartitionKey() => __pbn__NullPartitionKey = null;
         private bool? __pbn__NullPartitionKey;
 
+        [global::ProtoBuf.ProtoMember(31, Name = @"compacted_batch_indexes")]
+        public int CompactedBatchIndexes
+        {
+            get => __pbn__CompactedBatchIndexes.GetValueOrDefault();
+            set => __pbn__CompactedBatchIndexes = value;
+        }
+        public bool ShouldSerializeCompactedBatchIndexes() => __pbn__CompactedBatchIndexes != null;
+        public void ResetCompactedBatchIndexes() => __pbn__CompactedBatchIndexes = null;
+        private int? __pbn__CompactedBatchIndexes;
+
+        [global::ProtoBuf.ProtoMember(32, Name = @"schema_id")]
+        public byte[] SchemaId
+        {
+            get => __pbn__SchemaId;
+            set => __pbn__SchemaId = value;
+        }
+        public bool ShouldSerializeSchemaId() => __pbn__SchemaId != null;
+        public void ResetSchemaId() => __pbn__SchemaId = null;
+        private byte[] __pbn__SchemaId;
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -739,6 +759,17 @@ namespace SharpPulsar.Common.Protocol.Proto
         public bool ShouldSerializeSupportsGetPartitionedMetadataWithoutAutoCreation() => __pbn__SupportsGetPartitionedMetadataWithoutAutoCreation != null;
         public void ResetSupportsGetPartitionedMetadataWithoutAutoCreation() => __pbn__SupportsGetPartitionedMetadataWithoutAutoCreation = null;
         private bool? __pbn__SupportsGetPartitionedMetadataWithoutAutoCreation;
+
+        [global::ProtoBuf.ProtoMember(6, Name = @"supports_repl_dedup_by_lid_and_eid")]
+        [global::System.ComponentModel.DefaultValue(false)]
+        public bool SupportsReplDedupByLidAndEid
+        {
+            get => __pbn__SupportsReplDedupByLidAndEid ?? false;
+            set => __pbn__SupportsReplDedupByLidAndEid = value;
+        }
+        public bool ShouldSerializeSupportsReplDedupByLidAndEid() => __pbn__SupportsReplDedupByLidAndEid != null;
+        public void ResetSupportsReplDedupByLidAndEid() => __pbn__SupportsReplDedupByLidAndEid = null;
+        private bool? __pbn__SupportsReplDedupByLidAndEid;
 
     }
 
@@ -1240,6 +1271,10 @@ namespace SharpPulsar.Common.Protocol.Proto
         public bool ShouldSerializeAdvertisedListenerName() => __pbn__AdvertisedListenerName != null;
         public void ResetAdvertisedListenerName() => __pbn__AdvertisedListenerName = null;
         private string __pbn__AdvertisedListenerName;
+
+        [global::ProtoBuf.ProtoMember(8, Name = @"properties")]
+        public global::System.Collections.Generic.List<KeyValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
+
 
     }
 
@@ -1900,14 +1935,14 @@ namespace SharpPulsar.Common.Protocol.Proto
 
         [global::ProtoBuf.ProtoMember(4)]
         [global::System.ComponentModel.DefaultValue("")]
-        public string brokerServiceUrlTls
+        public string BrokerServiceUrlTls
         {
-            get => __pbn__brokerServiceUrlTls ?? "";
-            set => __pbn__brokerServiceUrlTls = value;
+            get => __pbn__BrokerServiceUrlTls ?? "";
+            set => __pbn__BrokerServiceUrlTls = value;
         }
-        public bool ShouldSerializebrokerServiceUrlTls() => __pbn__brokerServiceUrlTls != null;
-        public void ResetbrokerServiceUrlTls() => __pbn__brokerServiceUrlTls = null;
-        private string __pbn__brokerServiceUrlTls;
+        public bool ShouldSerializeBrokerServiceUrlTls() => __pbn__BrokerServiceUrlTls != null;
+        public void ResetBrokerServiceUrlTls() => __pbn__BrokerServiceUrlTls = null;
+        private string __pbn__BrokerServiceUrlTls;
 
         [global::ProtoBuf.ProtoContract()]
         public enum ResourceType
@@ -1931,6 +1966,28 @@ namespace SharpPulsar.Common.Protocol.Proto
         [global::ProtoBuf.ProtoMember(2, Name = @"request_id", IsRequired = true)]
         public ulong RequestId { get; set; }
 
+        [global::ProtoBuf.ProtoMember(3)]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string AssignedBrokerServiceUrl
+        {
+            get => __pbn__AssignedBrokerServiceUrl ?? "";
+            set => __pbn__AssignedBrokerServiceUrl = value;
+        }
+        public bool ShouldSerializeAssignedBrokerServiceUrl() => __pbn__AssignedBrokerServiceUrl != null;
+        public void ResetAssignedBrokerServiceUrl() => __pbn__AssignedBrokerServiceUrl = null;
+        private string __pbn__AssignedBrokerServiceUrl;
+
+        [global::ProtoBuf.ProtoMember(4)]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string AssignedBrokerServiceUrlTls
+        {
+            get => __pbn__AssignedBrokerServiceUrlTls ?? "";
+            set => __pbn__AssignedBrokerServiceUrlTls = value;
+        }
+        public bool ShouldSerializeAssignedBrokerServiceUrlTls() => __pbn__AssignedBrokerServiceUrlTls != null;
+        public void ResetAssignedBrokerServiceUrlTls() => __pbn__AssignedBrokerServiceUrlTls = null;
+        private string __pbn__AssignedBrokerServiceUrlTls;
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -1945,6 +2002,28 @@ namespace SharpPulsar.Common.Protocol.Proto
 
         [global::ProtoBuf.ProtoMember(2, Name = @"request_id", IsRequired = true)]
         public ulong RequestId { get; set; }
+
+        [global::ProtoBuf.ProtoMember(3)]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string AssignedBrokerServiceUrl
+        {
+            get => __pbn__AssignedBrokerServiceUrl ?? "";
+            set => __pbn__AssignedBrokerServiceUrl = value;
+        }
+        public bool ShouldSerializeAssignedBrokerServiceUrl() => __pbn__AssignedBrokerServiceUrl != null;
+        public void ResetAssignedBrokerServiceUrl() => __pbn__AssignedBrokerServiceUrl = null;
+        private string __pbn__AssignedBrokerServiceUrl;
+
+        [global::ProtoBuf.ProtoMember(4)]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string AssignedBrokerServiceUrlTls
+        {
+            get => __pbn__AssignedBrokerServiceUrlTls ?? "";
+            set => __pbn__AssignedBrokerServiceUrlTls = value;
+        }
+        public bool ShouldSerializeAssignedBrokerServiceUrlTls() => __pbn__AssignedBrokerServiceUrlTls != null;
+        public void ResetAssignedBrokerServiceUrlTls() => __pbn__AssignedBrokerServiceUrlTls = null;
+        private string __pbn__AssignedBrokerServiceUrlTls;
 
     }
 
