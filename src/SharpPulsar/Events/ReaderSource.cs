@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Admin.v2;
 using SharpPulsar.EventSource.Messages;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using System;
 using System.Collections.Generic;

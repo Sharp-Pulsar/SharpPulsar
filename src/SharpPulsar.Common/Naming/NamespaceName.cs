@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using SharpPulsar.Precondition;
+﻿using System.Collections.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,10 +21,10 @@ using SharpPulsar.Precondition;
 namespace SharpPulsar.Common.Naming
 {
 
-	/// <summary>
-	/// Parser of a value from the namespace field provided in configuration.
-	/// </summary>
-	public class NamespaceName : ServiceUnitId
+    /// <summary>
+    /// Parser of a value from the namespace field provided in configuration.
+    /// </summary>
+    public class NamespaceName : ServiceUnitId
 	{
 
 		private readonly string _namespace;

@@ -3,7 +3,6 @@ using System.IO;
 using Newtonsoft.Json.Linq;
 using SharpPulsar.Configuration;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
-using SharpPulsar.Interfaces.Schema;
 using System.Text.Json;
 
 /// <summary>

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using SharpPulsar.Auth;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,7 +24,6 @@ namespace SharpPulsar
     using System.Buffers;
     using Akka.Actor;
     using global::Akka.Util;
-    using SharpPulsar.Interfaces;
 
     public class TopicMessage<T> : IMessage<T>
 	{

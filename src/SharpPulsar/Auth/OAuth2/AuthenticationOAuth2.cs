@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using SharpPulsar.Auth.OAuth2.Protocol;
 using SharpPulsar.Extension;
-using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

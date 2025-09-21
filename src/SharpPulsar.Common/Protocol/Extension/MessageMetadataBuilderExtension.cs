@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Common.Protocol.Proto;
-using System;
 
 namespace SharpPulsar.Protocol.Extension
 {

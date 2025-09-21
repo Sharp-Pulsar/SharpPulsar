@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;

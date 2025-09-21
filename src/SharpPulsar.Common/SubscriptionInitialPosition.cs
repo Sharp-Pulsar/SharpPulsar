@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,13 +18,13 @@
 /// </summary>
 namespace SharpPulsar.Common
 {
-	/// <summary>
-	/// When creating a consumer, if the subscription does not exist, a new subscription will be created. By default the
-	/// subscription will be created at the end of the topic. See
-	/// <seealso cref="subscriptionInitialPosition(SubscriptionInitialPosition)"/> to configure the initial position behavior.
-	/// 
-	/// </summary>
-	public sealed class SubscriptionInitialPosition
+    /// <summary>
+    /// When creating a consumer, if the subscription does not exist, a new subscription will be created. By default the
+    /// subscription will be created at the end of the topic. See
+    /// <seealso cref="subscriptionInitialPosition(SubscriptionInitialPosition)"/> to configure the initial position behavior.
+    /// 
+    /// </summary>
+    public sealed class SubscriptionInitialPosition
 	{
 		/// <summary>
 		/// The latest position which means the start consuming position will be the last message.

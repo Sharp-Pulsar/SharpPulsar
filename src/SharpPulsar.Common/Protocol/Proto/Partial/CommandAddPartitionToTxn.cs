@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public sealed partial class CommandAddPartitionToTxn
+    public sealed partial class CommandAddPartitionToTxn
 	{
 		public static Builder NewBuilder()
 		{

@@ -24,7 +24,6 @@ using Akka.Actor;
 using Akka.Util.Internal;
 using SharpPulsar.Configuration;
 using SharpPulsar.Tracker.Messages;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using System.Threading.Tasks;
 

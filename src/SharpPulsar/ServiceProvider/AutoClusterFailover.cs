@@ -2,7 +2,6 @@
 using Akka.Actor;
 using SharpPulsar.Builder;
 using SharpPulsar.Common;
-using SharpPulsar.Interfaces;
 using SharpPulsar.ServiceProvider.Messages;
 
 namespace SharpPulsar.ServiceProvider

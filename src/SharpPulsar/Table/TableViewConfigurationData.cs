@@ -1,6 +1,5 @@
 ﻿using System;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,8 +22,8 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Table
 {
-	
-	[Serializable]
+
+    [Serializable]
 	public class TableViewConfigurationData
 	{
 		public string TopicName { get; set; } = null;

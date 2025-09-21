@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public partial class AuthData
+    public partial class AuthData
 	{
         public static Builder NewBuilder()
 		{

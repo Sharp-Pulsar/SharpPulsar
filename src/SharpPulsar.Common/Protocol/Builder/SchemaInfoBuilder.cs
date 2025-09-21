@@ -1,7 +1,5 @@
 ﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
-using System.Collections.Generic;
 
 namespace SharpPulsar.Protocol.Builder
 {

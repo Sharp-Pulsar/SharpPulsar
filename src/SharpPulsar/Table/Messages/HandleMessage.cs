@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Interfaces;
-
-namespace SharpPulsar.Table.Messages
+﻿namespace SharpPulsar.Table.Messages
 {
     public readonly record struct HandleMessage<T>
     {

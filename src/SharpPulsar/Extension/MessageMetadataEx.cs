@@ -1,8 +1,4 @@
-﻿
-
-using SharpPulsar.Protocol.Proto;
-
-namespace SharpPulsar.Extension
+﻿namespace SharpPulsar.Extension
 {
     public static class MessageMetadataEx
     {

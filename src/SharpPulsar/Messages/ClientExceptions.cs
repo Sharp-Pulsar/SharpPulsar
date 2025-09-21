@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Exceptions;
-
-namespace SharpPulsar.Messages
+﻿namespace SharpPulsar.Messages
 {
     public readonly record struct ClientExceptions
     {

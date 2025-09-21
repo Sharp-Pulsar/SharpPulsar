@@ -1,7 +1,6 @@
 ﻿using System;
 using Akka.Actor;
 using SharpPulsar.Client;
-using SharpPulsar.Extension;
 
 namespace SharpPulsar
 {

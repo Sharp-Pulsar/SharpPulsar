@@ -6,7 +6,6 @@ using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Precondition;
 using Range = SharpPulsar.Common.Range;
 

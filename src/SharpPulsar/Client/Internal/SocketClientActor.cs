@@ -15,11 +15,9 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Buffers;
-using SharpPulsar.Protocol.Proto;
 using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Extension;
-using SharpPulsar.Protocol;
 using SharpPulsar.Client.Internal.Help;
 
 namespace SharpPulsar.Client.Internal

@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Interfaces.Schema;
-
-namespace SharpPulsar.Schemas.Reader
+﻿namespace SharpPulsar.Schemas.Reader
 {
     /// <summary>
     /// The abstract class of multi version avro base reader.

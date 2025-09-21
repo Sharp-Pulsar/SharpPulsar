@@ -1,10 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Net;
-using System.Threading.Tasks;
+﻿using System.Net;
 using SharpPulsar.API.Schema;
-using SharpPulsar.Common.Naming;
-using SharpPulsar.Common.Partition;
-using SharpPulsar.Protocol.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

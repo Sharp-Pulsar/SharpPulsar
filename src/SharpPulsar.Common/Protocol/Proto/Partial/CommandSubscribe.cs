@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public partial class CommandSubscribe
+    public partial class CommandSubscribe
 	{
 
         public static InitialPosition ValueOf(int value)

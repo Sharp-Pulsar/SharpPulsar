@@ -17,12 +17,11 @@
 /// under the License.
 /// </summary>
 
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace SharpPulsar.Common.Naming
 {
-	public class NamedEntity
+    public class NamedEntity
 	{
 
 		// allowed characters for property, namespace, cluster and topic names are

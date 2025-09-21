@@ -6,7 +6,6 @@ using Akka.Actor;
 using Akka.Util.Internal;
 using OpenTelemetry.Context.Propagation;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Telemetry.Trace
 {

@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -26,7 +25,7 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 namespace SharpPulsar.Auth
 {
-	public class AuthenticationBasic : IAuthentication, IEncodedAuthenticationParameterSupport
+    public class AuthenticationBasic : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 		private string _userId;
 		private string _password;

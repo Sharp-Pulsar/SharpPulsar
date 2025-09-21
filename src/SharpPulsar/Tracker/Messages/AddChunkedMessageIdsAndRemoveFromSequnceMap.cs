@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Tracker.Messages
 {

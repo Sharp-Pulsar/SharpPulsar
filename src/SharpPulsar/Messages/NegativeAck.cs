@@ -1,7 +1,4 @@
-﻿
-using SharpPulsar.Interfaces;
-
-namespace SharpPulsar.Messages
+﻿namespace SharpPulsar.Messages
 {
     public readonly record struct NegativeAck
     {

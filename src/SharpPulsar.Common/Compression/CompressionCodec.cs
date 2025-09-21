@@ -1,5 +1,4 @@
-﻿
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -18,14 +17,12 @@
 /// under the License.
 /// </summary>
 
-using System.IO;
-
 namespace SharpPulsar.Common.Compression
 {
-	/// <summary>
-	/// Generic compression codec interface.
-	/// </summary>
-	public interface CompressionCodec
+    /// <summary>
+    /// Generic compression codec interface.
+    /// </summary>
+    public interface CompressionCodec
 	{
 
 		/// <summary>

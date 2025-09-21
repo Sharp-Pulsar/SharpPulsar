@@ -1,5 +1,4 @@
 ﻿using System;
-using SharpPulsar.Interfaces;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -20,11 +19,11 @@ using SharpPulsar.Interfaces;
 /// </summary>
 namespace SharpPulsar.Auth.OAuth2
 {
-	/// <summary>
-	/// Factory class that allows to create <seealso cref="IAuthentication"/> instances
-	/// for OAuth 2.0 authentication methods.
-	/// </summary>
-	public sealed class AuthenticationFactoryOAuth2
+    /// <summary>
+    /// Factory class that allows to create <seealso cref="IAuthentication"/> instances
+    /// for OAuth 2.0 authentication methods.
+    /// </summary>
+    public sealed class AuthenticationFactoryOAuth2
 	{
 
 		/// <summary>

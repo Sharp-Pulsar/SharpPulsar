@@ -18,11 +18,9 @@
 /// </summary>
 
 
-using SharpPulsar.Interfaces;
-
 namespace SharpPulsar.Utils
 {
-	public class MessageIdUtils
+    public class MessageIdUtils
 	{
 		public static long GetOffset(IMessageId messageId)
 		{

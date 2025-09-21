@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using SharpPulsar.Interfaces;
 using SharpPulsar.ServiceName;
 using System.Net.Sockets;
 using SharpPulsar.ServiceProvider.Messages;

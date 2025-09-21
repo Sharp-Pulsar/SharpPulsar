@@ -1,6 +1,4 @@
-﻿
-using SharpPulsar.Interfaces;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,7 +19,7 @@ using SharpPulsar.Interfaces;
 namespace SharpPulsar.Auth
 {
 
-	public class AuthenticationDataNull : IAuthenticationDataProvider
+    public class AuthenticationDataNull : IAuthenticationDataProvider
 	{
 
 	}

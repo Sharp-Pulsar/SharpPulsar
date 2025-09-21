@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,10 +18,10 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Common.Naming
 {
-	/// <summary>
-	/// Enumeration showing if a topic is persistent.
-	/// </summary>
-	public sealed class TopicDomain
+    /// <summary>
+    /// Enumeration showing if a topic is persistent.
+    /// </summary>
+    public sealed class TopicDomain
 	{
 		public static readonly TopicDomain Persistent = new TopicDomain("persistent", InnerEnum.Persistent, "persistent");
 		public static readonly TopicDomain NonPersistent = new TopicDomain("non_persistent", InnerEnum.NonPersistent, "non-persistent");

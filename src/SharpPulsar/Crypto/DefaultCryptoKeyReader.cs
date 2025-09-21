@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Shared;
 using System.Collections.Generic;
 using System.IO;

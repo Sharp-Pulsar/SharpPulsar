@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public sealed partial class CommandAuthChallenge
+    public sealed partial class CommandAuthChallenge
 	{
 		
 		public static Builder NewBuilder()

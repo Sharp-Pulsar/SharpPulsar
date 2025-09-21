@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Batch;
-using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

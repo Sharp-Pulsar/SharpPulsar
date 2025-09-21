@@ -8,7 +8,6 @@ using Akka.Actor;
 using App.Metrics.Concurrency;
 
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

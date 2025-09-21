@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public sealed partial class CommandPartitionedTopicMetadata
+    public sealed partial class CommandPartitionedTopicMetadata
 	{
 		
 		public static Builder NewBuilder()

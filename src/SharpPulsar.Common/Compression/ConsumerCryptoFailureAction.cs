@@ -17,8 +17,6 @@
 /// under the License.
 /// </summary>
 
-using SharpPulsar.Auth;
-
 namespace SharpPulsar.Common.Compression
 {
     /// <summary>

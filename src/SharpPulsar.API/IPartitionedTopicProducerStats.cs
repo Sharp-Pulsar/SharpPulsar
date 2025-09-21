@@ -1,7 +1,4 @@
-﻿
-using System.Collections.Generic;
-
-namespace SharpPulsar.API
+﻿namespace SharpPulsar.API
 {
     /// <summary>
     /// Partitioned topic Producer statistics recorded by client.

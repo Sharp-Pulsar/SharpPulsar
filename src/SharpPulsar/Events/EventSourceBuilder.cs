@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Trino;
 using System;
 using System.Collections.Generic;

@@ -22,8 +22,6 @@
  * the orignal MurmurHash3 source code.
  */
 
-using System;
-
 namespace SharpPulsar.Common.Util
 {
     /// <summary>

@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Dispatch;
 using SharpPulsar.Common;
-using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Extension
 {

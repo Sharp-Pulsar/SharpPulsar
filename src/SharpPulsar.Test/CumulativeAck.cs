@@ -4,12 +4,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
 using SharpPulsar.Common;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using Xunit;
 using Xunit.Abstractions;
-using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.Test
 {

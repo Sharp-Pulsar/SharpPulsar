@@ -6,12 +6,10 @@ using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Consumer;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utility;
 using SharpPulsar.Utils;
-using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.EventSource.Pulsar
 {

@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Extension;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 
 /// <summary>
@@ -28,7 +27,6 @@ namespace SharpPulsar
 {
     using global::Akka.Actor;
     using SharpPulsar.Configuration;
-    using SharpPulsar.Interfaces;
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Common.Precondition;
     using SharpPulsar.Schemas;

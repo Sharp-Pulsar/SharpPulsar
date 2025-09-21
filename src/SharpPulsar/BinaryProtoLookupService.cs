@@ -3,10 +3,7 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Model;
-using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
@@ -14,13 +11,11 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using SharpPulsar.Messages.Client;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.ServiceName;
 using Mode = SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace.Mode;
 using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
 using SharpPulsar.Client;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using DotNetty.Common.Utilities;
 
 /// <summary>

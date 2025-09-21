@@ -1,6 +1,5 @@
 ﻿
 using System;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Precondition;
 
 /// <summary>

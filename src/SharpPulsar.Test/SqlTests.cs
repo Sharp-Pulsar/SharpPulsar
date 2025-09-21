@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using SharpPulsar.Interfaces;
 using Xunit;
 using Xunit.Abstractions;
 using System.Threading.Tasks;

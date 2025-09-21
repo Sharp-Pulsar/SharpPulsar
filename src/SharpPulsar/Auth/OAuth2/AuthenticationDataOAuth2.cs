@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +21,10 @@ using SharpPulsar.Interfaces;
 /// </summary>
 namespace SharpPulsar.Auth.OAuth2
 {
-	/// <summary>
-	/// Provide OAuth 2.0 authentication data.
-	/// </summary>
-	[Serializable]
+    /// <summary>
+    /// Provide OAuth 2.0 authentication data.
+    /// </summary>
+    [Serializable]
 	internal class AuthenticationDataOAuth2 : IAuthenticationDataProvider
 	{
 		public const string HttpHeaderName = "Authorization";

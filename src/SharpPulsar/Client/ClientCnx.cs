@@ -1,17 +1,13 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Model;
 using SharpPulsar.Common.Precondition;
-using SharpPulsar.Protocol;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using SharpPulsar.Exceptions;
 using Akka.Util.Internal;
 using SharpPulsar.Messages;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Entity;
 using SharpPulsar.Messages.Transaction;

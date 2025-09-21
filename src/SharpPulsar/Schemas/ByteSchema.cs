@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces.Schema;
-using SharpPulsar.Shared;
+﻿using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schemas
 {

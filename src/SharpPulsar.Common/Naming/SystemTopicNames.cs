@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace SharpPulsar.Common.Naming
+﻿namespace SharpPulsar.Common.Naming
 {
     internal class SystemTopicNames
     {

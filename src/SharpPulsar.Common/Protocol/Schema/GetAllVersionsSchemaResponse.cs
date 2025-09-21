@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,10 +18,10 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	/// <summary>
-	/// Response containing all schemas.
-	/// </summary>
-	public class GetAllVersionsSchemaResponse
+    /// <summary>
+    /// Response containing all schemas.
+    /// </summary>
+    public class GetAllVersionsSchemaResponse
 	{
 		private readonly IList<GetSchemaResponse> _getSchemaResponses;
 

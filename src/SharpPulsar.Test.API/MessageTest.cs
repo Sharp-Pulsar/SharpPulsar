@@ -1,7 +1,4 @@
-﻿using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Schema;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Schemas;
+﻿using SharpPulsar.Schemas;
 using System.Buffers;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

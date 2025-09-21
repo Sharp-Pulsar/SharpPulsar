@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Interfaces.Schema;
-using SharpPulsar.Schemas;
+﻿using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

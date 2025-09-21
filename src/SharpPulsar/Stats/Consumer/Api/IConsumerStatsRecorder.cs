@@ -18,7 +18,6 @@
 /// </summary>
 
 using Akka.Actor;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Stats.Consumer.Api
 {

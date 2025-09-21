@@ -1,6 +1,4 @@
-﻿
-using SharpPulsar.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -26,7 +24,7 @@ using System.IO;
 namespace SharpPulsar.Auth
 {
 
-	public class AuthenticationDataToken : IAuthenticationDataProvider
+    public class AuthenticationDataToken : IAuthenticationDataProvider
 	{
 		public const string HttpHeaderName = "Authorization";
 

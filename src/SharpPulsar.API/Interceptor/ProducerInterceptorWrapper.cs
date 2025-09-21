@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SharpPulsar.API.Interceptor
+﻿namespace SharpPulsar.API.Interceptor
 {
-	/// <summary>
-	/// A wrapper for old style producer interceptor.
-	/// </summary>
-	public class ProducerInterceptorWrapper<T> : IProducerInterceptor<T>
+    /// <summary>
+    /// A wrapper for old style producer interceptor.
+    /// </summary>
+    public class ProducerInterceptorWrapper<T> : IProducerInterceptor<T>
     {
         private readonly IProducerInterceptor<T> innerInterceptor;
 

@@ -1,8 +1,6 @@
-﻿using SharpPulsar.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

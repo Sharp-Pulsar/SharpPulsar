@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -24,14 +20,14 @@ namespace SharpPulsar.Common
 {
 
 
-	/// <summary>
-	/// ServiceURI represents service uri within pulsar cluster.
-	/// 
-	/// <para>This file is based on
-	/// <seealso cref="https://github.com/apache/bookkeeper/blob/master/bookkeeper-common/src/main/java/org/apache/bookkeeper/common/net/ServiceURI.java"/>
-	/// </para>
-	/// </summary>
-	public class ServiceUri
+    /// <summary>
+    /// ServiceURI represents service uri within pulsar cluster.
+    /// 
+    /// <para>This file is based on
+    /// <seealso cref="https://github.com/apache/bookkeeper/blob/master/bookkeeper-common/src/main/java/org/apache/bookkeeper/common/net/ServiceURI.java"/>
+    /// </para>
+    /// </summary>
+    public class ServiceUri
 	{
 
 		private const string BinaryService = "pulsar";

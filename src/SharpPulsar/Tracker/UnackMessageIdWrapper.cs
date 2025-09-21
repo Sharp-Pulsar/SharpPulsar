@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Interfaces;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -19,7 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Tracker
 {
-	public class UnackMessageIdWrapper
+    public class UnackMessageIdWrapper
 	{
 		internal IMessageId MessageId;
 		internal int RedeliveryCount = 0;

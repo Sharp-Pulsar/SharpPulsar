@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Shared;
-using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +21,10 @@ using System.Collections.Generic;
 namespace SharpPulsar.Protocol.Schema
 {
 
-	/// <summary>
-	/// Response containing information about a schema.
-	/// </summary>
-	public class GetSchemaResponse
+    /// <summary>
+    /// Response containing information about a schema.
+    /// </summary>
+    public class GetSchemaResponse
 	{
 		public long Version { get; set; }
 		public SchemaType Type { get; set; }

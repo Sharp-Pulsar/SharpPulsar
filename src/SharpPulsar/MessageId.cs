@@ -4,9 +4,6 @@ using Google.Protobuf;
 
 using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Interfaces;
-using SharpPulsar.Protocol.Extension;
-using SharpPulsar.Protocol.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

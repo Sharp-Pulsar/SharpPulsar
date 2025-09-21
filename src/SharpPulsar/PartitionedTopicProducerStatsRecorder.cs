@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using App.Metrics.Concurrency;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Stats.Producer;
 
 namespace SharpPulsar

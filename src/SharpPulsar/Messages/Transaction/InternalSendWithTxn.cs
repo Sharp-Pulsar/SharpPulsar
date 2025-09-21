@@ -1,7 +1,6 @@
 ﻿
 using System.Threading.Tasks;
 using Akka.Actor;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Transaction
 {

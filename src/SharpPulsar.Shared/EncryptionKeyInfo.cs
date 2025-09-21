@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,11 +19,11 @@
 namespace SharpPulsar.Shared
 {
 
-	/// <summary>
-	/// EncryptionKeyInfo contains the encryption key and corresponding metadata which contains additional information about
-	/// the key such as version, timestamp.
-	/// </summary>
-	public class EncryptionKeyInfo
+    /// <summary>
+    /// EncryptionKeyInfo contains the encryption key and corresponding metadata which contains additional information about
+    /// the key such as version, timestamp.
+    /// </summary>
+    public class EncryptionKeyInfo
 	{
 
 		private IDictionary<string, string> metadata = null;

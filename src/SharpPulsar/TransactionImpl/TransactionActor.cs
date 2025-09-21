@@ -1,12 +1,9 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;
 using System;
 using System.Collections.Generic;
-using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

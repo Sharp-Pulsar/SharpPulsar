@@ -1,7 +1,4 @@
-﻿
-using SharpPulsar.Interfaces;
-
-namespace SharpPulsar.Tracker.Messages
+﻿namespace SharpPulsar.Tracker.Messages
 {
     public readonly record struct IsDuplicate
     {

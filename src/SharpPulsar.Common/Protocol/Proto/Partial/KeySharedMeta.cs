@@ -1,10 +1,6 @@
-﻿
-using System;
-using System.Collections.Generic;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public partial class KeySharedMeta
+    public partial class KeySharedMeta
 	{
 		
         public IntRange GetHashRanges(int index)

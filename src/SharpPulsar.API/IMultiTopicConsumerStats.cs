@@ -1,8 +1,4 @@
-﻿
-using System.Collections.Generic;
-using SharpPulsar.Stats.Consumer.Api;
-
-namespace SharpPulsar.API
+﻿namespace SharpPulsar.API
 {
     internal interface IMultiTopicConsumerStats
     {

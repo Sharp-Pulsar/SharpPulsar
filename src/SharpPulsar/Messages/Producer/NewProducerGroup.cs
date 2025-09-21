@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Producer
 {

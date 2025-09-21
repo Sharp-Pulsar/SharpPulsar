@@ -20,8 +20,6 @@
 
 namespace SharpPulsar.Common.Compression
 {
-    using Snappy;
-
     //using PooledByteBufAllocator = io.netty.buffer.PooledByteBufAllocator;
 
     /// <summary>

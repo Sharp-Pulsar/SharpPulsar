@@ -1,10 +1,8 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Interfaces.Schema;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Net;
-using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 namespace SharpPulsar.Messages.Requests
 {

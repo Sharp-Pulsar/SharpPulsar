@@ -7,7 +7,6 @@ using AvroSchemaGenerator;
 using SharpPulsar.Common;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Shared;
-using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

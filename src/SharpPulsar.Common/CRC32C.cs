@@ -4,7 +4,6 @@
 // code or tables extracted from it, as desired without restriction.
 
 using System.Buffers;
-using System.IO;
 
 
 namespace SharpPulsar.Common

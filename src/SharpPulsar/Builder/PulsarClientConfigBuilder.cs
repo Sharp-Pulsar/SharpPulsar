@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Auth;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Precondition;
 using System;
 using System.Collections.Generic;

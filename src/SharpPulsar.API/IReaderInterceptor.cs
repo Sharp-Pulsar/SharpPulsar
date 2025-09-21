@@ -1,7 +1,4 @@
-﻿
-using Akka.Actor;
-
-namespace SharpPulsar.API
+﻿namespace SharpPulsar.API
 {
     /// <summary>
     /// Reader interceptor. </summary>

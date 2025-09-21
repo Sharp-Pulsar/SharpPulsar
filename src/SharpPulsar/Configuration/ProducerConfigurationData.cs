@@ -3,13 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Precondition;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Builder;
 using SharpPulsar.Common.Compression;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

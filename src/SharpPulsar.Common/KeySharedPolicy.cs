@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,10 +19,10 @@
 namespace SharpPulsar.Common
 {
 
-	/// <summary>
-	/// KeyShared policy for KeyShared subscription.
-	/// </summary>
-	public abstract class KeySharedPolicy
+    /// <summary>
+    /// KeyShared policy for KeyShared subscription.
+    /// </summary>
+    public abstract class KeySharedPolicy
 	{
 		private KeySharedMode _keySharedMode;
         private bool _allowOutOfOrderDelivery = false;

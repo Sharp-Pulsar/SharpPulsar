@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,11 +20,11 @@ using System.Text;
 /// </summary>
 namespace SharpPulsar.Common
 {
-	/// <summary>
-	/// This this copy of <seealso cref="System.Collections.BitArray"/>.
-	/// Provides <seealso cref="BitSet.resetWords(long[])"/> method and leverage with netty recycler.
-	/// </summary>
-	[Serializable]
+    /// <summary>
+    /// This this copy of <seealso cref="System.Collections.BitArray"/>.
+    /// Provides <seealso cref="BitSet.resetWords(long[])"/> method and leverage with netty recycler.
+    /// </summary>
+    [Serializable]
 	public class BitSet : ICloneable
 	{
 		/*

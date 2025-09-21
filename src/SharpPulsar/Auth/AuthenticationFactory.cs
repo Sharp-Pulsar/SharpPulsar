@@ -1,8 +1,5 @@
-﻿
-using SharpPulsar.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,11 +22,11 @@ using static SharpPulsar.Exceptions.PulsarClientException;
 namespace SharpPulsar.Auth
 {
 
-	/// <summary>
-	/// Factory class that allows to create <seealso cref="Authentication"/> instances
-	/// for all the supported authentication methods.
-	/// </summary>
-	public sealed class AuthenticationFactory
+    /// <summary>
+    /// Factory class that allows to create <seealso cref="Authentication"/> instances
+    /// for all the supported authentication methods.
+    /// </summary>
+    public sealed class AuthenticationFactory
 	{
 
 		/// <summary>

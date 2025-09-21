@@ -1,7 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections.Immutable;
 using Akka.Actor;
-using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Requests
 {

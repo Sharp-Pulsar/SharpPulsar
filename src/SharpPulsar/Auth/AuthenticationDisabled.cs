@@ -1,6 +1,4 @@
-﻿
-using SharpPulsar.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -25,7 +23,7 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Auth
 {
 
-	public class AuthenticationDisabled : IAuthentication, IEncodedAuthenticationParameterSupport
+    public class AuthenticationDisabled : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		protected internal readonly IAuthenticationDataProvider nullData = new AuthenticationDataNull();

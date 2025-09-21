@@ -14,9 +14,6 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Consumer;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
@@ -28,8 +25,6 @@ using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Utils;
-using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
-using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar
 {
     public class PulsarClient : IPulsarClient, IDisposable

@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public partial class BaseCommand
+    public partial class BaseCommand
 	{
         public static Builder NewBuilder()
 		{

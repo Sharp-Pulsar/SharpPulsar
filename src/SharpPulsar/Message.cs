@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Batch;
-using SharpPulsar.Auth;
-using SharpPulsar.Protocol;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,7 +26,6 @@ using SharpPulsar.Protocol;
 
 namespace SharpPulsar
 {
-    using Protocol.Proto;
     using System.Linq;
     using Akka.Actor;
     using Akka.Util;

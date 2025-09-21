@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Batch;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker

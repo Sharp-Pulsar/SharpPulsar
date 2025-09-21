@@ -2,7 +2,6 @@
 using SharpPulsar.Configuration;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
 using Akka.Actor;

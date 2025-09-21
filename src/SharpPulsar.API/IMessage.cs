@@ -1,7 +1,4 @@
-﻿using Akka.Util;
-using SharpPulsar.Auth;
-using System.Buffers;
-using System.Collections.Generic;
+﻿using System.Buffers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,10 +20,10 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.API
 {
-	/// <summary>
-	/// The message abstraction used in Pulsar.
-	/// </summary>
-	public interface IMessage<T>
+    /// <summary>
+    /// The message abstraction used in Pulsar.
+    /// </summary>
+    public interface IMessage<T>
 	{
 
 		/// <summary>

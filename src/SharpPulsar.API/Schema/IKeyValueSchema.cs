@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SharpPulsar.API.Common.Schema;
-
-namespace SharpPulsar.API.Schema
+﻿namespace SharpPulsar.API.Schema
 {
     internal class IKeyValueSchema
     {

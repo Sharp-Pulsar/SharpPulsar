@@ -17,8 +17,6 @@
 /// under the License.
 /// </summary>
 
-using Akka.Actor;
-
 namespace SharpPulsar.API
 {
 

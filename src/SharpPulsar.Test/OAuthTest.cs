@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
 using Xunit;

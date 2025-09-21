@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Util;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;

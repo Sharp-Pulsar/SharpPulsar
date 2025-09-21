@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public sealed partial class CommandGetSchema 
+    public sealed partial class CommandGetSchema 
 	{
 		
 		public static Builder NewBuilder()

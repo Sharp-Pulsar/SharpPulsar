@@ -7,12 +7,7 @@ using DotNetty.Common.Utilities;
 using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Producer;
-using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Proto;
-using static SharpPulsar.Protocol.Commands;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

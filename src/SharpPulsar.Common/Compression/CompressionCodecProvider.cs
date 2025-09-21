@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Common.Protocol.Proto;
-using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,17 +20,17 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Common.Compression
 {
-	
-	/// <summary>
-	/// Provider of compression codecs used in Pulsar.
-	/// </summary>
-	/// <seealso cref= CompressionCodecNone </seealso>
-	/// <seealso cref= CompressionCodecLZ4 </seealso>
-	/// <seealso cref= CompressionCodecZLib </seealso>
-	/// <seealso cref= CompressionCodecZstd </seealso>
-	/// <seealso cref= CompressionCodecSnappy </seealso>
-	/// 
-	public static class CompressionCodecProvider
+
+    /// <summary>
+    /// Provider of compression codecs used in Pulsar.
+    /// </summary>
+    /// <seealso cref= CompressionCodecNone </seealso>
+    /// <seealso cref= CompressionCodecLZ4 </seealso>
+    /// <seealso cref= CompressionCodecZLib </seealso>
+    /// <seealso cref= CompressionCodecZstd </seealso>
+    /// <seealso cref= CompressionCodecSnappy </seealso>
+    /// 
+    public static class CompressionCodecProvider
 	{
 		private static readonly Dictionary<Protocol.Proto.CompressionType, CompressionCodec> Codecs;
 

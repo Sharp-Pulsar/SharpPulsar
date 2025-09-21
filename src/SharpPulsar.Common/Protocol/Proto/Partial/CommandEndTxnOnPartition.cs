@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public sealed partial class CommandEndTxnOnPartition
+    public sealed partial class CommandEndTxnOnPartition
 	{
 		
 		public static Builder NewBuilder()

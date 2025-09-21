@@ -22,8 +22,6 @@ namespace SharpPulsar.Schemas.Generic
     using System.IO;
     using Avro.IO;
     using System;
-    using SharpPulsar.Exceptions;
-    using SharpPulsar.Interfaces.Schema;
 
     public class GenericAvroWriter : ISchemaWriter<IGenericRecord>
     {

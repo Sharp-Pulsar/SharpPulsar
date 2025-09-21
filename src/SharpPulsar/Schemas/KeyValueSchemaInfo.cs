@@ -1,6 +1,4 @@
 ﻿using SharpPulsar.Extension;
-using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Common.Precondition;
 using SharpPulsar.Shared;
 using System;

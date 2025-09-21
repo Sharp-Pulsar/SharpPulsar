@@ -1,5 +1,4 @@
 ﻿using System.Buffers;
-using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Consumer
 {

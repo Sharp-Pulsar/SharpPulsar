@@ -1,7 +1,5 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Stats.Consumer.Api;
@@ -9,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using SharpPulsar.TransactionImpl;

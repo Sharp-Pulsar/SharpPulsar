@@ -1,6 +1,4 @@
-﻿
-using SharpPulsar.Interfaces;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Consumer

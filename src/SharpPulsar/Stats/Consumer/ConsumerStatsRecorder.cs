@@ -6,7 +6,6 @@ using Akka.Actor;
 using App.Metrics.Concurrency;
 using SharpPulsar.Configuration;
 using SharpPulsar.Stats.Consumer.Api;
-using SharpPulsar.Interfaces;
 using System.Collections.Generic;
 
 /// <summary>

@@ -1,7 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-
-using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Precondition;
 
 /// <summary>

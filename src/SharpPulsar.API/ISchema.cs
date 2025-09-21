@@ -3,7 +3,6 @@ using NodaTime;
 using SharpPulsar.API.Internal;
 using SharpPulsar.API.Schema;
 using SharpPulsar.Shared;
-using System;
 using System.Diagnostics.CodeAnalysis;
 
 

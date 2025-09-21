@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Builder;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;

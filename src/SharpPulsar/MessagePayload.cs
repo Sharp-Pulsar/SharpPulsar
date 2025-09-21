@@ -17,7 +17,6 @@
 // / under the License.
 // / </summary>
 using System.Buffers;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar
 {

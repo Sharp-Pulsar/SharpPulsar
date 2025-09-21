@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Batch
 {

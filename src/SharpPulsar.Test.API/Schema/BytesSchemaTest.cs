@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Interfaces;
-using SharpPulsar.Schemas;
+﻿using SharpPulsar.Schemas;
 using System.Text;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +20,7 @@ using System.Text;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-   
+
     /// <summary>
     /// Unit test <seealso cref="BytesSchema"/>.
     /// </summary>

@@ -8,9 +8,7 @@ using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Precondition;
-using SharpPulsar.Protocol.Proto;
 
 
 /// <summary>

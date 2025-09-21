@@ -1,7 +1,4 @@
-﻿
-using SharpPulsar.Protocol.Proto;
-
-namespace SharpPulsar.Messages
+﻿namespace SharpPulsar.Messages
 {
     public readonly record struct BrokerLookUp
     {

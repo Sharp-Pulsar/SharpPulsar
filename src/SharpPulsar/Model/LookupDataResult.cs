@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Protocol.Proto;
-
-namespace SharpPulsar.Model
+﻿namespace SharpPulsar.Model
 {
     public class LookupDataResult
 	{

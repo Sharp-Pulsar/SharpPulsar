@@ -7,8 +7,6 @@ using Akka.Annotations;
 using Akka.Util.Internal;
 using SharpPulsar.Auth;
 using SharpPulsar.Builder;
-using SharpPulsar.Interfaces;
-using SharpPulsar.Protocol;
 using SharpPulsar.ServiceProvider.Messages;
 
 /// <summary>

@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Auth;
 using SharpPulsar.Builder;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;

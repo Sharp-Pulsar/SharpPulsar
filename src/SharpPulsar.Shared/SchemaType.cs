@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,20 +18,20 @@
 /// </summary>
 namespace SharpPulsar.Shared
 {
-	/// <summary>
-	/// Types of supported schema for Pulsar messages.
-	/// 
-	/// <para>Ideally we should have just one single set of enum definitions
-	/// for schema type. but we have 3 locations of defining schema types.
-	/// 
-	/// </para>
-	/// <para>when you are adding a new schema type that whose
-	/// schema info is required to be recorded in schema registry,
-	/// add corresponding schema type into `pulsar-common/src/main/proto/PulsarApi.proto`
-	/// and `pulsar-broker/src/main/proto/SchemaRegistryFormat.proto`.
-	/// </para>
-	/// </summary>
-	public sealed class SchemaType
+    /// <summary>
+    /// Types of supported schema for Pulsar messages.
+    /// 
+    /// <para>Ideally we should have just one single set of enum definitions
+    /// for schema type. but we have 3 locations of defining schema types.
+    /// 
+    /// </para>
+    /// <para>when you are adding a new schema type that whose
+    /// schema info is required to be recorded in schema registry,
+    /// add corresponding schema type into `pulsar-common/src/main/proto/PulsarApi.proto`
+    /// and `pulsar-broker/src/main/proto/SchemaRegistryFormat.proto`.
+    /// </para>
+    /// </summary>
+    public sealed class SchemaType
 	{
 		/// <summary>
 		/// No schema defined.

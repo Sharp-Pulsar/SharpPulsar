@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Interfaces;
-using SharpPulsar.Shared;
+﻿using SharpPulsar.Shared;
 
 namespace SharpPulsar.Test.API
 {

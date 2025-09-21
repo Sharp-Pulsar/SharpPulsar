@@ -1,9 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Akka.Actor;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Transaction;
-using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 namespace SharpPulsar.TransactionImpl
 {

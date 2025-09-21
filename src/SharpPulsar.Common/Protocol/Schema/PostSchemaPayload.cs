@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,10 +18,10 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	/// <summary>
-	/// Payload with information about a schema.
-	/// </summary>
-	public class PostSchemaPayload
+    /// <summary>
+    /// Payload with information about a schema.
+    /// </summary>
+    public class PostSchemaPayload
 	{
 		private readonly string _type;
 		private readonly string _schema;

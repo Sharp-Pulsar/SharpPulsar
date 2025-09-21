@@ -1,6 +1,4 @@
 ﻿using Akka.Util;
-using SharpPulsar.Auth;
-using SharpPulsar.Interfaces;
 using System;
 using System.Buffers;
 using System.Collections;

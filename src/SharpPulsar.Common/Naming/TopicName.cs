@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Extensions.Logging;
-using SharpPulsar.Utility;
+﻿using System.Collections.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,10 +20,10 @@ using SharpPulsar.Utility;
 /// </summary>
 namespace SharpPulsar.Common.Naming
 {
-	/// <summary>
-	/// Encapsulate the parsing of the completeTopicName name.
-	/// </summary>
-	public class TopicName : ServiceUnitId
+    /// <summary>
+    /// Encapsulate the parsing of the completeTopicName name.
+    /// </summary>
+    public class TopicName : ServiceUnitId
 	{
 
 		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(TopicName));

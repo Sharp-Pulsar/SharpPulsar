@@ -1,8 +1,6 @@
 ﻿using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Builder;
-using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
-using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,10 +23,10 @@ using System.Collections.Generic;
 namespace SharpPulsar.Protocol.Schema
 {
 
-	/// <summary>
-	/// Schema data.
-	/// </summary>
-	public class SchemaData
+    /// <summary>
+    /// Schema data.
+    /// </summary>
+    public class SchemaData
 	{
 		public SchemaType Type { get; set; }
 		public  bool IsDeleted { get; set; }

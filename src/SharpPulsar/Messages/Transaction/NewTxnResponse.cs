@@ -1,7 +1,4 @@
-﻿using SharpPulsar.Exceptions;
-using SharpPulsar.Protocol.Proto;
-
-namespace SharpPulsar.Messages.Transaction
+﻿namespace SharpPulsar.Messages.Transaction
 {
     public readonly record struct NewTxnResponse
     {

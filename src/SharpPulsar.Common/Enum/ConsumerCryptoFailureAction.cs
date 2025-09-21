@@ -17,15 +17,13 @@
 /// under the License.
 /// </summary>
 
-using SharpPulsar.Auth;
-
 namespace SharpPulsar.Common.Enum
 {
-	/// <summary>
-	/// The action a consumer should take when a consumer receives a
-	/// message that it cannot decrypt.
-	/// </summary>
-	public enum ConsumerCryptoFailureAction
+    /// <summary>
+    /// The action a consumer should take when a consumer receives a
+    /// message that it cannot decrypt.
+    /// </summary>
+    public enum ConsumerCryptoFailureAction
 	{
 		/// <summary>
 		/// This is the default option to fail consume messages until crypto succeeds.

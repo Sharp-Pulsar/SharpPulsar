@@ -17,8 +17,6 @@
 /// under the License.
 /// </summary>
 
-using ZstdNet;
-
 namespace SharpPulsar.Common.Compression
 {
     /// <summary>

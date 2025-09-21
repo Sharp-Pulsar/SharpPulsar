@@ -4,7 +4,6 @@ using Akka.Actor;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Producer;
-using SharpPulsar.Protocol.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

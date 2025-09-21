@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Interfaces;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -19,7 +18,7 @@
 /// </summary>
 namespace SharpPulsar
 {
-	public class TopicMetadata : ITopicMetadata
+    public class TopicMetadata : ITopicMetadata
 	{
 
 		private readonly int _numPartitions;

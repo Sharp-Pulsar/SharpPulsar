@@ -18,7 +18,6 @@
 /// </summary>
 
 using System.Collections.Generic;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using Xunit;

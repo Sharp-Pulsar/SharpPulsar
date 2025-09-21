@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public partial class CommandProducer
+    public partial class CommandProducer
 	{
 		
         public KeyValue GetMetadata(int index)

@@ -1,7 +1,5 @@
 ﻿
 using Akka.Actor;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Requests
 {

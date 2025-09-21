@@ -3,8 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Batch;
-using SharpPulsar.Interfaces;
-using SharpPulsar.Protocol.Proto;
 
 // / <summary>
 // / Licensed to the Apache Software Foundation (ASF) under one

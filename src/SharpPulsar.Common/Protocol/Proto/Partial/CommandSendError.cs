@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace SharpPulsar.Common.Protocol.Proto
+﻿namespace SharpPulsar.Common.Protocol.Proto
 {
-	public sealed partial class CommandSendError
+    public sealed partial class CommandSendError
 	{
 		
 		public static Builder NewBuilder()

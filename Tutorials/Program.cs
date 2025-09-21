@@ -14,7 +14,6 @@ using DotNet.Testcontainers.Configurations;
 using SharpPulsar;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.ServiceProvider;
 using SharpPulsar.TransactionImpl;
@@ -22,7 +21,6 @@ using SharpPulsar.Trino;
 using SharpPulsar.Trino.Message;
 using Spectre.Console;
 using Testcontainers.Pulsar;
-using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace Tutorials
 {

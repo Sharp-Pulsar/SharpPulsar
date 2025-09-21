@@ -5,8 +5,6 @@ using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;

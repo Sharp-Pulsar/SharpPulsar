@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SharpPulsar.API
+﻿namespace SharpPulsar.API
 {
     /// <summary>
     /// Defines a custom strategy to compact messages in a topic.

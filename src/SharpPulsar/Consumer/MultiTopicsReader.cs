@@ -1,15 +1,12 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utility;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file

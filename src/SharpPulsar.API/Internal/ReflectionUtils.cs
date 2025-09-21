@@ -1,7 +1,4 @@
-﻿
-using System;
-using System.Reflection;
-using System.Threading;
+﻿using System.Reflection;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one

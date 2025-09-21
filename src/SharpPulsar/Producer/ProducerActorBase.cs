@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Schema;
 using System;
 using System.Collections.Generic;

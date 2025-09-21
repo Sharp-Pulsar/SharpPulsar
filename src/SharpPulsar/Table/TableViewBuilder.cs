@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Table.Messages;
 

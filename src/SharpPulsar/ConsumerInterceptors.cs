@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using Akka.Actor;
 
-using SharpPulsar.Interfaces;
-
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file

@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Interfaces;
 using System;
 
 namespace SharpPulsar

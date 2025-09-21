@@ -1,7 +1,5 @@
 ﻿
 using System.Collections.Generic;
-using SharpPulsar.Interfaces;
-using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Consumer
 {

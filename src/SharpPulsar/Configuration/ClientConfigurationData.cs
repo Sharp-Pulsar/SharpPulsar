@@ -1,6 +1,5 @@
 ﻿using SharpPulsar.Common;
 using SharpPulsar.Auth;
-using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
@@ -27,10 +26,10 @@ namespace SharpPulsar.Configuration
 {
 
 
-	/// <summary>
-	/// This is a simple holder of the client configuration values.
-	/// </summary>
-	public sealed class ClientConfigurationData
+    /// <summary>
+    /// This is a simple holder of the client configuration values.
+    /// </summary>
+    public sealed class ClientConfigurationData
     {
 		/// <summary>
 		/// TLS KeyStore type configuration: JKS, PKCS12

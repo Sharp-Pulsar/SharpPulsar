@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace SharpPulsar.API
+﻿namespace SharpPulsar.API
 {
     public interface ISendCallback<T>
     {

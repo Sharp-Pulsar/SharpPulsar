@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -19,11 +17,11 @@
 /// under the License.
 /// </summary>
 namespace SharpPulsar.Shared.Exceptions
-{ 
-	/// <summary>
-	/// Exceptions for transaction coordinator client.
-	/// </summary>
-	public class TransactionCoordinatorClientException : IOException
+{
+    /// <summary>
+    /// Exceptions for transaction coordinator client.
+    /// </summary>
+    public class TransactionCoordinatorClientException : IOException
 	{
 
 		public TransactionCoordinatorClientException(System.Exception t) : base(t.Message)

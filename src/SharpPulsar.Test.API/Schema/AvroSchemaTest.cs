@@ -2,7 +2,6 @@
 using Avro.Specific;
 using AvroSchemaGenerator;
 using AvroSchemaGenerator.Attributes;
-using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Reader;
 using SharpPulsar.Schemas.Writer;

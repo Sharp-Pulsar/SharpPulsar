@@ -4,7 +4,6 @@ using App.Metrics.Concurrency;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
@@ -14,7 +13,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

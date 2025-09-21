@@ -1,9 +1,6 @@
 ﻿using System;
 using SharpPulsar.Shared;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas.Generic;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

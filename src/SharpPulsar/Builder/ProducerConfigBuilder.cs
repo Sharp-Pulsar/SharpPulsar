@@ -4,11 +4,7 @@ using System.Linq;
 using SharpPulsar.Messages;
 
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Interfaces.Interceptor;
-
-using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
-using SharpPulsar.Protocol.Proto;
 
 /* Unmerged change from project 'SharpPulsar (net5.0)'
 Before:

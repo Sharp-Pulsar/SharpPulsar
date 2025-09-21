@@ -1,7 +1,5 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Interfaces;
 using System.Collections.Generic;
-using static SharpPulsar.Protocol.Proto.CommandAck;
 
 namespace SharpPulsar.Messages.Consumer
 {

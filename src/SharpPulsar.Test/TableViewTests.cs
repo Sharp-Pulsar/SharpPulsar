@@ -4,7 +4,6 @@ using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 using SharpPulsar.TestContainer;
 using Xunit;
 using Xunit.Abstractions;

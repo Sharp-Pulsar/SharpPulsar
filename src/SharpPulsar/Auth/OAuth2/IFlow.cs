@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Auth.OAuth2.Protocol;
-using SharpPulsar.Exceptions;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -21,10 +20,10 @@ using SharpPulsar.Exceptions;
 namespace SharpPulsar.Auth.OAuth2
 {
 
-	/// <summary>
-	/// An OAuth 2.0 authorization flow.
-	/// </summary>
-	internal interface IFlow //: AutoCloseable
+    /// <summary>
+    /// An OAuth 2.0 authorization flow.
+    /// </summary>
+    internal interface IFlow //: AutoCloseable
 	{
 
 		/// <summary>

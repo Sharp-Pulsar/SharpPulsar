@@ -4,13 +4,10 @@ using Akka.Util;
 using Akka.Util.Internal;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
-using SharpPulsar.Protocol;
 using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using System;
@@ -19,9 +16,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using static SharpPulsar.Exceptions.PulsarClientException;
-using static SharpPulsar.Protocol.Proto.CommandAck;
-using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using IScheduler = Akka.Actor.IScheduler;
 
 /// <summary>
