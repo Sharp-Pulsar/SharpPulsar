@@ -6,7 +6,7 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 using SharpPulsar.TransactionImpl;
 using System;
 using System.Collections.Concurrent;

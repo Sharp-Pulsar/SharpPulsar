@@ -2,7 +2,7 @@
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;

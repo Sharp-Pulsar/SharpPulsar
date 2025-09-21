@@ -1,4 +1,4 @@
-﻿using SharpPulsar.Protocol.Proto;
+﻿using SharpPulsar.Common.Protocol.Proto;
 using System.Collections.Generic;
 
 /// <summary>

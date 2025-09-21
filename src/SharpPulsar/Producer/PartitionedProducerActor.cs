@@ -18,7 +18,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 using SharpPulsar.Common.Util;
 using SharpPulsar.Messages;
 

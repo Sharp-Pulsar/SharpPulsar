@@ -21,7 +21,7 @@ using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 using SharpPulsar.Producer;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;

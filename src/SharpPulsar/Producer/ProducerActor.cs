@@ -22,7 +22,7 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Schemas;

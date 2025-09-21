@@ -6,7 +6,7 @@ using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 using System;
 using SharpPulsar.Common.Compression;
 

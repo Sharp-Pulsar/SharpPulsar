@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Builder;
 using SharpPulsar.Common.Compression;

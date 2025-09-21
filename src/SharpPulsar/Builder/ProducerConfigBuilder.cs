@@ -23,7 +23,7 @@ using SharpPulsar.Extension;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Crypto;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

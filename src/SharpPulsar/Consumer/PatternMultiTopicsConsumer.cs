@@ -8,7 +8,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Precondition;
+using SharpPulsar.Common.Precondition;
 using System;
 using System.Collections.Generic;
 using System.Linq;

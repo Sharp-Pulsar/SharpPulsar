@@ -30,7 +30,7 @@ namespace SharpPulsar
     using SharpPulsar.Configuration;
     using SharpPulsar.Interfaces;
     using SharpPulsar.Messages.Transaction;
-    using SharpPulsar.Precondition;
+    using SharpPulsar.Common.Precondition;
     using SharpPulsar.Schemas;
     using System.Buffers;
     using System.Threading.Tasks;

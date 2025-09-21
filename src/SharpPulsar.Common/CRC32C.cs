@@ -144,7 +144,7 @@ namespace SharpPulsar.Common
 
             return checksum ^ uint.MaxValue;
         }
-        internal static uint Get(uint crc, byte[] buf, int size)
+        public static uint Get(uint crc, byte[] buf, int size)
         {
             crc = crc ^ ~0U; //0xFFFFFFFF
             for (var i = 0; i < size; i++)
@@ -154,7 +154,7 @@ namespace SharpPulsar.Common
         }
 
         // Custom version of original, replaced buf with stream
-        internal static uint Get(uint crc, Stream str, int size)
+        public static uint Get(uint crc, Stream str, int size)
         {
             crc = crc ^ ~0U; //0xFFFFFFFF
             while (size-- > 0)
