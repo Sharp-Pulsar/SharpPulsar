@@ -47,15 +47,20 @@ namespace SharpPulsar.Common.Schema
 		/// </summary>
 		public delegate KeyValue<TK, TV> KeyValueDecoder(byte[] keyData, byte[] valueData);
 
-		/// <summary>
-		/// Encode a <tt>key</tt> and <tt>value</tt> pair into a bytes array.
-		/// </summary>
-		/// <param name="key"> key object to encode </param>
-		/// <param name="keyWriter"> a writer to encode key object </param>
-		/// <param name="value"> value object to encode </param>
-		/// <param name="valueWriter"> a writer to encode value object </param>
-		/// <returns> the encoded bytes array </returns>
-		public static EncodeData Encode(string topic, TK key, ISchema<TK> keyWriter, TV value, ISchema<TV> valueWriter)
+        /// <summary>
+        /// Encode a <tt>key</tt> and <tt>value</tt> pair into a bytes array.
+        /// </summary>
+        /// <param name="key"> key object to encode </param>
+        /// <param name="keyWriter"> a writer to encode key object </param>
+        /// <param name="value"> value object to encode </param>
+        /// <param name="valueWriter"> a writer to encode value object </param>
+        /// <returns> the encoded bytes array </returns>
+        /// 
+        public static byte[] Encode<K,V>(TK key, ISchema<TK> keyWriter, TV value, ISchema<TV> valueWriter)
+        {
+            return Encode(null, key, keyWriter, value, valueWriter).Data;
+        }
+        public static EncodeData Encode(string topic, TK key, ISchema<TK> keyWriter, TV value, ISchema<TV> valueWriter)
 		{
             EncodeData keyEncodeData;
             if (key == null)

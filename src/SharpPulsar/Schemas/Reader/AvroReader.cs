@@ -2,6 +2,7 @@
 using Avro.IO;
 using Avro.Reflect;
 using Avro.Specific;
+using SharpPulsar.API.Schema;
 using System.IO;
 
 namespace SharpPulsar.Schemas.Reader

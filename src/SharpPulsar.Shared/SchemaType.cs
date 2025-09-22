@@ -142,14 +142,25 @@ namespace SharpPulsar.Shared
 		/// </summary>
 		public static readonly SchemaType ProtobufNative = new SchemaType("ProtobufNative", InnerEnum.ProtobufNative, 20);
 
-		//
-		// Schemas that don't have schema info. the value should be negative.
-		//
+        /// <summary>
+        /// External Schema Type.
+        /// <para>
+        /// This is used to indicate that the schema is managed externally, such as in a schema registry.
+        /// 
+        /// External schema type is not compatible with any other schema type.
+        /// </para>
+        /// </summary>
+        public static readonly SchemaType External = new SchemaType("EXTERNAL", InnerEnum.ProtobufNative, 21);
+        
 
-		/// <summary>
-		/// A bytes array.
-		/// </summary>
-		public static readonly SchemaType BYTES = new SchemaType("BYTES", InnerEnum.BYTES, -1);
+        //
+        // Schemas that don't have schema info. the value should be negative.
+        //
+
+        /// <summary>
+        /// A bytes array.
+        /// </summary>
+        public static readonly SchemaType BYTES = new SchemaType("BYTES", InnerEnum.BYTES, -1);
 
 		/// <summary>
 		/// Auto Detect Schema Type.
@@ -193,7 +204,8 @@ namespace SharpPulsar.Shared
 			_valueList.Add(LocalTime);
 			_valueList.Add(LocalDateTime);
 			_valueList.Add(ProtobufNative);
-			_valueList.Add(BYTES);
+            _valueList.Add(External);
+            _valueList.Add(BYTES);
 			_valueList.Add(AUTO);
 			_valueList.Add(AutoConsume);
 			_valueList.Add(AutoPublish);
@@ -222,6 +234,7 @@ namespace SharpPulsar.Shared
 			LocalTime,
 			LocalDateTime,
 			ProtobufNative,
+            External,
 			BYTES,
 			AUTO,
 			AutoConsume,
@@ -300,7 +313,9 @@ namespace SharpPulsar.Shared
 					return LocalDateTime;
 				case 20:
 					return ProtobufNative;
-				case -1:
+                case 21:
+                    return External;
+                case -1:
 					return BYTES;
 				case -2:
 					return AUTO;
@@ -366,6 +381,7 @@ namespace SharpPulsar.Shared
 				case InnerEnum.JSON:
 				case InnerEnum.PROTOBUF:
 				case InnerEnum.ProtobufNative:
+                case InnerEnum.External:  
 					return true;
 				default:
 					return false;

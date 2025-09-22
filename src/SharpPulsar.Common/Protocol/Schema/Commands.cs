@@ -68,7 +68,9 @@ namespace SharpPulsar.Protocol.Schema
         {
             flags.SupportsAuthRefresh = true;
             flags.SupportsBrokerEntryMetadata = true;
-            flags.SupportsPartialProducer = true;   
+            flags.SupportsPartialProducer = true;
+            flags.SupportsGetPartitionedMetadataWithoutAutoCreation = true;
+            flags.SupportsReplDedupByLidAndEid = true;
         }
         public static ReadOnlySequence<byte> NewConnect(string authMethodName, string authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, string originalAuthData, string originalAuthMethod)
 		{
@@ -657,11 +659,20 @@ namespace SharpPulsar.Protocol.Schema
 		}
         private static Type GetSchemaType(SchemaType type)
 		{
-			if (type.Value < 0)
+            if (type == SchemaType.AutoConsume)
+            {
+                return Type.AutoConsume;
+            }
+            if (type.Value < 0)
 			{
 				return Type.None;
 			}
-			else
+            else if (type == SchemaType.External)
+            {
+                // This is a special case, SchemaType.EXTERNAL number is not match the Schema.Type.EXTERNAL.
+                return Type.External;
+            }
+            else
 			{
 				return Enum.GetValues(typeof(Type)).Cast<Type>().ToList()[type.Value];
 			}
@@ -669,12 +680,21 @@ namespace SharpPulsar.Protocol.Schema
 
 		public static SchemaType GetSchemaType(Type type)
 		{
-			if (type < 0)
+            if (type == Type.AutoConsume)
+            {
+                return SchemaType.AutoConsume;
+            }
+			else if (type < 0)
 			{
 				// this is unexpected
 				return SchemaType.NONE;
 			}
-			else
+            else if (type == Type.External)
+            {
+                // This is a special case, SchemaType.EXTERNAL number is not match the Schema.Type.EXTERNAL.
+                return SchemaType.External;
+            }
+            else
 			{
 				return SchemaType.ValueOf((int)type);
 			}

@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using AvroSchemaGenerator;
+using SharpPulsar.API.Schema;
 using SharpPulsar.Common;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Shared;
 

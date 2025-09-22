@@ -1,5 +1,10 @@
-﻿using SharpPulsar.Common.Precondition;
+﻿using SharpPulsar.API;
+using SharpPulsar.API.Schema;
+using SharpPulsar.Common.Precondition;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Shared;
+using SharpPulsar.Shared.Exceptions;
 using System;
 using System.Threading.Tasks;
 
@@ -88,7 +93,22 @@ namespace SharpPulsar.Schemas
 
 		private KeyValueSchema(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
-			_keySchema = KeySchema;
+            SchemaType keySchemaType = null;
+            if (KeySchema != null && KeySchema.SchemaInfo != null)
+            {
+                keySchemaType = KeySchema.SchemaInfo.Type;
+            }
+            SchemaType valueSchemaType = null;
+            if (ValueSchema != null && ValueSchema.SchemaInfo != null)
+            {
+                valueSchemaType = ValueSchema.SchemaInfo.Type;
+            }
+            if ((SchemaType.External.Equals(keySchemaType) && valueSchemaType != null && SchemaType.IsStructType(valueSchemaType)) || (SchemaType.External.Equals(valueSchemaType) && keySchemaType != null && SchemaType.IsStructType(keySchemaType)))
+            {
+                throw new System.ArgumentException("External schema cannot be used with other Pulsar struct schema types," + "keySchemaType: " + keySchemaType + ", valueSchemaType: " + valueSchemaType);
+            }
+
+            _keySchema = KeySchema;
 			_valueSchema = ValueSchema;
 			_keyValueEncodingType = KeyValueEncodingType;
 			_schemaInfoProvider = new InfoSchemaInfoProvider(this);
@@ -99,9 +119,18 @@ namespace SharpPulsar.Schemas
 			{
 				ConfigureKeyValueSchemaInfo();
 			}
-		}
+            else
+            {
+                BuildKeyValueSchemaInfo();
+            }
 
-		private class InfoSchemaInfoProvider : ISchemaInfoProvider
+        }
+        private void BuildKeyValueSchemaInfo()
+        {
+            _schemaInfo = KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(_keySchema, _valueSchema, _keyValueEncodingType);
+        }
+
+        private class InfoSchemaInfoProvider : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> _outerInstance;
 
@@ -129,12 +158,16 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		// encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
-		public virtual byte[] Encode(KeyValue<K, V> Message)
+        // encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
+        public byte[] Encode(KeyValue<K, V> message)
+        {
+            return Encode(null, message).Data;
+        }
+        public virtual EncodeData Encode(string topic, KeyValue<K, V> Message)
 		{
 			if (_keyValueEncodingType == KeyValueEncodingType.INLINE)
 			{
-				return KeyValue<K, V>.Encode(Message.Key, _keySchema, Message.Value, _valueSchema);
+				return KeyValue<K, V>.Encode(topic, Message.Key, _keySchema, Message.Value, _valueSchema);
 			}
 			else
 			{
@@ -142,7 +175,7 @@ namespace SharpPulsar.Schemas
 				{
 					return null;
 				}
-				return _valueSchema.Encode(Message.Value);
+				return _valueSchema.Encode(topic, Message.Value);
 			}
 		}
 

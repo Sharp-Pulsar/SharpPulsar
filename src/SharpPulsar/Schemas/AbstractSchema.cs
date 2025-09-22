@@ -1,5 +1,7 @@
 ﻿using System;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
+using SharpPulsar.API;
+using SharpPulsar.API.Schema;
+using SchemaSerializationException = SharpPulsar.Shared.Exceptions.SchemaSerializationException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -87,7 +89,7 @@ namespace SharpPulsar.Schemas
         }
         public virtual ISchema<T> AtSchemaVersion(byte[] schemaVersion)
         {
-            Precondition.Condition.RequireNonNull(schemaVersion, "schemaVersion");
+            Common.Precondition.Condition.RequireNonNull(schemaVersion, "schemaVersion");
             if (!SupportSchemaVersioning()) 
             {
                 return this;

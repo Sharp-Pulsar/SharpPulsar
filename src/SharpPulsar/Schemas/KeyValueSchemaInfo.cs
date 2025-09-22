@@ -3,6 +3,9 @@ using SharpPulsar.Common.Precondition;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
+using SharpPulsar.API.Schema;
+using SharpPulsar.API;
+using SharpPulsar.Common.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -17,6 +17,8 @@
 /// under the License.
 /// </summary>
 
+using SharpPulsar.API.Schema;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schemas

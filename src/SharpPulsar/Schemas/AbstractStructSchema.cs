@@ -1,7 +1,9 @@
 ﻿using System;
+using SharpPulsar.API;
+using SharpPulsar.API.Schema;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Schemas.Reader;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
+using SchemaSerializationException = SharpPulsar.Shared.Exceptions.SchemaSerializationException;
 namespace SharpPulsar.Schemas
 {
     public class AbstractStructSchema<T> : AbstractSchema<T>
@@ -64,7 +66,7 @@ namespace SharpPulsar.Schemas
         }
         public override ISchema<T> AtSchemaVersion(byte[] schemaVersion)
         {
-            Precondition.Condition.RequireNonNull(schemaVersion, "schemaVersion");
+            Common.Precondition.Condition.RequireNonNull(schemaVersion, "schemaVersion");
             if (_schemaInfoProvider == null)
             {
                 // this schema is not downloaded from the registry

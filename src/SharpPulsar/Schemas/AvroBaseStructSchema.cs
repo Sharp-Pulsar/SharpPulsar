@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using SharpPulsar.API.Schema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schemas
