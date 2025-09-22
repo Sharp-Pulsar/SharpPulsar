@@ -4,7 +4,7 @@
   </PropertyGroup>
   <!-- App dependencies -->
   <ItemGroup>
-    <PackageVersion Include="Akka" Version="1.5.49" />
+    <PackageVersion Include="Akka" Version="1.5.50" />
     <PackageVersion Include="Akka.Logger.Serilog" Version="$(AkkaLoggerSerilogVersion)" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
@@ -48,7 +48,7 @@
     <PackageVersion Include="Spectre.Console" Version="0.51.1" />
     <PackageVersion Include="JetBrains.Annotations" Version="2023.3.0" />
     <PackageVersion Include="protobuf-net.BuildTools" Version="3.2.52" />
-    <PackageVersion Include="Akka.TestKit.Xunit2" Version="1.5.49" />
+    <PackageVersion Include="Akka.TestKit.Xunit2" Version="1.5.50" />
     <PackageVersion Include="Castle.Core" Version="5.2.1" />
     <PackageVersion Include="FluentAssertions" Version="8.6.0" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="2.4.1" />
