@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace SharpPulsar.Extension
+namespace SharpPulsar.Shared
 {
     public static class SchemaEx
     {

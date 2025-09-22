@@ -1,4 +1,4 @@
-﻿namespace SharpPulsar.TransactionImpl
+﻿namespace SharpPulsar.Shared
 {
     public enum TransactionState
     {

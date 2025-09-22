@@ -3,13 +3,16 @@ using System.Buffers;
 using SharpPulsar.Shared;
 using AuthData = SharpPulsar.Common.Protocol.Proto.AuthData;
 using Type = SharpPulsar.Common.Protocol.Proto.Schema.Type;
-using Schema = SharpPulsar.Common.Protocol.Proto.Schema;
 using System.Text;
 using KeySharedMode = SharpPulsar.Common.Protocol.Proto.KeySharedMode;
 using SharpPulsar.Common;
 using static SharpPulsar.Common.Protocol.Proto.CommandAck;
 using SharpPulsar.API.Schema;
 using SharpPulsar.Common.Helpers;
+using Google.Protobuf;
+using ProtoBuf;
+using Serializer = SharpPulsar.Common.Helpers.Serializer;
+using Akka.Util.Internal; 
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

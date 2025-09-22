@@ -3,9 +3,9 @@
 //	This class is used to replace calls to some Java HashMap or Hashtable methods.
 //---------------------------------------------------------------------------------------------------------
 using System.Collections.Generic;
-namespace SharpPulsar.Extension
+namespace SharpPulsar.Shared
 {
-	internal static class HashMapHelper
+	public static class HashMapHelper
 	{
 		public static HashSet<KeyValuePair<TKey, TValue>> SetOfKeyValuePairs<TKey, TValue>(this IDictionary<TKey, TValue> dictionary)
 		{
@@ -22,5 +22,6 @@ namespace SharpPulsar.Extension
             dictionary.TryGetValue(key, out var ret);
 			return ret;
 		}
+
 	}
 }

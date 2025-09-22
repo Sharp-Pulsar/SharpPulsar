@@ -19,7 +19,7 @@
     <PackageVersion Include="Microsoft.Extensions.ApiDescription.Client" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="$(MicrosoftIORecyclableMemoryStreamVersion)" />
+    <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
     <PackageVersion Include="Microsoft.Rest.ClientRuntime" Version="$(MicrosoftRestClientRuntimeVersion)" />
     <PackageVersion Include="Nager.PublicSuffix" Version="3.6.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />

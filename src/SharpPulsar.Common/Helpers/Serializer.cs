@@ -1,5 +1,9 @@
 ﻿using System.Buffers;
+using Microsoft.IO;
 using SharpPulsar.Common.Protocol.Proto;
+using ProtoBuf;
+using SharpPulsar.Shared;
+using static SharpPulsar.Protocol.Schema.Commands;
 
 namespace SharpPulsar.Common.Helpers
 {

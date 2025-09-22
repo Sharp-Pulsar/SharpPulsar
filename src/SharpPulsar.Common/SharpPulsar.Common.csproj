@@ -7,7 +7,10 @@
   </PropertyGroup>
     
   <ItemGroup>
+      <PackageReference Include="Akka" />
+      <Using Include="Akka.Event" />
     <PackageReference Include="K4os.Compression.LZ4" />
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" />
     <PackageReference Include="SharpZipLib" />
     <PackageReference Include="Snappy.Standard" />
     <PackageReference Include="zlib.net-mutliplatform" />
