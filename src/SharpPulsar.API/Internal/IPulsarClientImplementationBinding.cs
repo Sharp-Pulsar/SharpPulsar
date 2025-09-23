@@ -35,7 +35,7 @@ namespace SharpPulsar.API.Internal
     {
         ISchemaDefinitionBuilder<T> NewSchemaDefinitionBuilder<T>();
 
-        ClientBuilder NewClientBuilder();
+        IClientBuilder NewClientBuilder();
 
         IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex);
 
@@ -125,7 +125,7 @@ namespace SharpPulsar.API.Internal
 
         IGenericSchema<IGenericRecord> GetGenericSchema(ISchemaInfo schemaInfo);
 
-        RecordSchemaBuilder NewRecordSchemaBuilder(string name);
+        IRecordSchemaBuilder NewRecordSchemaBuilder(string name);
 
         /// <summary>
         /// Decode the kv encoding type from the schema info.
@@ -199,9 +199,9 @@ namespace SharpPulsar.API.Internal
         //ORIGINAL LINE: byte[] convertKeyValueDataStringToSchemaInfoSchema(byte[] keyValueSchemaInfoDataJsonBytes) throws java.io.IOException;
         byte[] ConvertKeyValueDataStringToSchemaInfoSchema(byte[] keyValueSchemaInfoDataJsonBytes);
 
-        BatcherBuilder NewDefaultBatcherBuilder();
+        IBatcherBuilder NewDefaultBatcherBuilder();
 
-        BatcherBuilder NewKeyBasedBatcherBuilder();
+        IBatcherBuilder NewKeyBasedBatcherBuilder();
 
         IMessagePayloadFactory NewDefaultMessagePayloadFactory();
 

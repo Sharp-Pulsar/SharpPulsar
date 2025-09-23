@@ -1,4 +1,9 @@
-﻿/// <summary>
+﻿
+
+using Akka.Event;
+using SharpPulsar.API.Internal;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,9 +21,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-
-namespace SharpPulsar.Batch.Api
+namespace SharpPulsar.API
 {
     /// <summary>
 	/// Batcher builder.
@@ -55,8 +58,8 @@ namespace SharpPulsar.Batch.Api
 		/// <returns> new batch message container </returns>
 		IBatchMessageContainer Build<T>();
 
-		public static IBatcherBuilder Default(ILoggingAdapter log) => DefaultImplementation.NewDefaultBatcherBuilder(log);
-		public static IBatcherBuilder KeyBased(ILoggingAdapter log) => DefaultImplementation.NewKeyBasedBatcherBuilder(log);
+		public static IBatcherBuilder Default(/*ILoggingAdapter log*/) => DefaultImplementation.GetDefaultImplementation.NewDefaultBatcherBuilder(/*log*/);
+		public static IBatcherBuilder KeyBased(/*ILoggingAdapter log*/) => DefaultImplementation.GetDefaultImplementation.NewKeyBasedBatcherBuilder(/*log*/);
 
 	}
 

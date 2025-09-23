@@ -39,6 +39,12 @@ namespace SharpPulsar.Shared
             return buffer;
         }
 
+        public ByteBuffer Wrap(byte[] bytes)
+        {
+            writer.Write(bytes);
+            return this;    
+        }
+
         public static ByteBuffer AllocateDirect(int capacity)
         {
             //this wrapper class makes no distinction between 'allocate' & 'allocateDirect'

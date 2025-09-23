@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using Akka.Actor;
+using SharpPulsar.API;
 using SharpPulsar.Producer;
 
 /// <summary>

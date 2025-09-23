@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Batch.Api
+namespace SharpPulsar.API
 {
 	/// <summary>
 	/// Batch message container for individual messages being published until they are batched and sent to broker.
