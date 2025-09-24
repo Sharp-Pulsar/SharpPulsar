@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using Akka.Util;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -78,21 +80,16 @@ namespace SharpPulsar.API.Schema
         /// Set schema info provider, this method support multi version reader.
         /// </summary>
         /// <param name="schemaInfoProvider"> the stream of message </param>
-        virtual ISchemaInfoProvider SchemaInfoProvider
+        virtual void SetSchemaInfoProvider(ISchemaInfoProvider schemaInfoProvider)
         {
-            set
-            {
-            }
+            
         }
         /// <summary>
 		/// Returns the underling Schema if possible </summary>
 		/// <returns> the schema, or an empty Optional if it is not possible to access it </returns>
-		object NativeSchema
+		virtual Option<object> GetNativeSchema()
         {
-            get
-            {
-                return null;
-            }
+            return Option<object>.None;
         }
 
     }

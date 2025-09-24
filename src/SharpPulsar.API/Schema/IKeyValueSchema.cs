@@ -1,4 +1,7 @@
-﻿namespace SharpPulsar.API.Schema
+﻿using SharpPulsar.API.Internal;
+using SharpPulsar.Shared;
+
+namespace SharpPulsar.API.Schema
 {
     internal class IKeyValueSchema
     {
@@ -30,7 +33,7 @@ namespace SharpPulsar.API.Schema
     /// A Key and a Value. </summary>
     /// @param <K> the type of the Key </param>
     /// @param <V> the type of the Value. </param>
-    public interface IKeyValueSchema<K, V> : ISchema<KeyValue<K, V>>
+    public interface IKeyValueSchema<K, V> : ISchema<IKeyValue<K, V>>
     {
 
         /// <summary>

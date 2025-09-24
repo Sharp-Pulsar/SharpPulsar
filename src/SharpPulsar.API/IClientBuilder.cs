@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using System.Net;
+using System.Runtime.InteropServices;
+using SharpPulsar.TimeUnit;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -30,7 +34,7 @@ namespace SharpPulsar.API
         /// Construct the final <seealso cref="PulsarClient"/> instance.
         /// </summary>
         /// <returns> the new <seealso cref="PulsarClient"/> instance </returns>
-        PulsarClient Build();
+        IPulsarClient Build();
 
         /// <summary>
         /// Load the configuration from provided <tt>config</tt> map.
@@ -112,11 +116,63 @@ namespace SharpPulsar.API
         IClientBuilder ServiceUrlProvider(IServiceUrlProvider serviceUrlProvider);
 
         /// <summary>
+        /// Configure the service URL init quarantine duration.
+        /// For single host serviceUrl, this setting has no effect.
+        /// 
+        /// <para>When the client is unable to connect to an endpoint from serviceUrl with multiple hosts, that endpoint
+        ///  will be quarantined for a specific duration that is determined in a certain exponential way.
+        /// The init value of a single quarantine duration is set by
+        /// </para>
+        /// </summary>
+        /// <param name="serviceUrlQuarantineInitDuration."> A successful usage of the endpoint will reset the
+        /// duration to the initial value and move it back to the available addresses pool.
+        /// 
+        /// <para>
+        /// A value of 0 means don't quarantine any endpoints even if they fail.
+        /// </para>
+        /// </param>
+        /// <param name="serviceUrlQuarantineInitDuration"> the initial quarantine duration
+        /// for unavailable endpoint. Defaults to 60 seconds. </param>
+        /// <param name="unit"> the time unit for the quarantine duration </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder ServiceUrlQuarantineInitDuration(long serviceUrlQuarantineInitDuration, TimeUnit.TimeUnit unit);
+
+        /// <summary>
+        /// Configure the service URL max quarantine duration.
+        /// For single host serviceUrl, this setting has no effect.
+        /// 
+        /// <para>When the client is unable to connect to an endpoint from serviceUrl with multiple hosts, that endpoint
+        /// will be quarantined for a specific duration that is determined in a certain exponential way.
+        /// The max value of a single quarantine duration is set by
+        /// </para>
+        /// </summary>
+        /// <param name="serviceUrlQuarantineMaxDuration."> A successful usage of the endpoint will reset the
+        /// duration to the initial value and move it back to the available addresses pool.
+        /// 
+        /// <para>
+        /// A value of 0 means don't quarantine any endpoints even if they fail.
+        /// </para>
+        /// </param>
+        /// <param name="serviceUrlQuarantineMaxDuration"> the maximum quarantine duration for
+        /// unavailable endpoint. Defaults to 1 day. </param>
+        /// <param name="unit"> the time unit for the quarantine duration </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder serviceUrlQuarantineMaxDuration(long serviceUrlQuarantineMaxDuration, TimeUnit.TimeUnit unit);
+
+
+        /// <summary>
         /// Configure the listenerName that the broker will return the corresponding `advertisedListener`.
         /// </summary>
         /// <param name="name"> the listener name </param>
         /// <returns> the client builder instance </returns>
         IClientBuilder ListenerName(string name);
+
+        /// Release the connection if it is not used for more than {<param name="connectionMaxIdleSeconds">} seconds.
+        /// Defaults to 25 seconds.
+        /// </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder ConnectionMaxIdleSeconds(int connectionMaxIdleSeconds);
+
 
         /// <summary>
         /// Set the authentication provider to use in the Pulsar client instance.
@@ -214,6 +270,28 @@ namespace SharpPulsar.API
         ///            time unit for {@code operationTimeout} </param>
         /// <returns> the client builder instance </returns>
         IClientBuilder OperationTimeout(TimeSpan operationTimeout);
+
+        /// <summary>
+        /// Set lookup timeout <i>(default: matches operation timeout)</i>
+        /// 
+        /// <para>
+        /// Lookup operations have a different load pattern to other operations.
+        /// They can be handled by any broker, are not proportional to throughput,
+        /// and are harmless to retry. Given this, it makes sense to allow them to
+        /// retry longer than normal operation, especially if they experience a timeout.
+        /// 
+        /// </para>
+        /// <para>
+        /// By default, this is set to match operation timeout. This is to maintain legacy behaviour.
+        /// However, in practice it should be set to 5-10x the operation timeout.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="lookupTimeout"> lookup timeout </param>
+        /// <param name="unit"> time unit for {@code lookupTimeout} </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder LookupTimeout(int lookupTimeout, TimeUnit.TimeUnit unit);
+
 
         /// <summary>
         /// Set the number of threads to be used for handling connections to brokers <i>(default: 1 thread)</i>.
@@ -357,6 +435,22 @@ namespace SharpPulsar.API
         IClientBuilder TlsProtocols(ISet<string> tlsProtocols);
 
         /// <summary>
+        /// Configure a limit on the amount of direct memory that will be allocated by this client instance
+        /// <i>(default: 64 MB)</i>.
+        /// <para>
+        /// Setting this to 0 will disable the limit.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="memoryLimit">
+        ///            the limit </param>
+        /// <param name="unit">
+        ///            the memory limit size unit </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder MemoryLimit(long memoryLimit, sizeof(int) unit);
+
+
+        /// <summary>
         /// Set the interval between each stat info <i>(default: 60 seconds)</i> Stats will be activated with positive
         /// statsInterval It should be set to at least 1 second.
         /// </summary>
@@ -440,6 +534,39 @@ namespace SharpPulsar.API
         IClientBuilder MaxBackoffInterval(TimeSpan duration);
 
         /// <summary>
+        /// Option to enable busy-wait settings. Default is false.
+        /// 
+        /// <b>WARNING</b>: This option will enable spin-waiting on executors and IO threads in order to reduce latency
+        /// during context switches. The spinning will consume 100% CPU even when the broker is not doing any work. It
+        /// is recommended to reduce the number of IO threads and BK client threads to only have few CPU cores busy.
+        /// </summary>
+        /// <param name="enableBusyWait"> whether to enable busy wait </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder EnableBusyWait(bool enableBusyWait);
+
+        /// <summary>
+        /// Configure OpenTelemetry for Pulsar Client
+        /// <para>
+        /// When you pass an OpenTelemetry instance, Pulsar client will emit metrics that can be exported in a variety
+        /// of different methods.
+        /// </para>
+        /// <para>
+        /// Refer to <a href="https://opentelemetry.io/docs/languages/java/">OpenTelemetry Java SDK documentation</a> for
+        /// how to configure OpenTelemetry and the metrics exporter.
+        /// </para>
+        /// <para>
+        /// By default, Pulsar client will use the <seealso cref="io.opentelemetry.api.GlobalOpenTelemetry"/> instance. If an
+        /// OpenTelemetry JVM agent is configured, the metrics will be reported, otherwise the metrics will be
+        /// completely disabled.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="openTelemetry"> the OpenTelemetry instance </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder OpenTelemetry(OpenTelemetry.Api.OpenTelemetry openTelemetry);
+
+
+        /// <summary>
         /// The clock used by the pulsar client.
         /// 
         /// <para>The clock is currently used by producer for setting publish timestamps.
@@ -472,6 +599,70 @@ namespace SharpPulsar.API
         /// <param name="enableTransaction"> whether enable transaction feature
         /// @return </param>
         IClientBuilder EnableTransaction(bool enableTransaction);
+
+        /// <summary>
+        /// Set dns lookup bind address and port. </summary>
+        /// <param name="address"> dnsBindAddress </param>
+        /// <param name="port"> dnsBindPort </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder dnsLookupBind(string address, int port);
+
+        /// <summary>
+        /// Set dns lookup server addresses. </summary>
+        /// <param name="addresses"> dnsServerAddresses </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder DnsServerAddresses(IList<DnsEndPoint> addresses);
+
+        /// <summary>
+        ///  Set socks5 proxy address. </summary>
+        /// <param name="socks5ProxyAddress"> </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder Socks5ProxyAddress(DnsEndPoint socks5ProxyAddress);
+
+        /// <summary>
+        ///  Set socks5 proxy username. </summary>
+        /// <param name="socks5ProxyUsername"> </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder Socks5ProxyUsername(string socks5ProxyUsername);
+
+        /// <summary>
+        ///  Set socks5 proxy password. </summary>
+        /// <param name="socks5ProxyPassword"> </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder Socks5ProxyPassword(string socks5ProxyPassword);
+
+        /// <summary>
+        /// Set the SSL Factory Plugin for custom implementation to create SSL Context and SSLEngine. </summary>
+        /// <param name="sslFactoryPlugin"> ssl factory class name </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder SslFactoryPlugin(string sslFactoryPlugin);
+
+        /// <summary>
+        /// Set the SSL Factory Plugin params for the ssl factory plugin to use. </summary>
+        /// <param name="sslFactoryPluginParams"> Params in String format that will be inputted to the SSL Factory Plugin </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder SslFactoryPluginParams(string sslFactoryPluginParams);
+
+        /// <summary>
+        /// Set Cert Refresh interval in seconds. </summary>
+        /// <param name="autoCertRefreshSeconds"> </param>
+        /// <returns> the client builder instance </returns>
+        IClientBuilder AutoCertRefreshSeconds(int autoCertRefreshSeconds);
+
+        /// <summary>
+        /// Set the properties used for topic lookup.
+        /// <para>
+        /// When the broker performs topic lookup, these lookup properties will be taken into consideration in a customized
+        /// load manager.
+        /// </para>
+        /// <para>
+        /// Note: The lookup properties are only used in topic lookup when:
+        /// - The protocol is binary protocol, i.e. the service URL starts with "pulsar://" or "pulsar+ssl://"
+        /// - The `loadManagerClassName` config in broker is a class that implements the `ExtensibleLoadManager` interface
+        /// </para>
+        /// </summary>
+        IClientBuilder LookupProperties(IDictionary<string, string> properties);
+
     }
 
 }

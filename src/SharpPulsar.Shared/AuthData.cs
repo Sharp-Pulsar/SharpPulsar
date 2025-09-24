@@ -19,7 +19,7 @@ using System.Text;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.api
+namespace SharpPulsar.Shared
 {
     /// <summary>
     /// Authentication data.

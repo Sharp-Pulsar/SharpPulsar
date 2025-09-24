@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.API.Transaction;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -52,8 +54,8 @@ namespace SharpPulsar.API
         ///             if the message was not correctly received by the system within the timeout period </exception>
         /// <exception cref="PulsarClientException.AlreadyClosedException">
         ///             if the producer was already closed </exception>
-        MessageIdAdv Send(T message);
-        ValueTask<MessageIdAdv> SendAsync(T message);
+        IMessageIdAdv Send(T message);
+        ValueTask<IMessageIdAdv> SendAsync(T message);
 
 
         /// <summary>
@@ -102,7 +104,7 @@ namespace SharpPulsar.API
         /// <seealso cref= #newMessage()
         /// 
         /// @since 2.7.0 </seealso>
-        ITypedMessageBuilder<T> NewMessage(TransactionImpl.Transaction txn);
+        ITypedMessageBuilder<T> NewMessage(ITransaction txn);
         /// <summary>
         /// Get the last sequence id that was published by this producer.
         /// 
@@ -156,6 +158,11 @@ namespace SharpPulsar.API
         /// <returns> The last disconnected timestamp of the producer </returns>
         long LastDisconnectedTimestamp { get; }
         ValueTask<long> LastDisconnectedTimestampAsync();
+
+        /// <returns> the number of partitions per topic. </returns>
+        /// 
+        int NumOfPartitions { get; }
+        ValueTask<int> NumOfPartitionsAsync();
     }
 
 }

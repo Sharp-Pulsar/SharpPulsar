@@ -95,7 +95,13 @@ namespace SharpPulsar.API
         /// @return </param>
         IAutoClusterFailoverBuilder CheckInterval(TimeSpan interval);
 
-        void Validate();
+        /// <summary>
+        /// Build the ServiceUrlProvider instance.
+        /// 
+        /// @return
+        /// </summary>
+        IServiceUrlProvider Build();
+
     }
 
     public enum FailoverPolicy

@@ -1,5 +1,7 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,6 +29,8 @@ namespace SharpPulsar.API
     /// </summary>
     public interface IAuthenticationDataProvider
     {
+        public static string PULSAR_AUTH_METHOD_NAME = "X-Pulsar-Auth-Method-Name";
+
         /*
 		 * TLS
 		 */
@@ -43,6 +47,59 @@ namespace SharpPulsar.API
         /// 
         /// <returns> a client certificate chain, or null if the data are not available </returns>
         virtual X509Certificate2Collection TlsCertificates => null;
+
+        /// <returns> a client certificate file path </returns>
+		virtual string TlsCertificateFilePath
+        {
+            get
+            {
+                return "";
+            }
+        }
+
+        /// 
+		/// <returns> a private key for the client certificate, or null if the data are not available </returns>
+		RSA TlsPrivateKey
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        /// 
+        /// <returns> a private key file path </returns>
+        string TlsPrivateKeyFilePath
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        /// 
+        /// <returns> an input-stream of the trust store, or null if the trust-store provided at
+        ///         <seealso cref="ClientConfigurationData.getTlsTrustStorePath()"/> </returns>
+        Stream TlsTrustStoreStream
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Used for TLS authentication with keystore type.
+        /// </summary>
+        /// <returns> a KeyStoreParams for the client certificate chain, or null if the data are not available </returns>
+        X509Certificate2Collection TlsKeyStoreParams
+        {
+            get
+            {
+                return null;
+            }
+        }
+
 
 
         /*

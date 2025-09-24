@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System.Reflection;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -22,8 +24,6 @@ namespace SharpPulsar.API.Schema
     /// <summary>
     /// Builder to build schema definition <seealso cref="ISchemaDefinition<T>"/>.
     /// </summary>
-    //JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-    //ORIGINAL LINE: @InterfaceAudience.Public @InterfaceStability.Stable public interface SchemaDefinitionBuilder<T>
     public interface ISchemaDefinitionBuilder<T>
     {
 
@@ -73,8 +73,27 @@ namespace SharpPulsar.API.Schema
         /// </summary>
         /// <param name="pojo"> pojo schema definition
         /// </param>
+        /// <example>
+        /// Assembly assembly = Assembly.LoadFrom("SharpPulsar");
+        /// Type type = assembly.GetType("pojo");
+        /// object x = Activator.CreateInstance(type);
+        /// </example>
         /// <returns> schema definition builder </returns>
         ISchemaDefinitionBuilder<T> WithPojo(Type pojo);
+
+        /// <summary>
+        /// Set schema of pojo classLoader.
+        /// </summary>
+        /// <param name="classLoader"> pojo classLoader
+        /// </param>
+        /// <example>
+        /// Assembly assembly = Assembly.LoadFrom("SharpPulsar");
+        /// Type type = assembly.GetType("pojo");
+        /// object x = Activator.CreateInstance(type);
+        /// </example>
+        /// <returns> schema definition builder </returns>
+        ISchemaDefinitionBuilder<T> WithClassLoader(Assembly classLoader);
+
 
         /// <summary>
         /// Set schema of json definition.

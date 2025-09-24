@@ -110,6 +110,8 @@ namespace SharpPulsar.Batch.Api
             return _messagesFromMultiTopicsEnabled;
         }
 
+
+
         /// <summary>
 		/// Builder of BatchReceivePolicy.
 		/// </summary>

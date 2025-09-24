@@ -49,11 +49,17 @@ namespace SharpPulsar.API
 		/// <returns> message batch Size in bytes </returns>
 		long CurrentBatchSize {get;}
 
-		/// <summary>
-		/// Release the payload and clear the container.
-		/// </summary>
-		/// <param name="ex"> cause </param>
-		void Discard(Exception ex);
+        /// <summary>
+        /// Get current allocated buffer size of the message batch container in bytes. </summary>
+        /// <returns> allocated buffer size in bytes </returns>
+        int BatchAllocatedSizeBytes { get;}
+
+
+        /// <summary>
+        /// Release the payload and clear the container.
+        /// </summary>
+        /// <param name="ex"> cause </param>
+        void Discard(Exception ex);
 
 		/// <summary>
 		/// Return the batch container batch message in multiple batches.

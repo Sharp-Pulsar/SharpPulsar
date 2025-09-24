@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Shared;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -60,6 +62,37 @@ namespace SharpPulsar.API.Schema
 		/// <param name="fieldName"> the field name </param>
 		/// <returns> the value object </returns>
 		object GetField(int pos);
+
+        /// <summary>
+        /// Return the schema tyoe.
+        /// </summary>
+        /// <returns> the schema type </returns>
+        /// <exception cref="UnsupportedOperationException"> if this feature is not implemented </exception>
+        /// <seealso cref="SchemaType.AVRO"/>
+        /// <seealso cref="SchemaType.PROTOBUF_NATIVE"/>
+        /// <seealso cref="SchemaType.JSON"/>
+        SchemaType ISchemaType
+        {
+            get
+            {
+                throw new System.NotSupportedException();
+            }
+        }
+
+        /// <summary>
+        /// Return the internal native representation of the Record,
+        /// like a AVRO GenericRecord.
+        /// </summary>
+        /// <returns> the internal representation of the record </returns>
+        /// <exception cref="UnsupportedOperationException"> if the operation is not supported </exception>
+        object NativeObject
+        {
+            get
+            {
+                throw new System.NotSupportedException();
+            }
+        }
+
     }
 
 }

@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using SharpPulsar.API;
+using SharpPulsar.API.Internal;
+using static SharpPulsar.Shared.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -37,7 +40,7 @@ namespace SharpPulsar.Auth
 		/// <returns> the Authentication object initialized with the token credentials </returns>
 		public static IAuthentication Token(string token)
 		{
-			return DefaultImplementation.NewAuthenticationToken(token);
+			return DefaultImplementation.GetDefaultImplementation.NewAuthenticationToken(token);
 		}
 
 		/// <summary>
@@ -48,12 +51,12 @@ namespace SharpPulsar.Auth
 		/// <returns> the Authentication object initialized with the token credentials </returns>
 		public static IAuthentication Token(Func<string> tokenSupplier)
 		{
-			return DefaultImplementation.NewAuthenticationToken(tokenSupplier);
+			return DefaultImplementation.GetDefaultImplementation.NewAuthenticationToken(tokenSupplier);
 		}
         
         public static IAuthentication Tls(string pfxFilePath)
         {
-            return DefaultImplementation.NewAuthenticationTls(pfxFilePath);
+            return DefaultImplementation.GetDefaultImplementation.NewAuthenticationTls(pfxFilePath);
         }
         // CHECKSTYLE.ON: MethodName
 
@@ -71,7 +74,7 @@ namespace SharpPulsar.Auth
 		{
 			try
 			{
-				return DefaultImplementation.CreateAuthentication(authPluginClassName, authParamsString);
+				return DefaultImplementation.GetDefaultImplementation.CreateAuthentication(authPluginClassName, authParamsString);
 			}
 			catch (System.Exception t)
 			{
@@ -90,7 +93,7 @@ namespace SharpPulsar.Auth
 		{
 			try
 			{
-				return DefaultImplementation.CreateAuthentication(authPluginClassName, authParams);
+				return DefaultImplementation.GetDefaultImplementation.CreateAuthentication(authPluginClassName, authParams);
 			}
 			catch (System.Exception t)
 			{

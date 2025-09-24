@@ -24,13 +24,13 @@ namespace SharpPulsar.API.Schema
     /// <summary>
 	/// Building the schema for a <seealso cref="IGenericRecord"/>.
 	/// </summary>
-	public interface IRecordSchemaBuilder
-    {/// <summary>
-     /// Attach val-name property pair to the record schema.
-     /// </summary>
-     /// <param name="name"> property name </param>
-     /// <param name="val"> property value </param>
-     /// <returns> record schema builder </returns>
+	public interface IRecordSchemaBuilder: IFieldSchemaBuilder<IRecordSchemaBuilder>
+    {   /// <summary>
+        /// Attach val-name property pair to the record schema.
+        /// </summary>
+        /// <param name="name"> property name </param>
+        /// <param name="val"> property value </param>
+        /// <returns> record schema builder </returns>
         IRecordSchemaBuilder Property(string name, string val);
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace SharpPulsar.API.Schema
         /// </summary>
         /// <param name="fieldName"> name of the field </param>
         /// <returns> field schema builder to build the field. </returns>
-        //IFieldSchemaBuilder Field(string fieldName);
+        IRecordSchemaBuilder Field(string fieldName);
 
         /// <summary>
         /// Add a field with the given name and genericSchema to the record.
@@ -46,7 +46,7 @@ namespace SharpPulsar.API.Schema
         /// <param name="fieldName"> name of the field </param>
         /// <param name="genericSchema"> schema of the field </param>
         /// <returns> field schema builder to build the field. </returns>
-        //IFieldSchemaBuilder Field(string fieldName, IGenericSchema<IGenericRecord> genericSchema);
+        IRecordSchemaBuilder Field(string fieldName, IGenericSchema<IGenericRecord> genericSchema);
 
         /// <summary>
         /// Add doc to the record schema.

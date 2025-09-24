@@ -35,7 +35,7 @@ namespace SharpPulsar.API.Schema
         /// <seealso cref= SchemaType#AVRO </seealso>
         /// <seealso cref= SchemaType#PROTOBUF_NATIVE </seealso>
         /// <seealso cref= SchemaType#JSON </seealso>
-        SchemaType SchemaType
+        virtual SchemaType SchemaType
         {
             get
             {
@@ -49,7 +49,7 @@ namespace SharpPulsar.API.Schema
         /// </summary>
         /// <returns> the internal representation of the record </returns>
         /// <exception cref="NotSupportedException"> if the operation is not supported </exception>
-        object NativeObject
+        virtual object NativeObject
         {
             get
             {

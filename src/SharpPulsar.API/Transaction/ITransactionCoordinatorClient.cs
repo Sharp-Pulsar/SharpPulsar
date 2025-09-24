@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Shared;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -111,6 +113,25 @@ namespace SharpPulsar.API.Transaction
         /// </param>
         /// <returns> a future represents the result of add publish partition to txn. </returns>
         ValueTask AddPublishPartitionToTxnAsync(TxnID txnId, IList<string> partitions);
+
+        /// <summary>
+        /// Add ack subscription to txn.
+        /// </summary>
+        /// <param name="txnID"> transaction id </param>
+        /// <param name="topic"> topic name </param>
+        /// <param name="subscription"> subscription name </param>
+        /// <exception cref="TransactionCoordinatorClientException"> while transaction is conflict </exception>
+        void AddSubscriptionToTxn(TxnID txnID, string topic, string subscription);
+
+        /// <summary>
+        /// Add ack subscription to txn asynchronously.
+        /// </summary>
+        /// <param name="txnID"> transaction id </param>
+        /// <param name="topic"> topic name </param>
+        /// <param name="subscription"> subscription name </param>
+        /// <returns> the future of the result </returns>
+        ValueTask AddSubscriptionToTxnAsync(TxnID txnID, string topic, string subscription);
+
 
         /// <summary>
         /// Commit txn. </summary>

@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharpPulsar.Shared\SharpPulsar.Shared.csproj" />
+    <ProjectReference Include="..\SharpPulsar.TimeUnit\SharpPulsar.TimeUnit.csproj" />
   </ItemGroup>
 
 </Project>

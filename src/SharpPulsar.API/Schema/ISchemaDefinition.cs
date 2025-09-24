@@ -1,4 +1,5 @@
-﻿using Akka.Util;
+﻿using System.Reflection;
+using Akka.Util;
 using SharpPulsar.API.Internal;
 
 /// <summary>
@@ -43,6 +44,13 @@ namespace SharpPulsar.API.Schema
         bool AlwaysAllowNull { get; }
 
         /// <summary>
+        /// Get JSR310 conversion enabled.
+        /// </summary>
+        /// <returns> return true if enable JSR310 conversion. false means use Joda time conversion. </returns>
+        bool IsJsr310ConversionEnabled();
+
+
+        /// <summary>
         /// Get schema class.
         /// </summary>
         /// <returns> schema class </returns>
@@ -57,8 +65,25 @@ namespace SharpPulsar.API.Schema
         /// <summary>
         /// Get pojo schema definition.
         /// </summary>
+        /// <example>
+        /// Assembly assembly = Assembly.LoadFrom("SharpPulsar");
+        /// Type type = assembly.GetType("pojo");
+        /// object x = Activator.CreateInstance(type);
+        /// </example>
         /// <returns> pojo schema </returns>
         Type Pojo { get; }
+
+        /// <summary>
+        /// Get pojo classLoader.
+        /// </summary>
+        /// <example>
+        /// Assembly assembly = Assembly.LoadFrom("SharpPulsar");
+        /// Type type = assembly.GetType("pojo");
+        /// object x = Activator.CreateInstance(type);
+        /// </example>
+        /// <returns> pojo schema </returns>
+        Assembly ClassLoader();
+
 
         /// <summary>
         /// Get supportSchemaVersioning schema definition.
