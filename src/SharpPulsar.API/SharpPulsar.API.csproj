@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="NodaTime" />
     <PackageReference Include="Akka" />
+    <PackageReference Include="OpenTelemetry.Api" />
   </ItemGroup>
 
   <ItemGroup>

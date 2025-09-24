@@ -19,6 +19,9 @@ using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Extension;
 using SharpPulsar.Client.Internal.Help;
+using SharpPulsar.Common.Protocol.Proto;
+using SharpPulsar.Shared;
+using SharpPulsar.Protocol.Schema;
 
 namespace SharpPulsar.Client.Internal
 {
