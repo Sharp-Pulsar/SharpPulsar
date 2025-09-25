@@ -3,6 +3,7 @@ using SharpPulsar.Common.Naming;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Net;
+using static SharpPulsar.Common.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 namespace SharpPulsar.Messages.Requests
 {

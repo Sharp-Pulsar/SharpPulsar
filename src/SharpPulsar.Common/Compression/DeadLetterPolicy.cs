@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.API;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -47,6 +49,28 @@ namespace SharpPulsar.Common.Compression
         /// to be created.
         /// </summary>
         public string InitialSubscriptionName { get; set; }
+
+        /// <summary>
+        /// Customizer for configuring the producer builder for the retry letter topic.
+        /// 
+        /// <para>This field holds a function that allows the caller to customize the producer builder
+        /// settings for the retry letter topic before the producer is created. The customization logic
+        /// can use the provided context (which includes input topic and subscription details) to adjust
+        /// configurations such as timeouts, batching, or message routing.
+        /// </para>
+        /// </summary>
+        public IDeadLetterProducerBuilderCustomizer RetryLetterProducerBuilderCustomizer { get; set; }
+
+        /// <summary>
+        /// Customizer for configuring the producer builder for the dead letter topic.
+        /// 
+        /// <para>This field holds a function that allows the caller to customize the producer builder
+        /// settings for the dead letter topic before the producer is created. Using the provided context,
+        /// implementations can perform specific adjustments that ensure the dead letter queue operates
+        /// with the appropriate configurations tailored for handling undeliverable messages.
+        /// </para>
+        /// </summary>
+        public IDeadLetterProducerBuilderCustomizer DeadLetterProducerBuilderCustomizer { get; set; }
 
     }
 

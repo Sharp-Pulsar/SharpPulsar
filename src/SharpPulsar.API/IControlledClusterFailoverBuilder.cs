@@ -57,7 +57,7 @@ namespace SharpPulsar.API
         /// 
         /// @return </summary>
         /// <exception cref="Exception"> </exception>
-        void Validate();
+        IServiceUrlProvider Build();
     }
 
 }

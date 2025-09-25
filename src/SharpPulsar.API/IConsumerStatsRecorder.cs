@@ -19,7 +19,7 @@
 
 using Akka.Actor;
 
-namespace SharpPulsar.Stats.Consumer.Api
+namespace SharpPulsar.API
 {
     public interface IConsumerStatsRecorder : IConsumerStats
     {
@@ -38,6 +38,10 @@ namespace SharpPulsar.Stats.Consumer.Api
         void Reset();
 
         void UpdateCumulativeStats(IConsumerStats stats);
+
+        void SetDeadLetterProducerStats(IProducerStats producerStats);
+
+        void SetRetryLetterProducerStats(IProducerStats producerStats);
     }
 
 }

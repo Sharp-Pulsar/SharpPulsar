@@ -9,6 +9,7 @@ using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Common.Precondition;
+using SharpPulsar.API;
 
 
 /// <summary>

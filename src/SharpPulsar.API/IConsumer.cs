@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.API.Transaction;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -196,14 +198,14 @@ namespace SharpPulsar.API
         /// </summary>
         /// <param name="message">The {@code Message} to be acknowledged </param>
         /// <exception cref="PulsarClientException.AlreadyClosedException"> if the consumer was already closed </exception>
-        void Acknowledge(IMessage<T> message);
+        //void Acknowledge(IMessage<T> message);
 
         /// <summary>
         /// Acknowledge the consumption of a single message.
         /// </summary>
         /// <param name="message">The {@code Message} to be acknowledged </param>
         /// <exception cref="PulsarClientException.AlreadyClosedException">if the consumer was already closed </exception>
-        ValueTask AcknowledgeAsync(IMessage<T> message);
+        //ValueTask AcknowledgeAsync(IMessage<T> message);
 
         /// <summary>
         /// Acknowledge the consumption of a single message, identified by its <seealso cref="IMessageId"/>.
@@ -211,7 +213,7 @@ namespace SharpPulsar.API
         /// <param name="messageId">The <seealso cref="IMessageId"/> to be acknowledged </param>
         /// <exception cref="PulsarClientException.AlreadyClosedException">if the consumer was already closed </exception>
         ///             
-        void Acknowledge(IMessageId messageId);
+        //void Acknowledge(IMessageId messageId);
 
         /// <summary>
         /// Acknowledge the consumption of a single message, identified by its <seealso cref="IMessageId"/>.
@@ -219,7 +221,7 @@ namespace SharpPulsar.API
         /// <param name="messageId">The <seealso cref="IMessageId"/> to be acknowledged </param>
         /// <exception cref="PulsarClientException.AlreadyClosedException">if the consumer was already closed </exception>
         /// 
-        ValueTask AcknowledgeAsync(IMessageId messageId);
+        //ValueTask AcknowledgeAsync(IMessageId messageId);
 
         /// <summary>
         /// Acknowledge the consumption of <seealso cref="IMessages"/>.
@@ -227,7 +229,7 @@ namespace SharpPulsar.API
         /// <param name="messages"> messages </param>
         /// <exception cref="PulsarClientException.AlreadyClosedException">if the consumer was already closed </exception>
         ///              
-        void Acknowledge(IMessages<T> messages);
+        //void Acknowledge(IMessages<T> messages);
 
         /// <summary>
         /// Acknowledge the consumption of <seealso cref="IMessages"/>.
@@ -235,21 +237,21 @@ namespace SharpPulsar.API
         /// <param name="messages"> messages </param>
         /// <exception cref="PulsarClientException.AlreadyClosedException">if the consumer was already closed </exception>
         ///    
-        ValueTask AcknowledgeAsync(IMessages<T> messages);
+        //ValueTask AcknowledgeAsync(IMessages<T> messages);
 
         /// <summary>
         /// Acknowledge the consumption of a list of message. </summary>
         /// <param name="messageIdList"> </param>
         /// <exception cref="PulsarClientException"> </exception>
         /// 
-        void Acknowledge(IList<IMessageId> messageIdList);
+        //void Acknowledge(IList<IMessageId> messageIdList);
 
         /// <summary>
         /// Acknowledge the consumption of a list of message. </summary>
         /// <param name="messageIdList"> </param>
         /// <exception cref="PulsarClientException"> </exception>
         /// 
-        ValueTask AcknowledgeAsync(IList<IMessageId> messageIdList);
+        //ValueTask AcknowledgeAsync(IList<IMessageId> messageIdList);
 
         /// <summary>
         /// Acknowledge the failure to process a single message.
@@ -702,7 +704,7 @@ namespace SharpPulsar.API
         /// <exception cref="PulsarClientException.NotAllowedException">broker don't support transaction </exception>
         /// 
         /// @since 2.7.0 </returns>
-        void AcknowledgeCumulative(IMessageId messageId, TransactionImpl.Transaction txn);
+        void AcknowledgeCumulative(IMessageId messageId, ITransaction txn);
 
         /// <summary>
         /// Acknowledge the reception of all the messages in the stream up to (and including) the provided message with this
@@ -740,7 +742,7 @@ namespace SharpPulsar.API
         /// <exception cref="PulsarClientException.NotAllowedException">broker don't support transaction </exception>
         /// 
         /// @since 2.7.0 </returns>
-        ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, TransactionImpl.Transaction txn);
+        ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, ITransaction txn);
 
         /// <summary>
         /// reconsumeLater the reception of all the messages in the stream up to (and including) the provided message.
@@ -987,11 +989,11 @@ namespace SharpPulsar.API
         ValueTask<IList<ITopicMessageId>> LastMessageIdsAsync();
 
         /// <returns> Whether the consumer is connected to the broker </returns>
-        bool Connected { get; }
+        bool IsConnected { get; }
 
 
         /// <returns> Whether the consumer is connected to the broker </returns>
-        ValueTask<bool> ConnectedAsync();
+        ValueTask<bool> IsConnectedAsync();
 
         /// <summary>
         /// Get the name of consumer. </summary>

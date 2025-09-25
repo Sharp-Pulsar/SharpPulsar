@@ -17,36 +17,36 @@
 /// under the License.
 /// </summary>
 
-namespace SharpPulsar.Common.Compression
+namespace SharpPulsar.Shared
 {
     /// <summary>
     /// The action a consumer should take when a consumer receives a
     /// message that it cannot decrypt.
     /// </summary>
     public enum ConsumerCryptoFailureAction
-    {
-        /// <summary>
-        /// This is the default option to fail consume messages until crypto succeeds.
-        /// </summary>
-        Fail,
+	{
+		/// <summary>
+		/// This is the default option to fail consume messages until crypto succeeds.
+		/// </summary>
+		FAIL,
 
-        /// <summary>
-        /// Message is silently acknowledged and not delivered to the application.
-        /// </summary>
-        Discard,
+		/// <summary>
+		/// Message is silently acknowledged and not delivered to the application.
+		/// </summary>
+		DISCARD,
 
-        /// <summary>
-        /// Deliver the encrypted message to the application. It's the application's responsibility to decrypt the message.
-        /// 
-        /// <para>If message is also compressed, decompression will fail. If message contain batch messages, client will not be
-        /// able to retrieve individual messages in the batch.
-        /// 
-        /// </para>
-        /// <para>Delivered encrypted message contains <seealso cref="EncryptionContext"/> which contains encryption and compression
-        /// information in it using which application can decrypt consumed message payload.
-        /// </para>
-        /// </summary>
-        Consume
-    }
+		/// <summary>
+		/// Deliver the encrypted message to the application. It's the application's responsibility to decrypt the message.
+		/// 
+		/// <para>If message is also compressed, decompression will fail. If message contain batch messages, client will not be
+		/// able to retrieve individual messages in the batch.
+		/// 
+		/// </para>
+		/// <para>Delivered encrypted message contains <seealso cref="EncryptionContext"/> which contains encryption and compression
+		/// information in it using which application can decrypt consumed message payload.
+		/// </para>
+		/// </summary>
+		CONSUME
+	}
 
 }

@@ -17,7 +17,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Stats.Consumer.Api
+namespace SharpPulsar.API
 {
 
 	/// <summary>
@@ -83,7 +83,23 @@ namespace SharpPulsar.Stats.Consumer.Api
 		/// @return
 		/// </summary>
 		IDictionary<long, int> MsgNumInSubReceiverQueue { get; }
-	}
+
+        /// <returns> stats for each partition if topic is partitioned topic </returns>
+        internal virtual IDictionary<string, IConsumerStats> PartitionStats
+        {
+            get
+            {
+                return new Dictionary<string, IConsumerStats>();
+            }
+        }
+
+        /// <returns> producer stats for deadLetterProducer if available </returns>
+        IProducerStats GetDeadLetterProducerStats();
+
+        /// <returns> producer stats for retryLetterProducer if available </returns>
+        IProducerStats GetRetryLetterProducerStats();
+
+    }
 
 
 }
