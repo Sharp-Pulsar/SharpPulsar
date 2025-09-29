@@ -79,8 +79,12 @@ namespace SharpPulsar.Common
 				_keySharedMode = Common.KeySharedMode.Sticky;
 				_ranges = new List<Range>();
 			}
-
-			public virtual KeySharedPolicySticky GetRanges(params Range[] ranges)
+            public KeySharedPolicySticky Ranges(List<Range> ranges)
+            {
+                ((List<Range>)_ranges).AddRange(ranges);
+                return this;
+            }
+            public virtual KeySharedPolicySticky Ranges(params Range[] ranges)
 			{
 				((List<Range>)_ranges).AddRange(new List<Range>(ranges));
 				return this;
@@ -110,7 +114,7 @@ namespace SharpPulsar.Common
 				}
 			}
 
-			public virtual IList<Range> Ranges => _ranges;
+			public virtual IList<Range> GetRanges => _ranges;
         }
 
 		/// <summary>

@@ -46,10 +46,10 @@ namespace SharpPulsar.API
         // / <param name="messageConsumer"> the callback to consume each message </param>
         // / @param <T> </param>
         // / <exception cref="Exception"> </exception>
-        public void Process<T>(MessagePayload payload, MessagePayloadContext<T> context, ISchema<T> schema, Action<IMessage<T>> messageConsumer);
+        public void Process<T>(IMessagePayload payload, IMessagePayloadContext<T> context, ISchema<T> schema, Action<IMessage<T>> messageConsumer);
         public class Default : IMessagePayloadProcessor
         {
-            public void Process<T>(MessagePayload payload, MessagePayloadContext<T> context, ISchema<T> schema, Action<IMessage<T>> messageConsumer)
+            public void Process<T>(IMessagePayload payload, IMessagePayloadContext<T> context, ISchema<T> schema, Action<IMessage<T>> messageConsumer)
             {
                 if (context.Batch)
                 {

@@ -18,7 +18,7 @@
 /// </summary>
 namespace SharpPulsar.API
 {
-    public interface IHash : Common.Util.IHash
+    public interface IHash //: Common.Util.IHash
     {
 
         /// <summary>

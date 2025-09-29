@@ -1,5 +1,7 @@
 ﻿
 
+using SharpPulsar.API;
+
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -23,7 +25,7 @@ namespace SharpPulsar.Common.api
     /// <summary>
     /// Class representing an encryption context.
     /// </summary>
-    public class EncryptionContext
+    public class EncryptionContext : IEncryptionContext
     {
 
         public IDictionary<string, EncryptionKey> Keys { get; set; }

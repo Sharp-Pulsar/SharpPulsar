@@ -17,6 +17,7 @@
 // / under the License.
 // / </summary>
 using System.Buffers;
+using SharpPulsar.API.Internal;
 
 namespace SharpPulsar.API
 {
@@ -26,7 +27,15 @@ namespace SharpPulsar.API
     public interface IMessagePayloadFactory
     {
 
-        public static IMessagePayloadFactory Default = DefaultImplementation.NewDefaultMessagePayloadFactory();
+        public static IMessagePayloadFactory Default = DefaultImplementation.GetDefaultImplementation.NewDefaultMessagePayloadFactory();
+
+        /// <summary>
+        /// Create a payload whose underlying buffer refers to a byte array.
+        /// </summary>
+        /// <param name="bytes"> the byte array </param>
+        /// <returns> the created MessagePayload object </returns>
+        IMessagePayload Wrap(byte[] bytes);
+
 
         // / <summary>
         // / Create a payload whose underlying buffer refers to a byte array.

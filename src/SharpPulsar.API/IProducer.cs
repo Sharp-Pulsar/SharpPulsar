@@ -105,6 +105,22 @@ namespace SharpPulsar.API
         /// 
         /// @since 2.7.0 </seealso>
         ITypedMessageBuilder<T> NewMessage(ITransaction txn);
+
+        /// <summary>
+        /// Create a new message builder with transaction and schema, not required same parameterized type with the
+        /// producer.
+        /// 
+        /// <para>After the transaction commit, it will be made visible to consumer.
+        /// 
+        /// </para>
+        /// <para>After the transaction abort, it will never be visible to consumer.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> a typed message builder that can be used to construct the message to be sent through this producer </returns>
+        /// <seealso cref="newMessage()"/>
+        ITypedMessageBuilder<V> NewMessage<V>(ISchema<V> schema, ITransaction txn);
+
         /// <summary>
         /// Get the last sequence id that was published by this producer.
         /// 

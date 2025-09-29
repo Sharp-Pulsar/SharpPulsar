@@ -19,7 +19,6 @@ using SharpPulsar.Common.Precondition;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
 using SharpPulsar.Stats.Consumer;
-using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Utils;
@@ -34,10 +33,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Consumer.ChunkedMessageCtx;
-using ConsumerCryptoFailureAction = SharpPulsar.Common.Compression.ConsumerCryptoFailureAction;
 using DeadLetterPolicy = SharpPulsar.Common.Compression.DeadLetterPolicy;
-using EncryptionContext = SharpPulsar.Auth.EncryptionContext;
 using SubscriptionInitialPosition = SharpPulsar.Common.SubscriptionInitialPosition;
+using SharpPulsar.Common.Protocol.Proto;
+using SharpPulsar.Protocol.Schema;
+using static SharpPulsar.Common.Protocol.Proto.CommandAck;
+using SharpPulsar.API;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

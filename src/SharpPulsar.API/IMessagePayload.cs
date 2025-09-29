@@ -39,7 +39,7 @@ namespace SharpPulsar.API
         // / NOTE: For a MessagePayload object that is created from <seealso cref="MessagePayloadFactory.DEFAULT"/>, this method must be
         // / called to avoid memory leak.
         // / </summary>
-        void Release()
+        virtual void Release()
         {
             // No ops
         }

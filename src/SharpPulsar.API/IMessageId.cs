@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.API.Internal;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -52,7 +54,7 @@ namespace SharpPulsar.API
 		/// 
 		static IMessageId FromByteArray(byte[] data)
 		{
-			return DefaultImplementation.NewMessageIdFromByteArray(data);
+			return DefaultImplementation.GetDefaultImplementation.NewMessageIdFromByteArray(data);
 		}
 
 		/// <summary>
@@ -71,7 +73,7 @@ namespace SharpPulsar.API
 		/// 
 		static IMessageId FromByteArrayWithTopic(byte[] data, string topicName)
 		{
-			return DefaultImplementation.NewMessageIdFromByteArrayWithTopic(data, topicName);
+			return DefaultImplementation.GetDefaultImplementation.NewMessageIdFromByteArrayWithTopic(data, topicName);
 		}
 
 		// CHECKSTYLE.OFF: ConstantName
@@ -85,8 +87,8 @@ namespace SharpPulsar.API
 		/// </summary>
 
 		// CHECKSTYLE.ON: ConstantName
-		public static readonly IMessageId Earliest = DefaultImplementation.NewMessageId(-1, -1, -1, -1);
-		public static readonly IMessageId Latest = DefaultImplementation.NewMessageId(long.MaxValue, long.MaxValue, -1, -1);
+		IMessageId Earliest => DefaultImplementation.GetDefaultImplementation.NewMessageId(-1, -1, -1);
+		IMessageId Latest => DefaultImplementation.GetDefaultImplementation.NewMessageId(long.MaxValue, long.MaxValue, -1);
 	}
 
 }

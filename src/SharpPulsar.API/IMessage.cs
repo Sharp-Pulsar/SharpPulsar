@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using Akka.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -187,7 +188,7 @@ namespace SharpPulsar.API
 		/// decrypt consumed message with encrypted-payload.
 		/// </summary>
 		/// <returns> the optiona encryption context </returns>
-		Option<EncryptionContext> EncryptionCtx { get; }
+		Option<IEncryptionContext> EncryptionCtx { get; }
 
 		/// <summary>
 		/// Get message redelivery count, redelivery count maintain in pulsar broker. When client acknowledge message
@@ -208,13 +209,22 @@ namespace SharpPulsar.API
 		/// <returns> Schema version of the message if the message is produced with schema otherwise null. </returns>
 		byte[] SchemaVersion { get; }
 
-		/// <summary>
-		/// Check whether the message is replicated from other cluster.
-		/// 
-		/// @since 2.4.0 </summary>
-		/// <returns> true if the message is replicated from other cluster.
-		///         false otherwise. </returns>
-		bool Replicated { get; }
+        /// <summary>
+        /// Get schema ID of the message.
+        /// PIP-420 provides a way to produce messages with external schema,
+        /// and the schema ID will be set to the message metadata.
+        /// </summary>
+        /// <returns> the schema ID if the message is produced with external schema and schema ID is set, otherwise empty. </returns>
+        Option<byte[]> SchemaId { get; }
+
+
+        /// <summary>
+        /// Check whether the message is replicated from other cluster.
+        /// 
+        /// @since 2.4.0 </summary>
+        /// <returns> true if the message is replicated from other cluster.
+        ///         false otherwise. </returns>
+        bool Replicated { get; }
 
 		/// <summary>
 		/// Get name of cluster, from which the message is replicated.
@@ -233,12 +243,21 @@ namespace SharpPulsar.API
 		bool HasBrokerPublishTime();
 
         /// <summary>
+        /// Release a message back to the pool. This is required only if the consumer was created with the option to pool
+        /// messages, otherwise it will have no effect.
+        /// 
+        /// @since 2.8.0
+        /// </summary>
+        void Release();
+
+
+        /// <summary>
         /// Get broker publish time from broker entry metadata.
         /// Note that only if the feature is enabled in the broker then the value is available.
         /// 
         /// @since 2.9.0 </summary>
         /// <returns> broker publish time from broker entry metadata, or empty if the feature is not enabled in the broker. </returns>
-        long? BrokerPublishTime { get; }
+        Option<long> BrokerPublishTime { get; }
 
         /// <summary>
         /// Check whether the message has an index.
@@ -253,7 +272,7 @@ namespace SharpPulsar.API
         /// 
         /// @since 2.9.0 </summary>
         /// <returns> index from broker entry metadata, or empty if the feature is not enabled in the broker. </returns>
-        long? Index { get; }
+        Option<long> Index { get; }
 
     }
 

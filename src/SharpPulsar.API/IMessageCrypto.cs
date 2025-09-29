@@ -22,9 +22,9 @@ namespace SharpPulsar.API
     /// <summary>
 	/// Interface that abstracts the method to encrypt/decrypt message for End to End Encryption.
 	/// </summary>
-	public interface IMessageCrypto
+	public interface IMessageCrypto<MetadataT, BuilderT>
     {
-        public static int IV_LEN = 16;
+        public static int IV_LEN = 12;
 
         /*
 		 * Encrypt data key using the public key(s) in the argument. <p> If more than one key name is specified, data key is
@@ -48,30 +48,41 @@ namespace SharpPulsar.API
 		 */
         bool RemoveKeyCipher(string keyName);
 
+        /// <summary>
+        /// Return the maximum for a given buffer to be encrypted or decrypted.
+        /// 
+        /// This is meant to allow to pre-allocate a buffer with enough space to be passed as
+        /// </summary>
+        /// <param name="inputLen"> the length of the input buffer </param>
+        /// <returns> the maximum size of the buffer to hold the encrypted/decrypted version of the input buffer </returns>
+        int GetMaxOutputSize(int inputLen);
+        
         /*
-		 * Encrypt the payload using the data key and update message metadata with the keyname & encrypted data key
-		 *
-		 * @param encKeys One or more public keys to encrypt data key
-		 *
-		 * @param msgMetadata Message Metadata
-		 *
-		 * @param payload Message which needs to be encrypted
-		 *
-		 * @return encryptedData if success
-		 */
-        byte[] Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, MessageMetadata messageMetadata, byte[] payload);
+         * Encrypt the payload using the data key and update message metadata with the keyname & encrypted data key
+         *
+         * @param encKeys One or more public keys to encrypt data key
+         * @param msgMetadata Message Metadata
+         * @param payload Message which needs to be encrypted
+         * @param outBuffer the buffer where to write the encrypted payload. The buffer needs to be have enough space
+         *              to hold the encrypted value. Use #getMaxOutputSize method to discover the max size.
+         *
+         * @throws PulsarClientException if the encryption fails
+        */
+
+        void Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, Func<BuilderT> messageMetadata, Span<byte> payload, Span<byte> outBuffer);
 
         /*
-		 * Decrypt the payload using the data key. Keys used to encrypt data key can be retrieved from msgMetadata
-		 *
-		 * @param msgMetadata Message Metadata
-		 *
-		 * @param payload Message which needs to be decrypted
-		 *
-		 * @param keyReader KeyReader implementation to retrieve key value
-		 *
-		 * @return decryptedData if success, null otherwise
-		 */
-        byte[] Decrypt(MessageMetadata messageMetadata, byte[] payload, ICryptoKeyReader keyReader);
+         * Decrypt the payload using the data key. Keys used to encrypt data key can be retrieved from msgMetadata
+         *
+         * @param msgMetadata Message Metadata
+         * @param payload Message which needs to be decrypted
+         * @param keyReader KeyReader implementation to retrieve key value
+         * @param outBuffer the buffer where to write the encrypted payload. The buffer needs to be have enough space
+         *              to hold the encrypted value. Use #getMaxOutputSize method to discover the max size.
+         *
+         * @return true if success, false otherwise
+       */
+
+        bool Decrypt(Func<MetadataT> messageMetadataSupplier, Span<byte> payload, Span<byte> outBuffer, ICryptoKeyReader keyReader);
     }
 }
