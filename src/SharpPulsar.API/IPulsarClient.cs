@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using SharpPulsar.API.Internal;
+using SharpPulsar.API.Transaction;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -39,8 +42,18 @@ namespace SharpPulsar.API
     {
 
         /// <summary>
+        /// Get a new builder instance that can used to configure and build a <seealso cref="PulsarClient"/> instance.
+        /// </summary>
+        /// <returns> the <seealso cref="ClientBuilder"/>
+        /// 
+        /// @since 2.0.0 </returns>
+        static IClientBuilder Builder()
+        {
+            return DefaultImplementation.GetDefaultImplementation.NewClientBuilder();
+        }
+        /// <summary>
         /// Create a producer builder that can be used to configure
-        /// and construct a producer with default <seealso cref="ISchema{T}.Bytes"/>.
+        /// and construct a producer with default <seealso cref="Schema.BYTES"/>.
         /// 
         /// <para>Example:
         /// 
@@ -53,13 +66,10 @@ namespace SharpPulsar.API
         /// 
         /// </para>
         /// </summary>
-        /// <returns> a <seealso cref="Producer{T}"/> instance
+        /// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
         /// 
         /// @since 2.0.0 </returns>
-        Producer<byte[]> NewProducer(ProducerConfigBuilder<byte[]> producerConfigBuilder);
-
-        /// <inheritdoc cref="NewProducer(ProducerConfigBuilder{byte[]})"/>
-		ValueTask<Producer<byte[]>> NewProducerAsync(ProducerConfigBuilder<byte[]> producerConfigBuilder);
+        IProducerBuilder<byte[]> NewProducer();
 
         /// <summary>
         /// Create a producer builder that can be used to configure
@@ -82,13 +92,13 @@ namespace SharpPulsar.API
         /// <returns> a <seealso cref="Producer{T}"/> instance
         /// 
         /// @since 2.0.0 </returns>
-        Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
+        IProducerBuilder<T> NewProducer<T>(ISchema<T> schema);
 
         /// <inheritdoc cref="NewProducer{T}(ISchema{T}, ProducerConfigBuilder{T})"/>
-		ValueTask<Producer<T>> NewProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
+		ValueTask<IProducerBuilder<T>> NewProducerAsync<T>(ISchema<T> schema);
 
         /// <summary>
-        /// Create a consumer builder with no schema (<seealso cref="ISchema{T}.Bytes"/>) for subscribing to
+        /// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to
         /// one or more topics.
         /// 
         /// <pre>{@code
@@ -104,13 +114,10 @@ namespace SharpPulsar.API
         /// }
         /// }</pre>
         /// </summary>
-        /// <returns> a <seealso cref="Consumer{T}"/> instance
+        /// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
         /// 
         /// @since 2.0.0 </returns>
-        Consumer<byte[]> NewConsumer(ConsumerConfigBuilder<byte[]> conf);
-
-        /// <inheritdoc cref="NewConsumerAsync(ConsumerConfigBuilder{byte[]})"/>
-		ValueTask<Consumer<byte[]>> NewConsumerAsync(ConsumerConfigBuilder<byte[]> conf);
+        IConsumerBuilder<byte[]> NewConsumer();
 
         /// <summary>
         /// Create a consumer builder with a specific schema for subscribing on a specific topic
@@ -138,10 +145,10 @@ namespace SharpPulsar.API
         /// <returns> a <seealso cref="Consumer{T}"/> instance
         /// 
         /// @since 2.0.0 </returns>
-        Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
+        IConsumerBuilder<T> NewConsumer<T>(ISchema<T> schema);
 
         /// <inheritdoc cref="NewConsumerAsync{T}(ISchema{T}, ConsumerConfigBuilder{T})"/>
-		ValueTask<Consumer<T>> NewConsumerAsync<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
+		ValueTask<IConsumerBuilder<T>> NewConsumerAsync<T>(ISchema<T> schema);
 
         /// <summary>
         /// Create a topic reader builder with no schema (<seealso cref="ISchema{T}.Bytes"/>) to read from the specified topic.
@@ -181,8 +188,8 @@ namespace SharpPulsar.API
         /// </summary>
         /// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
         /// @since 2.0.0 </returns>
-        Reader<byte[]> NewReader(ReaderConfigBuilder<byte[]> conf);
-        ValueTask<Reader<byte[]>> NewReaderAsync(ReaderConfigBuilder<byte[]> conf);
+        IReaderBuilder<byte[]> NewReader();
+        ValueTask<IReaderBuilder<byte[]>> NewReaderAsync();
 
         /// <summary>
         /// Create a topic reader builder with a specific <seealso cref="Schema"/>) to read from the specified topic.
@@ -224,8 +231,8 @@ namespace SharpPulsar.API
         /// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
         /// 
         /// @since 2.0.0 </returns>
-        Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigBuilder<T> conf);
-        ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> conf);
+        IReaderBuilder<T> NewReader<T>(ISchema<T> schema);
+        ValueTask<IReaderBuilder<T>> NewReaderAsync<T>(ISchema<T> schema);
 
         /// <summary>
         /// Update the service URL this client is using.
@@ -360,6 +367,15 @@ namespace SharpPulsar.API
         void Shutdown();
         Task ShutdownAsync();
 
+        /// <summary>
+        /// Return internal state of the client. Useful if you want to check that current client is valid. </summary>
+        /// <returns> true is the client has been closed </returns>
+        /// <seealso cref=".shutdown()"/>
+        /// <seealso cref=".close()"/>
+        /// <seealso cref=".closeAsync()"/>
+        bool IsClosed();
+
+
 
         /// <summary>
         /// Create a transaction builder that can be used to configure
@@ -379,7 +395,7 @@ namespace SharpPulsar.API
         /// the <seealso cref="org.apache.pulsar.client.api.transaction.Transaction"/> instance
         /// 
         /// @since 2.7.0 </returns>
-        TransactionBuilder NewTransaction();
+        ITransactionBuilder NewTransaction();
     }
 
 }

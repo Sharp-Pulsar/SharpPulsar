@@ -16,25 +16,34 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Compression
+
+namespace SharpPulsar.Shared
 {
     /// <summary>
-    /// Standard hashing functions available when choosing the partition to use for a particular message.
-    /// </summary>
-    public enum HashingScheme
+	/// The type of access to the topic that the producer requires.
+	/// </summary>
+	public enum ProducerAccessMode
     {
+        /// <summary>
+        /// By default multiple producers can publish on a topic.
+        /// </summary>
+        Shared,
 
         /// <summary>
-        /// Use regular <code>String.hashCode()</code>.
+        /// Require exclusive access for producer. Fail immediately if there's already a producer connected.
         /// </summary>
-        JavaStringHash,
+        Exclusive,
 
         /// <summary>
-        /// Use Murmur3 hashing function.
-        /// <a href="https://en.wikipedia.org/wiki/MurmurHash">https://en.wikipedia.org/wiki/MurmurHash</a>
+        /// Acquire exclusive access for the producer. Any existing producer will be removed and
+        /// invalidated immediately.
         /// </summary>
-        Murmur332Hash
+        ExclusiveWithFencing,
+
+        /// <summary>
+        /// Producer creation is pending until it can acquire exclusive access.
+        /// </summary>
+        WaitForExclusive,
 
     }
-
 }

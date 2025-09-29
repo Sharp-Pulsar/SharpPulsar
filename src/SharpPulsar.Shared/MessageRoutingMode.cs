@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common
+namespace SharpPulsar.Shared
 {
 	/// <summary>
 	/// Default routing mode for messages to partition.

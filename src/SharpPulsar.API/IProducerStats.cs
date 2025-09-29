@@ -76,6 +76,15 @@ namespace SharpPulsar.API
         /// <returns> the total number of send acknowledges received by broker </returns>
         long TotalAcksReceived { get; }
 
-    }
+        /// <returns> current pending send-message queue size of the producer </returns>
+        int GetPendingQueueSize();
+
+        /// <returns> stats for each partition if topic is partitioned topic </returns>
+       virtual IDictionary<string, IProducerStats> PartitionStats()
+        {
+	        return new Dictionary<string, IProducerStats>();
+         }
+
+}
 
 }

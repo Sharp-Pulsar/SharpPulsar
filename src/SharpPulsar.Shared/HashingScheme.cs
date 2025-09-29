@@ -16,23 +16,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-namespace SharpPulsar.Common
+namespace SharpPulsar.Shared
 {
-	/// <summary>
-	/// The action the producer will take in case of encryption failures.
-	/// </summary>
-	public enum ProducerCryptoFailureAction
-	{
-		/// <summary>
-		/// This is the default option to fail send if crypto operation fails.
-		/// </summary>
-		Fail,
+    /// <summary>
+    /// Standard hashing functions available when choosing the partition to use for a particular message.
+    /// </summary>
+    public enum HashingScheme
+    {
 
-		/// <summary>
-		/// Ignore crypto failure and proceed with sending unencrypted messages.
-		/// </summary>
-		Send
-	}
+        /// <summary>
+        /// Use regular <code>String.hashCode()</code>.
+        /// </summary>
+        JavaStringHash,
+
+        /// <summary>
+        /// Use Murmur3 hashing function.
+        /// <a href="https://en.wikipedia.org/wiki/MurmurHash">https://en.wikipedia.org/wiki/MurmurHash</a>
+        /// </summary>
+        Murmur332Hash
+
+    }
 
 }

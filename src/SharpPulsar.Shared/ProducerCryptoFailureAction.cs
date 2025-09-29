@@ -17,33 +17,22 @@
 /// under the License.
 /// </summary>
 
-namespace SharpPulsar.Common
+namespace SharpPulsar.Shared
 {
-    /// <summary>
-	/// The type of access to the topic that the producer requires.
+	/// <summary>
+	/// The action the producer will take in case of encryption failures.
 	/// </summary>
-	public enum ProducerAccessMode
-    {
-        /// <summary>
-        /// By default multiple producers can publish on a topic.
-        /// </summary>
-        Shared,
+	public enum ProducerCryptoFailureAction
+	{
+		/// <summary>
+		/// This is the default option to fail send if crypto operation fails.
+		/// </summary>
+		Fail,
 
-        /// <summary>
-        /// Require exclusive access for producer. Fail immediately if there's already a producer connected.
-        /// </summary>
-        Exclusive,
+		/// <summary>
+		/// Ignore crypto failure and proceed with sending unencrypted messages.
+		/// </summary>
+		Send
+	}
 
-        /// <summary>
-        /// Acquire exclusive access for the producer. Any existing producer will be removed and
-        /// invalidated immediately.
-        /// </summary>
-        ExclusiveWithFencing,
-
-        /// <summary>
-        /// Producer creation is pending until it can acquire exclusive access.
-        /// </summary>
-        WaitForExclusive,
-
-    }
 }

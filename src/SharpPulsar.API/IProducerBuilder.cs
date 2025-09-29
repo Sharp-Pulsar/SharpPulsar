@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using System.Reflection.Metadata.Ecma335;
+using SharpPulsar.API.Interceptor;
+using SharpPulsar.Shared;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -126,6 +130,29 @@ namespace SharpPulsar.API
         IProducerBuilder<T> ProducerName(string producerName);
 
         /// <summary>
+        /// Configure the type of access mode that the producer requires on the topic.
+        /// 
+        /// <para>Possible values are:
+        /// <ul>
+        /// <li><seealso cref="ProducerAccessMode.Shared"/>: By default multiple producers can publish on a topic.
+        /// <li><seealso cref="ProducerAccessMode.Exclusive"/>: Require exclusive access for producer. Fail immediately if there's
+        /// already a producer connected.
+        /// <li><seealso cref="ProducerAccessMode.ExclusiveWithFencing"/>: Require exclusive access for the producer.
+        /// Any existing producer will be removed and invalidated immediately.
+        /// <li><seealso cref="ProducerAccessMode.WaitForExclusive"/>: Producer creation is pending until it can acquire exclusive
+        /// access.
+        /// </ul>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <seealso cref="ProducerAccessMode"/>
+        /// <param name="accessMode">
+        ///            The type of access to the topic that the producer requires </param>
+        /// <returns> the producer builder instance </returns>
+        IProducerBuilder<T> AccessMode(ProducerAccessMode accessMode);
+
+
+        /// <summary>
         /// Set the send timeout <i>(default: 30 seconds)</i>.
         /// 
         /// <para>If a message is not acknowledged by the server before the sendTimeout expires, an error will be reported.
@@ -176,7 +203,7 @@ namespace SharpPulsar.API
         /// <param name="messageCrypto">
         ///            MessageCrypto object </param>
         /// <returns> the producer builder instance </returns>
-        IProducerBuilder<T> MessageCrypto(MessageCrypto messageCrypto);
+        IProducerBuilder<T> MessageCrypto<M, B>(IMessageCrypto<M,B> messageCrypto);
 
 
         /// <summary>
@@ -200,6 +227,8 @@ namespace SharpPulsar.API
         /// <param name="maxPendingMessagesAcrossPartitions">
         ///            max pending messages across all the partitions </param>
         /// <returns> the producer builder instance </returns>
+        /// 
+        [Obsolete]
         IProducerBuilder<T> MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions);
 
         /// <summary>
@@ -296,7 +325,23 @@ namespace SharpPulsar.API
         /// <param name="compressionType">
         ///            the selected compression type </param>
         /// <returns> the producer builder instance </returns>
-        IProducerBuilder<T> CompressionType(CompressionType compressionType);
+        IProducerBuilder<T> CompressionType(ICompressionType compressionType);
+
+        /// <summary>
+        /// Sets the minimum uncompressed message body size required to enable compression.
+        /// <para>
+        /// When a message's body size exceeds this threshold (in bytes), compression will be applied
+        /// using the configured <seealso cref="compressionType(CompressionType)"/>. Messages smaller than this
+        /// threshold will not be compressed.
+        /// </para>
+        /// <para>
+        /// Default: 4 KB
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="compressionMinMsgBodySize"> the minimum uncompressed message body size required to enable compression </param>
+        IProducerBuilder<T> CompressionMinMsgBodySize(int compressionMinMsgBodySize);
+
 
         /// <summary>
         /// Set a custom message routing policy by passing an implementation of MessageRouter.
@@ -355,6 +400,16 @@ namespace SharpPulsar.API
         IProducerBuilder<T> EnableChunking(bool enableChunking);
 
         /// <summary>
+        /// Max chunk-message size in bytes. Producer chunks the message if chunking is enabled and message size is larger
+        /// than max chunk-message size. By default, chunkMaxMessageSize value is -1 and the producer chunks based
+        /// on the max-message size configured on the broker.
+        /// </summary>
+        /// <param name="chunkMaxMessageSize">
+        /// @return </param>
+        IProducerBuilder<T> ChunkMaxMessageSize(int chunkMaxMessageSize);
+
+
+        /// <summary>
         /// Sets a <seealso cref="CryptoKeyReader"/>.
         /// 
         /// <para>Configure the key reader to be used to encrypt the message payloads.
@@ -365,6 +420,33 @@ namespace SharpPulsar.API
         ///            CryptoKeyReader object </param>
         /// <returns> the producer builder instance </returns>
         IProducerBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader);
+
+        /// <summary>
+        /// Sets the default implementation of <seealso cref="CryptoKeyReader"/>.
+        /// 
+        /// <para>Configure the key reader to be used to encrypt the message payloads.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="publicKey">
+        ///            the public key that is always used to encrypt message payloads. </param>
+        /// <returns> the producer builder instance
+        /// @since 2.8.0 </returns>
+        IProducerBuilder<T> DefaultCryptoKeyReader(string publicKey);
+
+        /// <summary>
+        /// Sets the default implementation of <seealso cref="CryptoKeyReader"/>.
+        /// 
+        /// <para>Configure the key reader to be used to encrypt the message payloads.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="publicKeys">
+        ///            the map of public key names and their URIs used to encrypt message payloads. </param>
+        /// <returns> the producer builder instance
+        /// @since 2.8.0 </returns>
+        IProducerBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> publicKeys);
+
 
         /// <summary>
         /// Add public encryption key, used by producer to encrypt the data key.
@@ -520,6 +602,7 @@ namespace SharpPulsar.API
         /// <param name="interceptors">
         ///            the list of interceptors to intercept the producer created by this builder. </param>
         /// <returns> the producer builder instance </returns>
+        /// 
         IProducerBuilder<T> Intercept(params IProducerInterceptor<T>[] interceptors);
 
         /// <summary>
@@ -561,5 +644,24 @@ namespace SharpPulsar.API
         /// <returns> the producer builder instance
         /// @since 2.5.0 </returns>
         IProducerBuilder<T> EnableMultiSchema(bool multiSchema);
+
+        /// <summary>
+        /// This config affects Shared mode producers of partitioned topics only. It controls whether
+        /// producers register and connect immediately to the owner broker of each partition
+        /// or start lazily on demand. The internal producer of one partition always
+        /// starts immediately, as chosen by the routing policy, but the internal producers of
+        /// any additional partitions are started on demand upon receiving their first
+        /// message.
+        /// Using this mode can reduce the strain on brokers for topics with large numbers of
+        /// partitions and when the SinglePartition or some custom partial partition routing policy
+        /// like PartialRoundRobinMessageRouterImpl is used without keyed messages.
+        /// Because producer connection can be on demand, this can produce extra send latency
+        /// for the first messages of a given partition.
+        /// </summary>
+        /// <param name="lazyStartPartitionedProducers">
+        ///            enable or disable starting partition producers lazily </param>
+        /// <returns> the producer builder instance </returns>
+        IProducerBuilder<T> EnableLazyStartPartitionedProducers(bool lazyStartPartitionedProducers);
+
     }
 }
