@@ -83,9 +83,9 @@ namespace SharpPulsar.API.Internal
 
         ISchema<DateTime> NewDateSchema();
 
-        ISchema<Time> NewTimeSchema();
+        ISchema<DateTime> NewTimeSchema();
 
-        ISchema<TimeStamp> NewTimestampSchema();
+        ISchema<DateTime> NewTimestampSchema();
 
         ISchema<Instant> NewInstantSchema();
 

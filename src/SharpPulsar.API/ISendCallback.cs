@@ -15,7 +15,7 @@
         // / </summary>
         // / <param name="msg"> message sent </param>
         // / <param name="scb"> callback associated with the message </param>
-        void AddCallback(Message<T> msg, ISendCallback<T> scb);
+        void AddCallback(IMessage<T> msg, ISendCallback<T> scb);
 
         // / 
         // / <returns> next callback in chain </returns>
@@ -25,7 +25,7 @@
         // / Return next message in chain
         // / </summary>
         // / <returns> next message in chain </returns>
-        Message<T> NextMessage { get; }
+        IMessage<T> NextMessage { get; }
 
         // / 
         // / <returns> future associated with callback </returns>

@@ -70,6 +70,14 @@ namespace SharpPulsar.API
         ICollection<T> Values();
 
         /// <summary>
+        /// Performs the given action for each entry in this map until all entries
+        /// have been processed or the action throws an exception.
+        /// </summary>
+        /// <param name="action"> The action to be performed for each entry </param>
+        void ForEach(Action<string, T> action);
+
+
+        /// <summary>
         /// Performs the give action for each entry in this map until all entries
         /// have been processed or the action throws an exception.
         /// </summary>

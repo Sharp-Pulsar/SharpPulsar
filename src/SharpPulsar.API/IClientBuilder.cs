@@ -447,7 +447,7 @@ namespace SharpPulsar.API
         /// <param name="unit">
         ///            the memory limit size unit </param>
         /// <returns> the client builder instance </returns>
-        IClientBuilder MemoryLimit(long memoryLimit, sizeof(int) unit);
+        IClientBuilder MemoryLimit(long memoryLimit, int unit);
 
 
         /// <summary>
@@ -563,7 +563,7 @@ namespace SharpPulsar.API
         /// </summary>
         /// <param name="openTelemetry"> the OpenTelemetry instance </param>
         /// <returns> the client builder instance </returns>
-        IClientBuilder OpenTelemetry(OpenTelemetry.Api.OpenTelemetry openTelemetry);
+        IClientBuilder OpenTelemetry(OpenTelemetry.Metrics.MeterProvider openTelemetry);
 
 
         /// <summary>

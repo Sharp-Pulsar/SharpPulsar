@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿
+using SharpPulsar.Shared;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -85,6 +88,50 @@ namespace SharpPulsar.API
         /// <param name="unit"> the time unit of the interval </param>
         /// <returns> the <seealso cref="ITableViewBuilder{T}"/> builder instance </returns>
         ITableViewBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval);
+
+        /// <summary>
+		/// Set the subscription name of the <seealso cref="TableView"/>.
+		/// </summary>
+		/// <param name="subscriptionName"> the name of the subscription to the topic </param>
+		/// <returns> the <seealso cref="TableViewBuilder"/> builder instance </returns>
+		ITableViewBuilder<T> SubscriptionName(string subscriptionName);
+
+        /// <summary>
+        /// Set the <seealso cref="CryptoKeyReader"/> to decrypt the message payloads.
+        /// </summary>
+        /// <param name="cryptoKeyReader"> CryptoKeyReader object </param>
+        /// <returns> the <seealso cref="TableViewBuilder"/> builder instance </returns>
+        ITableViewBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader);
+
+        /// <summary>
+        /// Set the default implementation of <seealso cref="CryptoKeyReader"/>.
+        /// 
+        /// <para>Configure the key reader to be used to decrypt message payloads.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="privateKey"> the private key that is always used to decrypt message payloads. </param>
+        /// <returns> the <seealso cref="TableViewBuilder"/> builder instance </returns>
+        ITableViewBuilder<T> DefaultCryptoKeyReader(string privateKey);
+
+        /// <summary>
+        /// Set the default implementation of <seealso cref="CryptoKeyReader"/>.
+        /// 
+        /// <para>Configure the key reader to be used to decrypt message payloads.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="privateKeys"> the map of private key names and their URIs
+        ///                    used to decrypt message payloads. </param>
+        /// <returns> the <seealso cref="TableViewBuilder"/> builder instance </returns>
+        ITableViewBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> privateKeys);
+
+        /// <summary>
+        /// Set the <seealso cref="ConsumerCryptoFailureAction"/> to specify.
+        /// </summary>
+        /// <param name="action"> the action to take when the decoding fails </param>
+        /// <returns> the <seealso cref="TableViewBuilder"/> builder instance </returns>
+        ITableViewBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action);
     }
 
 }

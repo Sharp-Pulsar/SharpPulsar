@@ -1,4 +1,5 @@
 ﻿
+using Akka.Util;
 using NodaTime;
 using SharpPulsar.API.Internal;
 using SharpPulsar.API.Schema;
@@ -125,10 +126,6 @@ namespace SharpPulsar.API
         /// <returns> the deserialized object </returns>
         virtual T Decode(ByteBuffer data)
         {
-            if (data == null)
-            {
-                return null;
-            }
             return Decode(IPulsarClientImplementationBinding.GetBytes(data));
         }
 
@@ -152,10 +149,6 @@ namespace SharpPulsar.API
         /// <returns> the deserialized object </returns>
         virtual T Decode(ByteBuffer data, byte[] schemaVersion)
         {
-            if (data == null)
-            {
-                return null;
-            }
             return Decode(IPulsarClientImplementationBinding.GetBytes(data), schemaVersion);
         }
 
@@ -248,12 +241,12 @@ namespace SharpPulsar.API
         /// <summary>
         /// Time Schema.
         /// </summary>
-        public static ISchema<Time> Time = DefaultImplementation.GetDefaultImplementation.NewTimeSchema();
+        public static ISchema<DateTime> Time = DefaultImplementation.GetDefaultImplementation.NewTimeSchema();
 
         /// <summary>
         /// Timestamp Schema.
         /// </summary>
-        public static ISchema<Timestamp> Timestamp = DefaultImplementation.GetDefaultImplementation.NewTimestampSchema();
+        public static ISchema<DateTime> Timestamp = DefaultImplementation.GetDefaultImplementation.NewTimestampSchema();
 
 
         /// <summary>
@@ -300,7 +293,7 @@ namespace SharpPulsar.API
 		/// <returns> a Schema instance </returns>
 		static ISchema<T1> Json<T1>(Type pojo)
 		{
-			return DefaultImplementation.GetDefaultImplementation.NewJsonSchema(ISchemaDefinition<T1>.Builder().WithPojo(pojo).Build());
+			return DefaultImplementation.GetDefaultImplementation.NewJSONSchema(ISchemaDefinition<T1>.Builder().WithPojo(pojo).Build());
 		}
 
 		/// <summary>
@@ -310,7 +303,7 @@ namespace SharpPulsar.API
 		/// <returns> a Schema instance </returns>
 		static ISchema<T1> Json<T1>(ISchemaDefinition<T1> schemaDefinition)
 		{
-			return DefaultImplementation.GetDefaultImplementation.NewJsonSchema(schemaDefinition);
+			return DefaultImplementation.GetDefaultImplementation.NewJSONSchema(schemaDefinition);
 		}
 
 		/// <summary>

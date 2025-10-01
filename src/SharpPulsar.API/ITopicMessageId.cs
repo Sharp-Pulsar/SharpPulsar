@@ -1,4 +1,6 @@
-﻿namespace SharpPulsar.API
+﻿using SharpPulsar.API.Internal;
+
+namespace SharpPulsar.API
 {
     public interface ITopicMessageId : IMessageId
     {
@@ -16,7 +18,7 @@
             {
                 return (ITopicMessageId)messageId;
             }
-            return DefaultImplementation.NewTopicMessageId(topic, messageId);
+            return DefaultImplementation.GetDefaultImplementation.NewTopicMessageId(topic, messageId);
         }
     }
 

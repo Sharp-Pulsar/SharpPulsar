@@ -51,8 +51,8 @@ namespace SharpPulsar.API
         /// </para>
         /// </summary>
         /// <returns> the <seealso cref="MessageIdAdv"/> assigned by the broker to the published message. </returns>
-        MessageIdAdv Send();
-        ValueTask<MessageIdAdv> SendAsync();
+        IMessageIdAdv Send();
+        ValueTask<IMessageIdAdv> SendAsync();
 
 
 
@@ -87,7 +87,7 @@ namespace SharpPulsar.API
         /// <returns> the message builder instance </returns>
         ITypedMessageBuilder<T> Value(T value);
 
-        ITypedMessageBuilder<T> Value<TK, TV>(T value);
+        //ITypedMessageBuilder<T> Value<TK, TV>(T value);
 
         /// <summary>
         /// Sets a new property on a message.
