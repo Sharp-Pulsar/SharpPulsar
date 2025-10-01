@@ -1,4 +1,12 @@
-﻿/// <summary>
+﻿/*
+ * The original MurmurHash3 was written by Austin Appleby, and is placed in the
+ * public domain. This source code, implemented by Licht Takeuchi, is based on
+ * the orignal MurmurHash3 source code.
+ */
+
+using SharpPulsar.Shared;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,12 +24,6 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-/*
- * The original MurmurHash3 was written by Austin Appleby, and is placed in the
- * public domain. This source code, implemented by Licht Takeuchi, is based on
- * the orignal MurmurHash3 source code.
- */
-
 namespace SharpPulsar.Common.Util
 {
     /// <summary>
@@ -47,8 +49,11 @@ namespace SharpPulsar.Common.Util
 		{
 			return MakeHash0(b) & int.MaxValue;
 		}
-
-		private int MakeHash0(byte[] bytes)
+        public int MakeHash(int start, int end)
+        {
+            return start & end;
+        }
+        private int MakeHash0(byte[] bytes)
         {
             var byt = (byte[]) (object) bytes;
 			var len = bytes.Length;

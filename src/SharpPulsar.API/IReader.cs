@@ -53,6 +53,11 @@ namespace SharpPulsar.API
         IMessage<T> ReadNext(TimeSpan timeSpan);
         ValueTask<IMessage<T>> ReadNextAsync(TimeSpan timeSpan);
 
+        /// <summary>
+        /// Asynchronously close the reader and stop the broker to push more messages.
+        /// </summary>
+        /// <returns> a future that can be used to track the completion of the operation </returns>
+        ValueTask CloseAsync();
 
         bool HasReachedEndOfTopic();
         ValueTask<bool> HasReachedEndOfTopicAsync();
@@ -156,6 +161,7 @@ namespace SharpPulsar.API
         /// <param name="function">
         /// @return </param>
         ValueTask SeekAsync(Func<string, object> function);
+
         List<ITopicMessageId> LastMessageIds();
         ValueTask<List<ITopicMessageId>> LastMessageIdsAsync();
     }

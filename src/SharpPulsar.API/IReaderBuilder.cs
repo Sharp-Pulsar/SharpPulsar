@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using SharpPulsar.Shared;
+using Range = SharpPulsar.Shared.Range;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -110,6 +113,13 @@ namespace SharpPulsar.API
         IReaderBuilder<T> Topic(string topicName);
 
         /// <summary>
+        /// Specify topics this reader will read from. </summary>
+        /// <param name="topicNames">
+        /// @return </param>
+        IReaderBuilder<T> Topics(IList<string> topicNames);
+
+
+        /// <summary>
         /// The initial reader positioning is done by specifying a message id. The options are:
         /// <ul>
         /// <li><seealso cref="MessageIdAdv.earliest"/>: Start reading from the earliest message available in the topic</li>
@@ -171,12 +181,50 @@ namespace SharpPulsar.API
         IReaderBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader);
 
         /// <summary>
+        /// Sets the default implementation of <seealso cref="CryptoKeyReader"/>.
+        /// 
+        /// <para>Configure the key reader to be used to decrypt the message payloads.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="privateKey">
+        ///            the private key that is always used to decrypt message payloads. </param>
+        /// <returns> the reader builder instance
+        /// @since 2.8.0 </returns>
+        IReaderBuilder<T> DefaultCryptoKeyReader(string privateKey);
+
+        /// <summary>
+        /// Sets the default implementation of <seealso cref="CryptoKeyReader"/>.
+        /// 
+        /// <para>Configure the key reader to be used to decrypt the message payloads.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="privateKeys">
+        ///            the map of private key names and their URIs used to decrypt message payloads. </param>
+        /// <returns> the reader builder instance
+        /// @since 2.8.0 </returns>
+        IReaderBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> privateKeys);
+
+        /// <summary>
         /// Sets the <seealso cref="ConsumerCryptoFailureAction"/> to specify.
         /// </summary>
         /// <param name="action">
         ///            The action to take when the decoding fails </param>
         /// <returns> the reader builder instance </returns>
         IReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action);
+
+        /// <summary>
+        /// Sets a <seealso cref="MessageCrypto"/>.
+        /// 
+        /// <para>Contains methods to encrypt/decrypt message for End to End Encryption.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="messageCrypto"> message Crypto Object </param>
+        /// <returns> ReaderBuilder instance </returns>
+        IReaderBuilder<T> MessageCrypto<M,B>(IMessageCrypto<M, B> messageCrypto);
+
 
         /// <summary>
         /// Sets the size of the consumer receive queue.
@@ -214,6 +262,17 @@ namespace SharpPulsar.API
         /// <param name="subscriptionRolePrefix"> </param>
         /// <returns> the reader builder instance </returns>
         IReaderBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix);
+
+        /// <summary>
+        /// Set the subscription name.
+        /// <para>If subscriptionRolePrefix is set at the same time, this configuration will prevail
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="subscriptionName"> </param>
+        /// <returns> the reader builder instance </returns>
+        IReaderBuilder<T> SubscriptionName(string subscriptionName);
+
 
         /// <summary>
         /// If enabled, the reader will read messages from the compacted topic rather than reading the full message backlog
