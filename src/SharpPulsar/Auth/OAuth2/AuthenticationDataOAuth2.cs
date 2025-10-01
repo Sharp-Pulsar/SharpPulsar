@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using SharpPulsar.API;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -36,6 +37,7 @@ namespace SharpPulsar.Auth.OAuth2
 		{
 			_accessToken = accessToken;
 			_headers.Add(new KeyValuePair<string, string>(HttpHeaderName, "Bearer " + accessToken));
+            _headers.Add(new KeyValuePair<string, string>("X-Pulsar-Auth-Method-Name", AuthenticationOAuth2.AUTH_METHOD_NAME));
 		}
 
 		public virtual bool HasDataForHttp()

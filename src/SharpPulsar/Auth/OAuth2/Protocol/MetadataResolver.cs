@@ -25,7 +25,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 	/// </summary>
 	public interface MetadataResolver
 	{
-		Task<Metadata> Resolve();
+		ValueTask<Metadata> Resolve();
 	}
 
 }

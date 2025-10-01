@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpPulsar.Auth.OAuth2.Protocol;
+using SharpPulsar.Shared.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

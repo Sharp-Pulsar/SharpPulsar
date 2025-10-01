@@ -54,9 +54,9 @@ namespace SharpPulsar.Auth
 			return DefaultImplementation.GetDefaultImplementation.NewAuthenticationToken(tokenSupplier);
 		}
         
-        public static IAuthentication Tls(string pfxFilePath)
+        public static IAuthentication Tls(string pfxFilePath, string keyFilePath)
         {
-            return DefaultImplementation.GetDefaultImplementation.NewAuthenticationTls(pfxFilePath);
+            return DefaultImplementation.GetDefaultImplementation.NewAuthenticationTLS(pfxFilePath, keyFilePath);
         }
         // CHECKSTYLE.ON: MethodName
 

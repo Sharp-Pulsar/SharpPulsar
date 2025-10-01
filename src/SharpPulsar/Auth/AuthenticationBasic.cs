@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
-using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
+using SharpPulsar.API;
+using SharpPulsar.Shared.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

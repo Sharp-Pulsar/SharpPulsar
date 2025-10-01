@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using SharpPulsar.API;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -46,7 +47,9 @@ namespace SharpPulsar.Auth
 			{
 				var set = new HashSet<KeyValuePair<string, string>>
 				{
-					new KeyValuePair<string, string>(HttpHeaderName, "Bearer " + Token)
+                    new KeyValuePair<string, string>(IAuthenticationDataProvider.PULSAR_AUTH_METHOD_NAME, "token"),
+
+                    new KeyValuePair<string, string>(HttpHeaderName, "Bearer " + Token)
 				};
 				return set;
 			}

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using SharpPulsar.Auth.OAuth2.Protocol;
+using SharpPulsar.Shared.Exceptions;
 using Debug = System.Diagnostics.Debug;
 
 /// <summary>

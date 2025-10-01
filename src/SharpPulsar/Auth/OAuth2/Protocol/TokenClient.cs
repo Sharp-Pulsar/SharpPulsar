@@ -8,7 +8,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using SharpPulsar.Extension;
+using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -108,7 +108,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		/// <param name="req"> the client credentials request details. </param>
 		/// <returns> a token result </returns>
 		/// <exception cref="TokenExchangeException"> </exception>
-		public virtual async Task<TokenResult> ExchangeClientCredentials(ClientCredentialsExchangeRequest req)
+		public virtual async ValueTask<TokenResult> ExchangeClientCredentials(ClientCredentialsExchangeRequest req)
 		{
 			var body = BuildClientCredentialsBody(req);
 

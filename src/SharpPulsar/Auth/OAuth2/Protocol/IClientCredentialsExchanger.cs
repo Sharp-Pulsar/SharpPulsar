@@ -31,7 +31,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		/// <returns> an access token. </returns>
 		/// <exception cref="TokenExchangeException"> if the OAuth server returned a detailed error. </exception>
 		/// <exception cref="IOException"> if a general IO error occurred. </exception>
-		Task<TokenResult> ExchangeClientCredentials(ClientCredentialsExchangeRequest req);
+		ValueTask<TokenResult> ExchangeClientCredentials(ClientCredentialsExchangeRequest req);
 	}
 
 }

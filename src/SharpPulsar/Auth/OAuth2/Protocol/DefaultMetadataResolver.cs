@@ -63,7 +63,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		/// Resolves the authorization metadata. </summary>
 		/// <returns> metadata </returns>
 		/// <exception cref="IOException"> if the metadata could not be resolved. </exception>
-		public async Task<Metadata> Resolve()
+		public async ValueTask<Metadata> Resolve()
 		{
 			try
 			{

@@ -22,6 +22,24 @@ namespace SharpPulsar.Shared
             dictionary.TryGetValue(key, out var ret);
 			return ret;
 		}
+        public static TValue GetOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
+        {
+            TValue ret;
+            if (dictionary.TryGetValue(key, out ret))
+                return ret;
+            else
+                return defaultValue;
+        }
 
-	}
+        public static void PutAll<TKey, TValue>(this IDictionary<TKey, TValue> d1, IDictionary<TKey, TValue> d2)
+        {
+            if (d2 is null)
+                throw new NullReferenceException();
+
+            foreach (TKey key in d2.Keys)
+            {
+                d1[key] = d2[key];
+            }
+        }
+    }
 }

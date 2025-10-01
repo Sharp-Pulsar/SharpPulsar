@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using SharpPulsar.API;
 using SharpPulsar.Auth.OAuth2.Protocol;
 using SharpPulsar.Extension;
 

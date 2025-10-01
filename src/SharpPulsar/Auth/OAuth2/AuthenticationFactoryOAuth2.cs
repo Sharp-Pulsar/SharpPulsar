@@ -1,4 +1,5 @@
 ﻿using System;
+using SharpPulsar.API;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -52,7 +53,7 @@ namespace SharpPulsar.Auth.OAuth2
 		/// <returns> an Authentication object </returns>
 		public static IAuthentication ClientCredentials(Uri issuerUrl, Uri credentialsUrl, string audience, string scope)
 		{
-            var flow = new ClientCredentialsFlow(issuerUrl, audience, credentialsUrl.LocalPath, scope);
+            var flow = new ClientCredentialsFlow(issuerUrl, audience, credentialsUrl.AbsoluteUri, scope);
             return new AuthenticationOAuth2(flow, DateTime.Now);
 		}
 	}
