@@ -7,6 +7,10 @@ using SharpPulsar.Common;
 using SharpPulsar.Common.Precondition;
 using System;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.API;
+using static SharpPulsar.Common.Protocol.Proto.CommandSubscribe;
+using SharpPulsar.Shared;
+using System.Reflection.Metadata.Ecma335;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -36,15 +40,28 @@ namespace SharpPulsar.Configuration
             AutoUpdatePartitionsInterval = interval;
 		}
         public TimeSpan AutoUpdatePartitionsInterval { get; set; } = TimeSpan.FromSeconds(5);
-		public IMessageCrypto MessageCrypto { get; set; }
+		public IMessageCrypto<M,S> MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
         public int MaxAcknowledgmentGroupSize { get; set; } = 1000;
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
+
+        /// <summary>
+        /// Topic name
+        /// </summary>
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor<T>> Interceptors { get; set; }
         public bool IsAutoScaledReceiverQueueSizeEnabled { get; set; }
         public IRedeliveryBackoff NegativeAckRedeliveryBackoff { get; set; }    
         public IRedeliveryBackoff AckTimeoutRedeliveryBackoff { get; set; } 
+
+        /// <summary>
+        /// Subscription type.\n"
+        ///            + "Four subscription types are available:\n"
+        ///            + "* Exclusive\n"
+        ///            + "* Failover\n"
+        ///            + "* Shared\n"
+        ///            + "* Key_Shared
+        /// </summary>
         public SubType SubscriptionType { get; set; } = SubType.Exclusive;
 		internal IMessageListener<T> MessageListener { get; set; }
         public bool ForceTopicCreation { get; set; } = false;
@@ -79,7 +96,7 @@ namespace SharpPulsar.Configuration
 
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
 
-		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
+		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.FAIL;
 
 		public int PatternAutoDiscoveryPeriod { get; set; } = 30;
 
@@ -104,16 +121,23 @@ namespace SharpPulsar.Configuration
 
 		public bool ReadCompacted { get; set; }
 
-		public DeadLetterPolicy DeadLetterPolicy { get; set; }
+		public IDeadLetterPolicy DeadLetterPolicy { get; set; }
 
         public SubscriptionInitialPosition SubscriptionInitialPosition { get; set; } =
             SubscriptionInitialPosition.Earliest;
+
+        /// <summary>
+        /// The regexp for the topic name(not contains partition suffix).
+        /// </summary>
 		public Regex TopicsPattern { get; set; }
 
 		public SortedDictionary<string, string> Properties { get; set; } = new SortedDictionary<string, string>();
 
 		public string ConsumerName { get; set; }
 
+        /// <summary>
+        /// Subscription name
+        /// </summary>
 		public string SubscriptionName { get; set; }
 
         private IList<TopicConsumerConfigurationData> _topicConfigurations = new List<TopicConsumerConfigurationData>();

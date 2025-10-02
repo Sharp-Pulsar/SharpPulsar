@@ -16,28 +16,24 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Enum
+namespace SharpPulsar.Shared
 {
 	/// <summary>
-	/// When subscribing to topics using a regular expression, one can specify
-	/// to only pick a certain type of topics.
+	/// KeyShared mode of KeyShared subscription.
 	/// </summary>
-	public enum RegexSubscriptionMode
+	public enum KeySharedMode
 	{
-		/// <summary>
-		/// Only subscribe to persistent topics.
-		/// </summary>
-		PersistentOnly,
 
 		/// <summary>
-		/// Only subscribe to non-persistent topics.
+		/// Auto split while new consumer connected.
 		/// </summary>
-		NonPersistentOnly,
+		AutoSplit,
 
 		/// <summary>
-		/// Subscribe to both persistent and non-persistent topics.
+		/// New consumer with fixed hash range to attach the topic, if new consumer use conflict hash range with
+		/// exits consumers, new consumer will be rejected.
 		/// </summary>
-		AllTopics
+		Sticky
 	}
 
 }

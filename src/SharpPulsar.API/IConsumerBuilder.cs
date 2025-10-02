@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using SharpPulsar.Shared;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -334,7 +335,7 @@ namespace SharpPulsar.API
         /// </summary>
         /// <param name="messageListenerExecutor"> the executor of the consumer message listener </param>
         /// <returns> the consumer builder instance </returns>
-        IConsumerBuilder<T> MessageListenerExecutor(MessageListenerExecutor messageListenerExecutor);
+        IConsumerBuilder<T> MessageListenerExecutor(IMessageListenerExecutor messageListenerExecutor);
 
         /// <summary>
         /// Sets a <seealso cref="CryptoKeyReader"/>.
@@ -384,7 +385,7 @@ namespace SharpPulsar.API
         /// <param name="messageCrypto">
         ///            MessageCrypto object </param>
         /// <returns> the consumer builder instance </returns>
-        IConsumerBuilder<T> MessageCrypto(IMessageCrypto messageCrypto);
+        IConsumerBuilder<T> MessageCrypto<MetadataT, BuilderT>(IMessageCrypto<MetadataT, BuilderT> messageCrypto);
 
         /// <summary>
         /// Sets the ConsumerCryptoFailureAction to the value specified.
@@ -685,7 +686,7 @@ namespace SharpPulsar.API
         /// </pre>
         /// </para>
         /// </summary>
-        IConsumerBuilder<T> DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy);
+        IConsumerBuilder<T> DeadLetterPolicy(IDeadLetterPolicy deadLetterPolicy);
 
         /// <summary>
         /// If enabled, the consumer auto-subscribes for partition increases.

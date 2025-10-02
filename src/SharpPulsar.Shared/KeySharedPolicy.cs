@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Entity
+namespace SharpPulsar.Shared
 {
 
     /// <summary>
@@ -24,8 +24,8 @@ namespace SharpPulsar.Common.Entity
     /// </summary>
     public abstract class KeySharedPolicy
 	{
-
-		protected internal KeySharedMode keySharedMode;
+		private KeySharedMode _keySharedMode;
+        private bool _allowOutOfOrderDelivery = false;
 
 		public static readonly int DefaultHashRangeSize = 2 << 15;
 
@@ -40,8 +40,25 @@ namespace SharpPulsar.Common.Entity
 		}
 
 		public abstract void Validate();
+        public virtual bool AllowOutOfOrderDelivery => _allowOutOfOrderDelivery;
 
-		public virtual KeySharedMode KeySharedMode => this.keySharedMode;
+        /// <summary>
+        /// If enabled, it will relax the ordering requirement, allowing the broker to send out-of-order messages in case of
+        /// failures. This will make it faster for new consumers to join without being stalled by an existing slow consumer.
+        /// 
+        /// <para>In this case, a single consumer will still receive all the keys, but they may be coming in different orders.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="allowOutOfOrderDelivery">
+        ///            whether to allow for out of order delivery </param>
+        /// <returns> KeySharedPolicy instance </returns>
+        public virtual KeySharedPolicy SetAllowOutOfOrderDelivery(bool allowOutOfOrderDelivery)
+        {
+            _allowOutOfOrderDelivery = allowOutOfOrderDelivery;
+            return this;
+        }
+		public virtual KeySharedMode? KeySharedMode => _keySharedMode;
 
         public virtual int HashRangeTotal => DefaultHashRangeSize;
 
@@ -55,23 +72,21 @@ namespace SharpPulsar.Common.Entity
 		/// </summary>
 		public class KeySharedPolicySticky : KeySharedPolicy
 		{
-			protected internal IList<Range> _ranges;
+			private readonly IList<Range> _ranges;
 
-			internal KeySharedPolicySticky()
+			public KeySharedPolicySticky()
 			{
-				this.keySharedMode = KeySharedMode.Sticky;
-				this._ranges = new List<Range>();
+				_keySharedMode = Shared.KeySharedMode.Sticky;
+				_ranges = new List<Range>();
 			}
-
-			public virtual KeySharedPolicySticky Ranges(IList<Range> ranges)
+            public KeySharedPolicySticky Ranges(List<Range> ranges)
+            {
+                ((List<Range>)_ranges).AddRange(ranges);
+                return this;
+            }
+            public virtual KeySharedPolicySticky Ranges(params Range[] ranges)
 			{
-				((List<Range>)this._ranges).AddRange(ranges);
-				return this;
-			}
-
-			public virtual KeySharedPolicySticky Ranges(params Range[] ranges)
-			{
-				((List<Range>)this._ranges).AddRange(ranges);
+				((List<Range>)_ranges).AddRange(new List<Range>(ranges));
 				return this;
 			}
 
@@ -81,16 +96,16 @@ namespace SharpPulsar.Common.Entity
 				{
 					throw new System.ArgumentException("Ranges for KeyShared policy must not be empty.");
 				}
-				for (var i = 0; i < _ranges.Count; i++)
+				for (int i = 0; i < _ranges.Count; i++)
 				{
-					var range1 = _ranges[i];
+					Range range1 = _ranges[i];
 					if (range1.Start < 0 || range1.End > DefaultHashRangeSize)
 					{
 						throw new System.ArgumentException("Ranges must be [0, 65535] but provided range is " + range1);
 					}
-					for (var j = 0; j < _ranges.Count; j++)
+					for (int j = 0; j < _ranges.Count; j++)
 					{
-						var range2 = _ranges[j];
+						Range range2 = _ranges[j];
 						if (i != j && range1.Intersect(range2) != null)
 						{
 							throw new System.ArgumentException("Ranges for KeyShared policy with overlap between " + range1 + " and " + range2);
@@ -108,9 +123,9 @@ namespace SharpPulsar.Common.Entity
 		public class KeySharedPolicyAutoSplit : KeySharedPolicy
 		{
 
-			internal KeySharedPolicyAutoSplit()
+			public KeySharedPolicyAutoSplit()
 			{
-				this.keySharedMode = KeySharedMode.AutoSplit;
+				_keySharedMode = Shared.KeySharedMode.AutoSplit;
 			}
 
 			public override void Validate()

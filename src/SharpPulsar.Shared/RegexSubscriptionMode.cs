@@ -16,28 +16,28 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Entity
+namespace SharpPulsar.Shared
 {
-	//using Builder = lombok.Builder;
-	//using Data = lombok.Data;
-
 	/// <summary>
-	/// Configuration for the "dead letter queue" feature in consumer.
+	/// When subscribing to topics using a regular expression, one can specify
+	/// to only pick a certain type of topics.
 	/// </summary>
-	/// <seealso cref= ConsumerBuilder#deadLetterPolicy(DeadLetterPolicy) </seealso>
-	public class DeadLetterPolicy
+	public enum RegexSubscriptionMode
 	{
+		/// <summary>
+		/// Only subscribe to persistent topics.
+		/// </summary>
+		PersistentOnly,
 
 		/// <summary>
-		/// Maximum number of times that a message will be redelivered before being sent to the dead letter queue.
+		/// Only subscribe to non-persistent topics.
 		/// </summary>
-		public int MaxRedeliverCount { get; set; }
+		NonPersistentOnly,
 
 		/// <summary>
-		/// Name of the topic where the failing messages will be sent.
+		/// Subscribe to both persistent and non-persistent topics.
 		/// </summary>
-		public string DeadLetterTopic { get; set; }
-
+		AllTopics
 	}
 
 }

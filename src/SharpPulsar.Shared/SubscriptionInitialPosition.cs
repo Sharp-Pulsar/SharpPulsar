@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common
+namespace SharpPulsar.Shared
 {
     /// <summary>
     /// When creating a consumer, if the subscription does not exist, a new subscription will be created. By default the
@@ -36,16 +36,12 @@ namespace SharpPulsar.Common
 		/// </summary>
 		public static readonly SubscriptionInitialPosition Earliest = new SubscriptionInitialPosition("Earliest", InnerEnum.Earliest, 1);
 
-		private static readonly IList<SubscriptionInitialPosition> ValueList = new List<SubscriptionInitialPosition>();
+		private static readonly IList<SubscriptionInitialPosition> valueList = new List<SubscriptionInitialPosition>();
 
-        public SubscriptionInitialPosition()
-        {
-                
-        }
 		static SubscriptionInitialPosition()
 		{
-			ValueList.Add(Latest);
-			ValueList.Add(Earliest);
+			valueList.Add(Latest);
+			valueList.Add(Earliest);
 		}
 
 		public enum InnerEnum
@@ -54,45 +50,52 @@ namespace SharpPulsar.Common
 			Earliest
 		}
 
-		public readonly InnerEnum InnerEnumValue;
-		private readonly string _nameValue;
-		private readonly int _ordinalValue;
-		private static int _nextOrdinal = 0;
+		public readonly InnerEnum innerEnumValue;
+		private readonly string nameValue;
+		private readonly int ordinalValue;
+		private static int nextOrdinal = 0;
 
 
-		public int Value {get;}
+		private readonly int value;
 
-		public SubscriptionInitialPosition(string name, InnerEnum innerEnum, int value)
+		internal SubscriptionInitialPosition(string name, InnerEnum innerEnum, int value)
 		{
-			Value = value;
+			this.value = value;
 
-			_nameValue = name;
-			_ordinalValue = _nextOrdinal++;
-			InnerEnumValue = innerEnum;
+			nameValue = name;
+			ordinalValue = nextOrdinal++;
+			innerEnumValue = innerEnum;
 		}
 
+		public int Value
+		{
+			get
+			{
+				return value;
+			}
+		}
 
 
 		public static IList<SubscriptionInitialPosition> Values()
 		{
-			return ValueList;
+			return valueList;
 		}
 
 		public int Ordinal()
 		{
-			return _ordinalValue;
+			return ordinalValue;
 		}
 
 		public override string ToString()
 		{
-			return _nameValue;
+			return nameValue;
 		}
 
 		public static SubscriptionInitialPosition ValueOf(string name)
 		{
-			foreach (SubscriptionInitialPosition enumInstance in ValueList)
+			foreach (SubscriptionInitialPosition enumInstance in valueList)
 			{
-				if (enumInstance._nameValue == name)
+				if (enumInstance.nameValue == name)
 				{
 					return enumInstance;
 				}

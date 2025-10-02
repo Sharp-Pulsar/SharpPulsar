@@ -1,4 +1,6 @@
-﻿namespace SharpPulsar.API.Interceptor
+﻿using Akka.Actor;
+
+namespace SharpPulsar.API.Interceptor
 {
     /// <summary>
     /// A wrapper for old style producer interceptor.
