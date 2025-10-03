@@ -11,6 +11,7 @@ using SharpPulsar.API;
 using static SharpPulsar.Common.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Shared;
 using System.Reflection.Metadata.Ecma335;
+using SharpPulsar.Common.Protocol.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -40,8 +41,12 @@ namespace SharpPulsar.Configuration
             AutoUpdatePartitionsInterval = interval;
 		}
         public TimeSpan AutoUpdatePartitionsInterval { get; set; } = TimeSpan.FromSeconds(5);
-		public IMessageCrypto<M,S> MessageCrypto { get; set; }
+		public IMessageCrypto<MessageMetadata, MessageMetadata> MessageCrypt { get; set; }
 		public IMessageId StartMessageId { get; set; }
+
+        /// <summary>
+        /// Group a consumer acknowledgment for the number of messages.
+        /// </summary>
         public int MaxAcknowledgmentGroupSize { get; set; } = 1000;
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
 
@@ -51,7 +56,17 @@ namespace SharpPulsar.Configuration
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor<T>> Interceptors { get; set; }
         public bool IsAutoScaledReceiverQueueSizeEnabled { get; set; }
+
+        /// <summary>
+        /// Interface for custom message is negativeAcked policy. You can specify `RedeliveryBackoff` for a
+        /// consumer.
+        /// </summary>
         public IRedeliveryBackoff NegativeAckRedeliveryBackoff { get; set; }    
+
+        /// <summary>
+        /// Interface for custom message is ackTimeout policy. You can specify `RedeliveryBackoff` for a
+        /// consumer.
+        /// </summary>
         public IRedeliveryBackoff AckTimeoutRedeliveryBackoff { get; set; } 
 
         /// <summary>
@@ -67,27 +82,97 @@ namespace SharpPulsar.Configuration
         public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }
         public bool UseTls { get; set; } = false;
+
+        /// <summary>
+        /// Size of a consumer's receiver queue.
+        /// For example, the number of messages accumulated by a consumer before an application calls
+        /// `Receive`
+        /// A value higher than the default value increases consumer throughput, though at the expense of
+        /// more memory utilization.
+        /// </summary>
 		public int ReceiverQueueSize { get; set; } = 1_000;
 
-		public TimeSpan AcknowledgementsGroupTime { get; set; } = TimeSpan.FromMilliseconds(100);
+        /// <summary>
+        /// Group a consumer acknowledgment for a specified time.
+        /// By default, a consumer uses 100ms grouping time to send out acknowledgments to a broker.
+        /// Setting a group time of 0 sends out acknowledgments immediately.
+        /// A longer ack group time is more efficient at the expense of a slight increase in message "
+        /// re-deliveries after a failure
+        /// </summary>
+		public long AcknowledgementsGroupTimeMicros {get; set; } = TimeUnit.TimeUnit.MILLISECONDS.ToMicroseconds(100);
 
-		public TimeSpan NegativeAckRedeliveryDelay { get; set; } = TimeSpan.FromMilliseconds(30000);
+        /// <summary>
+        /// Delay to wait before redelivering messages that failed to be processed.
+        /// When an application uses {@link Consumer#negativeAcknowledge(Message)}, failed messages are "
+        /// redelivered after a fixed timeout.
+        /// </summary>
+		public long NegativeAckRedeliveryDelayMicros { get; set; } = TimeUnit.TimeUnit.MINUTES.ToMicroseconds(30000);
 
-		public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
+        /// <summary>
+        /// The redelivery time precision bit count. The lower bits of the redelivery time will be
+        /// trimmed to reduce the memory occupation.\nThe default value is 8, which means the"
+        /// redelivery time will be bucketed by 256ms, the redelivery time could be earlier(no later)
+        /// than the expected time, but no more than 256ms. \nIf set to k, the redelivery time will be
+        /// bucketed by 2^k ms.\nIf the value is 0, the redelivery time will be accurate to ms.
+        /// </summary>
+        public int NegativeAckPrecisionBitCnt { get; set; } = 8;
 
-		public TimeSpan AckTimeout { get; set; } = TimeSpan.FromSeconds(2);
-		public bool AckReceiptEnabled { get; set; } = false;
+        /// <summary>
+        /// The max total receiver queue size across partitions.
+        /// This setting reduces the receiver queue size for individual partitions if the total receiver
+        /// queue size exceeds this value."
+        /// </summary>
+        public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
+
+        /// <summary>
+        /// Timeout of unacked messages
+        /// </summary>
+		public long AckTimeoutMillis { get; set; } = 0;
+
+        /// <summary>
+        /// Granularity of the ack-timeout redelivery.
+        /// Using an higher `tickDurationMillis` reduces the memory overhead to track messages when setting
+        /// ack-timeout to a bigger value (for example, 1 hour).
+        /// </summary>
+        public long TickDurationMillis { get; set; } = 1000;
+        public bool AckReceiptEnabled { get; set; } = false;
 		public bool StartPaused { get; set; } = false;
 
         [NonSerialized]
         public IMessagePayloadProcessor PayloadProcessor = null;
 
-        public TimeSpan TickDuration { get; set; } = TimeSpan.FromMilliseconds(100);
-
+        /// <summary>
+        /// Priority level for a consumer to which a broker gives more priority while dispatching messages
+        /// in Shared subscription type.
+        /// The broker follows descending priorities. For example, 0=max-priority, 1, 2,...
+        /// In Shared subscription type, the broker **first dispatches messages to the max priority level
+        /// consumers if they have permits**. Otherwise, the broker considers next priority level consumers
+        /// **Example 1**
+        /// If a subscription has consumerA with `priorityLevel` 0 and consumerB with `priorityLevel` 1,
+        /// then the broker **only dispatches messages to consumerA until it runs out permits** and then
+        /// starts dispatching messages to consumerB.
+        /// **Example 2**
+        /// Consumer Priority, Level, Permits
+        /// C1, 0, 2
+        /// C2, 0, 1
+        /// C3, 0, 1
+        /// C4, 1, 2
+        /// C5, 1, 1
+        /// Order in which a broker dispatches messages to consumers is: C1, C2, C3, C1, C4, C5, C4."
+        /// </summary>
 		public int PriorityLevel { get; set; } = 0;
 
-        public int MaxPendingChuckedMessage { get; set; }
-        public TimeSpan ExpireTimeOfIncompleteChunkedMessage { get; set; }
+        /// <summary>
+        /// The time interval to expire incomplete chunks if a consumer fails to receive all the chunks in the
+        /// specified time period. The default value is 1 minute.
+        /// </summary>
+        public long ExpireTimeOfIncompleteChunkedMessageMillis { get; set; } = TimeUnit.TimeUnit.MINUTES.ToMilliseconds(1);
+
+        /// <summary>
+        /// Whether to automatically acknowledge pending chunked messages when the threshold of
+        /// `maxPendingChunkedMessage` is reached. If set to `false`, these messages will be redelivered
+        /// by their broker.
+        /// </summary>
         public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; }
 
         public bool BatchConsume { get; set; } = false;
@@ -96,6 +181,18 @@ namespace SharpPulsar.Configuration
 
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
 
+        /// <summary>
+        /// Consumer should take action when it receives a message that can not be decrypted.
+        /// * **FAIL**: this is the default option to fail messages until crypto succeeds.
+        /// * **DISCARD**:silently acknowledge and not deliver message to an application.
+        /// * **CONSUME**: deliver encrypted messages to applications. It is the application's
+        /// responsibility to decrypt the message.
+        /// The decompression of message fails.
+        /// If messages contain batch messages, a client is not be able to retrieve individual messages in
+        /// batch.
+        /// Delivered encrypted message contains {@link EncryptionContext} which contains encryption and
+        /// compression information in it using which application can decrypt consumed message payload.
+        /// </summary>
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.FAIL;
 
 		public int PatternAutoDiscoveryPeriod { get; set; } = 30;
@@ -103,6 +200,9 @@ namespace SharpPulsar.Configuration
 	    public SubscriptionMode SubscriptionMode = SubscriptionMode.Durable;
 
         public IDictionary<string, string> SubscriptionProperties;
+
+        public IMessageListenerExecutor MessageListenerExecutor { get; set; }
+
 
         public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 
@@ -118,8 +218,18 @@ namespace SharpPulsar.Configuration
 
         public KeySharedPolicy KeySharedPolicy { get; set; }
 
-
-		public bool ReadCompacted { get; set; }
+        /// <summary>
+        /// If enabling `readCompacted`, a consumer reads messages from a compacted topic rather than reading "
+        /// a full message backlog of a topic.
+        /// A consumer only sees the latest value for each key in the compacted topic, up until reaching
+        /// the point in the topic message when compacting backlog. Beyond that point, send messages as
+        /// normal.
+        /// Only enabling `readCompacted` on subscriptions to persistent topics, which have a single active
+        /// consumer (like failure or exclusive subscriptions).
+        /// Attempting to enable it on subscriptions to non-persistent topics or on shared subscriptions
+        /// leads to a subscription call throwing a `PulsarClientException`.
+        /// </summary>
+		public bool ReadCompacted { get; set; } = false;
 
 		public IDeadLetterPolicy DeadLetterPolicy { get; set; }
 
@@ -131,8 +241,17 @@ namespace SharpPulsar.Configuration
         /// </summary>
 		public Regex TopicsPattern { get; set; }
 
+        /// <summary>
+        /// A name or value property of this consumer.
+        /// `properties` is application defined metadata attached to a consumer.
+        /// When getting a topic stats, associate this metadata with the consumer stats for easier "
+        /// identification.
+        /// </summary>
 		public SortedDictionary<string, string> Properties { get; set; } = new SortedDictionary<string, string>();
 
+        /// <summary>
+        /// Consumer name
+        /// </summary>
 		public string ConsumerName { get; set; }
 
         /// <summary>
