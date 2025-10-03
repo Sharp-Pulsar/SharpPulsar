@@ -1,4 +1,7 @@
 ﻿using Avro;
+using SharpPulsar.API;
+using SharpPulsar.API.Schema;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
@@ -40,7 +43,7 @@ namespace SharpPulsar.Schemas.Generic
 
         public override IGenericRecordBuilder NewRecordBuilder()
         {
-            throw new NotImplementedException();
+            return new AvroRecordBuilder(this);
         }
 
         public override IGenericSchema<IGenericRecord> Generic(ISchemaInfo schemaInfo)

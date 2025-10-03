@@ -19,6 +19,7 @@
 /// </summary>
 namespace SharpPulsar.Schemas.Generic
 {
+    using SharpPulsar.API.Schema;
     using SharpPulsar.Schemas.Reader;
 
     /// <summary>

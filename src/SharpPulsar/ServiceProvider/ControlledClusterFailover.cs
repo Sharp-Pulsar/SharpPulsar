@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Akka.Actor;
+using SharpPulsar.API;
 using SharpPulsar.Builder;
 using SharpPulsar.ServiceProvider.Messages;
 
@@ -50,6 +51,11 @@ namespace SharpPulsar.ServiceProvider
         public void Initialize(PulsarClient pulsarClient)
         {           
             _clusterFailOverActor.Tell(new Initialize(pulsarClient));
+        }
+
+        public void Initialize(IPulsarClient pulsarClient)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

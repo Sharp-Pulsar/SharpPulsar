@@ -1,9 +1,12 @@
 ﻿using Avro;
+using SharpPulsar.API;
+using SharpPulsar.API.Schema;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Field = SharpPulsar.Interfaces.Schema.Field;
+using Field = SharpPulsar.API.Schema.Field;
 
 namespace SharpPulsar.Schemas.Generic
 {
@@ -38,14 +41,6 @@ namespace SharpPulsar.Schemas.Generic
 			_fields = ((RecordSchema)schema).Fields.Select(f => new Field(f.Name, f.Pos)).ToList();
 		}
 
-		public virtual IList<Field> Fields
-		{
-			get
-			{
-				return _fields;
-			}
-		}
-
 		/// <summary>
 		/// Create a generic schema out of a <tt>SchemaInfo</tt>.
 		///  warning : we suggest migrate GenericSchemaImpl.of() to  <GenericSchema Implementor>.of() method (e.g. GenericJsonSchema 、GenericAvroSchema ) </summary>
@@ -68,12 +63,14 @@ namespace SharpPulsar.Schemas.Generic
 			{
 				case "AVRO":
 				case "JSON":
-					return new GenericAvroSchema(schemaInfo);
+					return new GenericAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
 				default:
 					throw new NotSupportedException("Generic schema is not supported on schema type " + schemaInfo.Type + "'");
 			}
 		}
-	}
+        
+        public virtual IList<Field> Fields() => _fields;
+    }
 
 
 }

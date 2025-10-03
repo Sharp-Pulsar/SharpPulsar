@@ -24,6 +24,7 @@ using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Utils;
+using SharpPulsar.API;
 namespace SharpPulsar
 {
     public class PulsarClient : IPulsarClient, IDisposable

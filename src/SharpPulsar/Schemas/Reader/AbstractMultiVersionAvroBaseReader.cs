@@ -1,4 +1,6 @@
-﻿namespace SharpPulsar.Schemas.Reader
+﻿using SharpPulsar.API.Schema;
+
+namespace SharpPulsar.Schemas.Reader
 {
     /// <summary>
     /// The abstract class of multi version avro base reader.

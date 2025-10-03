@@ -2,6 +2,7 @@
 using SharpPulsar.API.Schema;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -149,5 +150,14 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-	}
+        public Assembly ClassLoader()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsJsr310ConversionEnabled()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

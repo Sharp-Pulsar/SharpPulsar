@@ -18,6 +18,8 @@
 /// </summary>
 
 using System;
+using SharpPulsar.API;
+using SharpPulsar.API.Schema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schemas

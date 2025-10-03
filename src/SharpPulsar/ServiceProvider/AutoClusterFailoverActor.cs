@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using SharpPulsar.ServiceProvider.Messages;
 using SharpPulsar.Builder;
 using Akka.Annotations;
+using SharpPulsar.API;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

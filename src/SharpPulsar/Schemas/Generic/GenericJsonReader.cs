@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using SharpPulsar.API.Schema;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
+using SharpPulsar.Shared.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

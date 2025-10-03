@@ -1,4 +1,7 @@
-﻿using SharpPulsar.Shared;
+﻿using SharpPulsar.API.Schema;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Shared;
+using SharpPulsar.Shared.Exceptions;
 using System;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

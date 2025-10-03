@@ -30,7 +30,7 @@ namespace SharpPulsar.API.Schema
         /// Returns the list of fields.
         /// </summary>
         /// <returns> the list of fields of generic record. </returns>
-        IList<Field> Fields { get; }
+        IList<Field> Fields();
 
         /// <summary>
         /// Create a builder to build <seealso cref="IGenericRecord"/>.

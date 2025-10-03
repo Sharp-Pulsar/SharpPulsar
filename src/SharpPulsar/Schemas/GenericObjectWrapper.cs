@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using SharpPulsar.API.Schema;
 using SharpPulsar.Shared;
 
 /// <summary>
@@ -40,7 +41,7 @@ namespace SharpPulsar.Schemas
         private GenericObjectWrapper(object nativeObject, SchemaType schemaType, byte[] schemaVersion)
         {
             _nativeObject = nativeObject;
-            _schemaType = Precondition.Condition.RequireNonNull(schemaType, "SchemaType is required");
+            _schemaType = Common.Precondition.Condition.RequireNonNull(schemaType, "SchemaType is required");
             _schemaVersion = schemaVersion;
         }
 

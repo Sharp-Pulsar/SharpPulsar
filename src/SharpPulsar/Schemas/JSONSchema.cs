@@ -1,4 +1,6 @@
 ﻿using AvroSchemaGenerator;
+using SharpPulsar.API.Schema;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Configuration;
 using SharpPulsar.Schemas.Reader;
 using SharpPulsar.Schemas.Writer;

@@ -1,4 +1,6 @@
 ﻿using NodaTime;
+using SharpPulsar.API.Schema;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -18,8 +18,9 @@
 /// </summary>
 
 using System;
+using SharpPulsar.API.Schema;
 using SharpPulsar.Configuration;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
+using SharpPulsar.Shared.Exceptions;
 
 namespace SharpPulsar.Schemas.Writer
 {

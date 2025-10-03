@@ -39,7 +39,7 @@ namespace SharpPulsar.Schemas
             {
                 if (_reader != null)
                 {
-                    _reader.SchemaInfoProvider = value;
+                    _reader.SetSchemaInfoProvider(value);
                 }
                 _schemaInfoProvider = value;
             }
@@ -122,7 +122,7 @@ namespace SharpPulsar.Schemas
                     if (_reader is AbstractMultiVersionReader<T> abstractMultiVersionReader)
                     {
                         var schemaReader = abstractMultiVersionReader.GetSchemaReader(SchemaVersion);
-                        return schemaReader.NativeSchema;
+                        return schemaReader.GetNativeSchema();
                     }
                     else
                     {

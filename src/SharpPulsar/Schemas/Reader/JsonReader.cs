@@ -2,8 +2,9 @@
 using System.IO;
 using Newtonsoft.Json.Linq;
 using SharpPulsar.Configuration;
-using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 using System.Text.Json;
+using SharpPulsar.API.Schema;
+using SharpPulsar.Shared.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

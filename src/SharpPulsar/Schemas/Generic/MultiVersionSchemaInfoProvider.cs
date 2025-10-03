@@ -7,6 +7,7 @@ using SharpPulsar.Cache;
 using System;
 using System.Threading.Tasks;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.API.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

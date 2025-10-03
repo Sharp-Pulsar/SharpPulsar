@@ -4,6 +4,8 @@ using System;
 using System.IO;
 using System.Runtime.Serialization;
 using SharpPulsar.Cache;
+using SharpPulsar.API.Schema;
+using SharpPulsar.Shared.Exceptions;
 
 namespace SharpPulsar.Schemas.Reader
 {

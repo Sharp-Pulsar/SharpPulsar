@@ -5,8 +5,10 @@ using System.Text.Json;
 using Akka.Actor;
 using Akka.Annotations;
 using Akka.Util.Internal;
+using SharpPulsar.API;
 using SharpPulsar.Auth;
 using SharpPulsar.Builder;
+using SharpPulsar.Protocol.Schema;
 using SharpPulsar.ServiceProvider.Messages;
 
 /// <summary>

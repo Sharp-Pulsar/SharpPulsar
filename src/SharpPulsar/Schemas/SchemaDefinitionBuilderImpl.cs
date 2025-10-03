@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Avro.Generic;
 using SharpPulsar.API.Schema;
 
@@ -127,13 +128,18 @@ namespace SharpPulsar.Schemas
 
 		public  ISchemaDefinition<T> Build()
 		{
-			Precondition.Condition.CheckArgument(!string.IsNullOrWhiteSpace(_jsonDef) || _clazz != null, "Must specify one of the pojo or jsonDef for the schema definition.");
-			Precondition.Condition.CheckArgument(!(!string.IsNullOrWhiteSpace(_jsonDef) && _clazz != null), "Not allowed to set pojo and jsonDef both for the schema definition.");
+            Common.Precondition.Condition.CheckArgument(!string.IsNullOrWhiteSpace(_jsonDef) || _clazz != null, "Must specify one of the pojo or jsonDef for the schema definition.");
+            Common.Precondition.Condition.CheckArgument(!(!string.IsNullOrWhiteSpace(_jsonDef) && _clazz != null), "Not allowed to set pojo and jsonDef both for the schema definition.");
 			_properties[AlwaysAllowNull] = _alwaysAllowNull ? "true" : "false";
 			_properties[Jsr310ConversionEnabled] = _jsr310ConversionEnabled ? "true" : "false";
 			return new SchemaDefinitionImpl<T>(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning, _jsr310ConversionEnabled, _reader, _writer);
 
 		}
-	}
+
+        public ISchemaDefinitionBuilder<T> WithClassLoader(Assembly classLoader)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
 }

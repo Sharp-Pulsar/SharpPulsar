@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using SharpPulsar.API.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

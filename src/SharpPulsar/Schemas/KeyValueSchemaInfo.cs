@@ -133,7 +133,7 @@ namespace SharpPulsar.Schemas
 			}
 
 			// process key/value schema data
-			byte[] schemaData = KeyValue<ISchemaInfo, ISchemaInfo>.Encode(keySchemaInfo, _schemaInfoWriter, valueSchemaInfo, _schemaInfoWriter);
+			byte[] schemaData = KeyValue<ISchemaInfo, ISchemaInfo>.Encode<ISchemaInfo, ISchemaInfo>(keySchemaInfo, _schemaInfoWriter, valueSchemaInfo, _schemaInfoWriter);
 
 			// process key/value schema properties
 			IDictionary<string, string> Properties = new Dictionary<string, string>();
