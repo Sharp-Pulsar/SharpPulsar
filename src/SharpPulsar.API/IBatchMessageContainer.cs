@@ -1,6 +1,4 @@
-﻿using System;
-
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,10 +18,10 @@
 /// </summary>
 namespace SharpPulsar.API
 {
-	/// <summary>
-	/// Batch message container for individual messages being published until they are batched and sent to broker.
-	/// </summary>
-	public interface IBatchMessageContainer
+    /// <summary>
+    /// Batch message container for individual messages being published until they are batched and sent to broker.
+    /// </summary>
+    public interface IBatchMessageContainer
 	{
 
 		/// <summary>

@@ -2,7 +2,6 @@
 using SharpPulsar.API.Schema;
 using SharpPulsar.Common.Precondition;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Messages.Requests;
 using SharpPulsar.Shared;
 using SharpPulsar.Shared.Exceptions;
 using System;

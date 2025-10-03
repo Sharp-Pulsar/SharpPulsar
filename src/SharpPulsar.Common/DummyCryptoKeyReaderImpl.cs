@@ -1,6 +1,4 @@
-﻿
-using System.Collections.Generic;
-using SharpPulsar.API;
+﻿using SharpPulsar.API;
 using SharpPulsar.Shared;
 
 /*

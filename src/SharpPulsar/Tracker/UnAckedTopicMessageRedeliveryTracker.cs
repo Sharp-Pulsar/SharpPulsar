@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
 using SharpPulsar.Tracker.Messages;
 
 /// <summary>

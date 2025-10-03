@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
-using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Consumer;

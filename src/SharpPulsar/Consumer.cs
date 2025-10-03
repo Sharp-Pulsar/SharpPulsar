@@ -2,7 +2,6 @@
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
 using System.Threading;

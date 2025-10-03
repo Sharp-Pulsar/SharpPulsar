@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using SharpPulsar.Batch.Api;
-using SharpPulsar.Common;
 using SharpPulsar.Common.Precondition;
 using System;
-using SharpPulsar.Common.Compression;
 using SharpPulsar.API;
 using static SharpPulsar.Common.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Shared;
-using System.Reflection.Metadata.Ecma335;
 using SharpPulsar.Common.Protocol.Proto;
+using System.Text.Json.Serialization;
+using SharpPulsar.Crypto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -41,7 +39,7 @@ namespace SharpPulsar.Configuration
             AutoUpdatePartitionsIntervalSeconds = interval;
 		}
         public TimeSpan AutoUpdatePartitionsIntervalSeconds { get; set; } = TimeSpan.FromSeconds(60);
-		public IMessageCrypto<MessageMetadata, MessageMetadata> MessageCrypt { get; set; }
+		public MessageCrypto MessageCrypt { get; set; }
 		public IMessageId StartMessageId { get; set; }
 
         /// <summary>
@@ -137,6 +135,8 @@ namespace SharpPulsar.Configuration
         public long TickDurationMillis { get; set; } = 1000;
         public bool AckReceiptEnabled { get; set; } = false;
 		public bool StartPaused { get; set; } = false;
+
+        [JsonIgnore]
         public IMessagePayloadProcessor PayloadProcessor = null;
 
         /// <summary>

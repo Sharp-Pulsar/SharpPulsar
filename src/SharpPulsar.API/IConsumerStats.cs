@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,14 +19,14 @@
 namespace SharpPulsar.API
 {
 
-	/// <summary>
-	/// Consumer statistics recorded by client.
-	/// 
-	/// <para>All the stats are relative to the last recording period. The interval of the stats refreshes is configured with
-	/// <seealso cref="IPulsarClientBuilder.statsInterval(long, java.util.concurrent.TimeUnit)"/> with a default of 1 minute.
-	/// </para>
-	/// </summary>
-	public interface IConsumerStats
+    /// <summary>
+    /// Consumer statistics recorded by client.
+    /// 
+    /// <para>All the stats are relative to the last recording period. The interval of the stats refreshes is configured with
+    /// <seealso cref="IPulsarClientBuilder.statsInterval(long, java.util.concurrent.TimeUnit)"/> with a default of 1 minute.
+    /// </para>
+    /// </summary>
+    public interface IConsumerStats
 	{
 
 		/// <returns> Number of messages received in the last interval </returns>

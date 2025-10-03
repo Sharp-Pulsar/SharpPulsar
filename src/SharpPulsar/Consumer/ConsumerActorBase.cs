@@ -2,13 +2,11 @@
 using Akka.Dispatch;
 using Akka.Util;
 using Akka.Util.Internal;
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
-using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using System;
 using System.Collections.Concurrent;

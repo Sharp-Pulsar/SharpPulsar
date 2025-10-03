@@ -4,7 +4,6 @@ using Akka.Actor;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
-using SharpPulsar.Common;
 using SharpPulsar.Utility;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utils;

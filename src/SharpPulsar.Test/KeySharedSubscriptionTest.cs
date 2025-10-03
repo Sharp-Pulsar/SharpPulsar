@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using Akka.Util.Internal;
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using Xunit;
 using Xunit.Abstractions;

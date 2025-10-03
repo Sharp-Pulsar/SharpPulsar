@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Extension;
-using SharpPulsar.Shared;
+﻿using SharpPulsar.Shared;
 using System;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using System.Buffers;
 using SharpPulsar.Messages.Consumer;
 using Akka.Util.Internal;
-using SharpPulsar.TransactionImpl;
 using SharpPulsar.Client;
 
 /// <summary>

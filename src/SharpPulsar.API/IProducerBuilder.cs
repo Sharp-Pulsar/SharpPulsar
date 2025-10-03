@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using SharpPulsar.API.Interceptor;
+﻿using SharpPulsar.API.Interceptor;
 using SharpPulsar.Shared;
 
 /// <summary>

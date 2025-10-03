@@ -17,11 +17,9 @@
 /// under the License.
 /// </summary>
 /// 
-using SharpPulsar.Common;
-
 namespace SharpPulsar.Test.Api
 {
-    
+
     public class KeySharedPolicyTest
 	{
 		[Fact]

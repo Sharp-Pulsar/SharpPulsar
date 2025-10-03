@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Messages;
 
-using SharpPulsar.Batch.Api;
-using SharpPulsar.Common;
-
 /* Unmerged change from project 'SharpPulsar (net5.0)'
 Before:
 using SharpPulsar.Extension;
@@ -15,9 +12,7 @@ using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.Builder;
 */
-using SharpPulsar.Extension;
 using SharpPulsar.Configuration;
-using SharpPulsar.Common.Compression;
 using SharpPulsar.Crypto;
 using SharpPulsar.Common.Precondition;
 

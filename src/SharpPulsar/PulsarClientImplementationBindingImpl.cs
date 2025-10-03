@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using SharpPulsar.Batch;
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Schemas;
 using System.Text;
 using NodaTime;

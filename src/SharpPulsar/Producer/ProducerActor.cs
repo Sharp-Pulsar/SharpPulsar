@@ -11,7 +11,6 @@ using SharpPulsar.Common.Entity;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
-using SharpPulsar.Extension;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;

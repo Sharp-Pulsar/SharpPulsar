@@ -1,6 +1,4 @@
 ﻿using System.Net;
-using System.Runtime.InteropServices;
-using SharpPulsar.TimeUnit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

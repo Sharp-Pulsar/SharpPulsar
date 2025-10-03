@@ -1,7 +1,4 @@
-﻿
-using System.Collections.Generic;
-using System.Linq;
-using SharpPulsar.Common.Naming;
+﻿using SharpPulsar.Common.Naming;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one

@@ -9,7 +9,6 @@ using Akka.Util;
 using SharpPulsar.Builder;
 using SharpPulsar.Cache;
 using SharpPulsar.Common;
-using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;

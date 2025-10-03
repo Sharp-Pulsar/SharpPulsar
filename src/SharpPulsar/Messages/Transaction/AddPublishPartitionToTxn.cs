@@ -1,5 +1,4 @@
-﻿using SharpPulsar.TransactionImpl;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Transaction

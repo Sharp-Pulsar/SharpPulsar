@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using ProtoBuf;
-using SharpPulsar.Common;
 using SharpPulsar.Producer;
 
 /// <summary>

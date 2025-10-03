@@ -1,6 +1,4 @@
-﻿using SharpPulsar.TransactionImpl;
-
-namespace SharpPulsar.Messages.Transaction
+﻿namespace SharpPulsar.Messages.Transaction
 {
     public readonly record struct AbortTxnID
     {

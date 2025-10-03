@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Dispatch;
-using SharpPulsar.Common;
 
 namespace SharpPulsar.Extension
 {

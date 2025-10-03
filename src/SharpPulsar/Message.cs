@@ -31,7 +31,6 @@ namespace SharpPulsar
     using Akka.Util;
     using Shared;
     using Schemas;
-    using Extension;
     using System.Buffers;
 
     public sealed class Message<T> : IMessage<T>

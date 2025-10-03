@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Enum
+namespace SharpPulsar.Shared
 {
 	/// <summary>
 	/// The compression type that can be specified on a <seealso cref="Producer"/>.

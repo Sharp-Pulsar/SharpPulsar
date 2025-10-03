@@ -1,7 +1,4 @@
-﻿
-
-using Akka.Event;
-using SharpPulsar.API.Internal;
+﻿using SharpPulsar.API.Internal;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Util.Internal;
 using SharpPulsar.Batch;
-using SharpPulsar.Common;
-using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Precondition;
 using Range = SharpPulsar.Common.Range;

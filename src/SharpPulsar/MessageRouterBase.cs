@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common.Compression;
-using System;
+﻿using System;
 
 namespace SharpPulsar
 {

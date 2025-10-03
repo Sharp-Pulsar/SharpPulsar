@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Routing;
 using Akka.Util.Internal;
-using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;

@@ -1,6 +1,4 @@
-﻿
-using System.Collections.Generic;
-using SharpPulsar.API.Transaction;
+﻿using SharpPulsar.API.Transaction;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one

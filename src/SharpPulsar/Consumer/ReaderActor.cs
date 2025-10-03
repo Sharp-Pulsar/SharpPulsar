@@ -1,6 +1,4 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Batch.Api;
-using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Consumer;

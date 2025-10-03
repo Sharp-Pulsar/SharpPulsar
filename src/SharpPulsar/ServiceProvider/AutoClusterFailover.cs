@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Builder;
-using SharpPulsar.Common;
 using SharpPulsar.ServiceProvider.Messages;
 
 namespace SharpPulsar.ServiceProvider

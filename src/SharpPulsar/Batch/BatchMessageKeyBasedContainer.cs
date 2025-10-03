@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using DotNetty.Common.Utilities;
 using ProtoBuf;
-using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Producer;
 

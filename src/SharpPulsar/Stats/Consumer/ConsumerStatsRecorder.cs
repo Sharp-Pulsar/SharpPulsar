@@ -5,7 +5,6 @@ using System.Text.Json;
 using Akka.Actor;
 using App.Metrics.Concurrency;
 using SharpPulsar.Configuration;
-using SharpPulsar.Stats.Consumer.Api;
 using System.Collections.Generic;
 
 /// <summary>

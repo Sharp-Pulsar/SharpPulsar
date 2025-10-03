@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Util.Internal;
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
@@ -12,7 +11,6 @@ using SharpPulsar.Common.Precondition;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Stats.Consumer;
-using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker.Messages;
 using System;
 using System.Collections.Concurrent;

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using SharpPulsar.Stats.Consumer.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
