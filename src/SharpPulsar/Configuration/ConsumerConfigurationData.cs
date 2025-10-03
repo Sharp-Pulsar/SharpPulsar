@@ -38,9 +38,9 @@ namespace SharpPulsar.Configuration
 		public void SetAutoUpdatePartitionsInterval(TimeSpan interval)
 		{
 			Condition.CheckArgument(interval.TotalMilliseconds > 0, "interval needs to be > 0");
-            AutoUpdatePartitionsInterval = interval;
+            AutoUpdatePartitionsIntervalSeconds = interval;
 		}
-        public TimeSpan AutoUpdatePartitionsInterval { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan AutoUpdatePartitionsIntervalSeconds { get; set; } = TimeSpan.FromSeconds(60);
 		public IMessageCrypto<MessageMetadata, MessageMetadata> MessageCrypt { get; set; }
 		public IMessageId StartMessageId { get; set; }
 
@@ -137,8 +137,6 @@ namespace SharpPulsar.Configuration
         public long TickDurationMillis { get; set; } = 1000;
         public bool AckReceiptEnabled { get; set; } = false;
 		public bool StartPaused { get; set; } = false;
-
-        [NonSerialized]
         public IMessagePayloadProcessor PayloadProcessor = null;
 
         /// <summary>
@@ -176,7 +174,7 @@ namespace SharpPulsar.Configuration
         public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; }
 
         public bool BatchConsume { get; set; } = false;
-        public bool BatchIndexAckEnabled { get; set; } = false;
+        public bool BatchIndexAckEnabled { get; set; } = true;
 		public TimeSpan BatchConsumeTimeout { get; set; } = TimeSpan.FromMilliseconds(30_000); //30 seconds
 
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
@@ -195,7 +193,11 @@ namespace SharpPulsar.Configuration
         /// </summary>
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.FAIL;
 
-		public int PatternAutoDiscoveryPeriod { get; set; } = 30;
+        /// <summary>
+        /// Topic auto discovery period when using a pattern for topic's consumer.
+        /// The default value is 1 minute, with a minimum of 1 second
+        /// </summary>
+		public int PatternAutoDiscoveryPeriod { get; set; } = 60;
 
 	    public SubscriptionMode SubscriptionMode = SubscriptionMode.Durable;
 
@@ -203,14 +205,28 @@ namespace SharpPulsar.Configuration
 
         public IMessageListenerExecutor MessageListenerExecutor { get; set; }
 
-
+        /// <summary>
+        /// When subscribing to a topic using a regular expression, you can pick a certain type of topics.
+        /// * **PersistentOnly**: only subscribe to persistent topics.
+        /// * **NonPersistentOnly**: only subscribe to non-persistent topics.
+        /// * **AllTopics**: subscribe to both persistent and non-persistent topics.
+        /// </summary>
         public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 
 
         public BatchReceivePolicy BatchReceivePolicy { get; set; } 
 
+        /// <summary>
+        /// If `autoUpdatePartitions` is enabled, a consumer subscribes to partition increasement
+        /// automatically.
+        /// **Note**: this is only for partitioned consumers.
+        /// </summary>
 		public bool AutoUpdatePartitions { get; set; } = true;
 
+        /// <summary>
+        /// If `replicateSubscriptionState` is enabled, a subscription state is replicated to geo-replicated
+        /// clusters.
+        /// </summary>
 		public bool ReplicateSubscriptionState { get; set; } = false;
 		public bool RetryEnable { get; set; } = false;
 
@@ -231,8 +247,34 @@ namespace SharpPulsar.Configuration
         /// </summary>
 		public bool ReadCompacted { get; set; } = false;
 
+        /// <summary>
+        /// Dead letter policy for consumers.
+        /// By default, some messages are probably redelivered many times, even to the extent that it
+        /// never stops.
+        /// By using the dead letter mechanism, messages have the max redelivery count. **When exceeding the
+        /// maximum number of redeliveries, messages are sent to the Dead Letter Topic and acknowledged
+        /// automatically**.
+        /// You can enable the dead letter mechanism by setting `deadLetterPolicy`.
+        /// **Example**
+        /// "```java
+        /// client.newConsumer()
+        /// .deadLetterPolicy(DeadLetterPolicy.builder().maxRedeliverCount(10).build())
+        /// .subscribe();
+        /// Default dead letter topic name is `{TopicName}-{Subscription}-DLQ`.
+        /// To set a custom dead letter topic name:
+        /// ```java
+        /// client.newConsumer()
+        /// .deadLetterPolicy(DeadLetterPolicy.builder().maxRedeliverCount(10)
+        /// .deadLetterTopic(\"your-topic-name\").build())
+        /// .subscribe();
+        /// When specifying the dead letter policy while not specifying `ackTimeoutMillis`, you can set the
+        /// ack timeout to 30000 millisecond.
+        /// </summary>
 		public IDeadLetterPolicy DeadLetterPolicy { get; set; }
 
+        /// <summary>
+        /// Initial position at which to set cursor when subscribing to a topic at first time.
+        /// </summary>
         public SubscriptionInitialPosition SubscriptionInitialPosition { get; set; } =
             SubscriptionInitialPosition.Earliest;
 
