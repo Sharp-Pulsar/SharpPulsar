@@ -15,6 +15,9 @@ using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Common.Precondition;
+using SharpPulsar.API;
+using SharpPulsar.Shared;
+using SharpPulsar.API.Interceptor;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -84,7 +87,7 @@ namespace SharpPulsar.Builder
             _conf.ProducerName = producerName;
             return this;
         }
-        public ProducerConfigBuilder<T> AccessMode(Common.ProducerAccessMode accessMode)
+        public ProducerConfigBuilder<T> AccessMode(ProducerAccessMode accessMode)
         {
             _conf.AccessMode = accessMode;
             return this;

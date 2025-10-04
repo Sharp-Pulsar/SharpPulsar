@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Akka.Actor;
+using SharpPulsar.API;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Shared;
+using SharpPulsar.Shared.Exceptions;
 using SharpPulsar.Table.Messages;
 
 /// <summary>

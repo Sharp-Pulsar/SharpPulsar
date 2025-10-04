@@ -25,10 +25,30 @@ using SharpPulsar.Table;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Utils;
 using SharpPulsar.API;
+using SharpPulsar.API.Schema;
+using SharpPulsar.API.Interceptor;
+using SharpPulsar.Shared.Exceptions;
+
 namespace SharpPulsar
 {
     public class PulsarClient : IPulsarClient, IDisposable
     {
+        private const int CLOSE_TIMEOUT_SECONDS = 60;
+        private const double THRESHOLD_FOR_CONSUMER_RECEIVER_QUEUE_SIZE_SHRINKING = 0.95;
+
+        // default limits for producers when memory limit controller is disabled
+        private const int NO_MEMORY_LIMIT_DEFAULT_MAX_PENDING_MESSAGES = 1000;
+        private const int NO_MEMORY_LIMIT_DEFAULT_MAX_PENDING_MESSAGES_ACROSS_PARTITIONS = 50000;
+
+        protected internal readonly ClientConfigurationData conf;
+        private readonly bool createdExecutorProviders;
+
+        private readonly bool createdScheduledProviders;
+        private readonly bool createdLookupProviders;
+
+        internal IActorRef CnxPool { get { return _cnxPool; } }
+        private IActorRef _lookup;
+
         private readonly IActorRef _client;
         internal IActorRef Client { get { return _client; } }
         private  IActorRef _transactionCoordinatorClient;
@@ -37,8 +57,7 @@ namespace SharpPulsar
         private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
         private readonly ILoggingAdapter _log;
         private readonly IActorRef _cnxPool;
-        internal IActorRef CnxPool { get { return _cnxPool; } }
-        private IActorRef _lookup;
+        
         internal IActorRef Lookup { get { return _lookup; } }
         private readonly IActorRef _generator;
         internal IActorRef Generator { get { return _generator; } }
@@ -417,6 +436,22 @@ namespace SharpPulsar
         /// </summary> 
         /// <param name="producerConfigBuilder"></param>
         /// <returns> <seealso cref="Producer{byte[]}"/> instance @since 2.0.0 </returns>
+        public IProducerBuilder<byte[]> NewProducer()
+        {
+            return new IProducerBuilder<byte[]>(this, ISchema.BYTES);
+        }
+
+        public IProducerBuilder<T> NewProducer<T>(ISchema<T> schema)
+        {
+            ProducerBuilder<T> producerBuilder = new ProducerBuilderImpl<T>(this, schema);
+            if (!memoryLimitController.isMemoryLimited())
+            {
+                // set default limits for producers when memory limit controller is disabled
+                producerBuilder.maxPendingMessages(NO_MEMORY_LIMIT_DEFAULT_MAX_PENDING_MESSAGES);
+                producerBuilder.maxPendingMessagesAcrossPartitions(NO_MEMORY_LIMIT_DEFAULT_MAX_PENDING_MESSAGES_ACROSS_PARTITIONS);
+            }
+            return producerBuilder;
+        }
 
         public Producer<byte[]> NewProducer(ProducerConfigBuilder<byte[]> producerConfigBuilder)
         {
@@ -505,6 +540,159 @@ namespace SharpPulsar
         public ITableViewBuilder<T> NewTableView<T>(ISchema<T> schema)
         {
             return new TableViewBuilder<T>(this, schema);
+        }
+        public virtual ValueTask<IProducer<byte[]>> CreateProducerAsync(ProducerConfigurationData conf)
+        {
+            return CreateProducerAsync(conf, ISchema<byte>.Bytes, null);
+        }
+
+        public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, ISchema<T> schema)
+        {
+            return CreateProducerAsync(conf, schema, null);
+        }
+        public virtual ValueTask<IProducer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
+        {
+            if (conf == null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Producer configuration undefined");
+            }
+
+            if (schema is AutoConsumeSchema)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically");
+            }
+
+            if (state.get() != State.Open)
+            {
+                throw new PulsarClientException.AlreadyClosedException("Client already closed : state = " + state.get());
+            }
+
+            string topic = conf.TopicName;
+
+            if (!TopicName.IsValid(topic))
+            {
+                throw new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'");
+            }
+
+            if (schema is AutoProduceBytesSchema<T>)
+            {
+                var autoProduceBytesSchema = (AutoProduceBytesSchema<T>)schema;
+                if (autoProduceBytesSchema.SchemaInitialized())
+                {
+                    return CreateProducerAsync(topic, conf, schema, interceptors);
+                }
+                return lookup.getSchema(TopicName.get(conf.getTopicName())).thenCompose(schemaInfoOptional =>
+                {
+                    if (schemaInfoOptional.isPresent())
+                    {
+                        SchemaInfo schemaInfo = schemaInfoOptional.get();
+                        if (schemaInfo.getType() == SchemaType.PROTOBUF)
+                        {
+                            autoProduceBytesSchema.setSchema(new GenericAvroSchema(schemaInfo));
+                        }
+                        else
+                        {
+                            autoProduceBytesSchema.setSchema(Schema.getSchema(schemaInfo));
+                        }
+                    }
+                    else
+                    {
+                        autoProduceBytesSchema.setSchema(Schema.BYTES);
+                    }
+                    return createProducerAsync(topic, conf, schema, interceptors);
+                });
+            }
+            else
+            {
+                return CreateProducerAsync(topic, conf, schema, interceptors);
+            }
+
+        }
+        private ValueTask<int> CheckPartitions(string topic, bool forceNoPartitioned, string producerNameForLog)
+        {
+            CompletableFuture<int> checkPartitions = new CompletableFuture<int>();
+            getPartitionedTopicMetadata(topic, !forceNoPartitioned, true).thenAccept(metadata =>
+            {
+                if (forceNoPartitioned && metadata.partitions > 0)
+                {
+                    string errorMsg = string.Format("Can not create the producer[{0}] for the topic[{1}] that contains {2}" + " partitions b,ut the producer does not support for a partitioned topic.", producerNameForLog, topic, metadata.partitions);
+                    log.error(errorMsg);
+                    checkPartitions.completeExceptionally(new PulsarClientException.NotConnectedException(errorMsg));
+                }
+                else
+                {
+                    checkPartitions.complete(metadata.partitions);
+                }
+            }).exceptionally(ex =>
+            {
+                Exception actEx = FutureUtil.unwrapCompletionException(ex);
+                if (forceNoPartitioned && (actEx is PulsarClientException.NotFoundException || actEx is PulsarClientException.TopicDoesNotExistException || actEx is PulsarAdminException.NotFoundException))
+                {
+                    checkPartitions.complete(0);
+                }
+                else
+                {
+                    checkPartitions.completeExceptionally(ex);
+                }
+                return null;
+            });
+            return checkPartitions;
+        }
+
+        private ValueTask<IProducer<T>> CreateProducerAsync<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
+        {
+            CompletableFuture<Producer<T>> producerCreatedFuture = new CompletableFuture<Producer<T>>();
+
+
+
+            checkPartitions(topic, conf.isNonPartitionedTopicExpected(), conf.getProducerName()).thenAccept(partitions =>
+            {
+                if (log.isDebugEnabled())
+                {
+                    log.debug("[{}] Received topic metadata. partitions: {}", topic, partitions);
+                }
+
+                ProducerBase<T> producer;
+                if (partitions > 0)
+                {
+                    producer = newPartitionedProducerImpl(topic, conf, schema, interceptors, producerCreatedFuture, partitions);
+                }
+                else
+                {
+                    producer = newProducerImpl(topic, -1, conf, schema, interceptors, producerCreatedFuture, null);
+                }
+                producers.add(producer);
+            }).exceptionally(ex =>
+            {
+                log.warn("[{}] Failed to get partitioned topic metadata: {}", topic, ex.getMessage());
+                producerCreatedFuture.completeExceptionally(ex);
+                return null;
+            });
+
+            return producerCreatedFuture;
+        }
+
+        /// <summary>
+        /// Factory method for creating ProducerImpl instance.
+        /// 
+        /// Allows overriding the ProducerImpl instance in tests.
+        /// </summary>
+        /// <param name="topic"> topic name </param>
+        /// <param name="partitionIndex"> partition index of a partitioned topic. the value -1 is used for non-partitioned topics. </param>
+        /// <param name="conf"> producer configuration </param>
+        /// <param name="schema"> topic schema </param>
+        /// <param name="interceptors"> producer interceptors </param>
+        /// <param name="producerCreatedFuture"> future for signaling completion of async producer creation </param>
+        /// @param <T> message type class
+        /// </param>
+        /// <returns> a producer instance </returns>
+        protected internal virtual Producer<T> NewProducer<T>(string topic, int partitionIndex, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, TaskCompletionSource<IProducer<T>> producerCreatedFuture, Option<string> overrideProducerName)
+        {
+            if (conf.IsReplProducer)
+            {
+                return new GeoReplicationProducer(this, topic, conf, producerCreatedFuture, partitionIndex, schema, interceptors, overrideProducerName);
+            }
+            return new Producer<T>(this, topic, conf, producerCreatedFuture, partitionIndex, schema, interceptors, overrideProducerName);
         }
 
         public async ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)
@@ -655,7 +843,7 @@ namespace SharpPulsar
             return await CreateProducer(conf, schema, null).ConfigureAwait(false);
         }
 
-        private async ValueTask<object> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
+        private async ValueTask<object> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema, IProducerInterceptors<T> interceptors)
         {
             if (conf == null)
             {
@@ -740,7 +928,7 @@ namespace SharpPulsar
             return checkPartitions;
         }
 
-        private async ValueTask<object> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
+        private async ValueTask<object> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, IProducerInterceptors<T> interceptors)
         {
             var check = CheckPartitions(topic, false,  conf.ProducerName);
             var task = check.Task;

@@ -62,7 +62,7 @@ namespace SharpPulsar.Producer
         private string _overrideProducerName;
         internal TopicsPartitionChangedListener _topicsPartitionChangedListener;
 
-        public PartitionedProducerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture, TaskCompletionSource<ConcurrentDictionary<int, IActorRef>> producer) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
+        public PartitionedProducerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, IProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture, TaskCompletionSource<ConcurrentDictionary<int, IActorRef>> producer) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
         {
             _producer = new ConcurrentDictionary<int, IActorRef>();
             _cnxPool = cnxPool;
@@ -137,7 +137,7 @@ namespace SharpPulsar.Producer
             ReceiveAny(any => _router.Forward(any));
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await Start());
         }
-        public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture, TaskCompletionSource<ConcurrentDictionary<int, IActorRef>> producer)
+        public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, IProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture, TaskCompletionSource<ConcurrentDictionary<int, IActorRef>> producer)
         {
             return Props.Create(() => new PartitionedProducerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, producerCreatedFuture, producer));
         }

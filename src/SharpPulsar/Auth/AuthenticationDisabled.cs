@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DotNetty.Common.Utilities;
 using SharpPulsar.API;
 
 /// <summary>
@@ -27,8 +28,8 @@ namespace SharpPulsar.Auth
     public class AuthenticationDisabled : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
-		protected internal readonly IAuthenticationDataProvider nullData = new AuthenticationDataNull();
-
+		protected internal readonly IAuthenticationDataProvider NullData = new AuthenticationDataNull();
+        public static AuthenticationDisabled INSTANCE = new AuthenticationDisabled();
         public AuthenticationDisabled()
 		{
 		}
@@ -37,7 +38,7 @@ namespace SharpPulsar.Auth
 
         public IAuthenticationDataProvider GetAuthData()
         {
-            return nullData;
+            return NullData;
         }
 
         public void Configure(string encodedAuthParamString)

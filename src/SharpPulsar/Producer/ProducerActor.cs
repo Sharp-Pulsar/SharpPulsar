@@ -167,7 +167,7 @@ namespace SharpPulsar.Producer
         // batchFlushTask before the batchingMaxPublishDelayMicros duration has passed.
         private long _lastBatchSendNanoTime;
 
-        public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, Option<string> overrideProducerName) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
+        public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, IProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, Option<string> overrideProducerName) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
         {
             Self.Path.WithUid(producerid);
             if (!InstanceFieldsInitialized)
@@ -313,7 +313,7 @@ namespace SharpPulsar.Producer
             GrabCnx();
 
         }
-        public static Props Prop(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, Option<string> overrideProducerName)
+        public static Props Prop(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, IProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, Option<string> overrideProducerName)
         {
             return Props.Create(() => new ProducerActor<T>(producerid, client, lookup, cnxPool, idGenerator, topic, conf, producerCreatedFuture, partitionIndex, schema, interceptors, clientConfiguration, overrideProducerName));
         }

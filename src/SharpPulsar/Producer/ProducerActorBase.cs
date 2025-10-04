@@ -36,7 +36,7 @@ namespace SharpPulsar.Producer
 
         protected internal readonly ProducerConfigurationData Conf;
         protected internal readonly ISchema<T> Schema;
-        protected internal readonly ProducerInterceptors<T> Interceptors;
+        protected internal readonly IProducerInterceptors<T> Interceptors;
         protected internal readonly Dictionary<SchemaHash, byte[]> SchemaCache;
         protected internal MultiSchemaMode _multiSchemaMode = MultiSchemaMode.Auto;
         protected internal IActorRef Client;
@@ -46,7 +46,7 @@ namespace SharpPulsar.Producer
         protected internal IActorRef HandlerstateActor;
         protected internal TaskCompletionSource<IActorRef> ProducerCreatedFuture;
 
-        protected ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
+        protected ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, ISchema<T> schema, IProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
         {
             ProducerCreatedFuture = producerCreatedFuture;
             ClientConfiguration = configurationData;

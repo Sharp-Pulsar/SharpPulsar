@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Builder;
+﻿using SharpPulsar.API;
+using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Shared;

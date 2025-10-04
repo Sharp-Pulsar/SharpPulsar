@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using SharpPulsar.API;
 using System.Net;
+using System.Xml.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -159,7 +160,7 @@ namespace SharpPulsar.Configuration
         /// <summary>
         /// Interval to print client stats (in seconds)
         /// </summary>
-		public TimeSpan StatsIntervalSeconds { get; set; } = TimeSpan.FromSeconds(60);
+		public long StatsIntervalSeconds { get; set; } = TimeUnit.TimeUnit.SECONDS.ToSeconds(60);
 
         /// <summary>
         /// "Number of connections established between the client and each Broker. A value of 0 means to disable connection pooling.
@@ -346,6 +347,17 @@ namespace SharpPulsar.Configuration
         /// </summary>
         public IList<DnsEndPoint> DnsServerAddresses = new List<DnsEndPoint>();
 
+        public string Description { get; set; }
+
+        public string description;
+
+        public IDictionary<string, string> LookupProperties {  get; set; } 
+
+        public OpenTelemetry OpenTelemetry { get; set; }
+        /// <summary>
+        /// Seconds of keeping alive interval for each client broker connection.
+        /// </summary>
+        public int KeepAliveIntervalSeconds { get; set; } = 30;
     }
 
 }

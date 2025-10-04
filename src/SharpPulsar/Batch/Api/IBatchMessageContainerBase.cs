@@ -80,6 +80,18 @@ namespace SharpPulsar.Batch.Api
         /// <param name="msg"> added message </param>
         /// <returns> belong to the same txn or not </returns>
         bool HasSameTxn(Message<T> msg);
+
+        /// <summary>
+        /// Get the timestamp in nanoseconds when the 1st message is added into the batch container.
+        /// </summary>
+        /// <returns> the timestamp in nanoseconds or 0L if the batch container is empty </returns>
+        long GetFirstAddedTimestamp();
+
+        /// <summary>
+        /// Clear the container's payload if build <seealso cref="OpSendMsg"/> failed.
+        /// </summary>
+        void ResetPayloadAfterFailedPublishing();
+
     }
 
 }

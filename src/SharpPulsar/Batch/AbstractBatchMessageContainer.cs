@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
+using SharpPulsar.API;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.Common.Protocol.Proto;
 using SharpPulsar.Producer;
+using SharpPulsar.Protocol.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -49,15 +52,21 @@ namespace SharpPulsar.Batch
 		protected internal long CurrentTxnidLeastBits = -1L;
 
 		private const int InitialBatchBufferSize = 1024;
+        private const int INITIAL_MESSAGES_NUM = 32;
 
-		// This will be the largest Size for a batch sent from this particular producer. This is used as a baseline to
-		// allocate a new buffer that can hold the entire batch without needing costly reallocations
-		private readonly int _maxBatchSize = InitialBatchBufferSize;
+        // This will be the largest Size for a batch sent from this particular producer. This is used as a baseline to
+        // allocate a new buffer that can hold the entire batch without needing costly reallocations
+        private readonly int _maxBatchSize = InitialBatchBufferSize;
+        protected internal int maxMessagesNum = INITIAL_MESSAGES_NUM;
+        private long _firstAddedTimestamp = 0L;
 
-		public virtual bool HaveEnoughSpace(Message<T> msg)
+
+        public virtual bool HaveEnoughSpace(Message<T> msg)
 		{
 			var messageSize = msg.Data.Length;
-			return ((_maxBytesInBatch <= 0 && (messageSize + _currentBatchSizeBytes) <= _producerContainer.MaxMessageSize) || (_maxBytesInBatch > 0 && (messageSize + _currentBatchSizeBytes) <= _maxBytesInBatch)) && (_maxNumMessagesInBatch <= 0 || _numMessagesInBatch < _maxNumMessagesInBatch);
+			return ((_maxBytesInBatch <= 0 && (messageSize + _currentBatchSizeBytes) 
+                <= MaxMessageSize) || (_maxBytesInBatch > 0 && (messageSize + _currentBatchSizeBytes) 
+                <= _maxBytesInBatch)) && (_maxNumMessagesInBatch <= 0 || _numMessagesInBatch < _maxNumMessagesInBatch);
 		}
 
         public virtual bool BatchFull 
@@ -83,7 +92,29 @@ namespace SharpPulsar.Batch
                 //return (inbatch && current) || (_maxBytesInBatch <= 0 && _currentBatchSizeBytes >= _producerContainer.MaxMessageSize) || (_maxNumMessagesInBatch > 0 && _numMessagesInBatch >= _maxNumMessagesInBatch);
 
             }
-        } 
+        }
+        public override bool haveEnoughSpace<T1>(MessageImpl<T1> msg)
+        {
+            int messageSize = msg.getDataBuffer().readableBytes();
+            return ((maxBytesInBatch <= 0 && (messageSize + currentBatchSizeBytes) <= MaxMessageSize) || (maxBytesInBatch > 0 && (messageSize + currentBatchSizeBytes) <= maxBytesInBatch)) && (maxNumMessagesInBatch <= 0 || numMessagesInBatch < maxNumMessagesInBatch);
+        }
+        protected internal virtual int MaxMessageSize
+        {
+            get
+            {
+                return producer != null && producer.getConnectionHandler() != null ? producer.getConnectionHandler().getMaxMessageSize() : Commands.DEFAULT_MAX_MESSAGE_SIZE;
+            }
+        }
+        protected internal virtual bool BatchFull
+        {
+            get
+            {
+                return (maxBytesInBatch > 0 && currentBatchSizeBytes >= maxBytesInBatch) || (maxBytesInBatch <= 0 && currentBatchSizeBytes >= MaxMessageSize) || (maxNumMessagesInBatch > 0 && numMessagesInBatch >= maxNumMessagesInBatch);
+            }
+        }
+        
+
+
 
         public virtual int NumMessagesInBatch
         {
@@ -154,6 +185,8 @@ namespace SharpPulsar.Batch
 
         }
         public virtual IActorRef Producer { get; set; }
+
+        public int BatchAllocatedSizeBytes => throw new NotImplementedException();
     }
 
 }
