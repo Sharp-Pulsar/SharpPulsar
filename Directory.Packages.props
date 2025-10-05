@@ -5,6 +5,7 @@
   <!-- App dependencies -->
   <ItemGroup>
     <PackageVersion Include="Akka" Version="1.5.50" />
+    <PackageVersion Include="Akka.Hosting" Version="1.5.51.1" />
     <PackageVersion Include="Akka.Logger.Serilog" Version="$(AkkaLoggerSerilogVersion)" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
