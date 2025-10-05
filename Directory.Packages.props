@@ -4,7 +4,7 @@
   </PropertyGroup>
   <!-- App dependencies -->
   <ItemGroup>
-    <PackageVersion Include="Akka" Version="1.5.50" />
+    <PackageVersion Include="Akka" Version="1.5.51" />
     <PackageVersion Include="Akka.Hosting" Version="1.5.51.1" />
     <PackageVersion Include="Akka.Logger.Serilog" Version="$(AkkaLoggerSerilogVersion)" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
@@ -26,7 +26,7 @@
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="Nito.AsyncEx" Version="$(NitoAsyncExVersion)" />
     <PackageVersion Include="NodaTime" Version="3.2.2" />
-    <PackageVersion Include="NSwag.ApiDescription.Client" Version="14.6.0" />
+    <PackageVersion Include="NSwag.ApiDescription.Client" Version="14.6.1" />
     <PackageVersion Include="Portable.BouncyCastle" Version="$(PortableBouncyCastleVersion)" />
     <PackageVersion Include="Pro.NBench.xUnit" Version="$(ProNBenchxUnitVersion)" />
     <PackageVersion Include="Microsoft.CSharp" Version="$(MicrosoftCSharpVersion)" />
@@ -36,7 +36,7 @@
     <PackageVersion Include="System.Diagnostics.Contracts" Version="$(SystemDiagnosticsContractsVersion)" />
     <PackageVersion Include="System.IO.Pipelines" Version="9.0.9" />
     <PackageVersion Include="System.Net.NetworkInformation" Version="$(SystemNetNetworkInformationVersion)" />
-    <PackageVersion Include="System.Reactive" Version="6.0.2" />
+    <PackageVersion Include="System.Reactive" Version="6.1.0" />
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
     <PackageVersion Include="System.Runtime.Serialization.Primitives" Version="$(SystemRuntimeSerializationPrimitivesVersion)" />
     <PackageVersion Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
@@ -49,22 +49,22 @@
     <PackageVersion Include="Spectre.Console" Version="0.51.1" />
     <PackageVersion Include="JetBrains.Annotations" Version="2023.3.0" />
     <PackageVersion Include="protobuf-net.BuildTools" Version="3.2.52" />
-    <PackageVersion Include="Akka.TestKit.Xunit2" Version="1.5.50" />
+    <PackageVersion Include="Akka.TestKit.Xunit2" Version="1.5.51" />
     <PackageVersion Include="Castle.Core" Version="5.2.1" />
-    <PackageVersion Include="FluentAssertions" Version="8.6.0" />
+    <PackageVersion Include="FluentAssertions" Version="8.7.1" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="2.4.1" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageVersion Include="OpenTelemetry" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.12.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
+    <PackageVersion Include="OpenTelemetry" Version="1.13.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.13.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.13.0" />
     <PackageVersion Include="System.Security.Permissions" Version="9.0.9" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.assert" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Ductus.FluentDocker" Version="2.85.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
-    <PackageVersion Include="polly" Version="8.6.3" />
+    <PackageVersion Include="polly" Version="8.6.4" />
     <PackageVersion Include="SharpCompress" Version="0.40.0" />
     <PackageVersion Include="Microsoft.Azure.Management.AppService.Fluent" Version="1.38.1" />
     <PackageVersion Include="Nuke.Common" Version="9.0.4" />
@@ -73,7 +73,7 @@
     <PackageVersion Include="xunit.runner.console" Version="2.9.3" />
     <PackageVersion Include="Microsoft.DocAsCode.App" Version="$(DocfxVersion)" />
     <PackageVersion Include="Testcontainers.Pulsar" Version="4.7.0" />
-    <PackageVersion Include="OpenTelemetry.Api" Version="1.12.0" />
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.13.0" />
   </ItemGroup>
   <!-- Test dependencies -->
   <ItemGroup>
