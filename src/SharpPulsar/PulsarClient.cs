@@ -12,13 +12,11 @@ using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
-using SharpPulsar.Consumer;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Common.Precondition;
-using SharpPulsar.Producer;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Table;
@@ -28,6 +26,10 @@ using SharpPulsar.API;
 using SharpPulsar.API.Schema;
 using SharpPulsar.API.Interceptor;
 using SharpPulsar.Shared.Exceptions;
+using SharpPulsar.Shared;
+using static SharpPulsar.Common.Protocol.Proto.CommandGetTopicsOfNamespace;
+using SharpPulsar.Internal.Consumer;
+using SharpPulsar.Internal.Producer;
 
 namespace SharpPulsar
 {
@@ -131,20 +133,20 @@ namespace SharpPulsar
             }
             return schema;
         }
-        public Consumer<byte[]> NewConsumer(ConsumerConfigBuilder<byte[]> conf)
+        public Consumer<byte[]> NewConsumer(ConsumerBuilder<byte[]> conf)
         {
             return NewConsumerAsync(ISchema<byte[]>.Bytes, conf).GetAwaiter().GetResult();
         }
-        public async ValueTask<Consumer<byte[]>> NewConsumerAsync(ConsumerConfigBuilder<byte[]> conf)
+        public async ValueTask<Consumer<byte[]>> NewConsumerAsync(ConsumerBuilder<byte[]> conf)
         {
             return await NewConsumerAsync(ISchema<byte[]>.Bytes, conf).ConfigureAwait(false);
         }
-        public Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> confBuilder)
+        public Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerBuilder<T> confBuilder)
         {
             return NewConsumerAsync(schema, confBuilder).GetAwaiter().GetResult();
         }
 
-        public async ValueTask<Consumer<T>> NewConsumerAsync<T>(ISchema<T> schema, ConsumerConfigBuilder<T> confBuilder)
+        public async ValueTask<Consumer<T>> NewConsumerAsync<T>(ISchema<T> schema, ConsumerBuilder<T> confBuilder)
         {
             var conf = confBuilder.ConsumerConfigurationData;
             // DLQ only supports non-ordered subscriptions, don't enable DLQ on Key_Shared subType since it require message ordering for given key.

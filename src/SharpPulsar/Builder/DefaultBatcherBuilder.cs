@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.API;
+using SharpPulsar.Batch;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,19 +19,22 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-namespace SharpPulsar.Table
+namespace SharpPulsar.Builder
 {
+    public class DefaultBatcherBuilder : IBatcherBuilder
+    {
+        private readonly ILoggingAdapter _log;
 
-    [Serializable]
-	public class TableViewConfigurationData
-	{
-		public string TopicName { get; set; } = null;
-		public TimeSpan AutoUpdatePartitionsSeconds { get; set; } = TimeSpan.FromSeconds(60);
-        public ICryptoKeyReader CryptoKeyReader { get; set; }
-        public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
-        public string SubscriptionName { get; set; } = string.Empty;
-        public string TopicCompactionStrategyClassName { get; set; } = null;
+        public DefaultBatcherBuilder(ILoggingAdapter log)
+        {
+            _log = log;
+        }
+
+        public IBatchMessageContainer Build<T>()
+        {
+            return new BatchMessageContainer<T>(_log);
+        }
+
     }
 
 }

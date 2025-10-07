@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Producer
+namespace SharpPulsar.Internal.Producer
 {
     internal abstract class ProducerActorBase<T> : ReceiveActor
     {

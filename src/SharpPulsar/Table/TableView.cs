@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Util.Internal;
+using SharpPulsar.API;
 
 namespace SharpPulsar.Table
 {
@@ -91,6 +92,10 @@ namespace SharpPulsar.Table
             //throw new NotImplementedException();
         }
 
+        public void ForEach(Action<string, T> action)
+        {
+            throw new NotImplementedException();
+        }
     }
     public class AskTable<T>
     {

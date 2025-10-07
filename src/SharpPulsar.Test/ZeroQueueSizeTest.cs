@@ -38,7 +38,7 @@ namespace SharpPulsar.Test
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
         private readonly int _totalMessages = 10;
 
         public ZeroQueueSizeTest(ITestOutputHelper output, PulsarFixture fixture)

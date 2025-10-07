@@ -10,6 +10,8 @@ using SharpPulsar.Shared;
 using SharpPulsar.Common.Protocol.Proto;
 using System.Text.Json.Serialization;
 using SharpPulsar.Crypto;
+using SharpPulsar.Extension;
+using SharpPulsar.TimeUnit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -36,10 +38,10 @@ namespace SharpPulsar.Configuration
 		public void SetAutoUpdatePartitionsInterval(TimeSpan interval)
 		{
 			Condition.CheckArgument(interval.TotalMilliseconds > 0, "interval needs to be > 0");
-            AutoUpdatePartitionsIntervalSeconds = interval;
+            AutoUpdatePartitionsIntervalSeconds = TimeUnit.TimeUnit.SECONDS.ToSeconds(interval.Seconds);
 		}
-        public TimeSpan AutoUpdatePartitionsIntervalSeconds { get; set; } = TimeSpan.FromSeconds(60);
-		public MessageCrypto MessageCrypt { get; set; }
+        public long AutoUpdatePartitionsIntervalSeconds { get; set; } = TimeUnit.TimeUnit.SECONDS.ToSeconds(60);
+		public MessageCrypto MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
 
         /// <summary>
@@ -75,7 +77,7 @@ namespace SharpPulsar.Configuration
         ///            + "* Shared\n"
         ///            + "* Key_Shared
         /// </summary>
-        public SubType SubscriptionType { get; set; } = SubType.Exclusive;
+        public SubscriptionType SubscriptionType { get; set; } = SubscriptionType.Exclusive;
 		internal IMessageListener<T> MessageListener { get; set; }
         public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }
@@ -310,15 +312,16 @@ namespace SharpPulsar.Configuration
                 : TopicConsumerConfigurationData.OfTopicName(topicName, this);
         }
 
-        public  IList<TopicConsumerConfigurationData> TopicConfigurations
+        public void TopicConfigurations(List<TopicConsumerConfigurationData> topicConfigurations)
         {
-            set
-            {
-                Condition.CheckArgument(value != null, "topicConfigurations should not be null.");
-                _topicConfigurations = value;
-            }
+            Condition.CheckArgument(topicConfigurations != null, "topicConfigurations should not be null.");
+            _topicConfigurations.AddRange(topicConfigurations);
         }
-
+        public void TopicConfigurations(TopicConsumerConfigurationData topicConfigurations)
+        {
+            Condition.CheckArgument(topicConfigurations != null, "topicConfigurations should not be null.");
+            _topicConfigurations.Add(topicConfigurations);
+        }
         public string SingleTopic
 		{
 			//get => TopicNames.Count == 1 ? TopicNames.First() : string.Empty;

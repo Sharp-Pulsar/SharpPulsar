@@ -5,7 +5,7 @@ using SharpPulsar.API;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Protocol.Proto;
-using SharpPulsar.Producer;
+using SharpPulsar.Internal.Producer;
 using SharpPulsar.Protocol.Schema;
 
 /// <summary>

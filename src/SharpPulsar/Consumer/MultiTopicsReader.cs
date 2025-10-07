@@ -24,7 +24,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Consumer
+namespace SharpPulsar.Internal.Consumer
 {
     internal class MultiTopicsReader<T> : ReceiveActor, IWithUnboundedStash
     {

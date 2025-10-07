@@ -2,7 +2,7 @@
 using System.IO;
 using Akka.Actor;
 using SharpPulsar.API;
-using SharpPulsar.Producer;
+using SharpPulsar.Internal.Producer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

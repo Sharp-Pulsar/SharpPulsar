@@ -4,6 +4,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Requests;
+using SharpPulsar.Shared.Exceptions;
 using System;
 using System.Collections.Generic;
 

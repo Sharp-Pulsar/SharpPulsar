@@ -21,6 +21,8 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using InvalidMessageException = SharpPulsar.Exceptions.PulsarClientException.InvalidMessageException;
 using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMetadata;
+using SharpPulsar.API;
+using SharpPulsar.API.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -40,7 +42,7 @@ using PartitionedTopicMetadata = SharpPulsar.Common.Partition.PartitionedTopicMe
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Consumer
+namespace SharpPulsar.Internal.Consumer
 {
 
     internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>, IWithTimers
@@ -129,7 +131,7 @@ namespace SharpPulsar.Consumer
             _paused = conf.StartPaused;
             _sharedQueueResumeThreshold = MaxReceiverQueueSize / 2;
             AllTopicPartitionsNumber = 0;
-            _startMessageId  = (IMessageIdAdv)startMessageId;// != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
+            _startMessageId = (IMessageIdAdv)startMessageId;// != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
             _startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
             //_unAckedMessageTracker = UnAckedMessageTracker;
             /*if (conf.AckTimeout != TimeSpan.Zero)
@@ -149,7 +151,7 @@ namespace SharpPulsar.Consumer
             }*/
 
             _internalConfig = InternalConsumerConfig;
-            _stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) :  ConsumerStatsDisabled.Instance;
+            _stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) : ConsumerStatsDisabled.Instance;
 
             if (_internalConfig.AutoUpdatePartitions)
             {
@@ -227,7 +229,7 @@ namespace SharpPulsar.Consumer
         {
             return Props.Create(() => new MultiTopicsConsumer<T>(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture));
         }
-        
+
         internal void Ready()
         {
             ReceiveAsync<SendState>(async _ =>
@@ -590,7 +592,7 @@ namespace SharpPulsar.Consumer
             {
                 //_log.Info($"MultiTopicConsumer `int` {i}");
             });
-            ReceiveAsync<string>(async s => 
+            ReceiveAsync<string>(async s =>
             {
                 switch (s)
                 {
@@ -619,9 +621,9 @@ namespace SharpPulsar.Consumer
                         {
                             Timers.StartSingleTimer("OnTopicsExtended", "OnTopicsExtended", Conf.AutoUpdatePartitionsInterval);
                         }
-                        
+
                         break;
-                    default:       
+                    default:
                         break;
                 }
             });
@@ -1230,7 +1232,7 @@ namespace SharpPulsar.Consumer
             catch (Exception ex)
             {
                 HandlerstateActor.Tell(new SetState(State.Failed));
-               // State.ConnectionState = HandlerState.State.Failed;
+                // State.ConnectionState = HandlerState.State.Failed;
                 _log.Error($"[{topicName}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {ex}");
                 throw;
             }
@@ -1874,8 +1876,8 @@ namespace SharpPulsar.Consumer
                 {
                     var ask = await v.Ask<AskResponse>(GetLastMessageIds.Instance).ConfigureAwait(false);
                     var ids = (IList<ITopicMessageId>)ask.Data;
-                    foreach(var s in ids)
-                        list.Add(s);    
+                    foreach (var s in ids)
+                        list.Add(s);
                 }
                 catch (Exception e)
                 {
@@ -1930,6 +1932,6 @@ namespace SharpPulsar.Consumer
 
             }
         }
-        
+
     }
 }

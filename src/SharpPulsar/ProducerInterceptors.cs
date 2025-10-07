@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using SharpPulsar.API.Interceptor;
 using System;
 using System.Collections.Generic;
 

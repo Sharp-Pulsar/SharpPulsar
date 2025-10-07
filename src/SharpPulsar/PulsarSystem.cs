@@ -15,7 +15,7 @@ using SharpPulsar.Messages;
 
 namespace SharpPulsar
 {
-    public sealed class PulsarSystem : IDisposable
+    public abstract class PulsarSystem : IDisposable
     {
         static PulsarSystem()
         {
@@ -115,7 +115,7 @@ namespace SharpPulsar
            
         }
         
-        public async ValueTask<PulsarClient> NewClient(PulsarClientConfigBuilder conf)
+        public virtual async ValueTask<PulsarClient> NewClient(ClientConfigBuilder conf)
         {
             _newClient++;
             var actorSystem = _actorSystem;

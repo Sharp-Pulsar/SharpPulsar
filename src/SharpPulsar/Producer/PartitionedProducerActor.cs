@@ -37,7 +37,7 @@ using SharpPulsar.Messages;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Producer
+namespace SharpPulsar.Internal.Producer
 {
     internal class PartitionedProducerActor<T> : ProducerActorBase<T>, IWithTimers
     {
@@ -53,7 +53,7 @@ namespace SharpPulsar.Producer
         private TopicMetadata _topicMetadata;
 
         // timeout related to auto check and subscribe partition increasement
-       // private ICancelable _partitionsAutoUpdateTimeout = null;
+        // private ICancelable _partitionsAutoUpdateTimeout = null;
         private ValueTask _partitionsAutoUpdateFuture;
         private readonly ILoggingAdapter _log;
         private readonly IActorContext _context;

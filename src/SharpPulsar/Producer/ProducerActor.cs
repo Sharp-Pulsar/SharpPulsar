@@ -53,7 +53,7 @@ using TimeoutException = SharpPulsar.Exceptions.PulsarClientException.TimeoutExc
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Producer
+namespace SharpPulsar.Internal.Producer
 {
 
     internal class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash, IWithTimers
@@ -263,7 +263,7 @@ namespace SharpPulsar.Producer
             }
 
             _lookupDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.LookupTimeout.TotalMilliseconds);
-            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, HandlerstateActor, 
+            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, HandlerstateActor,
                 new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(clientConfiguration.InitialBackoffIntervalMs))
                 .SetMax(TimeSpan.FromMilliseconds(clientConfiguration.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
 
@@ -332,7 +332,7 @@ namespace SharpPulsar.Producer
                 }
                 await ConnectionOpened(response.ConvertTo<ConnectionOpened>());
             });
-            Receive<ConnectionAlreadySet>(o => 
+            Receive<ConnectionAlreadySet>(o =>
             {
                 _log.Info($"ConnectionAlreadySet: {o.ClientCnx}");
             });
@@ -356,7 +356,7 @@ namespace SharpPulsar.Producer
                 {
                     var state = await HandlerstateActor.Ask<State>(GetState.Instance);
                     var currentState = await HandlerstateActor.Ask<State>(new GetAndUpdateState(state == State.Closed ? State.Closed : State.Closing));
-                    
+
                     if (currentState == State.Closed || currentState == State.Closing)
                     {
                         _replyTo.Tell(new AskResponse());

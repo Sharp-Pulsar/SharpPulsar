@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using SharpPulsar.API;
-using SharpPulsar.Producer;
+using SharpPulsar.Internal.Producer;
 
 namespace SharpPulsar
 {

@@ -22,7 +22,7 @@ namespace SharpPulsar.Test
         private readonly string _topic;
         private PulsarClient _client;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
 
         public OAuthTest(ITestOutputHelper output)
         {
@@ -30,7 +30,7 @@ namespace SharpPulsar.Test
             var issuerUrl = new Uri("https://churchos.auth0.com/");
             var audience = "https://churchos.auth0.com/api/v2/";
             _output = output;
-            var client = new PulsarClientConfigBuilder();
+            var client = new ClientConfigBuilder();
             var serviceUrl = "pulsar://localhost:6650";
             var webUrl = "http://localhost:8080";
             

@@ -64,7 +64,7 @@ namespace SharpPulsar.Builder
 
         public virtual IClientBuilder Clone()
         {
-            return new ClientBuilder(conf.clone());
+            return new ClientBuilder(conf.Clone());
         }
 
         public virtual IClientBuilder LoadConf(IDictionary<string, object> config)
@@ -126,11 +126,7 @@ namespace SharpPulsar.Builder
             return this;
         }
 
-        public virtual IClientBuilder OpenTelemetry(OpenTelemetry openTelemetry)
-        {
-            conf.OpenTelemetry = (openTelemetry);
-            return this;
-        }
+        
         public virtual IClientBuilder Authentication(string authPluginClassName, string authParamsString)
         {
             conf.AuthPluginClassName = authPluginClassName;
@@ -187,13 +183,13 @@ namespace SharpPulsar.Builder
         public virtual IClientBuilder OperationTimeout(int operationTimeout, TimeUnit.TimeUnit unit)
         {
             Condition.CheckArgument(operationTimeout >= 0, "operationTimeout needs to be >= 0");
-            conf.OperationTimeoutMs = unit.ToMilliseconds(operationTimeout));
+            conf.OperationTimeoutMs = unit.ToMilliseconds(operationTimeout);
             return this;
         }
 
         public virtual IClientBuilder LookupTimeout(int lookupTimeout, TimeUnit.TimeUnit unit)
         {
-            conf.LookupTimeoutMs = unit.ToMilliseconds(lookupTimeout));
+            conf.LookupTimeoutMs = unit.ToMilliseconds(lookupTimeout);
             return this;
         }
 
@@ -274,19 +270,19 @@ namespace SharpPulsar.Builder
 
         public virtual IClientBuilder TlsKeyStoreType(string tlsKeyStoreType)
         {
-            conf.TlsKeyStoreType = tlsKeyStoreType;
+            //conf.TlsKeyStoreType = tlsKeyStoreType;
             return this;
         }
 
         public virtual IClientBuilder TlsKeyStorePath(string tlsTrustStorePath)
         {
-            conf.TlsKeyStorePath = tlsTrustStorePath;
+            //conf.TlsKeyStorePath = tlsTrustStorePath;
             return this;
         }
 
         public virtual IClientBuilder TlsKeyStorePassword(string tlsKeyStorePassword)
         {
-            conf.TlsKeyStorePassword(tlsKeyStorePassword);
+            //conf.TlsKeyStorePassword(tlsKeyStorePassword);
             return this;
         }
 
@@ -370,7 +366,7 @@ namespace SharpPulsar.Builder
 
         public virtual IClientBuilder MaxBackoffInterval(long duration, TimeUnit.TimeUnit unit)
         {
-            conf.MaxBackoffIntervalNanos = unit.ToNanoseconds(duration));
+            conf.MaxBackoffIntervalNanos = unit.ToNanoseconds(duration);
             return this;
         }
 
@@ -390,7 +386,7 @@ namespace SharpPulsar.Builder
 
         public virtual IClientBuilder MemoryLimit(long memoryLimit, SizeUnit unit)
         {
-            conf.MemoryLimitBytes = unit.ToBytes(memoryLimit));
+            conf.MemoryLimitBytes = unit.ToBytes(memoryLimit);
             return this;
         }
 

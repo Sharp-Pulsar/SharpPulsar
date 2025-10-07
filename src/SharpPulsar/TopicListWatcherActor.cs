@@ -10,7 +10,7 @@ using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Client;
-using SharpPulsar.Consumer;
+using SharpPulsar.Internal.Consumer;
 
 namespace SharpPulsar
 {

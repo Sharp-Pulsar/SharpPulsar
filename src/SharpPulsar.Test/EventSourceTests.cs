@@ -22,7 +22,7 @@ namespace SharpPulsar.Test
         private readonly ITestOutputHelper _output;
 
         public ClientConfigurationData _clientConfigurationData;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
         private PulsarClient _client;
         private PulsarSystem _pulsarSystem;
 

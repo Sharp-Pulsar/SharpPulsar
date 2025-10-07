@@ -19,7 +19,7 @@ namespace SharpPulsar.Test
         private readonly CancellationTokenSource _cts;
         private readonly ITestOutputHelper _output;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
         private PulsarFixture _fixture;
         public TokenTests(ITestOutputHelper output, PulsarFixture fixture)
         {
@@ -171,9 +171,9 @@ namespace SharpPulsar.Test
             var token = await _fixture.Container!.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" });
             return token.Stdout;
         }
-        private async ValueTask<(PulsarClientConfigBuilder builder, string topic)> CreateCient()
+        private async ValueTask<(ClientConfigBuilder builder, string topic)> CreateCient()
         {
-            var client = new PulsarClientConfigBuilder();
+            var client = new ClientConfigBuilder();
             var serviceUrl = "pulsar://localhost:6650";
             //var webUrl = "http://localhost:8080";
             client.ServiceUrl(serviceUrl);

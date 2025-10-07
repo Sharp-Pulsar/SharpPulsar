@@ -32,7 +32,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using static SharpPulsar.Consumer.ChunkedMessageCtx;
+using static SharpPulsar.Internal.Consumer.ChunkedMessageCtx;
 using DeadLetterPolicy = SharpPulsar.Common.Compression.DeadLetterPolicy;
 using SubscriptionInitialPosition = SharpPulsar.Common.SubscriptionInitialPosition;
 using SharpPulsar.Common.Protocol.Proto;
@@ -58,7 +58,7 @@ using SharpPulsar.API;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Consumer
+namespace SharpPulsar.Internal.Consumer
 {
 
     internal class ConsumerActor<T> : ConsumerActorBase<T>
@@ -193,8 +193,8 @@ namespace SharpPulsar.Consumer
             _subscriptionMode = conf.SubscriptionMode;
             if (startMessageId != null)
             {
-                IMessageIdAdv firstChunkMessageId = ((IMessageIdAdv)startMessageId).FirstChunkMessageId;
-                _startMessageId = (firstChunkMessageId == null) ? (IMessageIdAdv)startMessageId : firstChunkMessageId;
+                var firstChunkMessageId = ((IMessageIdAdv)startMessageId).FirstChunkMessageId;
+                _startMessageId = firstChunkMessageId == null ? (IMessageIdAdv)startMessageId : firstChunkMessageId;
             }
             _initialStartMessageId = _startMessageId;
             _startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
@@ -404,7 +404,7 @@ namespace SharpPulsar.Consumer
                     return;
                 }
                 _clientCnx = c.ClientCnx;
-               // SetCnx(c.ClientCnx);
+                // SetCnx(c.ClientCnx);
                 _log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {_clientCnx.Path.Name}, consumerId {_consumerId}");
 
                 var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).ConfigureAwait(false);
@@ -437,7 +437,7 @@ namespace SharpPulsar.Consumer
                     {
                         ledgerId = (ulong)_startMessageId.LedgerId,
                         entryId = (ulong)_startMessageId.EntryId,
-                        BatchIndex = _startMessageId.BatchIndex,    
+                        BatchIndex = _startMessageId.BatchIndex,
                     };
                 }
                 else
@@ -563,7 +563,8 @@ namespace SharpPulsar.Consumer
                     _possibleSendToDeadLetterTopicMessages.Remove(s.MessageId);
                 }
             });
-            Receive<ConnectionAlreadySet>(o => {
+            Receive<ConnectionAlreadySet>(o =>
+            {
                 _log.Info($"ConnectionAlreadySet: {o.ClientCnx}");
             });
             Receive<RemoveMessagesTill>(s =>
@@ -822,15 +823,15 @@ namespace SharpPulsar.Consumer
             });
             ReceiveAsync<GetLastMessageIds>(async m =>
             {
-            try
-            {
-                _replyTo = Sender;
-                var lmsid = await LastMessageIds();
-                _replyTo.Tell(new AskResponse(lmsid));
-            }
-            catch (Exception ex)
-            {
-                _replyTo.Tell( new AskResponse(ex));
+                try
+                {
+                    _replyTo = Sender;
+                    var lmsid = await LastMessageIds();
+                    _replyTo.Tell(new AskResponse(lmsid));
+                }
+                catch (Exception ex)
+                {
+                    _replyTo.Tell(new AskResponse(ex));
                 }
             });
             Receive<GetStats>(m =>
@@ -1218,7 +1219,7 @@ namespace SharpPulsar.Consumer
                 result.TrySetException(new PulsarClientException.InvalidMessageException("Cannot handle message with null messageId"));
                 return result;
             }
-            
+
             Condition.CheckArgument(messageId is MessageIdAdv);
             var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             if (state != State.Ready && state != State.Connecting)
@@ -1454,7 +1455,7 @@ namespace SharpPulsar.Consumer
                 // in the past
                 _startMessageId = new BatchMessageId((MessageIdAdv)_lastDequeuedMessageId);
             }
-            
+
         }
         /// <summary>
         /// send the flow command to have the broker start pushing messages
@@ -1966,7 +1967,7 @@ namespace SharpPulsar.Consumer
             if (msgMetadata.ChunkId == 0)
             {
                 var totalChunks = msgMetadata.NumChunksFromMsg;
-                _chunkedMessagesMap.TryAdd(msgMetadata.Uuid, ChunkedMessageCtx.Get(totalChunks, new List<byte>()));
+                _chunkedMessagesMap.TryAdd(msgMetadata.Uuid, Get(totalChunks, new List<byte>()));
                 _pendingChunkedMessageCount++;
                 if (_maxPendingChuckedMessage > 0 && _pendingChunkedMessageCount > _maxPendingChuckedMessage)
                 {
@@ -2768,7 +2769,7 @@ namespace SharpPulsar.Consumer
 
             return propertiesMap;
         }
-        
+
 
         private string GetOriginTopicNameStr(IMessage<T> message)
         {
@@ -2786,11 +2787,11 @@ namespace SharpPulsar.Consumer
                 }
 
             }
-            else 
+            else
             {
                 return message.Topic;
             }
-            
+
         }
         private void InitDeadLetterProducerIfNeeded()
         {
@@ -2902,7 +2903,7 @@ namespace SharpPulsar.Consumer
                     {
                         await Seek(lastMessageIdResponse.LastMessageId);
                     }
-                    
+
                     var lastMessageId = (IMessageIdAdv)lastMessageIdResponse.LastMessageId;
                     var markDeletePosition = (IMessageIdAdv)lastMessageIdResponse.MarkDeletePosition;
                     if (markDeletePosition != null)
@@ -3007,7 +3008,7 @@ namespace SharpPulsar.Consumer
             {
                 new TopicMessageId(Topic, (IMessageIdAdv)msgId)
             };
-;
+            ;
             return t;
         }
 

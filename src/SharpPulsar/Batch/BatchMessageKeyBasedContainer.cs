@@ -6,7 +6,7 @@ using System.Linq;
 using DotNetty.Common.Utilities;
 using ProtoBuf;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Producer;
+using SharpPulsar.Internal.Producer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

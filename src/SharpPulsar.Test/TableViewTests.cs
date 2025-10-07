@@ -12,7 +12,8 @@ using SharpPulsar.Common.Naming;
 using FluentAssertions;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Admin.v2;
-using SharpPulsar.Table;
+using SharpPulsar.API;
+using SharpPulsar.Shared;
 
 namespace SharpPulsar.Test
 {
@@ -22,7 +23,7 @@ namespace SharpPulsar.Test
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientBuilder _configBuilder;
         public ClientConfigurationData _clientConfigurationData;
         private PulsarAdminRESTAPIClient _admin;
 
@@ -221,7 +222,7 @@ namespace SharpPulsar.Test
             var keys = new HashSet<string>();
             var builder = new ProducerConfigBuilder<byte[]>()
                 .Topic(topic)
-                .MessageRoutingMode(Common.MessageRoutingMode.RandomMode)
+                .MessageRoutingMode(MessageRoutingMode.RandomMode)
                 .MaxPendingMessages(count)
                 .BatchingMaxPublishDelay(TimeSpan.FromDays(1));
             if (enableBatch)

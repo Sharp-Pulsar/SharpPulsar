@@ -57,7 +57,7 @@ namespace SharpPulsar.API
         ///             if a producer with the same "producer name" is already connected to the topic </exception>
         /// <exception cref="PulsarClientException">
         ///             if the producer creation fails </exception>
-        IProducer<T> CreateAsync();
+        ValueTask<IProducer<T>> CreateAsync();
 
         /// <summary>
         /// Load the configuration from provided <tt>config</tt> map.
@@ -324,7 +324,7 @@ namespace SharpPulsar.API
         /// <param name="compressionType">
         ///            the selected compression type </param>
         /// <returns> the producer builder instance </returns>
-        IProducerBuilder<T> CompressionType(ICompressionType compressionType);
+        IProducerBuilder<T> CompressionType(CompressionType compressionType);
 
         /// <summary>
         /// Sets the minimum uncompressed message body size required to enable compression.

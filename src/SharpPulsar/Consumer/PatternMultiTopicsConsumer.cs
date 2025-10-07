@@ -32,7 +32,7 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Consumer
+namespace SharpPulsar.Internal.Consumer
 {
 
     internal class PatternMultiTopicsConsumer<T> : MultiTopicsConsumer<T>, IWithTimers
@@ -119,14 +119,14 @@ namespace SharpPulsar.Consumer
             {
                 OnTopicsRemoved(t.RemovedTopics);
             });
-            ReceiveAsync<TaskRun>( async _ =>
+            ReceiveAsync<TaskRun>(async _ =>
             {
                 await RecheckTopicsChange();
                 _updateTaskQueue.Tell(AppendRecheckOp.Instance);
             });
             ReceiveAsync<RecheckTopicsChange>(async _ =>
             {
-               await RecheckTopicsChange();
+                await RecheckTopicsChange();
             });
             ReceiveAsync<Close>(async _ => await CloseAsync());
             Receive<RecheckTopicsChangeAfterReconnect>(_ => RecheckTopicsChangeAfterReconnect());
@@ -298,7 +298,7 @@ namespace SharpPulsar.Consumer
         public static RecheckTopics Instance = new RecheckTopics();
     }
     internal sealed class TaskRun
-    { 
+    {
         internal static TaskRun Instance = new TaskRun();
         internal TaskRun() { }
     }

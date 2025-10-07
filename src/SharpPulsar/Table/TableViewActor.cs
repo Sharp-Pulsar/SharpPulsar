@@ -7,9 +7,12 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Util.Internal;
 using App.Metrics.Concurrency;
+using SharpPulsar.API;
 using SharpPulsar.Builder;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Shared.Exceptions;
 using SharpPulsar.Table.Messages;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -1,0 +1,4 @@
+﻿Make all `ACTORS` internal?
+All builders external?
+External -> Internal
+Builder -> Actors

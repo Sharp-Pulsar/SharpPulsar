@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using SharpPulsar.Utils;
-using SharpPulsar.Table;
 using SharpPulsar.API;
 
 /// <summary>

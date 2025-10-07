@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using SharpPulsar.API;
 using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
@@ -15,7 +16,7 @@ namespace SharpPulsar.Test
         private readonly ITestOutputHelper _output;
         //private TaskCompletionSource<PulsarClient> _tcs;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
         private readonly string _topic;
 
         public DelayedMessage(ITestOutputHelper output, PulsarFixture fixture)
@@ -112,7 +113,7 @@ namespace SharpPulsar.Test
         {
 
             var numMessages = 5;
-            var consumer = await _client.NewConsumerAsync(ISchema<string>.String, new ConsumerConfigBuilder<string>()
+            var consumer = await _client.NewConsumerAsync(ISchema<string>.String, new ConsumerBuilder<string>()
                 .Topic(_topic)
                 .SubscriptionName($"event-sub-{Guid.NewGuid()}")
                 .SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Exclusive)

@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using ProtoBuf;
-using SharpPulsar.Producer;
+using SharpPulsar.Internal.Producer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

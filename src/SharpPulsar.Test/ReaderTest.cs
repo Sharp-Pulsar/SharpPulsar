@@ -38,7 +38,7 @@ namespace SharpPulsar.Test
 
         private PulsarClient _client;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
 
         public ReaderTest(ITestOutputHelper output, PulsarFixture fixture)
         {

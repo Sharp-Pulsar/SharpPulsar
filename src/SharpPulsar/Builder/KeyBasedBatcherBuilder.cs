@@ -1,4 +1,6 @@
 ﻿using System;
+using SharpPulsar.API;
+using SharpPulsar.Batch;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,21 +20,21 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Batch
+namespace SharpPulsar.Builder
 {
     [Serializable]
-	public class KeyBasedBatcherBuilder : IBatcherBuilder
-	{
+    public class KeyBasedBatcherBuilder : IBatcherBuilder
+    {
         private readonly ILoggingAdapter _log;
 
-		public KeyBasedBatcherBuilder(ILoggingAdapter log)
+        public KeyBasedBatcherBuilder(ILoggingAdapter log)
         {
             _log = log;
         }
-		public virtual IBatchMessageContainer Build<T>()
-		{
-			return new BatchMessageKeyBasedContainer<T>(_log);
-		}
-	}
+        public virtual IBatchMessageContainer Build<T>()
+        {
+            return new BatchMessageKeyBasedContainer<T>(_log);
+        }
+    }
 
 }

@@ -38,7 +38,7 @@ namespace SharpPulsar.Test
         //private TaskCompletionSource<PulsarClient> _tcs;
         private PulsarClient _client;
         private PulsarSystem _system;   
-        private PulsarClientConfigBuilder _configBuilder;   
+        private ClientConfigBuilder _configBuilder;   
         public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;

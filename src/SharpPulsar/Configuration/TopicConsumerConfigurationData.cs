@@ -26,6 +26,10 @@ namespace SharpPulsar.Configuration
         {
             return _priorityLevel;  
         }
+        public void PriorityLevel(int priorityLevel)
+        {
+            _priorityLevel = priorityLevel;
+        }
         public static TopicConsumerConfigurationData OfTopicsPattern<T1>(string topicsPattern, ConsumerConfigurationData<T1> conf)
         {
             return OfTopicsPattern(topicsPattern, conf.PriorityLevel);

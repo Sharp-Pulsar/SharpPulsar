@@ -7,9 +7,9 @@ using Akka.Actor;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 
-namespace SharpPulsar.Consumer
+namespace SharpPulsar.Internal.Consumer
 {
-    internal class PatternConsumerUpdateQueue: ReceiveActor, IWithTimers
+    internal class PatternConsumerUpdateQueue : ReceiveActor, IWithTimers
     {
         private enum UpdateSubscriptionType
         {
@@ -29,7 +29,7 @@ namespace SharpPulsar.Consumer
 
         private static readonly KeyValuePair<UpdateSubscriptionType, ICollection<string>> RECHECK_OP = new KeyValuePair<UpdateSubscriptionType, ICollection<string>>(UpdateSubscriptionType.RECHECK, null);
 
-        private readonly BlockingCollection<KeyValuePair<UpdateSubscriptionType, ICollection<string>>>? _pendingTasks;
+        private readonly BlockingCollection<KeyValuePair<UpdateSubscriptionType, ICollection<string>>> _pendingTasks;
 
         private readonly IActorRef _patternConsumer;
 
@@ -66,7 +66,7 @@ namespace SharpPulsar.Consumer
             // To avoid subscribing and topics changed events execute concurrently, let the change events starts after the
             // subscribing task.
             ReceiveAsync<CancelAllAndWaitForTheRunningTask>(async _ => await CancelAllAndWaitForTheRunningTask());
-            Receive<LastRecheckTaskStartingTimestamp>( _ =>
+            Receive<LastRecheckTaskStartingTimestamp>(_ =>
             {
                 var failedTime = DateTimeHelper.CurrentUnixTimeMillis();
                 if (_lastRecheckTaskStartingTimestamp <= failedTime)
@@ -148,7 +148,7 @@ namespace SharpPulsar.Consumer
             if (!_taskInProgressBool)
             {
                 TriggerNextTask();
-                _taskInProgressBool = true; 
+                _taskInProgressBool = true;
             }
         }
         private void TriggerNextTask()
@@ -158,7 +158,7 @@ namespace SharpPulsar.Consumer
                 return;
             }
 
-            KeyValuePair<UpdateSubscriptionType, ICollection<string>> task = _pendingTasks.Take();
+            var task = _pendingTasks.Take();
 
             // No pending task.
             /*if (task.Value == null)
@@ -188,7 +188,7 @@ namespace SharpPulsar.Consumer
                 {
                     case UpdateSubscriptionType.CONSUMER_INIT:
                         {
-                            
+
                             try
                             {
                                 sub = _patternConsumer.Ask<string>(new GetSubscription()).GetAwaiter().GetResult();
@@ -249,11 +249,11 @@ namespace SharpPulsar.Consumer
                 }
                 // Skip if the last recheck task has been executed after the current time.
                 Timers.StartSingleTimer(LastRecheckTaskStartingTimestamp.Instance, LastRecheckTaskStartingTimestamp.Instance, TimeSpan.FromSeconds(10));
-                
+
                 TriggerNextTask();
             }
-            
-                     
+
+
         }
         private async ValueTask CancelAllAndWaitForTheRunningTask()
         {
@@ -267,7 +267,8 @@ namespace SharpPulsar.Consumer
             {
                 return;
             }
-            await _taskInProgress.Value.AsTask().ContinueWith(async t => {
+            await _taskInProgress.Value.AsTask().ContinueWith(async t =>
+            {
                 await t;
                 return;
             });
@@ -279,17 +280,17 @@ namespace SharpPulsar.Consumer
     }
     public readonly record struct RecheckTopicsChange
     {
-        public static RecheckTopicsChange Instance { get;} = new RecheckTopicsChange(); 
+        public static RecheckTopicsChange Instance { get; } = new RecheckTopicsChange();
     }
     public readonly record struct CancelAllAndWaitForTheRunningTask
-    { 
-        public static CancelAllAndWaitForTheRunningTask Instance = new CancelAllAndWaitForTheRunningTask();   
+    {
+        public static CancelAllAndWaitForTheRunningTask Instance = new CancelAllAndWaitForTheRunningTask();
     }
     public readonly record struct RecheckTopicsChangeAfterReconnect
     {
         public static RecheckTopicsChangeAfterReconnect Instance { get; } = new RecheckTopicsChangeAfterReconnect();
     }
-    
+
     internal readonly record struct LastRecheckTaskStartingTimestamp
     {
         public static LastRecheckTaskStartingTimestamp Instance { get; } = new LastRecheckTaskStartingTimestamp();

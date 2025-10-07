@@ -17,6 +17,10 @@ using System.Net;
 using System.Threading.Tasks;
 using SharpPulsar.Client.Internal;
 using static SharpPulsar.Client.Internal.SocketClientActor;
+using SharpPulsar.API;
+using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Shared.Exceptions;
+using SharpPulsar.Common.Protocol.Proto;
 
 namespace SharpPulsar.Client
 {
@@ -364,7 +368,7 @@ namespace SharpPulsar.Client
                 Condition.CheckArgument(authChallenge.Challenge != null);
                 Condition.CheckArgument(authChallenge.Challenge.auth_data != null);
 
-                if (Auth.AuthData.RefreshAuthDataBytes.Equals(authChallenge.Challenge.auth_data))
+                if (AuthData.RefreshAuthDataBytes.Equals(authChallenge.Challenge.auth_data))
                 {
                     try
                     {

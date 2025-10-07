@@ -1,7 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Akka.Actor;
+using DotNetty.Common.Concurrency;
 using SharpPulsar.API;
 using SharpPulsar.Builder;
+using SharpPulsar.ServiceName;
 using SharpPulsar.ServiceProvider.Messages;
 
 namespace SharpPulsar.ServiceProvider
@@ -30,8 +33,8 @@ namespace SharpPulsar.ServiceProvider
         /// </summary>
         public AutoClusterFailover(AutoClusterFailoverBuilder builder)
         {
-            builder.Validate();
-            _builder = builder; 
+            builder.Build();
+            _builder = builder;
         }
 
         public string ServiceUrl => ServiceUrlAsync().GetAwaiter().GetResult();

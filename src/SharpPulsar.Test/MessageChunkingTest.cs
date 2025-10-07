@@ -34,7 +34,7 @@ namespace SharpPulsar.Test
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
         public MessageChunkingTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;

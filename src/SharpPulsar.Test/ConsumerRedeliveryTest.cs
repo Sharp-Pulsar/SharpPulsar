@@ -36,7 +36,7 @@ namespace SharpPulsar.Test
         private readonly ITestOutputHelper _output;
         //private TaskCompletionSource<PulsarClient> _tcs;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
         public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;

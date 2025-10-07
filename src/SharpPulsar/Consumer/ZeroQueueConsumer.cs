@@ -25,7 +25,7 @@ using System.Threading.Tasks.Dataflow;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Consumer
+namespace SharpPulsar.Internal.Consumer
 {
     internal class ZeroQueueConsumer<T> : ConsumerActor<T>
     {

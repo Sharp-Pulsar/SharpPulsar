@@ -34,7 +34,7 @@ using IScheduler = Akka.Actor.IScheduler;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Consumer
+namespace SharpPulsar.Internal.Consumer
 {
     internal abstract class ConsumerActorBase<T> : ReceiveActor
     {

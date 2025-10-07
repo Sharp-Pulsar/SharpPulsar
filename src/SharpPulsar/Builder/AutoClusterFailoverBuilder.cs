@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using SharpPulsar.API;
+using SharpPulsar.ServiceProvider;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,7 +31,7 @@ namespace SharpPulsar.Builder
         public IDictionary<string, string> SecondaryTlsTrustCertsFilePaths = null;
         public IDictionary<string, string> SecondaryTlsTrustStorePaths = null;
         public IDictionary<string, string> SecondaryTlsTrustStorePasswords = null;
-        public FailoverPolicy failoverPolicy = Interfaces.FailoverPolicy.ORDER;
+        public FailoverPolicy failoverPolicy = API.FailoverPolicy.ORDER;
         public TimeSpan FailoverDelayNs;
         public TimeSpan SwitchBackDelayNs;
         public TimeSpan CheckIntervalMs = TimeSpan.FromMilliseconds(30_000);
@@ -93,7 +95,7 @@ namespace SharpPulsar.Builder
             return this;
         }
 
-        public void Validate()
+        public IServiceUrlProvider Build()
         {
             if (string.IsNullOrWhiteSpace(primary))
                 throw new ArgumentNullException(nameof(Primary), "primary service url shouldn't be null");
@@ -107,7 +109,7 @@ namespace SharpPulsar.Builder
             CheckArgument(SecondaryTlsTrustCertsFilePaths == null || SecondaryTlsTrustCertsFilePaths.Count == SecondarySize, "secondaryTlsTrustCertsFilePath should be null or size equal with secondary url size");
             CheckArgument(SecondaryTlsTrustStorePaths == null || SecondaryTlsTrustStorePaths.Count == SecondarySize, "secondaryTlsTrustStorePath should be null or size equal with secondary url size");
             CheckArgument(SecondaryTlsTrustStorePasswords == null || SecondaryTlsTrustStorePasswords.Count == SecondarySize, "secondaryTlsTrustStorePassword should be null or size equal with secondary url size");
-
+            return new AutoClusterFailover(this);
         }
 
         public static void CheckArgument(bool expression, string errorMessage)
@@ -117,6 +119,7 @@ namespace SharpPulsar.Builder
                 throw new ArgumentException(errorMessage.ToString());
             }
         }
+
     }
 
 }

@@ -28,11 +28,11 @@ namespace SharpPulsar.Configuration
 {
     public sealed class ReaderConfigurationData<T>
 	{
-        public IList<Common.Range> KeyHashRanges { get; set; }
+        public IList<Shared.Range> KeyHashRanges { get; set; }
 		public IMessageId StartMessageId { get; set; }
 		public IConsumerEventListener EventListener { get; set; }
         public bool AutoUpdatePartitions { get; set; } = true;
-        public TimeSpan AutoUpdatePartitionsInterval = TimeSpan.FromSeconds(60);
+        public long AutoUpdatePartitionsIntervalSeconds = TimeUnit.TimeUnit.SECONDS.ToSeconds(60);
         public bool PoolMessages { get; set; } = false;
         public long StartMessageFromRollbackDurationInSec { get; set; }
         public ISchema<T> Schema { get; set; }
@@ -135,6 +135,7 @@ namespace SharpPulsar.Configuration
         public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; } = false;
 
         public long ExpireTimeOfIncompleteChunkedMessageMillis { get; set; } = TimeUnit.TimeUnit.MINUTES.ToMilliseconds(1);
+
         public SubscriptionInitialPosition SubscriptionInitialPosition = SubscriptionInitialPosition.Latest;
 
         [JsonIgnore]

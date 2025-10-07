@@ -87,7 +87,7 @@ namespace SharpPulsar.API
         /// <param name="interval"> the interval of updating partitions </param>
         /// <param name="unit"> the time unit of the interval </param>
         /// <returns> the <seealso cref="ITableViewBuilder{T}"/> builder instance </returns>
-        ITableViewBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval);
+        ITableViewBuilder<T> AutoUpdatePartitionsInterval(int interval, TimeUnit.TimeUnit unit);
 
         /// <summary>
 		/// Set the subscription name of the <seealso cref="TableView"/>.

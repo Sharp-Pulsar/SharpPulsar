@@ -21,7 +21,7 @@ namespace SharpPulsar.Test
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
         private PulsarSystem _system;
-        private PulsarClientConfigBuilder _configBuilder;
+        private ClientConfigBuilder _configBuilder;
         private readonly string _topic = $"generic-topic-{Guid.NewGuid()}";
         
         public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)

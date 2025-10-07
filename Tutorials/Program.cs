@@ -56,7 +56,7 @@ namespace Tutorials
             }
             if (selection.Equals("1"))
                 url = "pulsar+ssl://127.0.0.1:6651";
-            var clientConfig = new PulsarClientConfigBuilder();
+            var clientConfig = new ClientConfigBuilder();
             Console.WriteLine("auto-cluster or config?");
             var cluster = Console.ReadLine();
             if (cluster == "auto-cluster")
@@ -935,7 +935,7 @@ namespace Tutorials
             var subscriptionName = "my-subscription";
             var topicName = $"my-topic-%{DateTime.Now.Ticks}";
 
-            var clientConfig = new PulsarClientConfigBuilder()
+            var clientConfig = new ClientConfigBuilder()
                 .ServiceUrl(serviceUrl)
                 //.AddTlsCerts()
                 .Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));

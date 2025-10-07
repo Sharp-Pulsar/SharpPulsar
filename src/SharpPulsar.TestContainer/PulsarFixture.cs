@@ -13,7 +13,7 @@ namespace SharpPulsar.TestContainer
     {
         public PulsarSystem? System;
         private readonly IConfiguration _configuration;
-        public PulsarClientConfigBuilder? ConfigBuilder;
+        public ClientConfigBuilder? ConfigBuilder;
         public ClientConfigurationData? ClientConfigurationData; 
         public string? Token;
         private PulsarContainer? _container; 
@@ -61,7 +61,7 @@ namespace SharpPulsar.TestContainer
                     exit-clr = on
                 }
             }"));
-            var client = new PulsarClientConfigBuilder();
+            var client = new ClientConfigBuilder();
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
             var webUrl = web ?? clienConfigSetting.GetSection("web-url").Value;

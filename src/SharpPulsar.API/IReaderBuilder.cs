@@ -147,7 +147,7 @@ namespace SharpPulsar.API
         /// <param name="rollbackDuration">
         ///            duration which position should be rolled back.
         /// @return </param>
-        IReaderBuilder<T> StartMessageFromRollbackDuration(TimeSpan rollbackDuration);
+        IReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, TimeUnit.TimeUnit unit);
 
         /// <summary>
         /// Set the reader to include the given position of <seealso cref="IReaderBuilder.startMessageId(MessageIdAdv)"/>
@@ -223,7 +223,7 @@ namespace SharpPulsar.API
         /// </summary>
         /// <param name="messageCrypto"> message Crypto Object </param>
         /// <returns> ReaderBuilder instance </returns>
-        IReaderBuilder<T> MessageCrypto<M,B>(IMessageCrypto<M, B> messageCrypto);
+        IReaderBuilder<T> MessageCrypto(MessageCrypto messageCrypto);
 
 
         /// <summary>
@@ -330,7 +330,7 @@ namespace SharpPulsar.API
         /// <param name="unit">
         ///            the time unit of the interval. </param>
         /// <returns> the reader builder instance </returns>
-        IReaderBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval);
+        IReaderBuilder<T> AutoUpdatePartitionsInterval(long interval, TimeUnit.TimeUnit unit);
 
         /// <summary>
         /// Intercept <seealso cref="Reader"/>.
@@ -380,7 +380,7 @@ namespace SharpPulsar.API
         /// <param name="duration"> </param>
         /// <param name="unit">
         /// @return </param>
-        IReaderBuilder<T> ExpireTimeOfIncompleteChunkedMessage(TimeSpan duration);
+        IReaderBuilder<T> ExpireTimeOfIncompleteChunkedMessage(long interval, TimeUnit.TimeUnit unit);
 
 
     }

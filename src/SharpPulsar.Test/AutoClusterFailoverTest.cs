@@ -98,7 +98,7 @@ namespace SharpPulsar.Test
                 .CheckInterval(TimeSpan.FromSeconds(20))
                 .FailoverDelay(TimeSpan.FromSeconds(20))
                 .SwitchBackDelay(TimeSpan.FromSeconds(20)));
-            var b = new PulsarClientConfigBuilder().ServiceUrlProvider(auto);
+            var b = new ClientConfigBuilder().ServiceUrlProvider(auto);
             _client = await _system.NewClient(b);
         }
 
