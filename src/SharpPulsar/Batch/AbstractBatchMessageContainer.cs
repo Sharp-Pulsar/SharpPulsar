@@ -47,8 +47,9 @@ namespace SharpPulsar.Batch
 		private int _maxBytesInBatch;
 		private int _numMessagesInBatch = 0;
 		private long _currentBatchSizeBytes = 0;
+        private int _batchAllocatedSizeBytes = 0;
 
-		protected internal long CurrentTxnidMostBits = -1L;
+        protected internal long CurrentTxnidMostBits = -1L;
 		protected internal long CurrentTxnidLeastBits = -1L;
 
 		private const int InitialBatchBufferSize = 1024;
@@ -93,7 +94,7 @@ namespace SharpPulsar.Batch
 
             }
         }
-        public override bool haveEnoughSpace<T1>(MessageImpl<T1> msg)
+        public virtual bool HaveEnoughSpace<T1>(Message<T1> msg)
         {
             int messageSize = msg.getDataBuffer().readableBytes();
             return ((maxBytesInBatch <= 0 && (messageSize + currentBatchSizeBytes) <= MaxMessageSize) || (maxBytesInBatch > 0 && (messageSize + currentBatchSizeBytes) <= maxBytesInBatch)) && (maxNumMessagesInBatch <= 0 || numMessagesInBatch < maxNumMessagesInBatch);
@@ -105,17 +106,7 @@ namespace SharpPulsar.Batch
                 return producer != null && producer.getConnectionHandler() != null ? producer.getConnectionHandler().getMaxMessageSize() : Commands.DEFAULT_MAX_MESSAGE_SIZE;
             }
         }
-        protected internal virtual bool BatchFull
-        {
-            get
-            {
-                return (maxBytesInBatch > 0 && currentBatchSizeBytes >= maxBytesInBatch) || (maxBytesInBatch <= 0 && currentBatchSizeBytes >= MaxMessageSize) || (maxNumMessagesInBatch > 0 && numMessagesInBatch >= maxNumMessagesInBatch);
-            }
-        }
         
-
-
-
         public virtual int NumMessagesInBatch
         {
             get => _numMessagesInBatch;
@@ -186,7 +177,35 @@ namespace SharpPulsar.Batch
         }
         public virtual IActorRef Producer { get; set; }
 
-        public int BatchAllocatedSizeBytes => throw new NotImplementedException();
+        //public int BatchAllocatedSizeBytes => throw new NotImplementedException();
+        public int BatchAllocatedSizeBytes()
+        {
+            return _batchAllocatedSizeBytes;
+        }
+
+
+        protected internal virtual void TryUpdateTimestamp()
+        {
+            if (_numMessagesInBatch == 1)
+            {
+                _firstAddedTimestamp = TimeSpan.NanosecondsPerTick;
+            }
+        }
+
+        protected internal virtual void ClearTimestamp()
+        {
+            _firstAddedTimestamp = 0L;
+        }
+
+        public long GetFirstAddedTimestamp()
+        {
+            return _firstAddedTimestamp;
+        }
+
+        public void ResetPayloadAfterFailedPublishing()
+        {
+            throw new NotImplementedException();
+        }
     }
 
 }

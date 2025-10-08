@@ -34,6 +34,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using TimeoutException = SharpPulsar.Exceptions.PulsarClientException.TimeoutException;
+using SharpPulsar.API;
+using SharpPulsar.Shared.Exceptions;
+using SharpPulsar.Common.Protocol.Proto;
+using CompressionType = SharpPulsar.Shared.CompressionType;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -827,7 +831,7 @@ namespace SharpPulsar.Internal.Producer
 
                     if (compressedSize > maxMessageSize && !Conf.ChunkingEnabled)
                     {
-                        var compressedStr = !BatchMessagingEnabled && Conf.CompressionType != CompressionType.None ? "Compressed" : "";
+                        var compressedStr = !BatchMessagingEnabled && Conf.CompressionType != CompressionType.NONE ? "Compressed" : "";
                         var invalidMessageException = new PulsarClientException.InvalidMessageException($"The producer {_producerName} of the topic {Topic} sends a {compressedStr} message with {compressedSize:d} bytes that exceeds {maxMessageSize:d} bytes");
                         _log.Error(invalidMessageException.ToString());
                         callback.Future.TrySetException(invalidMessageException);

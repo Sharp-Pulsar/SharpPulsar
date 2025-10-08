@@ -32,14 +32,23 @@ namespace SharpPulsar
     using Shared;
     using Schemas;
     using System.Buffers;
+    using SharpPulsar.API;
+    using SharpPulsar.Common.Protocol.Proto;
+    using CompressionType = Common.Protocol.Proto.CompressionType;
+    using SharpPulsar.Protocol.Schema;
+    using SharpPulsar.Common.api;
+    using SharpPulsar.Shared.Buf;
+    using SharpPulsar.Messages;
+    using DotNetty.Common.Utilities;
 
     public sealed class Message<T> : IMessage<T>
 	{
 		private  IMessageId _messageId;
 		private  IActorRef _cnx;
 
-		private  Metadata _metadata;
-        private  ReadOnlySequence<byte>? _payload;
+		//private  Metadata _metadata;
+        private  MessageMetadata _metadata;
+        private  ByteBuf _payload;
 		private  ISchema<T> _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;
@@ -54,7 +63,7 @@ namespace SharpPulsar
         private Message(){}
 		
 		// Constructor for out-going message
-		public static Message<T> Create(MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
+		public static Message<T> Create(MessageMetadata msgMetadata, ByteBuf payload, ISchema<T> schema)
 		{
             var msg = new Message<T>
             {
@@ -65,12 +74,12 @@ namespace SharpPulsar
                 _payload = payload,
                 _properties = new Dictionary<string, string>(),
                 _schema = schema,
-                _uncompressedSize = (int) payload.Length
+                _uncompressedSize = (int) payload.Capacity
             };
             return msg;
 		}
 
-        public static Message<T> Create(string topic, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
+        public static Message<T> Create(string topic, MessageMetadata msgMetadata, ByteBuf payload, ISchema<T> schema)
         {
             var msg = new Message<T>
             {
@@ -136,7 +145,7 @@ namespace SharpPulsar
             Init(msg, topic, null, msgMetadata, null, payload, encryptionCtx, cnx, schema, redeliveryCount, poolMessage, consumerEpoch);
             msg._messageId = messageId;
         }
-        private static void Init(Message<T> msg, string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage, long consumerEpoch)
+        private static void Init(Message<T> msg, string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, ByteBuf payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage, long consumerEpoch)
         {
             //msg._metadata.Clear();
             msg._metadata = new Metadata();
@@ -272,6 +281,11 @@ namespace SharpPulsar
             msg._properties = new Dictionary<string, string>();
             return msg;
         }
+        public MessageMetadata MessageBuilder()
+        {
+            return _metadata;
+        }
+
         public string ReplicatedFrom
 		{
 			set
@@ -322,6 +336,10 @@ namespace SharpPulsar
         public bool PublishedEarlierThan(long timestamp)
         {
             return _brokerEntryMetadata == null || !_brokerEntryMetadata.ShouldSerializeBrokerTimestamp()? PublishTime < timestamp : (long)_brokerEntryMetadata.BrokerTimestamp < timestamp;
+        }
+        public ByteBuf DataBuffer()
+        {
+            return _payload;
         }
         public ReadOnlySequence<byte> Data
 		{
@@ -809,6 +827,11 @@ namespace SharpPulsar
             return _brokerEntryMetadata != null && _brokerEntryMetadata.ShouldSerializeIndex();
         }
 
+        public void Release()
+        {
+            throw new NotImplementedException();
+        }
+
         public  long? Index
         {
             get
@@ -827,6 +850,13 @@ namespace SharpPulsar
             }
         }
 
+        Option<IEncryptionContext> IMessage<T>.EncryptionCtx => throw new NotImplementedException();
+
+        public Option<byte[]> SchemaId => throw new NotImplementedException();
+
+        Option<long> IMessage<T>.BrokerPublishTime => throw new NotImplementedException();
+
+        Option<long> IMessage<T>.Index => throw new NotImplementedException();
     }
     public sealed class Metadata
     {

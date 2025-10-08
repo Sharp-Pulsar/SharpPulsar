@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿
+using SharpPulsar.Shared.Buf;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +19,6 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
 namespace SharpPulsar.Common.Compression
 {
     /// <summary>
@@ -31,7 +33,7 @@ namespace SharpPulsar.Common.Compression
 		/// <param name="raw">
 		///            a buffer with the uncompressed content. The reader/writer indexes will not be modified </param>
 		/// <returns> a new buffer with the compressed content. The buffer needs to be released by the receiver </returns>
-		byte[] Encode(byte[] raw);
+		ByteBuf Encode(ByteBuf raw);
 
 		/// <summary>
 		/// Decompress a buffer.
