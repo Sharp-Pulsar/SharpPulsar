@@ -12,6 +12,9 @@ using SharpPulsar.Trino;
 using System.Collections.Generic;
 using SharpPulsar.Client;
 using SharpPulsar.Messages;
+using Akka.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 
 namespace SharpPulsar
 {
@@ -115,43 +118,31 @@ namespace SharpPulsar
            
         }
         
-        public virtual async ValueTask<PulsarClient> NewClient(ClientConfigBuilder conf)
+        public static async ValueTask<PulsarClient> Client(IServiceProvider serviceProvider, ActorRegistry registry, ClientConfigurationData conf)
         {
-            _newClient++;
-            var actorSystem = _actorSystem;
-            if (conf.GetServiceUrlProvider != null)
+            var actorSystem = serviceProvider.GetRequiredService<ActorSystem>();
+            var pool = registry.Get<Client.ConnectionPool>();
+            var generator = registry.Get<IdGeneratorActor>();
+            var lookup = registry.Get<BinaryProtoLookupService>();
+            var client = registry.Get<PulsarClientActor>();
+            
+            var clientS = new PulsarClient(client, lookup, pool, generator, conf, actorSystem);
+            if (conf.ServiceUrlProvider != null)
             {
-                conf.GetServiceUrlProvider.CreateActor(actorSystem);
-            }
-            var clientConf = conf.ClientConfigurationData;
-
-            var cnxPool = actorSystem.ActorOf(Client.ConnectionPool.Prop(clientConf), $"ConnectionPool{_newClient}");
-            _actorRefs.Add(cnxPool);
-            var generator = actorSystem.ActorOf(IdGeneratorActor.Prop(), $"IdGenerator{_newClient}");
-            _actorRefs.Add(generator);
-            var lookup = actorSystem.ActorOf(BinaryProtoLookupService.Prop(cnxPool, generator, clientConf.ServiceUrl, clientConf.ListenerName, 
-                clientConf.UseTls, clientConf.MaxLookupRequest, clientConf.OperationTimeout, clientConf.ClientCnx), $"BinaryProtoLookupService{_newClient}");
-            _actorRefs.Add(lookup);
-            var client = _actorSystem.ActorOf(Props.Create(() => new PulsarClientActor(conf.ClientConfigurationData, cnxPool, lookup, generator)), $"PulsarClient{_newClient}");
-            _actorRefs.Add(client);
-            lookup.Tell(new SetClient(client));
-            var clientS = new PulsarClient(client, lookup, cnxPool, generator, conf.ClientConfigurationData, _actorSystem);
-            if (conf.ClientConfigurationData.ServiceUrlProvider != null)
-            {
-                conf.ClientConfigurationData.ServiceUrlProvider.Initialize(clientS);
+                conf.ServiceUrlProvider.Initialize(clientS);
             }
 
             IActorRef tcClient = ActorRefs.Nobody;
-            if (clientConf.EnableTransaction)
+            if (conf.EnableTransaction)
             {
                 try
                 {
                     var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(client, lookup, cnxPool, generator, clientConf, tcs), $"transaction_coord_client{_newClient}");
+                    tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(client, lookup, pool, generator, conf, tcs), $"transaction_coord_client");
                     var count = await tcs.Task.ConfigureAwait(false);
                     if ((int)count <= 0)
                         throw new Exception($"Tranaction Coordinator has '{count}' transaction handler");
-                    _actorRefs.Add(tcClient);
+                    registry.TryRegister<TransactionCoordinatorClient>(tcClient);
                     client.Tell(new SetTcClient(tcClient));
                 }
                 catch

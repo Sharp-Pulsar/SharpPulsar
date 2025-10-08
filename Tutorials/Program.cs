@@ -11,6 +11,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using SharpPulsar;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
@@ -27,7 +29,7 @@ namespace Tutorials
     //https://helm.kafkaesque.io/#accessing-the-pulsar-cluster-on-localhost
     //docker run -it --name ebere -e PULSAR_STANDALONE_USE_ZOOKEEPER=1 -e PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true -e PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 -e PULSAR_PREFIX_transactionCoordinatorEnabled=true -e PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=true -e PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true -e PULSAR_PREFIX_webSocketServiceEnabled=true -e PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650  -p 8080:8080 -p 8081:8081 apachepulsar/pulsar-all:3.1.0 sh -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
 
-    class Program
+    public class Program
     {
         //static string myTopic = $"persistent://public/default/mytopic-2";
         private static PulsarContainer _container;
@@ -37,8 +39,11 @@ namespace Tutorials
         //static string myTopic = $"persistent://public/default/mytopic-pulsar";
         private static PulsarClient _client;
         public static string Token { get; private set; }
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
+            var clientConfig = new ClientBuilder();
+            var builder = Host.CreateDefaultBuilder(args);
+            builder.AddSharpPulsarSetup(clientConfig.ClientConfigurationData, out _client);
             await StartContainer();
             //await TokenStartContainer();
             var url = "pulsar://127.0.0.1:6650";
@@ -56,7 +61,6 @@ namespace Tutorials
             }
             if (selection.Equals("1"))
                 url = "pulsar+ssl://127.0.0.1:6651";
-            var clientConfig = new ClientConfigBuilder();
             Console.WriteLine("auto-cluster or config?");
             var cluster = Console.ReadLine();
             if (cluster == "auto-cluster")

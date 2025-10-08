@@ -8,6 +8,8 @@
     <PackageVersion Include="Akka.Hosting" Version="1.5.51.1" />
     <PackageVersion Include="Akka.Logger.Serilog" Version="$(AkkaLoggerSerilogVersion)" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Apache.Avro" Version="$(ApacheAvroVersion)" />
     <PackageVersion Include="App.Metrics.Concurrency" Version="$(AppMetricsConcurrencyVersion)" />

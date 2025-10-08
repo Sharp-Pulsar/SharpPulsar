@@ -13,8 +13,11 @@
 
   <ItemGroup>
     <PackageReference Include="Akka" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
       <Using Include="Akka.Event" />
     <PackageReference Include="Akka.Logger.Serilog" />
+      
+    <PackageReference Include="Akka.Hosting" />  
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Apache.Avro" />
     <PackageReference Include="App.Metrics.Concurrency" />
