@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.API;
+using SharpPulsar.API.Internal;
 using SharpPulsar.API.Schema;
 using SharpPulsar.Common.Precondition;
 using SharpPulsar.Common.Schema;
@@ -32,7 +33,7 @@ namespace SharpPulsar.Schemas
     /// <summary>
     /// [Key, Value] pair schema definition
     /// </summary>
-    public class KeyValueSchema<K, V> : ISchema<KeyValue<K, V>>
+    public class KeyValueSchema<K, V> : AbstractSchema<KeyValue<K, V>>, IKeyValueSchema<K, V>
 	{
 		private readonly ISchema<K> _keySchema;
 
@@ -303,6 +304,27 @@ namespace SharpPulsar.Schemas
 			        return Of(keySchema, valueSchema, _keyValueEncodingType);
 		    }
         }
+
+        public byte[] Encode(IKeyValue<K, V> message)
+        {
+            throw new NotImplementedException();
+        }
+
+        ISchema<IKeyValue<K, V>> ISchema<IKeyValue<K, V>>.Clone()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override byte[] Encode(KeyValue<K, V> message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override KeyValue<K, V> Decode(byte[] byteBuf)
+        {
+            throw new NotImplementedException();
+        }
+
         private class KeySchemaInfoProvider : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> _outerInstance;
@@ -334,7 +356,10 @@ namespace SharpPulsar.Schemas
         {
 			get => _keyValueEncodingType;
         }
-		private class ValueSchemaInfoProvider : ISchemaInfoProvider
+
+        Shared.KeyValueEncodingType IKeyValueSchema<K, V>.KeyValueEncodingType => throw new NotImplementedException();
+
+        private class ValueSchemaInfoProvider : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> _outerInstance;
 

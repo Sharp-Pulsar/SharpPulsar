@@ -12,6 +12,11 @@ using System.Buffers;
 using SharpPulsar.Messages.Consumer;
 using Akka.Util.Internal;
 using SharpPulsar.Client;
+using SharpPulsar.Common.Protocol.Proto;
+using SharpPulsar.Shared;
+using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Shared.Exceptions;
+using static SharpPulsar.Shared.Exceptions.TransactionCoordinatorClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
