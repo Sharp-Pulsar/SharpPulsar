@@ -1,4 +1,7 @@
-﻿namespace SharpPulsar.Messages.Transaction
+﻿using SharpPulsar.Common.Protocol.Proto;
+using SharpPulsar.Shared.Exceptions;
+
+namespace SharpPulsar.Messages.Transaction
 {
     public readonly record struct NewTxnResponse
     {

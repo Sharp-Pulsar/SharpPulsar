@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using SharpPulsar.Common.Protocol.Proto;
+using SharpPulsar.Shared;
 
 namespace SharpPulsar.Messages.Transaction
 {

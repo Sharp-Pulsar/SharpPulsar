@@ -8,19 +8,46 @@ using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages;
 using SharpPulsar.TransactionImpl;
 using SharpPulsar.Client;
+using Akka.Configuration;
+using SharpPulsar.API;
 
 namespace SharpPulsar
 {
     public static class SharpPulsarSetup
     {
-        public static void AddSharpPulsarSetup(this IHostBuilder hostBuilder, ClientConfigurationData conf, out PulsarClient pulsarClient)
+        public static void AddSharpPulsarSetup(this IHostBuilder hostBuilder, string pulsarClientName, ClientConfigurationData conf, out IPulsarClient pulsarClient, Config config = null)
         {
-            PulsarClient _client = null;
+            IPulsarClient _client = null;
+            var _config = config ?? ConfigurationFactory.ParseString(@"
+            akka
+            {
+                log-dead-letters = off
+                loglevel = INFO
+			    log-config-on-start = on 
+                loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
+			    actor 
+                {              
+				      debug 
+				      {
+					      receive = on
+					      autoreceive = on
+					      lifecycle = on
+					      event-stream = on
+					      unhandled = on
+				      }  
+			    }
+                coordinated-shutdown
+                {
+                    exit-clr = on
+                }
+            }");
             hostBuilder.ConfigureServices((ctx, services) =>
             {
-                services.AddAkka("PulsarSystem", (configurationBuilder, serviceProvider) =>
+                services.AddAkka(pulsarClientName, (configurationBuilder, serviceProvider) =>
                  {
+
                      configurationBuilder
+                         .AddHocon(_config, HoconAddMode.Append)
                          .ConfigureLoggers(setup =>
                          {
                              // This sets the minimum log level
@@ -42,40 +69,16 @@ namespace SharpPulsar
                                  conf.ServiceUrlProvider.CreateActor(system);
                              }
 
-                             var pool = system.ActorOf(Client.ConnectionPool.Prop(conf), $"ConnectionPool");
-                             registry.TryRegister<Client.ConnectionPool>(pool);
-                         })
-                         .WithActors((system, registry) =>
-                         {
-                             var generator = system.ActorOf(IdGeneratorActor.Prop(), $"IdGenerator");
-                             registry.TryRegister<IdGeneratorActor>(generator);
-                         })
-                         .WithActors((system, registry) =>
-                         {
-                             var pool = registry.Get<Client.ConnectionPool>();
-                             var generator = registry.Get<IdGeneratorActor>();
+                             var pool = system.ActorOf(Client.ConnectionPool.Prop(conf), $"ConnectionPool-{pulsarClientName}");
+
+                             var generator = system.ActorOf(IdGeneratorActor.Prop(), $"IdGenerator-{pulsarClientName}");
 
                              var lookup = system.ActorOf(BinaryProtoLookupService.Prop(pool, generator, conf.ServiceUrl, conf.ListenerName,
-                                 conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeout, conf.ClientCnx), $"BinaryProtoLookupService");
-                             registry.TryRegister<BinaryProtoLookupService>(lookup);
-                         })
-                         .WithActors((system, registry) =>
-                         {
-                             var pool = registry.Get<Client.ConnectionPool>();
-                             var generator = registry.Get<IdGeneratorActor>();
-                             var lookup = registry.Get<BinaryProtoLookupService>();
+                                 conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeout, conf.ClientCnx), $"BinaryProtoLookupService-{pulsarClientName}");
 
-                             var client = system.ActorOf(Props.Create(() => new PulsarClientActor(conf, pool, lookup, generator)), $"PulsarClient");
-                             registry.TryRegister<PulsarClientActor>(client);
+                             var client = system.ActorOf(Props.Create(() => new PulsarClientActor(conf, pool, lookup, generator)), pulsarClientName);
                              lookup.Tell(new SetClient(client));
-                         })
-                         .WithActors((system, registry) =>
-                         {
-                             var pool = registry.Get<Client.ConnectionPool>();
-                             var generator = registry.Get<IdGeneratorActor>();
-                             var lookup = registry.Get<BinaryProtoLookupService>();
-                             var client = registry.Get<PulsarClientActor>();
-                             
+
                              _client = new PulsarClient(client, lookup, pool, generator, conf, system);
                              if (conf.ServiceUrlProvider != null)
                              {
@@ -88,7 +91,7 @@ namespace SharpPulsar
                                  try
                                  {
                                      var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                     tcClient = system.ActorOf(TransactionCoordinatorClient.Prop(client, lookup, pool, generator, conf, tcs), $"transaction_coord_client");
+                                     tcClient = system.ActorOf(TransactionCoordinatorClient.Prop(client, lookup, pool, generator, conf, tcs), $"transaction_coord_client-{pulsarClientName}");
                                      var count = tcs.Task.GetAwaiter().GetResult();
                                      if ((int)count <= 0)
                                          throw new Exception($"Tranaction Coordinator has '{count}' transaction handler");
@@ -102,6 +105,7 @@ namespace SharpPulsar
                                  }
                              }
                              _client.TransactionCoordinatorClient(tcClient);
+                             //registry.TryRegister<Client.ConnectionPool>(pool);
                          });
                  });
             });

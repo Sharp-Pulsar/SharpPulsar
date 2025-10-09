@@ -1,5 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Akka.Actor;
+using SharpPulsar.API;
+using SharpPulsar.Common.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Transaction
 {

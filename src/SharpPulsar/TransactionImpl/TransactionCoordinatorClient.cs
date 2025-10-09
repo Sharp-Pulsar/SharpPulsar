@@ -1,10 +1,13 @@
 ﻿using Akka.Actor;
+using SharpPulsar.API.Transaction;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
+using SharpPulsar.Common.Protocol.Proto;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Shared.Exceptions;
 using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
@@ -192,7 +195,7 @@ namespace SharpPulsar.TransactionImpl
             {
                 _log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(pub.TxnID.MostSigBits).ToString());
 
-                Sender.Tell(new RegisterProducedTopicResponse(Protocol.Proto.ServerError.UnknownError));
+                Sender.Tell(new RegisterProducedTopicResponse(ServerError.UnknownError));
             }
             else
                 handler.Forward(pub);
@@ -210,12 +213,12 @@ namespace SharpPulsar.TransactionImpl
             }
             else
             {
-                var sub = new Protocol.Proto.Subscription
+                var sub = new Subscription
                 {
                     Topic = subToTxn.Topic,
                     subscription = subToTxn.Subscription,
                 };
-                handler.Tell(new AddSubscriptionToTxn(subToTxn.TxnID, new List<Protocol.Proto.Subscription> { sub }), Sender);
+                handler.Tell(new AddSubscriptionToTxn(subToTxn.TxnID, new List<Subscription> { sub }), Sender);
 
             }
         }

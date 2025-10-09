@@ -14,6 +14,7 @@ using DotNet.Testcontainers.Configurations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SharpPulsar;
+using SharpPulsar.API;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Schemas;
@@ -37,13 +38,16 @@ namespace Tutorials
 
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         //static string myTopic = $"persistent://public/default/mytopic-pulsar";
-        private static PulsarClient _client;
+        private static IPulsarClient _client;
+        private static IPulsarClient _client2;
         public static string Token { get; private set; }
         public static async Task Main(string[] args)
         {
             var clientConfig = new ClientBuilder();
             var builder = Host.CreateDefaultBuilder(args);
-            builder.AddSharpPulsarSetup(clientConfig.ClientConfigurationData, out _client);
+            builder.AddSharpPulsarSetup("pulsar", clientConfig.ClientConfigurationData, out _client);
+            builder.AddSharpPulsarSetup("pulsar2", clientConfig.ClientConfigurationData, out _client2);
+            var c = (PulsarClient)_client2;
             await StartContainer();
             //await TokenStartContainer();
             var url = "pulsar://127.0.0.1:6650";

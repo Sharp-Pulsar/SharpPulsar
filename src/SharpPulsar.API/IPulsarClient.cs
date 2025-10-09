@@ -1,4 +1,6 @@
-﻿using SharpPulsar.API.Internal;
+﻿using System.Net.Sockets;
+using Akka.Actor;
+using SharpPulsar.API.Internal;
 using SharpPulsar.API.Transaction;
 
 /// <summary>
@@ -396,6 +398,8 @@ namespace SharpPulsar.API
         /// 
         /// @since 2.7.0 </returns>
         ITransactionBuilder NewTransaction();
+
+        void TransactionCoordinatorClient(IActorRef tcClient);
     }
 
 }
