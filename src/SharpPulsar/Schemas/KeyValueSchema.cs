@@ -2,10 +2,17 @@
 using SharpPulsar.API.Internal;
 using SharpPulsar.API.Schema;
 using SharpPulsar.Common.Precondition;
+using SharpPulsar.Common.Protocol.Proto;
 using SharpPulsar.Common.Schema;
+using SharpPulsar.Messages.Requests;
+using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
+using SharpPulsar.Shared.Buf;
 using SharpPulsar.Shared.Exceptions;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -40,10 +47,12 @@ namespace SharpPulsar.Schemas
 		private readonly ISchema<V> _valueSchema;
 
 		private readonly KeyValueEncodingType _keyValueEncodingType;
+        private readonly IDictionary<ISchemaVersion, ISchema<object>> _schemaMap = new ConcurrentDictionary<ISchemaVersion, ISchema<object>>();
 
-		// schemaInfo combined by KeySchemaInfo and ValueSchemaInfo:
-		//   [keyInfo.length][keyInfo][valueInfo.length][ValueInfo]
-		private ISchemaInfo _schemaInfo;
+
+        // schemaInfo combined by KeySchemaInfo and ValueSchemaInfo:
+        //   [keyInfo.length][keyInfo][valueInfo.length][ValueInfo]
+        private ISchemaInfo _schemaInfo;
 
 		private ISchemaInfoProvider _schemaInfoProvider;
 
@@ -82,7 +91,7 @@ namespace SharpPulsar.Schemas
 			return _kvBytes;
 		}
 
-		public virtual bool SupportSchemaVersioning()
+		public override bool SupportSchemaVersioning()
 		{
 			return _keySchema.SupportSchemaVersioning() || _valueSchema.SupportSchemaVersioning();
 		}
@@ -159,7 +168,7 @@ namespace SharpPulsar.Schemas
 		}
 
         // encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
-        public byte[] Encode(KeyValue<K, V> message)
+        public override byte[] Encode(KeyValue<K, V> message)
         {
             return Encode(null, message).Data;
         }
@@ -231,8 +240,109 @@ namespace SharpPulsar.Schemas
 			}
 			return new KeyValue<K, V>(K, V);
 		}
+        public virtual KeyValue<K, V> Decode(string topic, byte[] keyBytes, byte[] valueBytes, byte[] schemaId)
+        {
+            K k = default(K);
+            byte[] keySchemaId = null;
+            byte[] valueSchemaId = null;
+            if (EncodeData.IsValidSchemaId(schemaId))
+            {
+                var kvSchemaId = GetKeyValueSchemaId(schemaId);
+                keySchemaId = kvSchemaId.Key;
+                valueSchemaId = kvSchemaId.Value;
+            }
 
-		public virtual ISchemaInfo SchemaInfo
+            if (keyBytes != null)
+            {
+                if (_keySchema.SupportSchemaVersioning() && EncodeData.IsValidSchemaId(keySchemaId))
+                {
+                    k = _keySchema.Decode(topic, keyBytes, keySchemaId);
+                }
+                else
+                {
+                    k = _keySchema.Decode(keyBytes);
+                }
+            }
+
+            V v = default(V);
+            if (valueBytes != null)
+            {
+                if (_valueSchema.SupportSchemaVersioning() && EncodeData.IsValidSchemaId(valueSchemaId))
+                {
+                    v = _valueSchema.Decode(topic, valueBytes, valueSchemaId);
+                }
+                else
+                {
+                    v = _valueSchema.Decode(valueBytes);
+                }
+            }
+            return new KeyValue<K, V>(k, v);
+        }
+
+        private KeyValue<byte[], byte[]> GetKeyValueSchemaId(byte[] schemaId)
+        {
+            if (!SchemaType.External.Equals(_valueSchema.SchemaInfo.Type))
+            {
+                return new KeyValue<byte[], byte[]>(schemaId, schemaId);
+            }
+            return KeyValue<byte[], byte[]>.GetSchemaId(schemaId);
+        }
+        /// <summary>
+        /// It may happen that the schema is not loaded but we need it, for instance in order to call getSchemaInfo()
+        /// We cannot call this method in getSchemaInfo. </summary>
+        /// <seealso cref="AutoConsumeSchema.fetchSchemaIfNeeded(SchemaVersion)"/>
+        public virtual void FetchSchemaIfNeeded(string topicName, ISchemaVersion schemaVersion)
+        {
+            if (_schemaInfo != null)
+            {
+                if (_keySchema is AutoConsumeSchema)
+                {
+                    ((AutoConsumeSchema)_keySchema).FetchSchemaIfNeeded(schemaVersion);
+                }
+                if (_valueSchema is AutoConsumeSchema)
+                {
+                    ((AutoConsumeSchema)_valueSchema).FetchSchemaIfNeeded(schemaVersion);
+                }
+                return;
+            }
+            SchemaInfoProviderOnSubschemas();
+            if (schemaVersion == null)
+            {
+                schemaVersion = BytesSchemaVersion.Of(new byte[0]);
+            }
+            if (_schemaInfoProvider == null)
+            {
+                throw new SchemaSerializationException("Can't get accurate schema information for " + topicName + " " + "using KeyValueSchemaImpl because SchemaInfoProvider is not set yet");
+            }
+            else
+            {
+                SchemaInfo schemaInfo;
+                try
+                {
+                    schemaInfo = (SchemaInfo)_schemaInfoProvider.GetSchemaByVersion(schemaVersion.Bytes());
+                    if (schemaInfo == null)
+                    {
+                        // schemaless topic
+                        schemaInfo = (SchemaInfo)BytesSchema.Of().SchemaInfo;
+                    }
+                    ConfigureSchemaInfo(topicName, "topic", schemaInfo);
+                }
+                catch (Exception e) { 
+                    //log.error("Can't get last schema for topic {} using KeyValueSchemaImpl", topicName);
+                    throw new SchemaSerializationException(e);
+                }
+                //log.info("Configure schema {} for topic {} : {}", schemaVersion, topicName, schemaInfo.getSchemaDefinition());
+            }
+
+        }
+        private void SchemaInfoProviderOnSubschemas()
+        {
+            _keySchema.SchemaInfoProvider = new KeySchemaInfoProvider(this);
+
+            _valueSchema.SchemaInfoProvider = new KeySchemaInfoProvider(this);
+        }
+
+        public override ISchemaInfo SchemaInfo
 		{
 			get
 			{
@@ -240,7 +350,7 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public virtual ISchemaInfoProvider SchemaInfoProvider
+		public override ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -291,7 +401,7 @@ namespace SharpPulsar.Schemas
         {
             return Clone();
         }
-        public ISchema<KeyValue<K, V>> AtSchemaVersion(byte[] schemaVersion)
+        public override ISchema<KeyValue<K, V>> AtSchemaVersion(byte[] schemaVersion)
         {
 		    if(!SupportSchemaVersioning())
 		    {
@@ -304,23 +414,18 @@ namespace SharpPulsar.Schemas
 			        return Of(keySchema, valueSchema, _keyValueEncodingType);
 		    }
         }
+        
+        ISchema<IKeyValue<K, V>> ISchema<IKeyValue<K, V>>.Clone()
+        {
+            throw new NotImplementedException();
+        }
 
         public byte[] Encode(IKeyValue<K, V> message)
         {
             throw new NotImplementedException();
         }
 
-        ISchema<IKeyValue<K, V>> ISchema<IKeyValue<K, V>>.Clone()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override byte[] Encode(KeyValue<K, V> message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override KeyValue<K, V> Decode(byte[] byteBuf)
+        public override KeyValue<K, V> Decode(ByteBuf byteBuf)
         {
             throw new NotImplementedException();
         }

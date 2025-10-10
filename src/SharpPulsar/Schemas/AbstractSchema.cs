@@ -1,6 +1,7 @@
 ﻿using System;
 using SharpPulsar.API;
 using SharpPulsar.API.Schema;
+using SharpPulsar.Shared.Buf;
 using SchemaSerializationException = SharpPulsar.Shared.Exceptions.SchemaSerializationException;
 
 /// <summary>
@@ -52,7 +53,7 @@ namespace SharpPulsar.Schemas
 		/// <param name="byteBuf"> the messages to verify </param>
 		/// <returns> true if it is a valid message </returns>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		public virtual void Validate(byte[] byteBuf)
+		public virtual void Validate(ByteBuf byteBuf)
 		{
 			throw new SchemaSerializationException("This method is not supported");
 		}
@@ -63,7 +64,7 @@ namespace SharpPulsar.Schemas
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		public abstract T Decode(byte[] byteBuf);
+		public abstract T Decode(ByteBuf byteBuf);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -72,7 +73,7 @@ namespace SharpPulsar.Schemas
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		public virtual T Decode(byte[] byteBuf, byte[] schemaVersion)
+		public virtual T Decode(ByteBuf byteBuf, byte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(byteBuf);

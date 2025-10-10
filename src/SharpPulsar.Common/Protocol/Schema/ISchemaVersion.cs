@@ -18,18 +18,15 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-	/// <summary>
-	/// Schema version.
-	/// </summary>
-	public interface ISchemaVersion
-	{
-        byte[] Bytes();
-	}
+    /// <summary>
+    /// Schema version.
+    /// </summary>
+    public interface ISchemaVersion
+    {
+        public static ISchemaVersion Latest = new LatestVersion();
+        public static ISchemaVersion Empty = new EmptyVersion();
 
-	public static class SchemaVersionFields
-	{
-		public static readonly ISchemaVersion Latest = new LatestVersion();
-		public static readonly ISchemaVersion Empty = new EmptyVersion();
-	}
+        byte[] Bytes();
+    }
 
 }

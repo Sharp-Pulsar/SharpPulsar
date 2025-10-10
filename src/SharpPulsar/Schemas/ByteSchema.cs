@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.API.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
+using SharpPulsar.Shared.Buf;
 using SharpPulsar.Shared.Exceptions;
 
 namespace SharpPulsar.Schemas
@@ -50,8 +51,12 @@ namespace SharpPulsar.Schemas
 			return bytes[0];
 		}
 
+        public override byte Decode(ByteBuf byteBuf)
+        {
+            throw new System.NotImplementedException();
+        }
 
-		public override ISchemaInfo SchemaInfo
+        public override ISchemaInfo SchemaInfo
 		{
 			get
 			{

@@ -17,6 +17,7 @@ using SharpPulsar;
 using SharpPulsar.API;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
+using SharpPulsar.Configuration;
 using SharpPulsar.Schemas;
 using SharpPulsar.ServiceProvider;
 using SharpPulsar.TransactionImpl;
@@ -38,16 +39,18 @@ namespace Tutorials
 
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         //static string myTopic = $"persistent://public/default/mytopic-pulsar";
-        private static IPulsarClient _client;
-        private static IPulsarClient _client2;
+        private static List<IPulsarClient> _client;
         public static string Token { get; private set; }
         public static async Task Main(string[] args)
         {
             var clientConfig = new ClientBuilder();
             var builder = Host.CreateDefaultBuilder(args);
-            builder.AddSharpPulsarSetup("pulsar", clientConfig.ClientConfigurationData, out _client);
-            builder.AddSharpPulsarSetup("pulsar2", clientConfig.ClientConfigurationData, out _client2);
-            var c = (PulsarClient)_client2;
+            var clientsData = new Dictionary<string, ClientConfigurationData>
+            {
+                { "pulsar", new ClientConfigurationData() }
+            };
+            builder.AddSharpPulsarSetup(clientsData, out _client);
+            var c = (PulsarClient)_client[1];
             await StartContainer();
             //await TokenStartContainer();
             var url = "pulsar://127.0.0.1:6650";
@@ -171,7 +174,7 @@ namespace Tutorials
         private static async ValueTask ProduceConsumer(PulsarClient pulsarClient)
         {
             var consumer = await pulsarClient
-                .NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
+                .NewConsumerAsync(new ConsumerBuilder<byte[]>()
                 .Topic(myTopic)
                 .ForceTopicCreation(true)
                 .SubscriptionName($"sub-{Guid.NewGuid()}")

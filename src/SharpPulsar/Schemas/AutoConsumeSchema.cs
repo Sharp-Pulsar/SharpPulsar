@@ -5,6 +5,15 @@ using SharpPulsar.API;
 using SharpPulsar.API.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared.Exceptions;
+using System.Collections.Concurrent;
+using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Admin.v2;
+using System.Threading;
+using SharpPulsar.Common.Precondition;
+using System.Text.Unicode;
+using Xunit;
+using Avro.Generic;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,6 +40,48 @@ namespace SharpPulsar.Schemas
     /// </summary>
     public class AutoConsumeSchema : ISchema<IGenericRecord>
     {
+        private bool InstanceFieldsInitialized = false;
+
+        public AutoConsumeSchema()
+        {
+            if (!InstanceFieldsInitialized)
+            {
+                InitializeInstanceFields();
+                InstanceFieldsInitialized = true;
+            }
+        }
+
+        private void InitializeInstanceFields()
+        {
+            _schemaMap = InitSchemaMap();
+        }
+        private ConcurrentDictionary<ISchemaVersion, ISchema<object>> InitSchemaMap()
+        {
+            var schemaMap = new ConcurrentDictionary<ISchemaVersion, ISchema<object>>();
+            // The Schema.BYTES will not be uploaded to the broker and store in the schema storage,
+            // if the schema version in the message metadata is empty byte[], it means its schema is Schema.BYTES.
+            schemaMap.TryAdd(BytesSchemaVersion.Of(new byte[0]), ISchema<object>.Bytes);
+            return schemaMap;
+        }
+        public virtual void SetSchema(ISchemaVersion schemaVersion, ISchema<object> schema)
+        {
+            _schemaMap.TryAdd(schemaVersion, schema);
+        }
+
+        public virtual void SetSchema(ISchema<object> schema)
+        {
+            _schemaMap.TryAdd(ISchemaVersion.Latest, schema);
+        }
+
+        private void EnsureSchemaInitialized(ISchemaVersion schemaVersion)
+        {
+            Condition.CheckState(_schemaMap.ContainsKey(schemaVersion), "Schema version " + schemaVersion + " is not initialized before used");
+        }
+
+        private ConcurrentDictionary<ISchemaVersion, ISchema<object>> _schemaMap;
+
+        public static readonly ISchemaInfo SCHEMA_INFO = SchemaInfo.Bui.builder().name("AutoConsume").type(SchemaType.AUTO_CONSUME).schema(new sbyte[0]).build();
+
 
         private ISchema<IGenericRecord> _schema;
 
@@ -93,25 +144,41 @@ namespace SharpPulsar.Schemas
         {
             return true;
         }
-        public virtual ISchema<IGenericRecord> AtSchemaVersion(byte[] schemaVersion)
+        public virtual ISchema<object> AtSchemaVersion(byte[] schemaVersion)
         {
-            FetchSchemaIfNeeded();
-            EnsureSchemaInitialized();
-            if (_schema.SupportSchemaVersioning() && _schema is AbstractSchema<IGenericRecord>)
+            var sv = GetSchemaVersion(schemaVersion);
+            FetchSchemaIfNeeded(sv);
+            EnsureSchemaInitialized(sv);
+
+            _schemaMap.TryGetValue(sv, out var topicVersionedSchema);
+            if (topicVersionedSchema.SupportSchemaVersioning() && topicVersionedSchema is AbstractSchema<object>)
             {
-                return ((AbstractSchema<IGenericRecord>)_schema).AtSchemaVersion(schemaVersion);
+                return ((AbstractSchema<object>)topicVersionedSchema).AtSchemaVersion(schemaVersion);
             }
             else
             {
-                return _schema;
+                return topicVersionedSchema;
             }
+
         }
         public IGenericRecord Decode(byte[] bytes, byte[] schemaVersion)
         {
-            FetchSchemaIfNeeded();
-            EnsureSchemaInitialized();
-            return Adapt(_schema.Decode(bytes, schemaVersion), schemaVersion);
+            var sv = GetSchemaVersion(schemaVersion);
+            FetchSchemaIfNeeded(sv);
+            EnsureSchemaInitialized(sv);
+            _schemaMap.TryGetValue(sv, out var t);
+            return Adapt(t.Decode(bytes, schemaVersion), schemaVersion);
         }
+
+        public IGenericRecord Decode(ByteBuffer buffer, byte[] schemaVersion)
+        {
+            var sv = GetSchemaVersion(schemaVersion);
+            FetchSchemaIfNeeded(sv);
+            EnsureSchemaInitialized(sv);
+            _schemaMap.TryGetValue(sv, out var t);
+            return Adapt(t.Decode(buffer, schemaVersion), schemaVersion);
+        }
+
         public object NativeSchema
         {
             get
@@ -133,20 +200,48 @@ namespace SharpPulsar.Schemas
             _componentName = componentName;
             if (schemaInfo == null) return;
             var genericSchema = GenerateSchema(schemaInfo);
-            Schema = genericSchema;
+            SetSchema(ISchemaVersion.Latest, genericSchema);
             //Log.LogInformation("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
         }
-
-        private IGenericSchema<IGenericRecord> GenerateSchema(ISchemaInfo schemaInfo)
+        
+        private static ISchema<object> GenerateSchema(ISchemaInfo schemaInfo)
         {
-            if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
-            {
-                throw new Exception("Currently auto consume only works for topics with avro or json schemas");
-            }
             // when using `AutoConsumeSchema`, we use the schema associated with the messages as schema reader
             // to decode the messages.
-            return GenericSchema.Of(schemaInfo, false);
+            const bool useProvidedSchemaAsReaderSchema = false;
+
+            if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
+            {
+                return ExtractFromAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
+            }
+            return GetSchema(schemaInfo);
         }
+        private static ISchema<object> ExtractFromAvroSchema(ISchemaInfo schemaInfo, in bool useProvidedSchemaAsReaderSchema)
+        {
+            var avroSchema = SchemaUtils.ParseAvroSchema(Encoding.UTF8.GetString(schemaInfo.Schema));
+            // if avroSchema type is RECORD we can use GenericSchema, otherwise use its own schema and decode return
+            // `GenericObjectWrapper`
+            if (avroSchema.Type == RECORD)
+            {
+                return GenericSchema.Of(schemaInfo, useProvidedSchemaAsReaderSchema);
+            }
+            else
+            {
+                // because of we use json primitive schema or avro primitive schema generated data
+                // different from the data generated using the primitive schema of pulsar itself.
+                // so we should use the original schema of this data
+                if (schemaInfo.Type == SchemaType.JSON)
+                {
+                    // It should be generated and used POJO, otherwise json cannot be parsed correctly
+                    return ISchema.JSON(SchemaDefinition.builder().withPojo(ReflectData.get().getClass(avroSchema)).build());
+                }
+                else
+                {
+                    return Schema.AVRO(SchemaDefinition.builder().withJsonDef(new string(schemaInfo.getSchema(), UTF_8)).build());
+                }
+            }
+        }
+
         public ISchema<IGenericRecord> Clone()
         {
             var schema = ISchema<IGenericRecord>.AutoConsume();
@@ -208,7 +303,7 @@ namespace SharpPulsar.Schemas
                     var kvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
                     var keySchema = (ISchema<object>)GetSchema(kvSchemaInfo.Key);
                     var valueSchema = (ISchema<object>)GetSchema(kvSchemaInfo.Value);
-                    return KeyValueSchema<object, object>.Of(keySchema, valueSchema);
+                    return KeyValueSchema<object, object>.Of(keySchema, valueSchema, KeyValueSchemaInfo.DecodeKeyValueEncodingType(schemaInfo));
                 default:
                     throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
             }
@@ -234,14 +329,54 @@ namespace SharpPulsar.Schemas
         {
             throw new NotImplementedException();
         }
+
+        public virtual ISchema<object> InternalSchema
+        {
+            get
+            {
+                _schemaMap.TryGetValue(ISchemaVersion.Latest, out var schema);
+                return schema;
+            }
+        }
+
+        public virtual ISchema<object> GetInternalSchema(byte[] schemaVersion)
+        {
+            _schemaMap.TryGetValue(GetSchemaVersion(schemaVersion), out var schema);
+            return schema;
+        }
+
+        /// <summary>
+        /// Get a specific schema version, fetching from the Registry if it is not loaded yet.
+        /// This method is not intended to be used by applications. </summary>
+        /// <param name="schemaVersion"> the version </param>
+        /// <returns> the Schema at the specific version </returns>
+        /// <seealso cref=".atSchemaVersion(byte[])"/>
+        public virtual ISchema<object> UnwrapInternalSchema(byte[] schemaVersion)
+        {
+            FetchSchemaIfNeeded(BytesSchemaVersion.Of(schemaVersion));
+            return GetInternalSchema(schemaVersion);
+        }
+        private static ISchemaVersion GetSchemaVersion(byte[] schemaVersion)
+        {
+            if (schemaVersion != null)
+            {
+                return BytesSchemaVersion.Of(schemaVersion);
+            }
+            return BytesSchemaVersion.Of(new byte[0]);
+        }
+
         /// <summary>
         /// It may happen that the schema is not loaded but we need it, for instance in order to call getSchemaInfo()
         /// We cannot call this method in getSchemaInfo, because getSchemaInfo is called in many
         /// places and we will introduce lots of deadlocks.
         /// </summary>
-        public virtual void FetchSchemaIfNeeded()
+        public virtual void FetchSchemaIfNeeded(ISchemaVersion schemaVersion)
         {
-            if (_schema == null)
+            if (schemaVersion == null)
+            {
+                schemaVersion = BytesSchemaVersion.Of(new byte[0]);
+            }
+            if (!_schemaMap.ContainsKey(schemaVersion))
             {
                 if (_schemaInfoProvider == null)
                 {
@@ -249,24 +384,26 @@ namespace SharpPulsar.Schemas
                 }
                 else
                 {
-                    ISchemaInfo schemaInfo = null;
+                    SchemaInfo schemaInfo = null;
                     try
                     {
-                        schemaInfo = _schemaInfoProvider.LatestSchema().GetAwaiter().GetResult();
+                        schemaInfo = (SchemaInfo)_schemaInfoProvider.GetSchemaByVersion(schemaVersion.Bytes());
                         if (schemaInfo == null)
                         {
                             // schemaless topic
-                            schemaInfo = BytesSchema.Of().SchemaInfo;
+                            schemaInfo = (SchemaInfo)BytesSchema.Of().SchemaInfo;
                         }
                     }
                     catch (Exception e)
                     {
-                        throw new SchemaSerializationException(e.Message);
+                        //log.error("Can't get last schema for topic {} using AutoConsumeSchema", topicName);
+                        throw new SchemaSerializationException(e);
                     }
                     // schemaInfo null means that there is no schema attached to the topic.
-                    _schema = GenerateSchema(schemaInfo);
-                    _schema.SchemaInfoProvider = _schemaInfoProvider;
-                    //log.info("Configure {} schema for topic {} : {}", _componentName, _topicName, schemaInfo.SchemaDefinition);
+                    var schema = GenerateSchema(schemaInfo);
+                    schema.SchemaInfoProvider = _schemaInfoProvider;
+                    SetSchema(schemaVersion, schema);
+                    //log.info("Configure {} schema {} for topic {} : {}", componentName, schemaVersion, topicName, schemaInfo.getSchemaDefinition());
                 }
             }
         }
