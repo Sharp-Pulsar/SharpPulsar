@@ -14,6 +14,7 @@ using DotNet.Testcontainers.Configurations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SharpPulsar;
+using SharpPulsar.Admin.v2;
 using SharpPulsar.API;
 using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
@@ -43,14 +44,19 @@ namespace Tutorials
         public static string Token { get; private set; }
         public static async Task Main(string[] args)
         {
+            var serviceCollection = new ServiceCollection(); 
+
             var clientConfig = new ClientBuilder();
             var builder = Host.CreateDefaultBuilder(args);
-            var clientsData = new Dictionary<string, ClientConfigurationData>
+            builder.ConfigureServices(services =>
             {
-                { "pulsar", new ClientConfigurationData() }
-            };
-            builder.AddSharpPulsarSetup(clientsData, out _client);
+                services.AddSingleton<TutorialsService>();
+                services.AddHostedService<TutorialsService>();
+            });
+            builder.AddSharpPulsarSetup();
+            builder.Build().Start();
             var c = (PulsarClient)_client[1];
+
             await StartContainer();
             //await TokenStartContainer();
             var url = "pulsar://127.0.0.1:6650";
@@ -141,36 +147,7 @@ namespace Tutorials
             else
                 await ProduceConsumer(pulsarClient);
         }
-        private static async ValueTask StartContainer()
-        {
-            _container = BuildContainer()
-              .WithCleanUp(true)
-              .Build();
-
-            await _container.StartAsync();
-            //await _container.ExecAsync(new List<string> { @"./bin/pulsar", "initialize-transaction-coordinator-metadata", "-cs", "localhost:2181", "-c", "standalone", "--initial-num-transaction-coordinators", "2" });
-            Console.WriteLine("Start Test Container");
-            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-            await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
-            await AwaitPortReadiness($"http://127.0.0.1:8081/");
-            Console.WriteLine("AwaitPortReadiness Test Container");
-        }
-        private static async ValueTask TokenStartContainer()
-        {
-            var t = TokenBuildContainer();
-            _container = t
-              .WithCleanUp(true)
-              .Build();
-
-            await _container.StartAsync();
-            Console.WriteLine("Start Test Container");
-            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-           
-            await Task.Delay(2000);
-            var s = await _container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", "/pulsar/secret.key", "--subject", "test-user" });
-            Token = s.Stdout;
-           // await AwaitPortReadiness($"http://127.0.0.1:8081/");
-        }
+       
         private static async ValueTask ProduceConsumer(PulsarClient pulsarClient)
         {
             var consumer = await pulsarClient
@@ -1011,28 +988,5 @@ namespace Tutorials
             throw new Exception("Unable to confirm Pulsar has initialized");
         }
     }
-    public class Students
-    {
-        public string Name { get; set; }
-        public int Age { get; set; }
-        public string School { get; set; }
-    }
-    public class DataOp
-    {
-        public string Text { get; set; }
-    }
-    public class JournalEntry
-    {
-        public string Id { get; set; }
-
-        public string PersistenceId { get; set; }
-
-        public long SequenceNr { get; set; }
-
-        public bool IsDeleted { get; set; }
-
-        public byte[] Payload { get; set; }
-        public long Ordering { get; set; }
-        public string Tags { get; set; }
-    }
+    
 }

@@ -15,134 +15,54 @@ using SharpPulsar.Messages;
 using Akka.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
+using SharpPulsar.API;
 
 namespace SharpPulsar
 {
-    public abstract class PulsarSystem : IDisposable
+    public class PulsarSystem : IDisposable
     {
         static PulsarSystem()
         {
             // Unify unhandled exceptions
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         }
-        private int _newClient = 0;
-        private static PulsarSystem _instance;
         private static readonly Nito.AsyncEx.AsyncLock _lock = new Nito.AsyncEx.AsyncLock();
         private static ActorSystem _actorSystem;
         private readonly ClientConfigurationData _conf = new();
         private readonly List<IActorRef> _actorRefs= new List<IActorRef>();
-        private readonly Action _logSetup = () => 
-        {
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.File("logs.log", rollingInterval: RollingInterval.Hour)
-                .MinimumLevel.Information()
-                .CreateLogger();
-        };
         
+        public PulsarSystem(IServiceProvider serviceProvider)
+        {
+            _actorSystem = serviceProvider.GetRequiredService<ActorSystem>();
+        }
+        public static async ValueTask<IPulsarClient> NewClient(string pulsarClientName,  ClientConfigurationData conf)
+        {
+            var pool = _actorSystem.ActorOf(Client.ConnectionPool.Prop(conf), $"ConnectionPool-{pulsarClientName}");
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="actorSystem"></param>
-        /// <param name="actorSystemName"></param>
-        /// <returns></returns>
-        public static PulsarSystem GetInstance(ActorSystem actorSystem, string actorSystemName = "apache-pulsar")
-        {
-            if (_instance == null)
-            {
-                using (_lock.Lock())
-                {
-                    if (_instance == null)
-                    {
-                        _instance = CreateActorSystem(null, null, false, actorSystemName, actorSystem);
-                    }
-                }
-            }
-            return _instance;
-        }
-        public static PulsarSystem GetInstance(Action logSetup = null, Config config = null, string actorSystemName = "apache-pulsar")
-        {
-            if (_instance == null)
-            {
-                using (_lock.Lock())
-                {
-                    if (_instance == null)
-                    {
-                        _instance = CreateActorSystem(logSetup, config, true, actorSystemName);
+            var generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), $"IdGenerator-{pulsarClientName}");
 
-                    }
-                }
-            }
-            return _instance;
-        }
-       
-        private static PulsarSystem CreateActorSystem(Action logSetup, Config config, bool runLogSetup, string actorSystemName, ActorSystem actorsystem = null)
-        {
-            var confg = config ?? ConfigurationFactory.ParseString(@"
-            akka
-            {
-                log-dead-letters = off
-                loglevel = INFO
-			    log-config-on-start = on 
-                loggers=[""Akka.Logger.Serilog.SerilogLogger, Akka.Logger.Serilog""]
-			    actor 
-                {              
-				      debug 
-				      {
-					      receive = on
-					      autoreceive = on
-					      lifecycle = on
-					      event-stream = on
-					      unhandled = on
-				      }  
-			    }
-                coordinated-shutdown
-                {
-                    exit-clr = on
-                }
-            }");
+            var lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(pool, generator, conf.ServiceUrl, conf.ListenerName,
+                conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeout, conf.ClientCnx), $"BinaryProtoLookupService-{pulsarClientName}");
 
-            
-            var actorSystem = actorsystem ?? ActorSystem.Create(actorSystemName, confg);
-            return new PulsarSystem(actorSystem, logSetup, runLogSetup);
-        }
-        
-        private PulsarSystem(ActorSystem actorSystem, Action logSetup, bool runLogSetup)
-        {
-            _actorSystem = actorSystem;
-            if (runLogSetup)
-            {
-                var logging = logSetup ?? _logSetup;
-                logging();
-            }
-           
-        }
-        
-        public static async ValueTask<PulsarClient> Client(IServiceProvider serviceProvider, ActorRegistry registry, ClientConfigurationData conf)
-        {
-            var actorSystem = serviceProvider.GetRequiredService<ActorSystem>();
-            var pool = registry.Get<Client.ConnectionPool>();
-            var generator = registry.Get<IdGeneratorActor>();
-            var lookup = registry.Get<BinaryProtoLookupService>();
-            var client = registry.Get<PulsarClientActor>();
-            
-            var clientS = new PulsarClient(client, lookup, pool, generator, conf, actorSystem);
+            var client = _actorSystem.ActorOf(Props.Create(() => new PulsarClientActor(conf, pool, lookup, generator)), pulsarClientName);
+            lookup.Tell(new SetClient(client));
+
+
+            var clientS = new PulsarClient(client, lookup, pool, generator, conf, _actorSystem);
             if (conf.ServiceUrlProvider != null)
             {
                 conf.ServiceUrlProvider.Initialize(clientS);
             }
-
             IActorRef tcClient = ActorRefs.Nobody;
             if (conf.EnableTransaction)
             {
                 try
                 {
                     var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(client, lookup, pool, generator, conf, tcs), $"transaction_coord_client");
+                    tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(client, lookup, pool, generator, conf, tcs), $"transaction_coord_client-{pulsarClientName}");
                     var count = await tcs.Task.ConfigureAwait(false);
                     if ((int)count <= 0)
                         throw new Exception($"Tranaction Coordinator has '{count}' transaction handler");
-                    registry.TryRegister<TransactionCoordinatorClient>(tcClient);
                     client.Tell(new SetTcClient(tcClient));
                 }
                 catch
