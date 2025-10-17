@@ -1,13 +1,13 @@
-﻿using System.Buffers;
+﻿using SharpPulsar.Shared.Buf;
 
 namespace SharpPulsar.Messages
 {
     public readonly record struct Payload
     {
-        public ReadOnlySequence<byte> Bytes { get; }
+        public ByteBuf Bytes { get; }
         public long RequestId { get; }
         public string Command { get; }
-        public Payload(ReadOnlySequence<byte> bytes, long requestId, string command)
+        public Payload(ByteBuf bytes, long requestId, string command)
         {
             Bytes = bytes;
             RequestId = requestId;

@@ -4,24 +4,25 @@
   </PropertyGroup>
   <!-- App dependencies -->
   <ItemGroup>
-    <PackageVersion Include="Akka" Version="1.5.51" />
-    <PackageVersion Include="Akka.Hosting" Version="1.5.51.1" />
+    <PackageVersion Include="Akka" Version="1.5.53" />
+    <PackageVersion Include="Akka.Hosting" Version="1.5.53" />
     <PackageVersion Include="Akka.Logger.Serilog" Version="$(AkkaLoggerSerilogVersion)" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
+    <PackageVersion Include="Google.Protobuf.Tools" Version="3.33.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.10" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="Apache.Avro" Version="$(ApacheAvroVersion)" />
+    <PackageVersion Include="Apache.Avro" Version="1.12.1" />
     <PackageVersion Include="App.Metrics.Concurrency" Version="$(AppMetricsConcurrencyVersion)" />
     <PackageVersion Include="AvroSchemaGenerator" Version="$(AvroSchemaGeneratorVersion)" />
     <PackageVersion Include="DotNetty.Common" Version="$(DotNettyCommonVersion)" />
-    <PackageVersion Include="Google.Protobuf" Version="3.32.1" />
+    <PackageVersion Include="Google.Protobuf" Version="3.33.0" />
     <PackageVersion Include="IdentityModel" Version="$(IdentityModelVersion)" />
     <PackageVersion Include="JsonSubTypes" Version="$(JsonSubTypesVersion)" />
     <PackageVersion Include="K4os.Compression.LZ4" Version="$(K4osCompressionLZ4Version)" />
-    <PackageVersion Include="Microsoft.Extensions.ApiDescription.Client" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.ApiDescription.Client" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
     <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
     <PackageVersion Include="Microsoft.Rest.ClientRuntime" Version="$(MicrosoftRestClientRuntimeVersion)" />
     <PackageVersion Include="Nager.PublicSuffix" Version="3.6.0" />
@@ -36,46 +37,46 @@
     <PackageVersion Include="SharpZipLib" Version="$(SharpZipLibVersion)" />
     <PackageVersion Include="Snappy.Standard" Version="$(SnappyStandardVersion)" />
     <PackageVersion Include="System.Diagnostics.Contracts" Version="$(SystemDiagnosticsContractsVersion)" />
-    <PackageVersion Include="System.IO.Pipelines" Version="9.0.9" />
+    <PackageVersion Include="System.IO.Pipelines" Version="9.0.10" />
     <PackageVersion Include="System.Net.NetworkInformation" Version="$(SystemNetNetworkInformationVersion)" />
     <PackageVersion Include="System.Reactive" Version="6.1.0" />
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
     <PackageVersion Include="System.Runtime.Serialization.Primitives" Version="$(SystemRuntimeSerializationPrimitivesVersion)" />
     <PackageVersion Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.9" />
-    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="9.0.9" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.10" />
+    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="9.0.10" />
     <PackageVersion Include="zlib.net-mutliplatform" Version="$(zlibnetmutliplatformVersion)" />
     <PackageVersion Include="ZstdNet" Version="$(ZstdNetVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.json" Version="9.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.json" Version="9.0.10" />
     <PackageVersion Include="HttpToSocks5Proxy" Version="1.4.0" />
-    <PackageVersion Include="Spectre.Console" Version="0.51.1" />
+    <PackageVersion Include="Spectre.Console" Version="0.52.0" />
     <PackageVersion Include="JetBrains.Annotations" Version="2023.3.0" />
     <PackageVersion Include="protobuf-net.BuildTools" Version="3.2.52" />
-    <PackageVersion Include="Akka.TestKit.Xunit2" Version="1.5.51" />
+    <PackageVersion Include="Akka.TestKit.Xunit2" Version="1.5.53" />
     <PackageVersion Include="Castle.Core" Version="5.2.1" />
     <PackageVersion Include="FluentAssertions" Version="8.7.1" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="2.4.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
-    <PackageVersion Include="OpenTelemetry" Version="1.13.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.13.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.13.0" />
-    <PackageVersion Include="System.Security.Permissions" Version="9.0.9" />
+    <PackageVersion Include="OpenTelemetry" Version="1.13.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.13.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.13.1" />
+    <PackageVersion Include="System.Security.Permissions" Version="9.0.10" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.assert" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Ductus.FluentDocker" Version="2.85.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.10" />
     <PackageVersion Include="polly" Version="8.6.4" />
-    <PackageVersion Include="SharpCompress" Version="0.40.0" />
+    <PackageVersion Include="SharpCompress" Version="0.41.0" />
     <PackageVersion Include="Microsoft.Azure.Management.AppService.Fluent" Version="1.38.1" />
     <PackageVersion Include="Nuke.Common" Version="9.0.4" />
     <PackageVersion Include="docfx.console" Version="2.59.4" ExcludeAssets="build" />
-    <PackageVersion Include="System.Configuration.ConfigurationManager" Version="9.0.9" />
+    <PackageVersion Include="System.Configuration.ConfigurationManager" Version="9.0.10" />
     <PackageVersion Include="xunit.runner.console" Version="2.9.3" />
     <PackageVersion Include="Microsoft.DocAsCode.App" Version="$(DocfxVersion)" />
     <PackageVersion Include="Testcontainers.Pulsar" Version="4.7.0" />
-    <PackageVersion Include="OpenTelemetry.Api" Version="1.13.0" />
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.13.1" />
   </ItemGroup>
   <!-- Test dependencies -->
   <ItemGroup>

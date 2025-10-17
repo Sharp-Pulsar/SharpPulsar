@@ -9,6 +9,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="Testcontainers.Pulsar" />
+    <PackageReference Include="Google.Protobuf" />
     <ProjectReference Include="..\src\SharpPulsar\SharpPulsar.csproj" />
   </ItemGroup>
 

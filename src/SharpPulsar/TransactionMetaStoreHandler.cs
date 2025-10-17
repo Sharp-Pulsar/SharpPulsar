@@ -17,6 +17,8 @@ using SharpPulsar.Shared;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared.Exceptions;
 using static SharpPulsar.Shared.Exceptions.TransactionCoordinatorClientException;
+using App.Metrics.Concurrency;
+using SharpPulsar.API;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -81,6 +83,11 @@ namespace SharpPulsar
         public IStash Stash { get; set; }
         public ITimerScheduler Timers { get; set; }
 
+
+        private readonly long _lookupDeadline;
+        private readonly AtomicInteger _previousExceptionCount = new AtomicInteger();
+
+
         public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf, TaskCompletionSource<object> completionSource)
         {
             _lookup = lookup;
@@ -105,6 +112,8 @@ namespace SharpPulsar
             //_blockIfReachMaxPendingOps = true;
             Timers.StartSingleTimer(RunRequestTimeout.Instance, RunRequestTimeout.Instance, conf.OperationTimeout);
             //_requestTimeout = _scheduler.ScheduleTellOnceCancelable(conf.OperationTimeout, Self, RunRequestTimeout.Instance, Nobody.Instance);
+            this.timer = pulsarClient.timer();
+            _lookupDeadline = DateTimeHelper.CurrentUnixTimeMillis() + conf.LookupTimeoutMs;
 
             Listening();
         }
@@ -128,12 +137,9 @@ namespace SharpPulsar
             Receive<ConnectionClosed>(o => {
                 HandleConnectionClosed(o.ClientCnx);
             });
-            Receive<ConnectionFailed>(f => {
-                _log.Error("Transaction meta handler with transaction coordinator id {} connection failed.", _transactionCoordinatorId, f.Exception);
-                if (!_connectFuture.Task.IsCompleted)
-                {
-                    _connectFuture.TrySetException(f.Exception);
-                }
+            Receive<ConnectionFailed>(f => 
+            {
+                ConnectionFailed(f.Exception);
             });
             Receive<RunRequestTimeout>(t =>
             {
@@ -181,6 +187,36 @@ namespace SharpPulsar
         {
             return Props.Create(() => new TransactionMetaStoreHandler(transactionCoordinatorId, client, lookup, cnxPool, idGenerator, topic, conf, connectFuture));
         }
+        private void ConnectionFailed(PulsarClientException exception)
+        {
+            bool nonRetriableError = !PulsarClientException.IsRetriableError(exception);
+            bool timeout = DateTimeHelper.CurrentUnixTimeMillis() > _lookupDeadline;
+            if (nonRetriableError || timeout)
+            {
+                exception.SetPreviousExceptionsCount(_previousExceptionCount);
+                if (!_connectFuture.Task.IsCompleted)
+                {
+                    _connectFuture.TrySetException(exception);
+                }
+                if (!_connectFuture.Task.IsCompleted)
+                {
+                    if (nonRetriableError)
+                    {
+                        _log.Error("Transaction meta handler with transaction coordinator id {} connection failed.", _transactionCoordinatorId, exception);
+                    }
+                    else
+                    {
+                        _log.Error("Transaction meta handler with transaction coordinator id {} connection failed  after timeout.", _transactionCoordinatorId, exception);
+                    }
+                    _state.Tell(new SetState(State.Failed));
+                }
+            }
+            else
+            {
+                _previousExceptionCount.GetAndIncrement();
+            }
+        }
+
         private Task<object> EndTxn(object[] args)
         {
             var txnID = (TxnID)args[0];

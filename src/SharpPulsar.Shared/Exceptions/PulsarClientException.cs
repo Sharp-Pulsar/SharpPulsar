@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using App.Metrics.Concurrency;
+
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,6 +30,7 @@ namespace SharpPulsar.Shared.Exceptions
 	{
 		private long _sequenceId = -1; 
         private ICollection<Exception> _previous;
+        private AtomicInteger _previousExceptionAttempt;
         /// <summary>
         /// Constructs an {@code PulsarClientException} with the specified detail message.
         /// </summary>
@@ -37,16 +40,19 @@ namespace SharpPulsar.Shared.Exceptions
         public PulsarClientException(string msg) : base(msg)
 		{
 		}
-
-		/// <summary>
-		/// Constructs an {@code PulsarClientException} with the specified detail message.
-		/// </summary>
-		/// <param name="msg">
-		///        The detail message (which is saved for later retrieval
-		///        by the <seealso cref="getMessage()"/> method) </param>
-		/// <param name="sequenceId">
-		///        The sequenceId of the message </param>
-		public PulsarClientException(string msg, long sequenceId) : base(msg)
+        public void SetPreviousExceptionCount(AtomicInteger previousExceptionCount)
+        {
+            _previousExceptionAttempt = previousExceptionCount;
+        }
+        /// <summary>
+        /// Constructs an {@code PulsarClientException} with the specified detail message.
+        /// </summary>
+        /// <param name="msg">
+        ///        The detail message (which is saved for later retrieval
+        ///        by the <seealso cref="getMessage()"/> method) </param>
+        /// <param name="sequenceId">
+        ///        The sequenceId of the message </param>
+        public PulsarClientException(string msg, long sequenceId) : base(msg)
 		{
 			_sequenceId = sequenceId;
         }

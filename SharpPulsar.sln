@@ -112,7 +112,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Shared", "src\S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Common", "src\SharpPulsar.Common\SharpPulsar.Common.csproj", "{494AD4FC-0FF5-4E49-B796-1B013D3D0ABE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Hosting", "src\SharpPulsar.Hosting\SharpPulsar.Hosting.csproj", "{0F9B57B7-A80B-4BC2-8A25-6E5A3EE39334}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Hosting", "src\SharpPulsar.Hosting\SharpPulsar.Hosting.csproj", "{0F9B57B7-A80B-4BC2-8A25-6E5A3EE39334}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "protobuf", "protobuf", "{4E0FB35D-1780-4777-9600-26EC879DD0A4}"
+	ProjectSection(SolutionItems) = preProject
+		src\protobuf\PulsarApi.proto = src\protobuf\PulsarApi.proto
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
