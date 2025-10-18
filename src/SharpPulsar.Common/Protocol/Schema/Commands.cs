@@ -17,6 +17,11 @@ using System.Buffers.Text;
 using DotNetty.Common;
 using DotNetty.Buffers;
 using DotNetty.Codecs;
+using System.Collections;
+using SharpPulsar.Common.Util;
+using Akka.Actor.Dsl;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Common.Naming;
 
 
 /// <summary>
@@ -67,7 +72,9 @@ namespace SharpPulsar.Protocol.Schema
 
         private static BaseCommand LocalCmd(BaseCommand.Types.Type type)
         {
-            return LOCAL_BASE_COMMAND.get().clear().setType(type);
+            LOCAL_BASE_COMMAND.Value.ClearType();
+            LOCAL_BASE_COMMAND.Value.Type = type;
+            return LOCAL_BASE_COMMAND.Value;
         }
 
         private static readonly FastThreadLocal<SingleMessageMetadata> LOCAL_SINGLE_MESSAGE_METADATA = new ThreadLocalSingleMessageMetadata();
@@ -101,21 +108,6 @@ namespace SharpPulsar.Protocol.Schema
             }
         }
 
-        public static AbstractByteBuffer NewConnect(string authMethodName, string authData, string libVersion)
-		{
-			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, null, null, null, null);
-		}
-
-		public static AbstractByteBuffer NewConnect(string authMethodName, string authData, string libVersion, string targetBroker)
-		{
-			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, targetBroker, null, null, null);
-		}
-        
-        public static AbstractByteBuffer NewConnect(string authMethodName, string authData, string libVersion, string targetBroker, 
-            string originalPrincipal, string clientAuthData, string clientAuthMethod)
-		{
-			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, targetBroker, originalPrincipal, clientAuthData, clientAuthMethod);
-		}
         private static void SetFeatureFlags(FeatureFlags flags)
         {
             flags.SupportsAuthRefresh = true;
@@ -124,178 +116,7 @@ namespace SharpPulsar.Protocol.Schema
             flags.SupportsGetPartitionedMetadataWithoutAutoCreation = true;
             flags.SupportsReplDedupByLidAndEid = true;
         }
-        public static AbstractByteBuffer NewConnect(string authMethodName, string authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, string originalAuthData, string originalAuthMethod)
-		{
-            
-            var connect = new CommandConnect
-            {
-                ClientVersion = libVersion ?? "Pulsar Client", 
-                AuthMethodName = authMethodName,
-                FeatureFlags = new FeatureFlags()
-            };
-            if ("ycav1".Equals(authMethodName))
-			{
-				// Handle the case of a client that gets updated before the broker and starts sending the string auth method
-				// name. An example would be in broker-to-broker replication. We need to make sure the clients are still
-				// passing both the enum and the string until all brokers are upgraded.
-				connect.AuthMethod = AuthMethod.AuthMethodYcaV1;
-			}
-
-			if (!ReferenceEquals(targetBroker, null))
-			{
-				// When connecting through a proxy, we need to specify which broker do we want to be proxied through
-				connect.ProxyToBrokerUrl = targetBroker;
-			}
-
-			if (!ReferenceEquals(authData, null))
-			{
-				connect.AuthData = ByteString.CopyFromUtf8(authData).ToByteArray();
-			}
-
-			if (!ReferenceEquals(originalPrincipal, null))
-			{
-				connect.OriginalPrincipal = originalPrincipal;
-			}
-
-			if (!ReferenceEquals(originalAuthData, null))
-			{
-				connect.OriginalAuthData = originalAuthData;
-			}
-
-			if (!ReferenceEquals(originalAuthMethod, null))
-			{
-				connect.OriginalAuthMethod = originalAuthMethod;
-			}
-			connect.ProtocolVersion = protocolVersion;
-            SetFeatureFlags(connect.FeatureFlags);
-			return Serializer.Serialize(connect.ToBaseCommand());
-		}
-        public static AbstractByteBuffer NewTcClientConnectRequest(long tcId, long requestId)
-        {
-            var tcClientConnect = new CommandTcClientConnectRequest
-            {
-                TcId = (ulong)tcId,
-                RequestId = (ulong)requestId
-            };
-            return Serializer.Serialize(tcClientConnect.ToBaseCommand());
-        }
-        public static AbstractByteBuffer NewConnect(string authMethodName, AuthData authData, int protocolVersion, 
-            string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod, string proxyVersion)
-		{
-            var connect = new CommandConnect
-            {
-                ClientVersion = libVersion,
-                AuthMethodName = authMethodName,
-                FeatureFlags = new FeatureFlags(),
-                ProtocolVersion = protocolVersion
-            };
-            if (proxyVersion != null)
-            {
-                connect.ProxyVersion = proxyVersion;
-            }
-            if (!string.IsNullOrWhiteSpace(targetBroker))
-			{
-				// When connecting through a proxy, we need to specify which broker do we want to be proxied through
-				connect.ProxyToBrokerUrl = targetBroker;
-			}
-
-			if (authData != null)
-			{
-				connect.AuthData = authData.auth_data;
-			}
-
-			if (!string.IsNullOrWhiteSpace(originalPrincipal))
-			{
-				connect.OriginalPrincipal = originalPrincipal;
-			}
-
-			if (originalAuthData != null)
-			{
-				connect.OriginalAuthData = Encoding.UTF8.GetString(originalAuthData.auth_data);
-			}
-
-			if (!string.IsNullOrWhiteSpace(originalAuthMethod))
-			{
-				connect.OriginalAuthMethod = originalAuthMethod;
-			}
-            SetFeatureFlags(connect.FeatureFlags);
-            var ba = connect.ToBaseCommand();
-            return Serializer.Serialize(ba);
-        }
-
-        public static AbstractByteBuffer NewConnect(string authMethodName, AuthData authData, int protocolVersion,
-            string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
-        {
-            var connect = new CommandConnect
-            {
-                ClientVersion = libVersion,
-                AuthMethodName = authMethodName,
-                FeatureFlags = new FeatureFlags(),
-                ProtocolVersion = protocolVersion
-            };
-            if (!string.IsNullOrWhiteSpace(targetBroker))
-            {
-                // When connecting through a proxy, we need to specify which broker do we want to be proxied through
-                connect.ProxyToBrokerUrl = targetBroker;
-            }
-
-            if (authData != null)
-            {
-                connect.AuthData = authData.auth_data;
-            }
-
-            if (!string.IsNullOrWhiteSpace(originalPrincipal))
-            {
-                connect.OriginalPrincipal = originalPrincipal;
-            }
-
-            if (originalAuthData != null)
-            {
-                connect.OriginalAuthData = Encoding.UTF8.GetString(originalAuthData.auth_data);
-            }
-
-            if (!string.IsNullOrWhiteSpace(originalAuthMethod))
-            {
-                connect.OriginalAuthMethod = originalAuthMethod;
-            }
-            SetFeatureFlags(connect.FeatureFlags);
-            var ba = connect.ToBaseCommand();
-            return Serializer.Serialize(ba);
-        }
-        public static AbstractByteBuffer NewAuthResponse(string authMethod, AuthData clientData, int clientProtocolVersion, string clientVersion)
-        {
-            var authData = new AuthData {auth_data = clientData.auth_data, AuthMethodName = authMethod};
-
-            var response = new CommandAuthResponse
-            {
-                Response = authData,
-                ProtocolVersion = clientProtocolVersion,
-                ClientVersion = clientVersion ?? "Pulsar Client"
-            };
-            return Serializer.Serialize(response.ToBaseCommand());
-            
-        }
-		public static AbstractByteBuffer NewAuthChallenge(string authMethod, AuthData brokerData, int clientProtocolVersion)
-		{
-			var challenge = new CommandAuthChallenge();
-
-			// If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
-			// client supports, to avoid confusing the client.
-            var versionToAdvertise = Math.Min(Enum.GetValues(typeof(ProtocolVersion)).Cast<int>().Max(), clientProtocolVersion);
-
-			challenge.ProtocolVersion = versionToAdvertise;
-
-            challenge.Challenge = new AuthData
-            {
-                auth_data = brokerData.auth_data,
-                AuthMethodName = authMethod
-            };
-			//var challenge = challenge.Challenge().Build();
-
-			return Serializer.Serialize(challenge.ToBaseCommand());
-			
-		}
-		
+        
 		public static AbstractByteBuffer NewSendError(long producerId, long sequenceId, ServerError error, string errorMsg)
 		{
             var sendError = new CommandSendError
@@ -328,564 +149,6 @@ namespace SharpPulsar.Protocol.Schema
             return buffer.ReadInt();
         }
         
-        public static void SkipChecksumIfPresent(AbstractByteBuffer buffer)
-		{
-            if (HasChecksum(buffer))
-            {
-                buffer.SkipBytes((ISchema<short>.Bytes.SchemaInfo.Schema.Length + ISchema<int>.Bytes.SchemaInfo.Schema.Length));
-            }
-            
-		}
-		
-		public static MessageMetadata ParseMessageMetadata(AbstractByteBuffer buffer)
-		{
-			try
-			{
-                // initially reader-index may point to start of broker entry metadata :
-                // increment reader-index to start_of_headAndPayload to parse metadata
-                var skipped = SkipBrokerEntryMetadataIfExist(buffer);
-                SkipChecksumIfPresent(buffer);
-                var metadataSize = buffer.ReadInt();
-                skipped.SkipBytes(metadataSize);
-                return Serializer.Deserialize<MessageMetadata>(skipped);
-            }
-			catch (Exception e)
-			{
-				throw new Exception(e.Message, e);
-			}
-		}
-
-        public static AbstractByteBuffer NewSend(long producerId, long sequenceId, int numMessaegs, ChecksumType checksumType, long ledgerId, long entryId, MessageMetadata messageMetadata, byte[] payload)
-        {
-            return NewSend(producerId, sequenceId, -1, numMessaegs, messageMetadata.ShouldSerializeTxnidLeastBits() ? (long)messageMetadata.TxnidLeastBits : -1, messageMetadata.ShouldSerializeTxnidMostBits() ? (long)messageMetadata.TxnidMostBits : -1, checksumType, ledgerId, entryId, messageMetadata, payload);
-        }
-
-        public static AbstractByteBuffer NewSend(long producerId, long sequenceId, int numMessaegs, ChecksumType checksumType, MessageMetadata messageMetadata, byte[] payload)
-        {
-            return NewSend(producerId, sequenceId, -1, numMessaegs, messageMetadata.ShouldSerializeTxnidLeastBits() ? (long)messageMetadata.TxnidLeastBits : -1, messageMetadata.ShouldSerializeTxnidMostBits() ? (long)messageMetadata.TxnidMostBits : -1, checksumType, -1, -1, messageMetadata, payload);
-        }
-
-        public static AbstractByteBuffer NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessaegs, ChecksumType checksumType, MessageMetadata messageMetadata, byte[] payload)
-        {
-            return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessaegs, messageMetadata.ShouldSerializeTxnidLeastBits() ? (long)messageMetadata.TxnidLeastBits : -1, messageMetadata.ShouldSerializeTxnidMostBits() ? (long)messageMetadata.TxnidMostBits : -1, checksumType, -1, -1, messageMetadata, payload);
-        }
-
-        public static AbstractByteBuffer NewSend(long producerId, long sequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, long ledgerId, long entryId, MessageMetadata messageData, byte[] payload)
-		{
-            var send = new CommandSend
-            {
-                ProducerId = (ulong) producerId, 
-                SequenceId = (ulong) sequenceId
-            };
-            if (highestSequenceId >= 0)
-            {
-                send.HighestSequenceId = (ulong)highestSequenceId;
-            }
-            if (numMessages > 1)
-			{
-				send.NumMessages = numMessages;
-			}
-			if (txnIdLeastBits >= 0)
-			{
-				send.TxnidLeastBits = (ulong)txnIdLeastBits;
-			}
-			if (txnIdMostBits >= 0)
-			{
-				send.TxnidMostBits = (ulong)txnIdMostBits;
-			}
-            if (messageData.ShouldSerializeTotalChunkMsgSize() && messageData.TotalChunkMsgSize > 1)
-            {
-                send.IsChunk = true;
-            }
-
-            if (messageData.ShouldSerializeMarkerType())
-            {
-                send.Marker = true;
-            }
-            if (ledgerId >= 0 && entryId >= 0)
-            {
-                send.MessageId = new MessageIdData { ledgerId = (ulong)ledgerId, entryId = (ulong)entryId };
-            }
-                        
-            return Serializer.Serialize(send.ToBaseCommand(), checksumType, messageData, payload);
-		}
-
-		public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
-		{
-			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
-		}
-		
-		public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, ISchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
-		{
-            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null, new Dictionary<string, string>(), DefaultConsumerEpoch);
-		}
-
-		public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, 
-            long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, 
-            bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, 
-            bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, 
-            long startMessageRollbackDurationInSec, ISchemaInfo schemaInfo, 
-            bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy, 
-            IDictionary<string, string> subscriptionProperties, long consumerEpoch)
-		{
-            var subscribe = new CommandSubscribe
-            {
-                Topic = topic,
-                Subscription = subscription,
-                subType = subType,
-                ConsumerId = (ulong) consumerId,
-                ConsumerName = consumerName,
-                RequestId = (ulong) requestId,
-                PriorityLevel = priorityLevel,
-                Durable = isDurable,
-                ReadCompacted = readCompacted,
-                initialPosition = subscriptionInitialPosition,
-                ReplicateSubscriptionState = isReplicated,
-                ForceTopicCreation = createTopicIfDoesNotExist,
-                ConsumerEpoch = (ulong)consumerEpoch
-                
-            };
-            if(subscriptionProperties != null && subscriptionProperties.Count > 0)
-            {
-                var kv = new List<KeyValue>();
-                subscriptionProperties.ForEach(k =>
-                {
-                    var keyValue = new KeyValue
-                    {
-                        Key = k.Key,
-                        Value = k.Value
-                    };
-                    kv.Add(keyValue);
-                });
-                subscribe.SubscriptionProperties.AddRange(kv);
-            }
-            if (keySharedPolicy != null)
-            {
-                var keySharedMeta = new KeySharedMeta
-                {
-                    allowOutOfOrderDelivery = keySharedPolicy.AllowOutOfOrderDelivery,
-                    keySharedMode = ConvertKeySharedMode(keySharedPolicy.KeySharedMode)
-                };
-                
-                if (keySharedPolicy is KeySharedPolicy.KeySharedPolicySticky sticky)
-                {
-                    var ranges = sticky.GetRanges().Ranges;
-                    foreach (var range in ranges)
-                    {
-                        keySharedMeta.hashRanges.Add(new IntRange { Start = range.Start, End = range.End });
-                    }
-				}
-
-                subscribe.keySharedMeta = keySharedMeta;
-            }
-			if (startMessageId != null)
-			{
-				subscribe.StartMessageId = startMessageId;
-			}
-			if (startMessageRollbackDurationInSec > 0)
-			{
-				subscribe.StartMessageRollbackDurationSec = (ulong)startMessageRollbackDurationInSec;
-			}
-			subscribe.Metadatas.AddRange(CommandUtils.ToKeyValueList(metadata));
-
-            if (schemaInfo != null)
-            {
-                subscribe.Schema = ConvertSchema(schemaInfo);
-            }
-
-			return Serializer.Serialize(subscribe.ToBaseCommand());
-
-            
-		}
-        public static AbstractByteBuffer NewWatchTopicList(long requestId, long watcherId, string @namespace, string topicsPattern, string topicsHash)
-        {
-            var watchTopic = new CommandWatchTopicList 
-            { 
-                RequestId =(ulong) requestId,
-                Namespace = @namespace, 
-                TopicsPattern = topicsPattern, 
-                WatcherId = (ulong) watcherId,
-
-            };
-            if (topicsHash != null)
-            {
-                watchTopic.TopicsHash = topicsHash;
-            }
-
-            return Serializer.Serialize(watchTopic.ToBaseCommand());
-        }
-
-        public static AbstractByteBuffer NewWatchTopicListSuccess(long requestId, long watcherId, string topicsHash, IList<string> topics)
-        {
-            var success = new CommandWatchTopicListSuccess 
-            { 
-                RequestId = (ulong) requestId,
-                WatcherId= (ulong) watcherId,
-            };
-            if (topicsHash != null)
-            {
-                success.TopicsHash = topicsHash;
-            }
-
-            if (topics != null && topics.Count > 0)
-            {
-                success.Topics.AddRange(topics);
-            }
-
-            return Serializer.Serialize(success.ToBaseCommand());
-        }
-
-        
-        public static long GetEntryTimestamp(AbstractByteBuffer headersAndPayloadWithBrokerEntryMetadata)
-        {
-            // get broker timestamp first if BrokerEntryMetadata is enabled with AppendBrokerTimestampMetadataInterceptor
-            BrokerEntryMetadata brokerEntryMetadata = ParseBrokerEntryMetadataIfExist(headersAndPayloadWithBrokerEntryMetadata);
-            if (brokerEntryMetadata != null && brokerEntryMetadata.ShouldSerializeBrokerTimestamp())
-            {
-                return (long)brokerEntryMetadata.BrokerTimestamp;
-            }
-            // otherwise get the publish_time
-            return (long)ParseMessageMetadata(headersAndPayloadWithBrokerEntryMetadata).PublishTime;
-        }
-
-        private static KeySharedMode ConvertKeySharedMode(KeySharedMode? mode)
-        {
-            switch (mode)
-            {
-                case KeySharedMode.AutoSplit:
-                    return KeySharedMode.AutoSplit;
-                case KeySharedMode.Sticky:
-                    return KeySharedMode.Sticky;
-                default:
-                    throw new ArgumentException("Unexpected key shared mode: " + mode);
-            }
-        }
-		public static AbstractByteBuffer NewUnsubscribe(long consumerId, long requestId, bool force)
-		{
-            var unsubscribe = new CommandUnsubscribe
-            {
-                ConsumerId = (ulong) consumerId, 
-                RequestId = (ulong) requestId,
-                Force = force
-            };
-            return Serializer.Serialize(unsubscribe.ToBaseCommand());
-			
-		}
-
-		public static AbstractByteBuffer NewActiveConsumerChange(long consumerId, bool isActive)
-		{
-            var change = new CommandActiveConsumerChange {ConsumerId = (ulong) consumerId, IsActive = isActive};
-            return Serializer.Serialize(change.ToBaseCommand());
-			
-		}
-
-		public static AbstractByteBuffer NewSeek(long consumerId, long requestId, long ledgerId, long entryId, List<long> ackSet)
-		{
-            var seek = new CommandSeek {ConsumerId = (ulong) consumerId, RequestId = (ulong) requestId};
-
-            var messageId = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId, AckSets = ackSet};
-            seek.MessageId = messageId;
-			return Serializer.Serialize(seek.ToBaseCommand());			
-		}
-        
-        public static AbstractByteBuffer NewSeek(long consumerId, long requestId, long timestamp)
-		{
-            var seek = new CommandSeek
-            {
-                ConsumerId = (ulong) consumerId,
-                RequestId = (ulong) requestId,
-                MessagePublishTime = (ulong) timestamp
-            };
-
-            return Serializer.Serialize(seek.ToBaseCommand());
-
-			
-		}
-
-		public static AbstractByteBuffer NewCloseConsumer(long consumerId, long requestId)
-		{
-            var closeConsumer = new CommandCloseConsumer
-            {
-                ConsumerId = (ulong) consumerId, RequestId = (ulong) requestId
-            };
-            return Serializer.Serialize(closeConsumer.ToBaseCommand());
-			
-			
-		}
-
-		public static AbstractByteBuffer NewReachedEndOfTopic(long consumerId)
-		{
-            var reachedEndOfTopic = new CommandReachedEndOfTopic {ConsumerId = (ulong) consumerId};
-            return Serializer.Serialize(reachedEndOfTopic.ToBaseCommand());
-			
-			
-		}
-
-		public static AbstractByteBuffer NewCloseProducer(long producerId, long requestId)
-		{
-            var closeProducer = new CommandCloseProducer
-            {
-                ProducerId = (ulong) producerId, RequestId = (ulong) requestId
-            };
-            return Serializer.Serialize(closeProducer.ToBaseCommand());
-			
-			
-		}
-
-		public static AbstractByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, IDictionary<string, string> metadata, bool isTxnEnabled)
-		{
-			return NewProducer(topic, producerId, requestId, producerName, false, metadata, isTxnEnabled);
-		}
-
-		public static AbstractByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, bool isTxnEnabled)
-		{
-			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, ProducerAccessMode.Shared, null, isTxnEnabled, null);
-		}
-        private static Type GetSchemaType(SchemaType type)
-		{
-            if (type == SchemaType.AutoConsume)
-            {
-                return Type.AutoConsume;
-            }
-            if (type.Value < 0)
-			{
-				return Type.None;
-			}
-            else if (type == SchemaType.External)
-            {
-                // This is a special case, SchemaType.EXTERNAL number is not match the Schema.Type.EXTERNAL.
-                return Type.External;
-            }
-            else
-			{
-				return Enum.GetValues(typeof(Type)).Cast<Type>().ToList()[type.Value];
-			}
-		}
-
-		public static SchemaType GetSchemaType(Type type)
-		{
-            if (type == Type.AutoConsume)
-            {
-                return SchemaType.AutoConsume;
-            }
-			else if (type < 0)
-			{
-				// this is unexpected
-				return SchemaType.NONE;
-			}
-            else if (type == Type.External)
-            {
-                // This is a special case, SchemaType.EXTERNAL number is not match the Schema.Type.EXTERNAL.
-                return SchemaType.External;
-            }
-            else
-			{
-				return SchemaType.ValueOf((int)type);
-			}
-		}
-		public static SchemaType GetSchemaTypeFor(SchemaType type)
-		{
-			if (type.Value < 0)
-			{
-				// this is unexpected
-				return SchemaType.NONE;
-			}
-			else
-			{
-				return SchemaType.ValueOf(type.Value);
-			}
-		}
-
-        private static Common.Protocol.Proto.Schema ConvertSchema(ISchemaInfo SchemaInfo)
-        {
-            var schema = new Common.Protocol.Proto.Schema
-            {
-                Name = SchemaInfo.Name,
-                SchemaData = SchemaInfo.Schema,
-                type = GetSchemaType(SchemaInfo.Type)
-            };
-
-            SchemaInfo.Properties.SetOfKeyValuePairs().ForEach(entry =>
-            {
-                if (entry.Key != null && entry.Value != null)
-                {
-                    schema.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value });
-                }
-            });
-            return schema;
-        }
-
-        public static AbstractByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, Common.ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled, string initialSubscriptionName)
-		{
-            var producer = new CommandProducer
-            {
-                Topic = topic,
-                ProducerId = (ulong)producerId,
-                RequestId = (ulong)requestId,
-                Epoch = (ulong)epoch,
-                ProducerAccessMode = ConvertProducerAccessMode(accessMode),
-                TxnEnabled = isTxnEnabled,
-                UserProvidedProducerName = userProvidedProducerName,
-                Encrypted = encrypted
-            };
-			
-            if (!string.IsNullOrWhiteSpace(producerName))
-			{
-				producer.ProducerName = producerName;
-			}
-            if (metadata.Count > 0)
-                metadata.ForEach(x => producer.Metadatas.Add(new KeyValue { Key = x.Key, Value = x.Value}));
-
-			if (schemaInfo != null)
-			{
-                producer.Schema = ConvertSchema(schemaInfo);
-			}
-            if (topicEpoch.HasValue)
-                producer.TopicEpoch = (ulong)topicEpoch.Value;
-
-            if(!string.IsNullOrEmpty(initialSubscriptionName))
-                producer.InitialSubscriptionName = initialSubscriptionName;
-
-			return Serializer.Serialize(producer.ToBaseCommand());			
-		}
-
-		public static AbstractByteBuffer NewPartitionMetadataRequest(string topic, long requestId, bool metadataAutoCreationEnabled = true)
-		{
-            var partitionMetadata = new CommandPartitionedTopicMetadata
-            {
-                Topic = topic, 
-                RequestId = (ulong) requestId,
-                MetadataAutoCreationEnabled = metadataAutoCreationEnabled   
-            };
-            return Serializer.Serialize(partitionMetadata.ToBaseCommand());
-			
-			
-		}
-
-		public static AbstractByteBuffer NewLookup(string topic, string listenerName, bool authoritative, long requestId)
-		{
-            var lookupTopic = new CommandLookupTopic
-            {
-                Topic = topic, 
-                RequestId = (ulong) requestId, 
-                Authoritative = authoritative
-            };
-            if (!string.IsNullOrWhiteSpace(listenerName))
-            {
-                lookupTopic.AdvertisedListenerName = listenerName;
-            }
-			return Serializer.Serialize(lookupTopic.ToBaseCommand());
-			
-			
-		}
-		public static AbstractByteBuffer NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, List<long> bitSet)> entries)
-		{
-            var ackBuilder = new CommandAck
-            {
-                ConsumerId = (ulong)consumerId,
-                ack_type = AckType.Individual,
-                TxnidLeastBits = (ulong)txnID.LeastSigBits,
-                TxnidMostBits = (ulong)txnID.MostSigBits
-            };
-            return NewMultiMessageAckCommon(ackBuilder, entries);
-		}
-		public static AbstractByteBuffer NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, List<long> bitSet)> entries)
-		{
-			int entriesCount = entries.Count;
-			for (int i = 0; i < entriesCount; i++)
-			{
-				long ledgerId = entries[i].ledger;
-				long entryId = entries[i].entry;
-				var bitSet = entries[i].bitSet;
-                var messageIdDataBuilder = new MessageIdData
-                {
-                    ledgerId = (ulong)ledgerId,
-                    entryId = (ulong)entryId
-                };
-                if (bitSet != null)
-				{
-					messageIdDataBuilder.AckSets = bitSet;
-				}
-				var messageIdData = messageIdDataBuilder;
-				ackBuilder.MessageIds.Add(messageIdData);
-			}
-
-			var ack = ackBuilder;
-
-			return Serializer.Serialize(ack.ToBaseCommand());
-			
-		}
-        public static AbstractByteBuffer NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, List<long> Sets)> entries, long requestId)
-        {
-            var ackBuilder = new CommandAck
-            {
-                ConsumerId = (ulong)consumerId,
-                ack_type = AckType.Individual
-            };
-            if (requestId >= 0)
-            {
-                ackBuilder.RequestId = (ulong)requestId;
-            }
-            return NewMultiMessageAckCommon(ackBuilder, entries);
-        }
-        public static AbstractByteBuffer NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
-        {
-            var ackCmd = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = AckType.Individual};
-
-            var entriesCount = entries.Count;
-            for (var i = 0; i < entriesCount; i++)
-            {
-                var ledgerId = entries[i].LedgerId;
-                var entryId = entries[i].EntryId;
-                var bitSet = entries[i].Sets;
-                var messageIdData = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId};
-                if (bitSet != null)
-                {
-                    messageIdData.AckSets = bitSet.ToLongArray().ToList();
-                }
-                ackCmd.MessageIds.Add(messageIdData);
-            }
-            return Serializer.Serialize(ackCmd.ToBaseCommand());
-            
-        }
-        public static AbstractByteBuffer NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, List<long> Sets)> entries)
-        {
-            var ackCmd = new CommandAck { ConsumerId = (ulong)consumerId, ack_type = AckType.Individual };
-
-            var entriesCount = entries.Count;
-            for (var i = 0; i < entriesCount; i++)
-            {
-                var ledgerId = entries[i].LedgerId;
-                var entryId = entries[i].EntryId;
-                var bitSet = entries[i].Sets;
-                var messageIdData = new MessageIdData { ledgerId = (ulong)ledgerId, entryId = (ulong)entryId };
-                if (bitSet != null)
-                {
-                    messageIdData.AckSets = bitSet;
-                }
-                ackCmd.MessageIds.Add(messageIdData);
-            }
-            return Serializer.Serialize(ackCmd.ToBaseCommand());
-            
-        }
-        /// <summary>
-        /// Peek the message metadata from the buffer and return a deep copy of the metadata.
-        ///  
-        /// If you want to hold multiple <seealso cref="MessageMetadata"/> instances from multiple buffers, you must call this method
-        /// rather than <seealso cref="Commands.peekMessageMetadata(AbstractByteBuffer, string, long)"/>, which returns a thread local reference,
-        /// see <seealso cref="Commands.LOCAL_MESSAGE_METADATA"/>.
-        /// </summary>
-        
-        public static MessageMetadata PeekAndCopyMessageMetadata(AbstractByteBuffer metadataAndPayload, string subscription, long consumerId)
-        {
-            MessageMetadata localMetadata = PeekMessageMetadata(metadataAndPayload, subscription, consumerId);
-            if (localMetadata == null)
-            {
-                return null;
-            }
-
-            return localMetadata;
-        }
         public static MessageMetadata PeekMessageMetadata(AbstractByteBuffer metadataAndPayload, string subscription, long consumerId)
         {
             try
@@ -941,183 +204,7 @@ namespace SharpPulsar.Protocol.Schema
 
             return new AbstractByteBuffer(NONE_KEY);
         }
-        public static AbstractByteBuffer NewAck(long consumerId, long ledgerId, long entryId, List<long> ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
-		{
-			return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, -1L, -1L, -1L, -1);
-		}
-        public static AbstractByteBuffer NewAck(long consumerId, long ledgerId, long entryId, List<long> ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long requestId)
-        {
-            return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, -1L, -1L, requestId, -1);
-        }
-        public static AbstractByteBuffer NewAck(long consumerId, long ledgerId, long entryId, List<long> ackSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
-		{
-			return NewAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError,
-					properties, txnIdLeastBits, txnIdMostBits, requestId, -1);
-		}
-        public static AbstractByteBuffer NewAck(long consumerId, IList<MessageIdData> messageIds, AckType ackType,
-                                 ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits,
-                                 long txnIdMostBits, long requestId)
-        {
-            var ack = new CommandAck { ConsumerId = (ulong)consumerId, ack_type = ackType };
-            ack.MessageIds.AddRange(messageIds);
-
-            return NewAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack);
-        }
-        public static AbstractByteBuffer NewAck(long consumerId, long ledgerId, long entryId, List<long> ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, int batchSize)
-		{
-            var ack = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = ackType};
-			
-            var messageIdData = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId};
-            if (ackSets != null)
-            {
-                messageIdData.AckSets = ackSets;
-            }
-            ack.MessageIds.Add(messageIdData);
-			if (batchSize >= 0)
-			{
-				messageIdData.BatchSize = batchSize;
-			}
-            return NewAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack);
-        }
-        private static AbstractByteBuffer NewAck(ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits,
-                                  long txnIdMostBits, long requestId, CommandAck ack)
-        {
-            if (validationError != null)    
-                ack.validation_error = validationError.Value;
-
-            if (txnIdMostBits >= 0)
-            {
-                ack.TxnidMostBits = (ulong) txnIdMostBits;
-            }
-            if (txnIdLeastBits >= 0)
-            {
-                ack.TxnidLeastBits = (ulong)txnIdLeastBits;
-            }
-
-            if (requestId >= 0)
-            {
-                ack.RequestId = (ulong)requestId;
-            }
-            foreach (var e in properties.ToList())
-            {
-                ack.Properties.Add(new KeyLongValue() { Key = e.Key, Value = (ulong)e.Value });
-            }
-
-            return Serializer.Serialize(ack.ToBaseCommand());
-        }
-
-        public static AbstractByteBuffer NewFlow(long consumerId, int messagePermits)
-		{
-            var flow = new CommandFlow {ConsumerId = (ulong) consumerId, messagePermits = (uint) messagePermits};
-
-            return Serializer.Serialize(flow.ToBaseCommand());
-			
-			
-		}
-
-		public static AbstractByteBuffer NewRedeliverUnacknowledgedMessages(long consumerId)
-		{
-            var redeliver = new CommandRedeliverUnacknowledgedMessages {ConsumerId = (ulong) consumerId};
-            return Serializer.Serialize(redeliver.ToBaseCommand());
-			
-			
-		}
-
-		public static AbstractByteBuffer NewRedeliverUnacknowledgedMessages(long consumerId, IList<MessageIdData> messageIds)
-		{
-            var redeliver = new CommandRedeliverUnacknowledgedMessages {ConsumerId = (ulong) consumerId};
-            redeliver.MessageIds.AddRange(messageIds);
-			return Serializer.Serialize(redeliver.ToBaseCommand());
-		    
-		}
-
-		public static AbstractByteBuffer NewGetTopicsOfNamespaceRequest(string @namespace, long requestId, CommandGetTopicsOfNamespace.Mode mode, string topicsPattern, string topicsHash)
-		{
-            var topics = new CommandGetTopicsOfNamespace
-            {
-                Namespace = @namespace, RequestId = (ulong) requestId, mode = mode
-            };
-            if (topicsPattern != null)
-            {
-                topics.TopicsPattern = topicsPattern;
-            }
-            if (topicsHash != null)
-            {
-                topics.TopicsHash = topicsHash;
-            }
-            return Serializer.Serialize(topics.ToBaseCommand());
-			
-			
-		}
-        private static readonly IByteBuffer CmdPing;
-
-		static Commands()
-		{
-			var serializedCmdPing = Serializer.Serialize(new CommandPing().ToBaseCommand());
-			CmdPing = serializedCmdPing;
-			var serializedCmdPong = Serializer.Serialize(new CommandPong().ToBaseCommand());
-			CmdPong = serializedCmdPong;
-		}
-
-		internal static AbstractByteBuffer NewPing()
-		{
-			return CmdPing;
-		}
-
-		private static readonly AbstractByteBuffer CmdPong;
-
-
-		internal static AbstractByteBuffer NewPong()
-		{
-			return CmdPong;
-		}
-
-		public static AbstractByteBuffer NewGetLastMessageId(long consumerId, long requestId)
-		{
-            var cmd = new CommandGetLastMessageId {ConsumerId = (ulong) consumerId, RequestId = (ulong) requestId};
-
-            return Serializer.Serialize(cmd.ToBaseCommand());
-			
-			
-		}
-
-		public static AbstractByteBuffer NewGetSchema(long requestId, string topic, ISchemaVersion version)
-        {
-            var schema = new CommandGetSchema {RequestId = (ulong) requestId, Topic = topic};
-            if (version != null)
-			{
-				schema.SchemaVersion = version.Bytes();
-			}
-			
-			return Serializer.Serialize(schema.ToBaseCommand());
-			
-			
-		}
-
-		public static AbstractByteBuffer NewGetOrCreateSchema(long requestId, string topic, ISchemaInfo schemaInfo)
-		{
-            var getOrCreateSchema = new CommandGetOrCreateSchema
-            {
-                RequestId = (ulong) requestId, Topic = topic, Schema = ConvertSchema(schemaInfo)
-            };
-            
-            return Serializer.Serialize(getOrCreateSchema.ToBaseCommand());
-			
-			
-		}
-		
-		// ---- transaction related ----
-
-		public static AbstractByteBuffer NewTxn(long tcId, long requestId, long ttlSeconds)
-		{
-            var commandNewTxn = new CommandNewTxn
-            {
-                TcId = (ulong) tcId, RequestId = (ulong) requestId, TxnTtlSeconds = (ulong) ttlSeconds
-            };
-            return Serializer.Serialize(commandNewTxn.ToBaseCommand());
-			
-			
-		}
+        
         public static AbstractByteBuffer newConnect(string authMethodName, string authData, string libVersion)
         {
             return newConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, null, null, null, null);
@@ -1281,9 +368,9 @@ namespace SharpPulsar.Protocol.Schema
             return serializeWithSize(newConnectedCommand(clientProtocolVersion, maxMessageSize, supportsTopicWatchers));
         }
 
-        public static AbstractByteBuffer newAuthChallenge(string authMethod, AuthData brokerData, int clientProtocolVersion)
+        public static AbstractByteBuffer NewAuthChallenge(string authMethod, AuthData brokerData, int clientProtocolVersion)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.AUTH_CHALLENGE);
+            BaseCommand cmd = LocalCmd(BaseCommand.Type.AUTH_CHALLENGE);
             CommandAuthChallenge challenge = cmd.setAuthChallenge();
 
             // If the broker supports a newer version of the protocol, it will anyway advertise the max version that the
@@ -1295,12 +382,6 @@ namespace SharpPulsar.Protocol.Schema
             return serializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newAuthResponse(string authMethod, AuthData clientData, int clientProtocolVersion, string clientVersion)
-        {
-            BaseCommand cmd = localCmd(BaseCommand.Type.AUTH_RESPONSE);
-            cmd.setAuthResponse().setClientVersion(!string.ReferenceEquals(clientVersion, null) ? clientVersion : "Pulsar Client").setProtocolVersion(clientProtocolVersion).setResponse().setAuthData(clientData.getBytes()).setAuthMethodName(authMethod);
-            return serializeWithSize(cmd);
-        }
 
         public static BaseCommand newSuccessCommand(long requestId)
         {
@@ -1309,9 +390,9 @@ namespace SharpPulsar.Protocol.Schema
             return cmd;
         }
 
-        public static AbstractByteBuffer newSuccess(long requestId)
+        public static AbstractByteBuffer NewSuccess(long requestId)
         {
-            return serializeWithSize(newSuccessCommand(requestId));
+            return SerializeWithSize(newSuccessCommand(requestId));
         }
 
         public static BaseCommand newProducerSuccessCommand(long requestId, string producerName, SchemaVersion schemaVersion)
@@ -1324,58 +405,65 @@ namespace SharpPulsar.Protocol.Schema
             return newProducerSuccess(requestId, producerName, -1, schemaVersion, null, true);
         }
 
-        public static BaseCommand newProducerSuccessCommand(long requestId, string producerName, long lastSequenceId, SchemaVersion schemaVersion, long? topicEpoch, bool isProducerReady)
+        public static BaseCommand NewProducerSuccessCommand(long requestId, string producerName, long lastSequenceId, ISchemaVersion schemaVersion, long? topicEpoch, bool isProducerReady)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.PRODUCER_SUCCESS);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.ProducerSuccess);
             CommandProducerSuccess ps = cmd.setProducerSuccess().setRequestId(requestId).setProducerName(producerName).setLastSequenceId(lastSequenceId).setSchemaVersion(schemaVersion.bytes()).setProducerReady(isProducerReady);
             topicEpoch.ifPresent(ps.setTopicEpoch);
             return cmd;
         }
 
-        public static AbstractByteBuffer newProducerSuccess(long requestId, string producerName, long lastSequenceId, SchemaVersion schemaVersion, long? topicEpoch, bool isProducerReady)
+        public static AbstractByteBuffer NewProducerSuccess(long requestId, string producerName, long lastSequenceId, ISchemaVersion schemaVersion, long? topicEpoch, bool isProducerReady)
         {
-            return serializeWithSize(newProducerSuccessCommand(requestId, producerName, lastSequenceId, schemaVersion, topicEpoch, isProducerReady));
+            return SerializeWithSize(NewProducerSuccessCommand(requestId, producerName, lastSequenceId, schemaVersion, topicEpoch, isProducerReady));
         }
 
-        public static BaseCommand newErrorCommand(long requestId, ServerError serverError, string message)
+        public static BaseCommand NewErrorCommand(long requestId, ServerError serverError, string message)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.ERROR);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Error);
             cmd.setError().setRequestId(requestId).setError(serverError).setMessage(!string.ReferenceEquals(message, null) ? message : "");
             return cmd;
         }
 
-        public static AbstractByteBuffer newError(long requestId, ServerError serverError, string message)
+        public static AbstractByteBuffer NewError(long requestId, ServerError serverError, string message)
         {
-            return serializeWithSize(newErrorCommand(requestId, serverError, message));
+            return SerializeWithSize(NewErrorCommand(requestId, serverError, message));
         }
 
-        public static BaseCommand newSendReceiptCommand(long producerId, long sequenceId, long highestId, long ledgerId, long entryId)
+        public static BaseCommand NewSendReceiptCommand(long producerId, long sequenceId, long highestId, long ledgerId, long entryId)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.SEND_RECEIPT);
-            cmd.setSendReceipt().setProducerId(producerId).setSequenceId(sequenceId).setHighestSequenceId(highestId).setMessageId().setLedgerId(ledgerId).setEntryId(entryId);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.SendReceipt);
+            cmd.SendReceipt.ProducerId = (ulong)(producerId);
+            cmd.SendReceipt.SequenceId = (ulong)(sequenceId);
+            cmd.SendReceipt.HighestSequenceId = (ulong)(highestId);
+            cmd.SendReceipt.MessageId.LedgerId = (ulong)(ledgerId);
+            cmd.SendReceipt.MessageId.EntryId = (ulong)(entryId);
             return cmd;
         }
 
-        public static AbstractByteBuffer newSendReceipt(long producerId, long sequenceId, long highestId, long ledgerId, long entryId)
+        public static AbstractByteBuffer NewSendReceipt(long producerId, long sequenceId, long highestId, long ledgerId, long entryId)
         {
-            return serializeWithSize(newSendReceiptCommand(producerId, sequenceId, highestId, ledgerId, entryId));
+            return SerializeWithSize(NewSendReceiptCommand(producerId, sequenceId, highestId, ledgerId, entryId));
         }
 
-        public static BaseCommand newSendErrorCommand(long producerId, long sequenceId, ServerError error, string errorMsg)
+        public static BaseCommand NewSendErrorCommand(long producerId, long sequenceId, ServerError error, string errorMsg)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.SEND_ERROR);
-            cmd.setSendError().setProducerId(producerId).setSequenceId(sequenceId).setError(error).setMessage(!string.ReferenceEquals(errorMsg, null) ? errorMsg : "");
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.SendError);
+            cmd.SendError.ProducerId = (ulong)(producerId);
+            cmd.SendError.SequenceId = (ulong)(sequenceId);
+            cmd.SendError.Error = (error);
+            cmd.SendError.Message = (!string.ReferenceEquals(errorMsg, null) ? errorMsg : "");
             return cmd;
         }
 
-        public static AbstractByteBuffer newSendError(long producerId, long sequenceId, ServerError error, string errorMsg)
+        public static AbstractByteBuffer NewSendError(long producerId, long sequenceId, ServerError error, string errorMsg)
         {
-            return serializeWithSize(newSendErrorCommand(producerId, sequenceId, error, errorMsg));
+            return SerializeWithSize(NewSendErrorCommand(producerId, sequenceId, error, errorMsg));
         }
 
-        public static bool hasChecksum(AbstractByteBuffer buffer)
+        public static bool HasChecksum(AbstractByteBuffer buffer)
         {
-            return buffer.getShort(buffer.readerIndex()) == magicCrc32c;
+            return buffer.GetShort(buffer.ReaderIndex) == MagicCrc32c;
         }
 
         /// <summary>
@@ -1384,48 +472,48 @@ namespace SharpPulsar.Protocol.Schema
         /// <para>Note: This method assume the checksum presence was already verified before.
         /// </para>
         /// </summary>
-        public static int readChecksum(AbstractByteBuffer buffer)
+        public static int ReadChecksum(AbstractByteBuffer buffer)
         {
-            buffer.skipBytes(2); //skip magic bytes
-            return buffer.readInt();
+            buffer.SkipBytes(2); //skip magic bytes
+            return buffer.ReadInt();
         }
 
-        public static void skipChecksumIfPresent(AbstractByteBuffer buffer)
+        public static void SkipChecksumIfPresent(AbstractByteBuffer buffer)
         {
             if (hasChecksum(buffer))
             {
-                buffer.skipBytes(Short.BYTES + Integer.BYTES);
+                buffer.SkipBytes(Short.BYTES + Integer.BYTES);
             }
         }
 
-        public static MessageMetadata parseMessageMetadata(AbstractByteBuffer buffer)
+        public static MessageMetadata ParseMessageMetadata(AbstractByteBuffer buffer)
         {
-            MessageMetadata md = LOCAL_MESSAGE_METADATA.get();
-            parseMessageMetadata(buffer, md);
+            MessageMetadata md = LOCAL_MESSAGE_METADATA.Value;
+            ParseMessageMetadata(buffer, md);
             return md;
         }
 
-        public static void parseMessageMetadata(AbstractByteBuffer buffer, MessageMetadata msgMetadata)
+        public static void ParseMessageMetadata(AbstractByteBuffer buffer, MessageMetadata msgMetadata)
         {
             // initially reader-index may point to start of broker entry metadata :
             // increment reader-index to start_of_headAndPayload to parse metadata
-            skipBrokerEntryMetadataIfExist(buffer);
+            SkipBrokerEntryMetadataIfExist(buffer);
             // initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
             // to parse metadata
             skipChecksumIfPresent(buffer);
-            int metadataSize = (int)buffer.readUnsignedInt();
+            int metadataSize = (int)buffer.ReadUnsignedInt();
 
-            msgMetadata.parseFrom(buffer, metadataSize);
+            msgMetadata.ParseFrom(buffer, metadataSize);
         }
 
-        public static void skipMessageMetadata(AbstractByteBuffer buffer)
+        public static void SkipMessageMetadata(AbstractByteBuffer buffer)
         {
             // initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata to parse
             // metadata
-            skipBrokerEntryMetadataIfExist(buffer);
+            SkipBrokerEntryMetadataIfExist(buffer);
             skipChecksumIfPresent(buffer);
-            int metadataSize = (int)buffer.readUnsignedInt();
-            buffer.skipBytes(metadataSize);
+            int metadataSize = (int)buffer.ReadUnsignedInt();
+            buffer.SkipBytes(metadataSize);
         }
 
         /// <summary>
@@ -1433,145 +521,163 @@ namespace SharpPulsar.Protocol.Schema
         /// Prefer using Managed Ledger's Entry's getEntryTimestamp() method over this method. </summary>
         /// <param name="headersAndPayloadWithBrokerEntryMetadata"> headers and payload for the message </param>
         /// <returns> the entry timestamp </returns>
-        public static long getEntryTimestamp(AbstractByteBuffer headersAndPayloadWithBrokerEntryMetadata)
+        public static long GetEntryTimestamp(AbstractByteBuffer headersAndPayloadWithBrokerEntryMetadata)
         {
             // get broker timestamp first if BrokerEntryMetadata is enabled with AppendBrokerTimestampMetadataInterceptor
-            return peekBrokerEntryMetadataToLong(headersAndPayloadWithBrokerEntryMetadata, brokerEntryMetadata =>
+            return PeekBrokerEntryMetadataToLong(headersAndPayloadWithBrokerEntryMetadata, brokerEntryMetadata =>
             {
-                if (brokerEntryMetadata != null && brokerEntryMetadata.hasBrokerTimestamp())
+                if (brokerEntryMetadata != null && brokerEntryMetadata.HasBrokerTimestamp)
                 {
-                    return brokerEntryMetadata.getBrokerTimestamp();
+                    return (long)brokerEntryMetadata.BrokerTimestamp;
                 }
                 // otherwise get the publish_time
-                return parseMessageMetadata(headersAndPayloadWithBrokerEntryMetadata).getPublishTime();
+                return (long)ParseMessageMetadata(headersAndPayloadWithBrokerEntryMetadata).PublishTime;
             });
         }
 
-        public static BaseCommand newMessageCommand(long consumerId, long ledgerId, long entryId, int partition, int redeliveryCount, long[] ackSet, long consumerEpoch)
+        public static BaseCommand NewMessageCommand(long consumerId, long ledgerId, long entryId, int partition, int redeliveryCount, long[] ackSet, long consumerEpoch)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.MESSAGE);
-            CommandMessage msg = cmd.setMessage().setConsumerId(consumerId);
-            msg.setMessageId().setLedgerId(ledgerId).setEntryId(entryId).setPartition(partition);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Message);
+            cmd.Message.ConsumerId = (ulong)(consumerId);
+            CommandMessage msg = cmd.Message;
+            msg.MessageId.LedgerId = (ulong)(ledgerId);
+            msg.MessageId.EntryId = (ulong)(entryId);
+            msg.MessageId.Partition = (partition);
 
             // consumerEpoch > -1 is useful
-            if (consumerEpoch > DEFAULT_CONSUMER_EPOCH)
+            if (consumerEpoch > DefaultConsumerEpoch)
             {
-                msg.setConsumerEpoch(consumerEpoch);
+                msg.ConsumerEpoch = (ulong)(consumerEpoch);
             }
             if (redeliveryCount > 0)
             {
-                msg.setRedeliveryCount(redeliveryCount);
+                msg.RedeliveryCount = (uint)(redeliveryCount);
             }
             if (ackSet != null)
             {
                 for (int i = 0; i < ackSet.Length; i++)
                 {
-                    msg.addAckSet(ackSet[i]);
+                    msg.AckSet.Add(ackSet[i]);
                 }
             }
             return cmd;
         }
 
-        public static ByteBufPair newMessage(long consumerId, long ledgerId, long entryId, int partition, int redeliveryCount, AbstractByteBuffer metadataAndPayload, long[] ackSet)
+        public static ByteBufPair NewMessage(long consumerId, long ledgerId, long entryId, int partition, int redeliveryCount, AbstractByteBuffer metadataAndPayload, long[] ackSet)
         {
-            return serializeCommandMessageWithSize(newMessageCommand(consumerId, ledgerId, entryId, partition, redeliveryCount, ackSet, DEFAULT_CONSUMER_EPOCH), metadataAndPayload);
+            return SerializeCommandMessageWithSize(NewMessageCommand(consumerId, ledgerId, entryId, partition, redeliveryCount, ackSet, DefaultConsumerEpoch), metadataAndPayload);
         }
 
-        public static ByteBufPair newSend(long producerId, long sequenceId, int numMessages, ChecksumType checksumType, long ledgerId, long entryId, MessageMetadata messageMetadata, AbstractByteBuffer payload)
+        public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessages, ChecksumType checksumType, long ledgerId, long entryId, MessageMetadata messageMetadata, AbstractByteBuffer payload)
         {
-            return newSend(producerId, sequenceId, -1, numMessages, messageMetadata.hasTxnidLeastBits() ? messageMetadata.getTxnidLeastBits() : -1, messageMetadata.hasTxnidMostBits() ? messageMetadata.getTxnidMostBits() : -1, checksumType, ledgerId, entryId, messageMetadata, payload);
+            return NewSend(producerId, sequenceId, -1, numMessages, messageMetadata.HasTxnidLeastBits ? (long)messageMetadata.TxnidLeastBits : -1, messageMetadata.HasTxnidMostBits ? (long)messageMetadata.TxnidMostBits : -1, checksumType, ledgerId, entryId, messageMetadata, payload);
         }
 
-        public static ByteBufPair newSend(long producerId, long sequenceId, int numMessages, ChecksumType checksumType, MessageMetadata messageMetadata, AbstractByteBuffer payload)
+        public static ByteBufPair NewSend(long producerId, long sequenceId, int numMessages, ChecksumType checksumType, MessageMetadata messageMetadata, AbstractByteBuffer payload)
         {
-            return newSend(producerId, sequenceId, -1, numMessages, messageMetadata.hasTxnidLeastBits() ? messageMetadata.getTxnidLeastBits() : -1, messageMetadata.hasTxnidMostBits() ? messageMetadata.getTxnidMostBits() : -1, checksumType, -1, -1, messageMetadata, payload);
+            return NewSend(producerId, sequenceId, -1, numMessages, messageMetadata.HasTxnidLeastBits ? (long)messageMetadata.TxnidLeastBits : -1, messageMetadata.HasTxnidMostBits ? (long)messageMetadata.TxnidMostBits : -1, checksumType, -1, -1, messageMetadata, payload);
         }
 
-        public static ByteBufPair newSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, ChecksumType checksumType, MessageMetadata messageMetadata, AbstractByteBuffer payload)
+        public static ByteBufPair NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, ChecksumType checksumType, MessageMetadata messageMetadata, AbstractByteBuffer payload)
         {
-            return newSend(producerId, lowestSequenceId, highestSequenceId, numMessages, messageMetadata.hasTxnidLeastBits() ? messageMetadata.getTxnidLeastBits() : -1, messageMetadata.hasTxnidMostBits() ? messageMetadata.getTxnidMostBits() : -1, checksumType, -1, -1, messageMetadata, payload);
+            return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, messageMetadata.HasTxnidLeastBits ? (long)messageMetadata.TxnidLeastBits : -1, messageMetadata.HasTxnidMostBits ? (long)messageMetadata.TxnidMostBits : -1, checksumType, -1, -1, messageMetadata, payload);
         }
 
-        public static ByteBufPair newSend(long producerId, long sequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, long ledgerId, long entryId, MessageMetadata messageData, AbstractByteBuffer payload)
+        public static ByteBufPair NewSend(long producerId, long sequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, ChecksumType checksumType, long ledgerId, long entryId, MessageMetadata messageData, AbstractByteBuffer payload)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.SEND);
-            CommandSend send = cmd.setSend().setProducerId(producerId).setSequenceId(sequenceId);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Send);
+            cmd.Send.ProducerId = (ulong)producerId;
+            cmd.Send.SequenceId = (ulong)(sequenceId);
+            CommandSend send = cmd.Send;
             if (highestSequenceId >= 0)
             {
-                send.setHighestSequenceId(highestSequenceId);
+                send.HighestSequenceId = (ulong)(highestSequenceId);
             }
             if (numMessages > 1)
             {
-                send.setNumMessages(numMessages);
+                send.NumMessages = (numMessages);
             }
             if (txnIdLeastBits >= 0)
             {
-                send.setTxnidLeastBits(txnIdLeastBits);
+                send.TxnidLeastBits = (ulong)(txnIdLeastBits);
             }
             if (txnIdMostBits >= 0)
             {
-                send.setTxnidMostBits(txnIdMostBits);
+                send.TxnidMostBits = (ulong)(txnIdMostBits);
             }
-            if (messageData.hasTotalChunkMsgSize() && messageData.getTotalChunkMsgSize() > 1)
+            if (messageData.HasTotalChunkMsgSize && messageData.TotalChunkMsgSize > 1)
             {
-                send.setIsChunk(true);
+                send.IsChunk = (true);
             }
 
-            if (messageData.hasMarkerType())
+            if (messageData.HasMarkerType)
             {
-                send.setMarker(true);
+                send.Marker = (true);
             }
 
             if (ledgerId >= 0 && entryId >= 0)
             {
-                send.setMessageId().setLedgerId(ledgerId).setEntryId(entryId);
+                send.MessageId.LedgerId = (ulong)(ledgerId);
+                send.MessageId.EntryId = (ulong)(entryId);
             }
 
-            return serializeCommandSendWithSize(cmd, checksumType, messageData, payload);
+            return SerializeCommandSendWithSize(cmd, checksumType, messageData, payload);
         }
 
-        public static AbstractByteBuffer newSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
+        public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
         {
-            return newSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, Collections.emptyMap(), false, false, CommandSubscribe.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
+            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, Collections.emptyMap(), false, false, CommandSubscribe.Types.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
         }
 
-        public static AbstractByteBuffer newSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool? isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
+        public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool? isReplicated, CommandSubscribe.Types.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
         {
-            return newSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null, Collections.emptyMap(), DEFAULT_CONSUMER_EPOCH);
+            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null, Collections.emptyMap(), DefaultConsumerEpoch);
         }
 
-        public static AbstractByteBuffer newSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool? isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy, IDictionary<string, string> subscriptionProperties, long consumerEpoch)
+        public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool? isReplicated, CommandSubscribe.Types.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy, IDictionary<string, string> subscriptionProperties, long consumerEpoch)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.SUBSCRIBE);
-            CommandSubscribe subscribe = cmd.setSubscribe().setTopic(topic).setSubscription(subscription).setSubType(subType).setConsumerId(consumerId).setConsumerName(consumerName).setRequestId(requestId).setPriorityLevel(priorityLevel).setDurable(isDurable).setReadCompacted(readCompacted).setInitialPosition(subscriptionInitialPosition).setForceTopicCreation(createTopicIfDoesNotExist).setConsumerEpoch(consumerEpoch);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Subscribe);
+            cmd.Subscribe.Topic = (topic);
+            cmd.Subscribe.Subscription = (subscription);
+            cmd.Subscribe.SubType = (subType);
+            cmd.Subscribe.ConsumerId = (ulong)(consumerId);
+            cmd.Subscribe.ConsumerName = (consumerName);
+            cmd.Subscribe.RequestId = (ulong)(requestId);
+            cmd.Subscribe.PriorityLevel = (priorityLevel);
+            cmd.Subscribe.Durable = (isDurable);
+            cmd.Subscribe.ReadCompacted = (readCompacted);
+            cmd.Subscribe.InitialPosition = (subscriptionInitialPosition);
+            cmd.Subscribe.ForceTopicCreation = (createTopicIfDoesNotExist);
+            cmd.Subscribe.ConsumerEpoch = (ulong)(consumerEpoch);
+            CommandSubscribe subscribe = cmd.Subscribe;
             if (isReplicated != null)
             {
-                subscribe.setReplicateSubscriptionState(isReplicated);
+                subscribe.ReplicateSubscriptionState = ((bool)isReplicated);
             }
 
             if (subscriptionProperties != null && subscriptionProperties.Count > 0)
             {
                 IList<KeyValue> keyValues = new List<KeyValue>();
-                subscriptionProperties.forEach((key, value) =>
+                subscriptionProperties.ForEach(kv =>
                 {
                     KeyValue keyValue = new KeyValue();
-                    keyValue.setKey(key);
-                    keyValue.setValue(value);
+                    keyValue.Key = kv.Key;
+                    keyValue.Value = kv.Value;
                     keyValues.Add(keyValue);
                 });
-                subscribe.addAllSubscriptionProperties(keyValues);
+                subscribe.SubscriptionProperties.AddRange(keyValues);
             }
 
             if (keySharedPolicy != null)
             {
-                KeySharedMeta keySharedMeta = subscribe.setKeySharedMeta();
-                keySharedMeta.setAllowOutOfOrderDelivery(keySharedPolicy.isAllowOutOfOrderDelivery());
-                keySharedMeta.setKeySharedMode(convertKeySharedMode(keySharedPolicy.getKeySharedMode()));
+                KeySharedMeta keySharedMeta = subscribe.KeySharedMeta;
+                keySharedMeta.AllowOutOfOrderDelivery = (keySharedPolicy.AllowOutOfOrderDelivery);
+                keySharedMeta.KeySharedMode = (ConvertKeySharedMode(keySharedPolicy.KeySharedMode));
 
                 if (keySharedPolicy is KeySharedPolicy.KeySharedPolicySticky)
                 {
-                    IList<Range> ranges = ((KeySharedPolicy.KeySharedPolicySticky)keySharedPolicy).getRanges();
-                    foreach (Range range in ranges)
+                    IList<Shared.Range> ranges = ((KeySharedPolicy.KeySharedPolicySticky)keySharedPolicy).GetRanges;
+                    foreach (Shared.Range range in ranges)
                     {
                         IntRange r = keySharedMeta.addHashRange();
                         r.setStart(range.getStart());
@@ -1582,177 +688,199 @@ namespace SharpPulsar.Protocol.Schema
 
             if (startMessageId != null)
             {
-                subscribe.setStartMessageId().copyFrom(startMessageId);
+                subscribe.StartMessageId.MergeFrom(startMessageId);
             }
             if (startMessageRollbackDurationInSec > 0)
             {
-                subscribe.setStartMessageRollbackDurationSec(startMessageRollbackDurationInSec);
+                subscribe.StartMessageRollbackDurationSec = (ulong)(startMessageRollbackDurationInSec);
             }
 
             if (metadata.Count > 0)
             {
-                metadata.SetOfKeyValuePairs().forEach(e => subscribe.addMetadata().setKey(e.getKey()).setValue(e.getValue()));
+                metadata.SetOfKeyValuePairs().ForEach(e => 
+                {
+                    KeyValue k = new KeyValue();
+                    k.Key = e.Key;
+                    k.Value = e.Value;
+                    subscribe.Metadata.Add(k);
+                }); 
             }
 
             if (schemaInfo != null)
             {
-                if (subscribe.hasSchema())
+                if (subscribe.Schema == null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                if (subscribe.Schema.Properties.Count > 0)
                 {
                     throw new System.InvalidOperationException();
                 }
 
-                if (subscribe.setSchema().getPropertiesCount() > 0)
-                {
-                    throw new System.InvalidOperationException();
-                }
-
-                convertSchema(schemaInfo, subscribe.setSchema());
+                ConvertSchema(schemaInfo, subscribe.Schema);
             }
 
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newTcClientConnectRequest(long tcId, long requestId)
+        public static AbstractByteBuffer NewTcClientConnectRequest(long tcId, long requestId)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.TC_CLIENT_CONNECT_REQUEST);
-            cmd.setTcClientConnectRequest().setTcId(tcId).setRequestId(requestId);
-            return serializeWithSize(cmd);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.TcClientConnectRequest);
+            cmd.TcClientConnectRequest.TcId = (ulong)(tcId);
+            cmd.TcClientConnectRequest.RequestId = (ulong)(requestId);
+            return SerializeWithSize(cmd);
         }
 
-        private static KeySharedMode convertKeySharedMode(org.apache.pulsar.client.api.KeySharedMode mode)
+        private static Pulsar.Proto.KeySharedMode ConvertKeySharedMode(Shared.KeySharedMode mode)
         {
             switch (mode)
             {
-                case AUTO_SPLIT:
-                    return KeySharedMode.AUTO_SPLIT;
-                case STICKY:
-                    return KeySharedMode.STICKY;
+                case Shared.KeySharedMode.AutoSplit:
+                    return Pulsar.Proto.KeySharedMode.AutoSplit;
+                case Shared.KeySharedMode.Sticky:
+                    return Pulsar.Proto.KeySharedMode.Sticky;
                 default:
                     throw new System.ArgumentException("Unexpected key shared mode: " + mode);
             }
         }
 
-        public static AbstractByteBuffer newUnsubscribe(long consumerId, long requestId, bool force)
+        public static AbstractByteBuffer NewUnsubscribe(long consumerId, long requestId, bool force)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.UNSUBSCRIBE);
-            cmd.setUnsubscribe().setConsumerId(consumerId).setRequestId(requestId).setForce(force);
-            return serializeWithSize(cmd);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Unsubscribe);
+            cmd.Unsubscribe.ConsumerId = (ulong)(consumerId);
+            cmd.Unsubscribe.RequestId = (ulong)(requestId);
+            cmd.Unsubscribe.Force = (force);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newActiveConsumerChange(long consumerId, bool isActive)
+        public static AbstractByteBuffer NewActiveConsumerChange(long consumerId, bool isActive)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.ACTIVE_CONSUMER_CHANGE);
-            cmd.setActiveConsumerChange().setConsumerId(consumerId).setIsActive(isActive);
-            return serializeWithSize(cmd);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.ActiveConsumerChange);
+            cmd.ActiveConsumerChange.ConsumerId = (ulong)(consumerId);
+            cmd.ActiveConsumerChange.IsActive = (isActive);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newSeek(long consumerId, long requestId, long ledgerId, long entryId, long[] ackSet)
+        public static AbstractByteBuffer NewSeek(long consumerId, long requestId, long ledgerId, long entryId, long[] ackSet)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.SEEK);
-            CommandSeek seek = cmd.setSeek().setConsumerId(consumerId).setRequestId(requestId);
-            MessageIdData messageId = seek.setMessageId().setLedgerId(ledgerId).setEntryId(entryId);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Seek);
+            cmd.Seek.ConsumerId = (ulong)(consumerId);
+            cmd.Seek.RequestId = (ulong)(requestId);
+            CommandSeek seek = cmd.Seek;
+            MessageIdData messageId = new MessageIdData();
+            messageId.LedgerId = (ulong)ledgerId;
+            messageId.EntryId = (ulong)entryId;
+            seek.MessageId = messageId;
             for (int i = 0; i < ackSet.Length; i++)
             {
-                messageId.addAckSet(ackSet[i]);
+                messageId.AckSet.Add(ackSet[i]);
             }
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newSeek(long consumerId, long requestId, long timestamp)
+        public static AbstractByteBuffer NewSeek(long consumerId, long requestId, long timestamp)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.SEEK);
-            cmd.setSeek().setConsumerId(consumerId).setRequestId(requestId).setMessagePublishTime(timestamp);
-            return serializeWithSize(cmd);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Seek);
+            cmd.Seek.ConsumerId = (ulong)(consumerId);
+            cmd.Seek.RequestId = (ulong)(requestId);
+            cmd.Seek.MessagePublishTime = (ulong)(timestamp);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newCloseConsumer(long consumerId, long requestId, string assignedBrokerUrl, string assignedBrokerUrlTls)
+        public static AbstractByteBuffer NewCloseConsumer(long consumerId, long requestId, string assignedBrokerUrl, string assignedBrokerUrlTls)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.CLOSE_CONSUMER);
-            CommandCloseConsumer commandCloseConsumer = cmd.setCloseConsumer().setConsumerId(consumerId).setRequestId(requestId);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.CloseConsumer);
+            cmd.CloseConsumer.ConsumerId = (ulong)(consumerId);
+            cmd.CloseConsumer.RequestId = (ulong)(requestId);
+            CommandCloseConsumer commandCloseConsumer = cmd.CloseConsumer;
 
             if (!string.ReferenceEquals(assignedBrokerUrl, null))
             {
-                commandCloseConsumer.setAssignedBrokerServiceUrl(assignedBrokerUrl);
+                commandCloseConsumer.AssignedBrokerServiceUrl = (assignedBrokerUrl);
             }
 
             if (!string.ReferenceEquals(assignedBrokerUrlTls, null))
             {
-                commandCloseConsumer.setAssignedBrokerServiceUrlTls(assignedBrokerUrlTls);
+                commandCloseConsumer.AssignedBrokerServiceUrlTls = (assignedBrokerUrlTls);
             }
 
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newReachedEndOfTopic(long consumerId)
+        public static AbstractByteBuffer NewReachedEndOfTopic(long consumerId)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.REACHED_END_OF_TOPIC);
-            cmd.setReachedEndOfTopic().setConsumerId(consumerId);
-            return serializeWithSize(cmd);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.ReachedEndOfTopic);
+            cmd.ReachedEndOfTopic.ConsumerId = (ulong)(consumerId);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newTopicMigrated(CommandTopicMigrated.ResourceType type, long resourceId, string brokerUrl, string brokerUrlTls)
+        public static AbstractByteBuffer NewTopicMigrated(CommandTopicMigrated.Types.ResourceType type, long resourceId, string brokerUrl, string brokerUrlTls)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.TOPIC_MIGRATED);
-            CommandTopicMigrated migratedCmd = cmd.setTopicMigrated();
-            migratedCmd.setResourceType(type).setResourceId(resourceId);
-            if (StringUtils.isNotBlank(brokerUrl))
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.TopicMigrated);
+            CommandTopicMigrated migratedCmd = cmd.TopicMigrated;
+            migratedCmd.ResourceType = (type);
+            migratedCmd.ResourceId = (ulong)(resourceId);
+            if (!string.IsNullOrWhiteSpace(brokerUrl))
             {
-                migratedCmd.setBrokerServiceUrl(brokerUrl);
+                migratedCmd.BrokerServiceUrl  = (brokerUrl);
             }
-            if (StringUtils.isNotBlank(brokerUrlTls))
+            if (!string.IsNullOrWhiteSpace(brokerUrlTls))
             {
-                migratedCmd.setBrokerServiceUrlTls(brokerUrlTls);
+                migratedCmd.BrokerServiceUrlTls = (brokerUrlTls);
             }
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newCloseProducer(long producerId, long requestId)
+        public static AbstractByteBuffer NewCloseProducer(long producerId, long requestId)
         {
-            return newCloseProducer(producerId, requestId, null, null);
+            return NewCloseProducer(producerId, requestId, null, null);
         }
 
-        public static AbstractByteBuffer newCloseProducer(long producerId, long requestId, string assignedBrokerUrl, string assignedBrokerUrlTls)
+        public static AbstractByteBuffer NewCloseProducer(long producerId, long requestId, string assignedBrokerUrl, string assignedBrokerUrlTls)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.CLOSE_PRODUCER);
-            CommandCloseProducer commandCloseProducer = cmd.setCloseProducer().setProducerId(producerId).setRequestId(requestId);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.CloseProducer);
+            cmd.CloseProducer.ProducerId = (ulong)(producerId);
+            cmd.CloseProducer.RequestId = (ulong)(requestId);
+            CommandCloseProducer commandCloseProducer = cmd.CloseProducer;
 
             if (!string.ReferenceEquals(assignedBrokerUrl, null))
             {
-                commandCloseProducer.setAssignedBrokerServiceUrl(assignedBrokerUrl);
+                commandCloseProducer.AssignedBrokerServiceUrl = (assignedBrokerUrl);
             }
 
             if (!string.ReferenceEquals(assignedBrokerUrlTls, null))
             {
-                commandCloseProducer.setAssignedBrokerServiceUrlTls(assignedBrokerUrlTls);
+                commandCloseProducer.AssignedBrokerServiceUrlTls = (assignedBrokerUrlTls);
             }
 
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newProducer(string topic, long producerId, long requestId, string producerName, IDictionary<string, string> metadata, bool isTxnEnabled)
+        public static AbstractByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, IDictionary<string, string> metadata, bool isTxnEnabled)
         {
-            return newProducer(topic, producerId, requestId, producerName, false, metadata, isTxnEnabled);
+            return NewProducer(topic, producerId, requestId, producerName, false, metadata, isTxnEnabled);
         }
 
-        public static AbstractByteBuffer newProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, bool isTxnEnabled)
+        public static AbstractByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, bool isTxnEnabled)
         {
-            return newProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, ProducerAccessMode.Shared, null, isTxnEnabled);
+            return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, ProducerAccessMode.Shared, null, isTxnEnabled);
         }
 
-        private static Schema.Type getSchemaType(SchemaType type)
+        private static Pulsar.Proto.Schema.Types.Type GetSchemaType(SchemaType type)
         {
-            if (type == SchemaType.AUTO_CONSUME)
+            if (type == SchemaType.AutoConsume)
             {
-                return Schema.Type.AutoConsume;
+                return Pulsar.Proto.Schema.Types.Type.AutoConsume;
             }
             else if (type.getValue() < 0)
             {
-                return Schema.Type.None;
+                return Pulsar.Proto.Schema.Types.Type.None;
             }
-            else if (type == SchemaType.EXTERNAL)
+            else if (type == SchemaType.External)
             {
                 // This is a special case, SchemaType.EXTERNAL number is not match the Schema.Type.EXTERNAL.
-                return Schema.Type.External;
+                return Pulsar.Proto.Schema.Types.Type.External;
             }
             else
             {
@@ -1760,31 +888,31 @@ namespace SharpPulsar.Protocol.Schema
             }
         }
 
-        public static SchemaType getSchemaType(Schema.Type type)
+        public static SchemaType GetSchemaType(Pulsar.Proto.Schema.Types.Type type)
         {
-            if (type == Schema.Type.AutoConsume)
+            if (type == Pulsar.Proto.Schema.Types.Type.AutoConsume)
             {
-                return SchemaType.AUTO_CONSUME;
+                return SchemaType.AutoConsume;
             }
             else if (type.getValue() < 0)
             {
                 // this is unexpected
                 return SchemaType.NONE;
             }
-            else if (type == Schema.Type.External)
+            else if (type == Pulsar.Proto.Schema.Types.Type.External)
             {
                 // This is a special case, SchemaType.EXTERNAL number is not match the Schema.Type.EXTERNAL.
-                return SchemaType.EXTERNAL;
+                return SchemaType.External;
             }
             else
             {
-                return SchemaType.valueOf(type.getValue());
+                return SchemaType.ValueOf(type);
             }
         }
 
-        private static void convertSchema(SchemaInfo schemaInfo, Schema schema)
+        private static void ConvertSchema(ISchemaInfo schemaInfo, Schema schema)
         {
-            schema.setName(schemaInfo.getName()).setSchemaData(schemaInfo.getSchema()).setType(getSchemaType(schemaInfo.getType()));
+            schema.Name(schemaInfo.getName()).setSchemaData(schemaInfo.getSchema()).setType(getSchemaType(schemaInfo.getType()));
 
             schemaInfo.getProperties().entrySet().ForEach(entry =>
             {
@@ -1795,19 +923,27 @@ namespace SharpPulsar.Protocol.Schema
             });
         }
 
-        public static AbstractByteBuffer newProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, SchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled)
+        public static AbstractByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, SchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled)
         {
             return newProducer(topic, producerId, requestId, producerName, encrypted, metadata, schemaInfo, epoch, userProvidedProducerName, accessMode, topicEpoch, isTxnEnabled, null);
 
         }
 
-        public static AbstractByteBuffer newProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, SchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled, string initialSubscriptionName)
+        public static AbstractByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, SchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled, string initialSubscriptionName)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.PRODUCER);
-            CommandProducer producer = cmd.setProducer().setTopic(topic).setProducerId(producerId).setRequestId(requestId).setEpoch(epoch).setUserProvidedProducerName(userProvidedProducerName).setEncrypted(encrypted).setTxnEnabled(isTxnEnabled).setProducerAccessMode(convertProducerAccessMode(accessMode));
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Producer);
+            cmd.Producer.Topic = (topic);
+            cmd.Producer.ProducerId = (ulong)(producerId);
+            cmd.Producer.RequestId = (ulong)(requestId);
+            cmd.Producer.Epoch = (ulong)(epoch);
+            cmd.Producer.UserProvidedProducerName = (userProvidedProducerName);
+            cmd.Producer.Encrypted = (encrypted);
+            cmd.Producer.TxnEnabled = (isTxnEnabled);
+            cmd.Producer.ProducerAccessMode = ConvertProducerAccessMode(accessMode);
+            CommandProducer producer = cmd.Producer;
             if (!string.ReferenceEquals(producerName, null))
             {
-                producer.setProducerName(producerName);
+                producer.ProducerName = (producerName);
             }
 
             if (metadata.Count > 0)
@@ -1817,235 +953,254 @@ namespace SharpPulsar.Protocol.Schema
 
             if (null != schemaInfo)
             {
-                convertSchema(schemaInfo, producer.setSchema());
+                ConvertSchema(schemaInfo, producer.Schema);
             }
 
             topicEpoch.ifPresent(producer.setTopicEpoch);
 
-            if (!Strings.isNullOrEmpty(initialSubscriptionName))
+            if (!string.IsNullOrWhiteSpace(initialSubscriptionName))
             {
-                producer.setInitialSubscriptionName(initialSubscriptionName);
+                producer.InitialSubscriptionName = (initialSubscriptionName);
             }
 
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newPartitionMetadataRequest(string topic, long requestId, bool metadataAutoCreationEnabled)
+        public static AbstractByteBuffer NewPartitionMetadataRequest(string topic, long requestId, bool metadataAutoCreationEnabled)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.PARTITIONED_METADATA);
-            cmd.setPartitionMetadata().setTopic(topic).setRequestId(requestId).setMetadataAutoCreationEnabled(metadataAutoCreationEnabled);
-            return serializeWithSize(cmd);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.PartitionedMetadata);
+            cmd.PartitionMetadata.Topic = (topic);
+            cmd.PartitionMetadata.RequestId = (ulong)(requestId);
+            cmd.PartitionMetadata.MetadataAutoCreationEnabled = (metadataAutoCreationEnabled);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newLookup(string topic, bool authoritative, long requestId)
+        public static AbstractByteBuffer NewLookup(string topic, bool authoritative, long requestId)
         {
-            return newLookup(topic, null, authoritative, requestId, null);
+            return NewLookup(topic, null, authoritative, requestId, null);
         }
 
-        public static AbstractByteBuffer newLookup(string topic, string listenerName, bool authoritative, long requestId, IDictionary<string, string> properties)
+        public static AbstractByteBuffer NewLookup(string topic, string listenerName, bool authoritative, long requestId, IDictionary<string, string> properties)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.LOOKUP);
-            CommandLookupTopic lookup = cmd.setLookupTopic().setTopic(topic).setRequestId(requestId).setAuthoritative(authoritative);
-            if (StringUtils.isNotBlank(listenerName))
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Lookup);
+            cmd.LookupTopic.Topic = (topic);
+            cmd.LookupTopic.RequestId = (ulong)(requestId);
+            cmd.LookupTopic.Authoritative = (authoritative);
+            CommandLookupTopic lookup = cmd.LookupTopic;
+            if (!string.IsNullOrWhiteSpace(listenerName))
             {
-                lookup.setAdvertisedListenerName(listenerName);
+                lookup.AdvertisedListenerName = (listenerName);
             }
             if (properties != null)
             {
-                properties.forEach((key, value) => lookup.addProperty().setKey(key).setValue(value));
+                properties.ForEach(kv =>
+                {
+                    var b = new KeyValue();
+                    b.Key = kv.Key;
+                    b.Value = kv.Value;
+                    lookup.Properties.Add(b);
+                });
             }
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static BaseCommand newLookupResponseCommand(string brokerServiceUrl, string brokerServiceUrlTls, bool authoritative, CommandLookupTopicResponse.LookupType lookupType, long requestId, bool proxyThroughServiceUrl)
+        public static AbstractByteBuffer NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, List<long> bitSet)> entries)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.LOOKUP_RESPONSE);
-            CommandLookupTopicResponse response = cmd.setLookupTopicResponse().setResponse(lookupType).setRequestId(requestId).setAuthoritative(authoritative).setProxyThroughServiceUrl(proxyThroughServiceUrl);
-            if (!string.ReferenceEquals(brokerServiceUrl, null))
-            {
-                response.setBrokerServiceUrl(brokerServiceUrl);
-            }
-            if (!string.ReferenceEquals(brokerServiceUrlTls, null))
-            {
-                response.setBrokerServiceUrlTls(brokerServiceUrlTls);
-            }
-
-            return cmd;
+            BaseCommand cmd = NewMultiMessageAckCommon(entries);
+            cmd.Ack.ConsumerId = (ulong)(consumerId);
+            cmd.Ack.AckType = (CommandAck.Types.AckType.Individual);
+            cmd.Ack.TxnidLeastBits = (ulong)(txnID.LeastSigBits);
+            cmd.Ack.TxnidMostBits = (ulong)(txnID.MostSigBits);
+            return SerializeWithSize(cmd);
         }
 
-
-        public static AbstractByteBuffer newMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<Triple<long, long, ConcurrentBitSetRecyclable>> entries)
+        private static BaseCommand NewMultiMessageAckCommon(IList<(long ledger, long entry, List<long> bitSet)> entries)
         {
-            BaseCommand cmd = newMultiMessageAckCommon(entries);
-            cmd.getAck().setConsumerId(consumerId).setAckType(CommandAck.AckType.Individual).setTxnidLeastBits(txnID.getLeastSigBits()).setTxnidMostBits(txnID.getMostSigBits());
-            return serializeWithSize(cmd);
-        }
-
-        private static BaseCommand newMultiMessageAckCommon(IList<Triple<long, long, ConcurrentBitSetRecyclable>> entries)
-        {
-            BaseCommand cmd = localCmd(BaseCommand.Type.ACK);
-            CommandAck ack = cmd.setAck();
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Ack);
+            CommandAck ack = cmd.Ack;
             int entriesCount = entries.Count;
             for (int i = 0; i < entriesCount; i++)
             {
-                long ledgerId = entries[i].getLeft();
-                long entryId = entries[i].getMiddle();
-                ConcurrentBitSetRecyclable bitSet = entries[i].getRight();
-                MessageIdData msgId = ack.addMessageId().setLedgerId(ledgerId).setEntryId(entryId);
+                long ledgerId = entries[i].ledger;
+                long entryId = entries[i].entry;
+                List<long> bitSet = entries[i].bitSet;
+                MessageIdData msgId = new MessageIdData();
+                msgId.LedgerId = (ulong)ledgerId;
+                msgId.EntryId = (ulong)entryId;
+                ack.MessageId.Add(msgId);
                 if (bitSet != null)
                 {
-                    long[] ackSet = bitSet.toLongArray();
+                    long[] ackSet = bitSet.ToArray();
                     for (int j = 0; j < ackSet.Length; j++)
                     {
-                        msgId.addAckSet(ackSet[j]);
+                        msgId.AckSet.Add(ackSet[j]);
                     }
-                    bitSet.recycle();
+                    //bitSet.Recycle();
                 }
             }
 
             return cmd;
         }
 
-        public static AbstractByteBuffer newMultiMessageAck(long consumerId, IList<Triple<long, long, ConcurrentBitSetRecyclable>> entries, long requestId)
+        public static AbstractByteBuffer NewMultiMessageAck(long consumerId, IList<(long ledger, long entry, List<long> bitSet)> entries, long requestId)
         {
-            BaseCommand cmd = newMultiMessageAckCommon(entries);
-            cmd.getAck().setConsumerId(consumerId).setAckType(CommandAck.AckType.Individual);
+            BaseCommand cmd = NewMultiMessageAckCommon(entries);
+            cmd.Ack.AckType = CommandAck.Types.AckType.Individual;
             if (requestId >= 0)
             {
-                cmd.getAck().setRequestId(requestId);
+                cmd.Ack.RequestId = (ulong)(requestId);
             }
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newAck(long consumerId, long ledgerId, long entryId, BitSetRecyclable ackSet, CommandAck.AckType ackType, CommandAck.ValidationError validationError, IDictionary<string, long> properties, long requestId)
+        public static AbstractByteBuffer NewAck(long consumerId, long ledgerId, long entryId, BitSetRecyclable ackSet, CommandAck.Types.AckType ackType, CommandAck.Types.ValidationError validationError, IDictionary<string, long> properties, long requestId)
         {
-            return newAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError, properties, -1L, -1L, requestId, -1);
+            return NewAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError, properties, -1L, -1L, requestId, -1);
         }
 
-        public static AbstractByteBuffer newAck(long consumerId, long ledgerId, long entryId, BitSetRecyclable ackSet, CommandAck.AckType ackType, CommandAck.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, int batchSize)
+        public static AbstractByteBuffer NewAck(long consumerId, long ledgerId, long entryId, BitSetRecyclable ackSet, CommandAck.Types.AckType ackType, CommandAck.Types.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, int batchSize)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.ACK);
-            CommandAck ack = cmd.setAck().setConsumerId(consumerId).setAckType(ackType);
-            MessageIdData messageIdData = ack.addMessageId().setLedgerId(ledgerId).setEntryId(entryId);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Ack);
+            cmd.Ack.ConsumerId = (ulong)(consumerId);
+            cmd.Ack.AckType = (ackType);
+            CommandAck ack = cmd.Ack;
+            MessageIdData messageIdData = new MessageIdData();
+            messageIdData.LedgerId = (ulong)(ledgerId); 
+            messageIdData.EntryId = (ulong)(entryId);
+            ack.MessageId.Add(messageIdData);
             if (ackSet != null)
             {
-                long[] @as = ackSet.toLongArray();
+                long[] @as = ackSet.ToLongArray();
                 for (int i = 0; i < @as.Length; i++)
                 {
-                    messageIdData.addAckSet(@as[i]);
+                    messageIdData.AckSet.Add(@as[i]);
                 }
             }
 
             if (batchSize >= 0)
             {
-                messageIdData.setBatchSize(batchSize);
+                messageIdData.BatchSize = (batchSize);
             }
 
-            return newAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack, cmd);
+            return NewAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack, cmd);
         }
 
-        public static AbstractByteBuffer newAck(long consumerId, IList<MessageIdData> messageIds, CommandAck.AckType ackType, CommandAck.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
+        public static AbstractByteBuffer NewAck(long consumerId, IList<MessageIdData> messageIds, CommandAck.Types.AckType ackType, CommandAck.Types.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.ACK);
-            CommandAck ack = cmd.setAck().setConsumerId(consumerId).setAckType(ackType);
-            ack.addAllMessageIds(messageIds);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Ack);
+            cmd.Ack.ConsumerId = (ulong)(consumerId);
+            cmd.Ack.AckType = (ackType);
+            CommandAck ack = cmd.Ack;
+            ack.MessageId.AddRange(messageIds);
 
-            return newAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack, cmd);
+            return NewAck(validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, ack, cmd);
         }
 
-        private static AbstractByteBuffer newAck(CommandAck.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, CommandAck ack, BaseCommand cmd)
+        private static AbstractByteBuffer NewAck(CommandAck.Types.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, CommandAck ack, BaseCommand cmd)
         {
             if (validationError != null)
             {
-                ack.setValidationError(validationError);
+                ack.ValidationError = (validationError);
             }
             if (txnIdMostBits >= 0)
             {
-                ack.setTxnidMostBits(txnIdMostBits);
+                ack.TxnidMostBits = (ulong)(txnIdMostBits);
             }
             if (txnIdLeastBits >= 0)
             {
-                ack.setTxnidLeastBits(txnIdLeastBits);
+                ack.TxnidLeastBits = (ulong)(txnIdLeastBits);
             }
 
             if (requestId >= 0)
             {
-                ack.setRequestId(requestId);
+                ack.RequestId = (ulong)(requestId);
             }
             if (properties.Count > 0)
             {
-                properties.forEach((k, v) =>
+                properties.ForEach(kv =>
                 {
-                    ack.addProperty().setKey(k).setValue(v);
+                    var b = new KeyLongValue();
+                    b.Key = kv.Key;
+                    b.Value = (ulong)kv.Value; 
+                    ack.Properties.Add(b);
                 });
             }
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newAck(long consumerId, long ledgerId, long entryId, BitSetRecyclable ackSet, CommandAck.AckType ackType, CommandAck.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
+        public static AbstractByteBuffer NewAck(long consumerId, long ledgerId, long entryId, BitArray ackSet, CommandAck.Types.AckType ackType, CommandAck.Types.ValidationError validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
         {
-            return newAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, -1);
+            return NewAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError, properties, txnIdLeastBits, txnIdMostBits, requestId, -1);
         }
 
-        public static AbstractByteBuffer newFlow(long consumerId, int messagePermits)
+        public static AbstractByteBuffer NewFlow(long consumerId, int messagePermits)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.FLOW);
-            cmd.setFlow().setConsumerId(consumerId).setMessagePermits(messagePermits);
-            return serializeWithSize(cmd);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.Flow);
+            cmd.Flow.ConsumerId = (ulong)(consumerId);
+            cmd.Flow.MessagePermits = (uint)messagePermits;
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newRedeliverUnacknowledgedMessages(long consumerId, long consumerEpoch)
+        public static AbstractByteBuffer NewRedeliverUnacknowledgedMessages(long consumerId, long consumerEpoch)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.REDELIVER_UNACKNOWLEDGED_MESSAGES);
-            cmd.setRedeliverUnacknowledgedMessages().setConsumerId(consumerId).setConsumerEpoch(consumerEpoch);
-            return serializeWithSize(cmd);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages);
+            cmd.RedeliverUnacknowledgedMessages.ConsumerId = (ulong)(consumerId);
+            cmd.RedeliverUnacknowledgedMessages.ConsumerEpoch = (ulong)(consumerEpoch);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newRedeliverUnacknowledgedMessages(long consumerId, IList<MessageIdData> messageIds)
+        public static AbstractByteBuffer NewRedeliverUnacknowledgedMessages(long consumerId, IList<MessageIdData> messageIds)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.REDELIVER_UNACKNOWLEDGED_MESSAGES);
-            CommandRedeliverUnacknowledgedMessages req = cmd.setRedeliverUnacknowledgedMessages().setConsumerId(consumerId);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.RedeliverUnacknowledgedMessages);
+            cmd.RedeliverUnacknowledgedMessages.ConsumerId = (ulong)(consumerId);
+            CommandRedeliverUnacknowledgedMessages req = cmd.RedeliverUnacknowledgedMessages;
             messageIds.ForEach(msgId =>
             {
-                MessageIdData m = req.addMessageId().setLedgerId(msgId.getLedgerId()).setEntryId(msgId.getEntryId());
-                if (msgId.hasBatchIndex())
+                MessageIdData m = new MessageIdData();  
+                m.LedgerId = msgId.LedgerId;    
+                m.EntryId = msgId.EntryId;
+                req.MessageIds.Add(m);
+                if (msgId.HasBatchIndex)
                 {
-                    m.setBatchIndex(msgId.getBatchIndex());
+                    m.BatchIndex = msgId.BatchIndex;
                 }
             });
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
-        public static AbstractByteBuffer newGetTopicsOfNamespaceRequest(string @namespace, long requestId, CommandGetTopicsOfNamespace.Mode mode, string topicsPattern, string topicsHash)
+        public static AbstractByteBuffer NewGetTopicsOfNamespaceRequest(string @namespace, long requestId, CommandGetTopicsOfNamespace.Types.Mode mode, string topicsPattern, string topicsHash)
         {
-            BaseCommand cmd = localCmd(BaseCommand.Type.GET_TOPICS_OF_NAMESPACE);
-            CommandGetTopicsOfNamespace topics = cmd.setGetTopicsOfNamespace();
-            topics.setNamespace(@namespace);
-            topics.setRequestId(requestId);
-            topics.setMode(mode);
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.GetTopicsOfNamespace);
+            CommandGetTopicsOfNamespace topics = cmd.GetTopicsOfNamespace;
+            topics.Namespace = (@namespace);
+            topics.RequestId = (ulong)(requestId);
+            topics.Mode = (mode);
             if (!string.ReferenceEquals(topicsPattern, null))
             {
-                topics.setTopicsPattern(topicsPattern);
+                topics.TopicsPattern = (topicsPattern);
             }
             if (!string.ReferenceEquals(topicsHash, null))
             {
-                topics.setTopicsHash(topicsHash);
+                topics.TopicsHash = (topicsHash);
             }
-            return serializeWithSize(cmd);
+            return SerializeWithSize(cmd);
         }
 
         private static readonly IByteBuffer cmdPing;
 
         static Commands()
         {
-            BaseCommand cmd = (new BaseCommand()).setType(BaseCommand.Type.PING);
-            cmd.setPing();
+            var ping = new BaseCommand();
+            ping.Type = BaseCommand.Types.Type.Ping;
+            BaseCommand cmd = ping;
             AbstractByteBuffer serializedCmdPing = SerializeWithSize(cmd);
             cmdPing = Unpooled.CopiedBuffer(serializedCmdPing);
-            serializedCmdPing.release();
-            BaseCommand cmd = (new BaseCommand()).setType(BaseCommand.Type.PONG);
-            cmd.setPong();
-            AbstractByteBuffer serializedCmdPong = SerializeWithSize(cmd);
+            serializedCmdPing.Release();
+
+            var pong = new BaseCommand();
+            pong.Type = BaseCommand.Types.Type.Pong;
+            BaseCommand cmdP = pong;
+            AbstractByteBuffer serializedCmdPong = SerializeWithSize(cmdP);
             cmdPong = Unpooled.CopiedBuffer(serializedCmdPong);
             serializedCmdPong.Release();
         }
@@ -2330,8 +1485,8 @@ namespace SharpPulsar.Protocol.Schema
             brokerMeta.WriteInt(brokerMetaSize);
             brokerEntryMetadata.WriteTo(brokerMeta);
 
-            CompositeByteBuf compositeByteBuf = PulsarByteBufAllocator.DEFAULT.compositeBuffer();
-            compositeByteBuf.addComponents(true, brokerMeta, headerAndPayload);
+            CompositeByteBuffer compositeByteBuf = PulsarByteBufAllocator.DEFAULT.compositeBuffer();
+            compositeByteBuf.AddComponents(true, brokerMeta, headerAndPayload);
             return compositeByteBuf;
         }
 
@@ -2479,7 +1634,7 @@ namespace SharpPulsar.Protocol.Schema
             {
                 metadataAndPayload.WriteShort(MagicCrc32c);
                 checksumReaderIndex = metadataAndPayload.WriterIndex;
-                metadataAndPayload.WriterIndex = metadataAndPayload.WriterIndex + ChecksumSize; // skip 4 bytes of checksum
+                metadataAndPayload.SetWriterIndex(metadataAndPayload.WriterIndex + ChecksumSize); // skip 4 bytes of checksum
             }
 
             // Write metadata
@@ -2490,7 +1645,7 @@ namespace SharpPulsar.Protocol.Schema
             if (includeChecksum)
             {
                 metadataAndPayload.MarkReaderIndex();
-                metadataAndPayload.ReaderIndex = checksumReaderIndex + ChecksumSize;
+                metadataAndPayload.SetReaderIndex(checksumReaderIndex + ChecksumSize);
                 int metadataChecksum = ComputeChecksum(metadataAndPayload);
                 int computedChecksum = ResumeChecksum(metadataChecksum, payload);
                 // set computed checksum
@@ -2596,18 +1751,18 @@ namespace SharpPulsar.Protocol.Schema
 
         public static AbstractByteBuffer DeSerializeSingleMessageInBatch(AbstractByteBuffer uncompressedPayload, SingleMessageMetadata singleMessageMetadata, int index, int batchSize)
         {
-            int singleMetaSize = (int)uncompressedPayload.ReadUnsignedInt;
+            int singleMetaSize = (int)uncompressedPayload.ReadUnsignedInt();
             singleMessageMetadata.ParseFrom(uncompressedPayload, singleMetaSize);
 
             int singleMessagePayloadSize = singleMessageMetadata.PayloadSize;
 
             int readerIndex = uncompressedPayload.ReaderIndex;
-            AbstractByteBuffer singleMessagePayload = uncompressedPayload.RetainedSlice(readerIndex, singleMessagePayloadSize);
+            AbstractByteBuffer singleMessagePayload = (AbstractByteBuffer)uncompressedPayload.RetainedSlice(readerIndex, singleMessagePayloadSize);
 
             // reader now points to beginning of payload read; so move it past message payload just read
             if (index < batchSize)
             {
-                uncompressedPayload.ReaderIndex = (readerIndex + singleMessagePayloadSize);
+                uncompressedPayload.SetReaderIndex(readerIndex + singleMessagePayloadSize);
             }
 
             return singleMessagePayload;
@@ -2649,7 +1804,7 @@ namespace SharpPulsar.Protocol.Schema
             }
             finally
             {
-                metadataAndPayload.ReaderIndex = readerIdx;
+                metadataAndPayload.SetReaderIndex(readerIdx);
             }
         }
 
@@ -2663,7 +1818,7 @@ namespace SharpPulsar.Protocol.Schema
             }
             finally
             {
-                metadataAndPayload.ReaderIndex = readerIdx;
+                metadataAndPayload.SetReaderIndex(readerIdx);
             }
         }
 
@@ -2705,7 +1860,7 @@ namespace SharpPulsar.Protocol.Schema
             }
             finally
             {
-                metadataAndPayload.ReaderIndex = readerIdx;
+                metadataAndPayload.SetReaderIndex(readerIdx);
             }
         }
         public static byte[] ResolveStickyKey(MessageMetadata metadata)
@@ -2800,34 +1955,34 @@ namespace SharpPulsar.Protocol.Schema
             return peerVersion >= (int)ProtocolVersion.V21;
         }
 
-        private static ProducerAccessMode ConvertProducerAccessMode(ProducerAccessMode accessMode)
+        private static Shared.ProducerAccessMode ConvertProducerAccessMode(ProducerAccessMode accessMode)
         {
             switch (accessMode)
             {
                 case ProducerAccessMode.Exclusive:
-                    return ProducerAccessMode.Exclusive;
+                    return Shared.ProducerAccessMode.Exclusive;
                 case ProducerAccessMode.Shared:
-                    return ProducerAccessMode.Shared;
+                    return Shared.ProducerAccessMode.Shared;
                 case ProducerAccessMode.WaitForExclusive:
-                    return ProducerAccessMode.WaitForExclusive;
+                    return Shared.ProducerAccessMode.WaitForExclusive;
                 case ProducerAccessMode.ExclusiveWithFencing:
-                    return ProducerAccessMode.ExclusiveWithFencing;
+                    return Shared.ProducerAccessMode.ExclusiveWithFencing;
                 default:
                     throw new ArgumentException("Unknown access mode: " + accessMode);
             }
         }
 
-        public static ProducerAccessMode ConvertProducerAccessMode(ProducerAccessMode accessMode)
+        public static ProducerAccessMode ConvertProducerAccessMode(Shared.ProducerAccessMode accessMode)
         {
             switch (accessMode)
             {
-                case ProducerAccessMode.Exclusive:
+                case Shared.ProducerAccessMode.Exclusive:
                     return ProducerAccessMode.Exclusive;
-                case ProducerAccessMode.Shared:
+                case Shared.ProducerAccessMode.Shared:
                     return ProducerAccessMode.Shared;
-                case ProducerAccessMode.WaitForExclusive:
+                case Shared.ProducerAccessMode.WaitForExclusive:
                     return ProducerAccessMode.WaitForExclusive;
-                case ProducerAccessMode.ExclusiveWithFencing:
+                case Shared.ProducerAccessMode.ExclusiveWithFencing:
                     return ProducerAccessMode.ExclusiveWithFencing;
                 default:
                     throw new ArgumentException("Unknown access mode: " + accessMode);
