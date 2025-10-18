@@ -4,18 +4,21 @@
   </PropertyGroup>
   <!-- App dependencies -->
   <ItemGroup>
-    <PackageVersion Include="Akka" Version="1.5.53" />
+    <PackageVersion Include="Akka" Version="1.5.54" />
     <PackageVersion Include="Akka.Hosting" Version="1.5.53" />
     <PackageVersion Include="Akka.Logger.Serilog" Version="$(AkkaLoggerSerilogVersion)" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
+    <PackageVersion Include="DotNetty.Buffers" Version="0.7.6" />
+    <PackageVersion Include="DotNetty.Codecs" Version="0.7.6" />
     <PackageVersion Include="Google.Protobuf.Tools" Version="3.33.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.10" />
+    <PackageVersion Include="Nett" Version="0.15.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Apache.Avro" Version="1.12.1" />
     <PackageVersion Include="App.Metrics.Concurrency" Version="$(AppMetricsConcurrencyVersion)" />
     <PackageVersion Include="AvroSchemaGenerator" Version="$(AvroSchemaGeneratorVersion)" />
-    <PackageVersion Include="DotNetty.Common" Version="$(DotNettyCommonVersion)" />
+    <PackageVersion Include="DotNetty.Common" Version="0.7.6" />
     <PackageVersion Include="Google.Protobuf" Version="3.33.0" />
     <PackageVersion Include="IdentityModel" Version="$(IdentityModelVersion)" />
     <PackageVersion Include="JsonSubTypes" Version="$(JsonSubTypesVersion)" />

@@ -1,13 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+      <TargetFrameworks>net5.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
     
   <ItemGroup>
       <PackageReference Include="Akka" />
+      <PackageReference Include="DotNetty.Buffers" />
+      <PackageReference Include="DotNetty.Codecs" />
+      <PackageReference Include="DotNetty.Common" />
       <Using Include="Akka.Event" />
     <PackageReference Include="K4os.Compression.LZ4" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" />

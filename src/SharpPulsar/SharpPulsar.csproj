@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>    
+    <TargetFrameworks>net5.0;net8.0</TargetFrameworks>    
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="Akka" />
+    <PackageReference Include="DotNetty.Buffers" />
+    <PackageReference Include="DotNetty.Codecs" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
       <Using Include="Akka.Event" />
     <PackageReference Include="Akka.Logger.Serilog" />
