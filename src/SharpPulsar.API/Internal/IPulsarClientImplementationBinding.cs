@@ -40,9 +40,6 @@ namespace SharpPulsar.API.Internal
         IMessageId NewMessageId(long ledgerId, long entryId, int partitionIndex);
 
         IMessageId NewMessageIdFromByteArray(byte[] data);
-
-        //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-        //ORIGINAL LINE: org.apache.pulsar.client.api.MessageId newMessageIdFromByteArrayWithTopic(byte[] data, String topicName) throws java.io.IOException;
         IMessageId NewMessageIdFromByteArrayWithTopic(byte[] data, string topicName);
 
         IAuthentication NewAuthenticationToken(string token);
@@ -51,12 +48,8 @@ namespace SharpPulsar.API.Internal
 
         IAuthentication NewAuthenticationTLS(string certFilePath, string keyFilePath);
 
-        //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-        //ORIGINAL LINE: org.apache.pulsar.client.api.Authentication createAuthentication(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
         IAuthentication CreateAuthentication(string authPluginClassName, string authParamsString);
 
-        //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-        //ORIGINAL LINE: org.apache.pulsar.client.api.Authentication createAuthentication(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
         IAuthentication CreateAuthentication(string authPluginClassName, IDictionary<string, string> authParams);
 
         ISchema<byte[]> NewBytesSchema();
@@ -107,8 +100,6 @@ namespace SharpPulsar.API.Internal
 
         ISchema<byte[]> NewAutoProduceSchema();
 
-        //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in C#:
-        //ORIGINAL LINE: org.apache.pulsar.client.api.Schema<byte[]> newAutoProduceSchema(org.apache.pulsar.client.api.Schema<?> schema);
         ISchema<byte[]> NewAutoProduceSchema<T1>(ISchema<T1> schema);
 
         ISchema<byte[]> NewAutoProduceValidatedAvroSchema(object schema);
@@ -119,8 +110,6 @@ namespace SharpPulsar.API.Internal
 
         ISchema<IKeyValue<K, V>> NewKeyValueSchema<K, V>(Type key, Type value, SchemaType type);
 
-        //JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in C#:
-        //ORIGINAL LINE: org.apache.pulsar.client.api.Schema<?> getSchema(org.apache.pulsar.common.schema.SchemaInfo schemaInfo);
         ISchema<object> GetSchema(ISchemaInfo schemaInfo);
 
         IGenericSchema<IGenericRecord> GetGenericSchema(ISchemaInfo schemaInfo);
@@ -186,8 +175,6 @@ namespace SharpPulsar.API.Internal
         /// </summary>
         /// <param name="kvSchemaInfo"> the key/value schema info </param>
         /// <returns> the convert key/value schema data string </returns>
-        //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-        //ORIGINAL LINE: String convertKeyValueSchemaInfoDataToString(org.apache.pulsar.common.schema.KeyValue<org.apache.pulsar.common.schema.SchemaInfo, org.apache.pulsar.common.schema.SchemaInfo> kvSchemaInfo) throws java.io.IOException;
         string ConvertKeyValueSchemaInfoDataToString(KeyValuePair<ISchemaInfo, ISchemaInfo> kvSchemaInfo);
 
         /// <summary>
@@ -195,8 +182,6 @@ namespace SharpPulsar.API.Internal
         /// </summary>
         /// <param name="keyValueSchemaInfoDataJsonBytes"> the key/value schema info data json bytes </param>
         /// <returns> the key/value schema info data bytes </returns>
-        //JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-        //ORIGINAL LINE: byte[] convertKeyValueDataStringToSchemaInfoSchema(byte[] keyValueSchemaInfoDataJsonBytes) throws java.io.IOException;
         byte[] ConvertKeyValueDataStringToSchemaInfoSchema(byte[] keyValueSchemaInfoDataJsonBytes);
 
         IBatcherBuilder NewDefaultBatcherBuilder();
