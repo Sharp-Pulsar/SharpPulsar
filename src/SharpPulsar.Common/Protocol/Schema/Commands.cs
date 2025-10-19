@@ -3,22 +3,15 @@ using SharpPulsar.Shared;
 using System.Text;
 using SharpPulsar.Common;
 using SharpPulsar.API.Schema;
-using SharpPulsar.Common.Helpers;
 using Google.Protobuf;
-using Serializer = SharpPulsar.Common.Helpers.Serializer;
 //using SharpPulsar.Shared.Buf;
 using Akka.Util.Internal;
-using System;
-using SharpPulsar.API;
 using Pulsar.Proto;
 using ProducerAccessMode = Pulsar.Proto.ProducerAccessMode;
 using DotNetty.Common;
 using DotNetty.Buffers;
-using System.Collections;
 using SharpPulsar.Common.Util;
-using Akka.Actor.Dsl;
 using SharpPulsar.Common.Schema;
-using DotNetty.Codecs.Base64;
 using System.Text.Json;
 using AuthData = SharpPulsar.Shared.AuthData;
 
@@ -76,36 +69,6 @@ namespace SharpPulsar.Protocol.Schema
             return LOCAL_BASE_COMMAND.Value;
         }
 
-        private static readonly FastThreadLocal<SingleMessageMetadata> LOCAL_SINGLE_MESSAGE_METADATA = new ThreadLocalSingleMessageMetadata();
-
-        private class ThreadLocalSingleMessageMetadata : FastThreadLocal<SingleMessageMetadata>
-        {
-            
-            protected internal SingleMessageMetadata InitialValue()
-            {
-                return new SingleMessageMetadata();
-            }
-        }
-
-        private static readonly FastThreadLocal<MessageMetadata> LOCAL_MESSAGE_METADATA = new ThreadLocalMessageMetadata();
-
-        private class ThreadLocalMessageMetadata : FastThreadLocal<MessageMetadata>
-        {
-            protected internal MessageMetadata InitialValue()
-            {
-                return new MessageMetadata();
-            }
-        }
-
-        private static readonly FastThreadLocal<BrokerEntryMetadata> BROKER_ENTRY_METADATA = new ThreadLocalBrokerEntryMetadata();
-
-        private class ThreadLocalBrokerEntryMetadata : FastThreadLocal<BrokerEntryMetadata>
-        {
-            protected internal BrokerEntryMetadata InitialValue()
-            {
-                return new BrokerEntryMetadata();
-            }
-        }
 
         private static void SetFeatureFlags(FeatureFlags flags)
         {
@@ -396,13 +359,13 @@ namespace SharpPulsar.Protocol.Schema
         {
             if (HasChecksum(buffer))
             {
-                buffer.SkipBytes((ISchema<short>.Bytes). + ISchema<int>.Bytes);
+                buffer.SkipBytes(2/*java lang Short.BYTES*/ + 4 /*java lang Integer.BYTES*/);
             }
         }
 
         public static MessageMetadata ParseMessageMetadata(AbstractByteBuffer buffer)
         {
-            MessageMetadata md = LOCAL_MESSAGE_METADATA.Value;
+            MessageMetadata md = new MessageMetadata();
             ParseMessageMetadata(buffer, md);
             return md;
         }
@@ -542,12 +505,12 @@ namespace SharpPulsar.Protocol.Schema
 
         public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
         {
-            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, Collections.emptyMap(), false, false, CommandSubscribe.Types.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
+            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, null, false, false, CommandSubscribe.Types.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
         }
 
         public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool? isReplicated, CommandSubscribe.Types.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
         {
-            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null, Collections.emptyMap(), DefaultConsumerEpoch);
+            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null, null, DefaultConsumerEpoch);
         }
 
         public static AbstractByteBuffer NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.Types.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool? isReplicated, CommandSubscribe.Types.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy, IDictionary<string, string> subscriptionProperties, long consumerEpoch)
@@ -588,16 +551,14 @@ namespace SharpPulsar.Protocol.Schema
             {
                 KeySharedMeta keySharedMeta = subscribe.KeySharedMeta;
                 keySharedMeta.AllowOutOfOrderDelivery = (keySharedPolicy.AllowOutOfOrderDelivery);
-                keySharedMeta.KeySharedMode = (ConvertKeySharedMode(keySharedPolicy.KeySharedMode));
+                keySharedMeta.KeySharedMode = ConvertKeySharedMode(keySharedPolicy.KeySharedMode.Value);
 
                 if (keySharedPolicy is KeySharedPolicy.KeySharedPolicySticky)
                 {
-                    IList<Shared.Range> ranges = ((KeySharedPolicy.KeySharedPolicySticky)keySharedPolicy).GetRanges;
+                    var ranges = ((KeySharedPolicy.KeySharedPolicySticky)keySharedPolicy).GetRanges;
                     foreach (Shared.Range range in ranges)
                     {
-                        IntRange r = keySharedMeta.addHashRange();
-                        r.setStart(range.getStart());
-                        r.setEnd(range.getEnd());
+                        keySharedMeta.HashRanges.Add(new IntRange { Start = range.Start, End = range.End});
                     }
                 }
             }
@@ -780,7 +741,7 @@ namespace SharpPulsar.Protocol.Schema
 
         public static AbstractByteBuffer NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, bool isTxnEnabled)
         {
-            return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, ProducerAccessMode.Shared, null, isTxnEnabled);
+            return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, Shared.ProducerAccessMode.Shared, null, isTxnEnabled);
         }
 
         private static Pulsar.Proto.Schema.Types.Type GetSchemaType(SchemaType type)
@@ -800,7 +761,7 @@ namespace SharpPulsar.Protocol.Schema
             }
             else
             {
-                return Schema.Type.valueOf(type.getValue());
+                return Enum.GetValues(typeof(Pulsar.Proto.Schema.Types.Type)).Cast<Pulsar.Proto.Schema.Types.Type>().ToList()[type.Value];
             }
         }
 
@@ -810,7 +771,7 @@ namespace SharpPulsar.Protocol.Schema
             {
                 return SchemaType.AutoConsume;
             }
-            else if (type.getValue() < 0)
+            else if (type < 0)
             {
                 // this is unexpected
                 return SchemaType.NONE;
@@ -822,21 +783,21 @@ namespace SharpPulsar.Protocol.Schema
             }
             else
             {
-                return SchemaType.ValueOf(type);
+                return SchemaType.ValueOf((int)type);
             }
         }
 
         private static void ConvertSchema(ISchemaInfo schemaInfo, Pulsar.Proto.Schema schema)
         {
             schema.Name = (schemaInfo.Name);
-            schema.SchemaData = (schemaInfo.Schema);
+            schema.SchemaData = Bytes(schemaInfo.Schema);
             schema.Type = (GetSchemaType(schemaInfo.Type));
 
-            schemaInfo.getProperties().entrySet().ForEach(entry =>
+            schemaInfo.Properties.SetOfKeyValuePairs().ForEach(entry =>
             {
-                if (entry.getKey() != null && entry.getValue() != null)
+                if(entry.Key != null && entry.Value != null)
                 {
-                    schema.addProperty().setKey(entry.getKey()).setValue(entry.getValue());
+                    schema.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value});
                 }
             });
         }
@@ -1169,7 +1130,7 @@ namespace SharpPulsar.Protocol.Schema
                 return ByteString.FromStream(str);
         }
 		
-        public static AbstractByteBuffer NewGetOrCreateSchema(long requestId, string topic, Common.Schema.SchemaInfo schemaInfo)
+        public static AbstractByteBuffer NewGetOrCreateSchema(long requestId, string topic, SchemaInfo schemaInfo)
         {
             BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.GetOrCreateSchema);
             cmd.GetOrCreateSchema.RequestId = (ulong)(requestId);
@@ -1320,8 +1281,8 @@ namespace SharpPulsar.Protocol.Schema
             int totalSize = cmdSize + 4;
             int frameSize = totalSize + 4;
 
-            AbstractByteBuffer buf = PulsarByteBufAllocator.DEFAULT.buffer(frameSize, frameSize);
-
+            AbstractByteBuffer buf = (AbstractByteBuffer) Unpooled.Buffer(frameSize);
+            //buf.MaxCapacity = frameSize;
             // Prepend 2 lengths to the buffer
             buf.WriteInt(totalSize);
             buf.WriteInt(cmdSize);
@@ -1382,24 +1343,23 @@ namespace SharpPulsar.Protocol.Schema
             return command;
         }
 
-        public static AbstractByteBuffer AddBrokerEntryMetadata(AbstractByteBuffer headerAndPayload, ISet<BrokerEntryMetadataInterceptor> interceptors)
+        public static AbstractByteBuffer AddBrokerEntryMetadata(AbstractByteBuffer headerAndPayload, ISet<IBrokerEntryMetadataInterceptor> interceptors)
         {
             return AddBrokerEntryMetadata(headerAndPayload, interceptors, -1);
         }
 
-        public static AbstractByteBuffer AddBrokerEntryMetadata(AbstractByteBuffer headerAndPayload, ISet<BrokerEntryMetadataInterceptor> brokerInterceptors, int numberOfMessages)
+        public static AbstractByteBuffer AddBrokerEntryMetadata(AbstractByteBuffer headerAndPayload, ISet<IBrokerEntryMetadataInterceptor> brokerInterceptors, int numberOfMessages)
         {
             //   | BROKER_ENTRY_METADATA_MAGIC_NUMBER | BROKER_ENTRY_METADATA_SIZE |         BROKER_ENTRY_METADATA         |
             //   |         2 bytes                    |       4 bytes              |    BROKER_ENTRY_METADATA_SIZE bytes   |
 
-            BrokerEntryMetadata brokerEntryMetadata = BROKER_ENTRY_METADATA.Get();
-            brokerEntryMetadata.Clear();
-            foreach (BrokerEntryMetadataInterceptor interceptor in brokerInterceptors)
+            BrokerEntryMetadata brokerEntryMetadata = new BrokerEntryMetadata();
+            foreach (IBrokerEntryMetadataInterceptor interceptor in brokerInterceptors)
             {
-                interceptor.intercept(brokerEntryMetadata);
+                interceptor.Intercept(brokerEntryMetadata);
                 if (numberOfMessages >= 0)
                 {
-                    interceptor.interceptWithNumberOfMessages(brokerEntryMetadata, numberOfMessages);
+                    interceptor.InterceptWithNumberOfMessages(brokerEntryMetadata, numberOfMessages);
                 }
             }
 
@@ -1424,7 +1384,7 @@ namespace SharpPulsar.Protocol.Schema
             int readerIndex = headerAndPayload.ReaderIndex;
             if (headerAndPayload.GetShort(readerIndex) == MagicBrokerEntryMetadata)
             {
-                headerAndPayload.SkipBytes(Short.BYTES);
+                headerAndPayload.SkipBytes(2/*java lang Short.BYTES*/);
                 int brokerEntryMetadataSize = headerAndPayload.ReadInt();
                 headerAndPayload.SkipBytes(brokerEntryMetadataSize);
             }
@@ -1468,7 +1428,7 @@ namespace SharpPulsar.Protocol.Schema
             int readerIndex = headerAndPayload.ReaderIndex;
             if (headerAndPayload.GetShort(readerIndex) == MagicBrokerEntryMetadata)
             {
-                headerAndPayload.SkipBytes(ISchema<short>.Bytes);
+                headerAndPayload.SkipBytes(2/*java lang Short.BYTES*/);
                 try
                 {
                     int brokerEntryMetadataSize = headerAndPayload.ReadInt();
@@ -1507,7 +1467,7 @@ namespace SharpPulsar.Protocol.Schema
         /// <returns> the result of the function </returns>
         public static T PeekBrokerEntryMetadataToObject<T>(AbstractByteBuffer headerAndPayload, Func<BrokerEntryMetadata, T> function)
         {
-            BrokerEntryMetadata brokerEntryMetadata = ParseOrPeekBrokerEntryMetadataIfExist(headerAndPayload, BROKER_ENTRY_METADATA.Value, true);
+            BrokerEntryMetadata brokerEntryMetadata = ParseOrPeekBrokerEntryMetadataIfExist(headerAndPayload, new BrokerEntryMetadata(), true);
             return function(brokerEntryMetadata);
         }
 
@@ -1519,9 +1479,9 @@ namespace SharpPulsar.Protocol.Schema
         /// <param name="headerAndPayload"> the header and payload of the message </param>
         /// <param name="function"> the function to apply to the BrokerEntryMetadata </param>
         /// <returns> the result of the function </returns>
-        public static long PeekBrokerEntryMetadataToLong(AbstractByteBuffer headerAndPayload, System.Func<BrokerEntryMetadata, long> function)
+        public static long PeekBrokerEntryMetadataToLong(AbstractByteBuffer headerAndPayload, Func<BrokerEntryMetadata, long> function)
         {
-            BrokerEntryMetadata brokerEntryMetadata = ParseOrPeekBrokerEntryMetadataIfExist(headerAndPayload, BROKER_ENTRY_METADATA.Value, true);
+            BrokerEntryMetadata brokerEntryMetadata = ParseOrPeekBrokerEntryMetadataIfExist(headerAndPayload, new BrokerEntryMetadata(), true);
             return function(brokerEntryMetadata);
         }
 
@@ -1533,9 +1493,9 @@ namespace SharpPulsar.Protocol.Schema
         /// </summary>
         /// <param name="headerAndPayload"> the header and payload of the message </param>
         /// <param name="function"> the function to apply to the BrokerEntryMetadata </param>
-        public static void PeekBrokerEntryMetadataAndConsume(AbstractByteBuffer headerAndPayload, System.Action<BrokerEntryMetadata> function)
+        public static void PeekBrokerEntryMetadataAndConsume(AbstractByteBuffer headerAndPayload, Action<BrokerEntryMetadata> function)
         {
-            BrokerEntryMetadata brokerEntryMetadata = ParseOrPeekBrokerEntryMetadataIfExist(headerAndPayload, BROKER_ENTRY_METADATA.Value, true);
+            BrokerEntryMetadata brokerEntryMetadata = ParseOrPeekBrokerEntryMetadataIfExist(headerAndPayload, new BrokerEntryMetadata(), true);
             function(brokerEntryMetadata);
         }
 
@@ -1635,7 +1595,7 @@ namespace SharpPulsar.Protocol.Schema
         public static AbstractByteBuffer SerializeSingleMessageInBatchWithPayload(MessageMetadata msg, AbstractByteBuffer payload, AbstractByteBuffer batchBuffer)
         {
             // build single message meta-data
-            SingleMessageMetadata smm = LOCAL_SINGLE_MESSAGE_METADATA.Value;
+            SingleMessageMetadata smm = new SingleMessageMetadata();
             //smm.Clear;
 
             if (msg.HasPartitionKey)
@@ -1924,7 +1884,7 @@ namespace SharpPulsar.Protocol.Schema
         {
             return peerVersion >= (int)ProtocolVersion.V16;
         }
-
+        
     }
 
 }
