@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public readonly record struct AcknowledgeMessage<T>(IMessage<T> Message) : IAcknowledge;
-    public readonly record struct AcknowledgeMessageId(IMessageId MessageId) : IAcknowledge;
+    public record AcknowledgeMessage<T>(IMessage<T> Message) : IAcknowledge;
+    public record AcknowledgeMessageId(IMessageId MessageId) : IAcknowledge;
 
-    public readonly record struct AcknowledgeMessageIds(IList<IMessageId> MessageIds) : IAcknowledge;
-    public readonly record struct Subscribe(string TopicName, int NumberOfPartitions);
-    public readonly record struct SubscribeAndCreateTopicIfDoesNotExist(string TopicName, bool CreateTopicIfDoesNotExist);
+    public record AcknowledgeMessageIds(IList<IMessageId> MessageIds) : IAcknowledge;
+    public record Subscribe(string TopicName, int NumberOfPartitions);
+    public record SubscribeAndCreateTopicIfDoesNotExist(string TopicName, bool CreateTopicIfDoesNotExist);
 
-    public readonly record struct SubscribeAndCreateTopicsIfDoesNotExist(List<string> Topics, bool CreateTopicIfDoesNotExist);
+    public record SubscribeAndCreateTopicsIfDoesNotExist(List<string> Topics, bool CreateTopicIfDoesNotExist);
 
-    public readonly record struct AcknowledgeWithTxn : IAcknowledge
+    public record AcknowledgeWithTxn : IAcknowledge
     {
         /// <summary>
         /// Fulfils DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
@@ -59,7 +59,7 @@ namespace SharpPulsar.Messages.Consumer
             Txn = txn;
         }
     }
-    public readonly record struct AcknowledgeMessages<T>(IMessages<T> Messages) : IAcknowledge;
+    public record AcknowledgeMessages<T>(IMessages<T> Messages) : IAcknowledge;
     public interface IAcknowledge
     {
 

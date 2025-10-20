@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct ProducerCreated
+    public record ProducerCreated
     {
         public ProducerCreated(string name, long requestId, long lastSequenceId, byte[] schemaVersion)
         {

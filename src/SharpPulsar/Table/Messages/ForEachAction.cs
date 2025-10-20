@@ -3,7 +3,7 @@ using System;
 
 namespace SharpPulsar.Table.Messages
 {
-    public readonly record struct ForEachAction<T>
+    public record ForEachAction<T>
     {
         public Action<string, T> Action { get; }
         public ForEachAction(Action<string, T> action)

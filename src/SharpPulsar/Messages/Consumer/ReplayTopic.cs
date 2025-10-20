@@ -3,7 +3,7 @@ using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public readonly record struct StartReplayTopic<T>
+    public record StartReplayTopic<T>
     {
         internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData<T> readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged, SourceType source)
         {
@@ -27,7 +27,7 @@ namespace SharpPulsar.Messages.Consumer
         public string AdminUrl { get; }
         public SourceType Source { get; }
     }
-    public readonly record struct ReplayTopic<T>
+    public record ReplayTopic<T>
     {
         public ReplayTopic(ReaderConfigurationData<T> readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged, SourceType source)
         {
@@ -49,7 +49,7 @@ namespace SharpPulsar.Messages.Consumer
         public string AdminUrl { get; }
         public SourceType Source { get; }
     }
-    public readonly record struct GetNumberOfEntries 
+    public record GetNumberOfEntries 
     {
         public GetNumberOfEntries(string topic, string server, SourceType source)
         {
@@ -62,7 +62,7 @@ namespace SharpPulsar.Messages.Consumer
         public SourceType Source { get; }
 
     }
-    public readonly record struct TopicEntries 
+    public record TopicEntries 
     {
         public TopicEntries(string topic, long? max, long? totalEntries, int totalNumberOfTopics)
         {
@@ -76,7 +76,7 @@ namespace SharpPulsar.Messages.Consumer
         public long? TotalEntries { get; }
         public int TotalNumberOfTopics { get; }
     }
-    public readonly record struct NextPlay 
+    public record NextPlay 
     {
         public NextPlay(string topic, long max, long @from, long to, SourceType source, bool tagged = false)
         {
@@ -95,7 +95,7 @@ namespace SharpPulsar.Messages.Consumer
         public SourceType Source { get; }
     }
 
-    public readonly record struct Tag
+    public record Tag
     {
         public Tag(string key, string value)
         {

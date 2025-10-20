@@ -4,7 +4,7 @@ using SharpPulsar.Batch;
 
 namespace SharpPulsar.Tracker.Messages
 {
-    public readonly record struct AddBatchIndexAcknowledgment
+    public record AddBatchIndexAcknowledgment
     {
         public AddBatchIndexAcknowledgment(BatchMessageId messageId, int batchIndex, int batchSize, CommandAck.AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {

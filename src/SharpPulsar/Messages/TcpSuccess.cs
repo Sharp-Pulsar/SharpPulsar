@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct TcpSuccess
+    public record TcpSuccess
     {
         public string Name { get; }
 

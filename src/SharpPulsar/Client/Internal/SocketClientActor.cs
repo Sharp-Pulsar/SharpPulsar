@@ -126,7 +126,7 @@ namespace SharpPulsar.Client.Internal
                         {
                             var consumed = buffer.GetPosition(totalSize);
                             var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
-                            if (command.type == BaseCommand.Type.Message)
+                            if (command.type == BaseCommand.Types.Type.Message)
                             {
                                 BrokerEntryMetadata brokerEntryMetadata = null;
                                 var brokerEntryMetadataPosition = stream.Position;
@@ -221,7 +221,7 @@ namespace SharpPulsar.Client.Internal
                         {
                             var consumed = buffer.GetPosition(totalSize);
                             var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
-                            if (command.type == BaseCommand.Type.Message)
+                            if (command.type == BaseCommand.Types.Type.Message)
                             {
                                 BrokerEntryMetadata brokerEntryMetadata = null;
                                 var brokerEntryMetadataPosition = stream.Position;
@@ -440,19 +440,19 @@ namespace SharpPulsar.Client.Internal
             //base.Unhandled(message);
             _logger.Info($"SocketClientActor:::::::Unhandled {message}");
         }
-        internal readonly record struct Connect
+        internal record Connect
         {
             internal static Connect Instance = new Connect();
         }
-        internal readonly record struct Start
+        internal record Start
         {
             internal static Start Instance = new Start();
         }
-        private readonly record struct ClientMessage
+        private record ClientMessage
         {
             internal static ClientMessage Instance = new ClientMessage();
         }
-        internal readonly record struct SendMessage
+        internal record SendMessage
         {
             public readonly ReadOnlySequence<byte> Message;
             internal SendMessage(ReadOnlySequence<byte> message)
@@ -460,6 +460,6 @@ namespace SharpPulsar.Client.Internal
                 Message = message;
             }
         }
-        internal readonly record struct Reader(BaseCommand Command, MessageMetadata Metadata, BrokerEntryMetadata BrokerEntryMetadata, ReadOnlySequence<byte> Payload, bool HasValidcheckSum, bool HasMagicNumber);
+        internal record Reader(BaseCommand Command, MessageMetadata Metadata, BrokerEntryMetadata BrokerEntryMetadata, ReadOnlySequence<byte> Payload, bool HasValidcheckSum, bool HasMagicNumber);
     }
 }

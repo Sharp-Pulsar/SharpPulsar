@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct NegativeAck
+    public record NegativeAck
     {
         public NegativeAck(IMessageId messageId)
         {

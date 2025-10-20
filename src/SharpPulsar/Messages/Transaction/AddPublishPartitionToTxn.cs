@@ -5,7 +5,7 @@ using SharpPulsar.Shared;
 
 namespace SharpPulsar.Messages.Transaction
 {
-    public readonly record struct AddPublishPartitionToTxn
+    public record AddPublishPartitionToTxn
     {
         public TxnID TxnID { get; }
         public ImmutableList<string> Topics { get; }
@@ -16,7 +16,7 @@ namespace SharpPulsar.Messages.Transaction
             Topics = topics.ToImmutableList();
         }
     }
-    public readonly record struct SubscriptionToTxn
+    public record SubscriptionToTxn
     {
         public TxnID TxnID { get; }
         public string Topic { get; }
@@ -28,7 +28,7 @@ namespace SharpPulsar.Messages.Transaction
             Subscription = subscription;
         }
     }
-    public readonly record struct AddSubscriptionToTxn
+    public record AddSubscriptionToTxn
     {
         public TxnID TxnID { get; }
         public ImmutableList<Subscription> Subscriptions { get; }

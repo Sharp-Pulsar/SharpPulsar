@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct BrokerLookUp
+    public record BrokerLookUp
     {
         public BrokerLookUp(string message, bool authoritative, CommandLookupTopicResponse.LookupType response, string brokerServiceUrl, string brokerServiceUrlTls, long requestId, bool useProxy)
         {

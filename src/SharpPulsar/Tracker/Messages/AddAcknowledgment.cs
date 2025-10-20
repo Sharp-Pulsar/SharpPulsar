@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Tracker.Messages
 {
-    public readonly record struct AddAcknowledgment
+    public record AddAcknowledgment
     {
         public AddAcknowledgment(IMessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties)
         {

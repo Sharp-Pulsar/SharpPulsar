@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct GetOrCreateSchemaServerResponse
+    public record GetOrCreateSchemaServerResponse
     {
         public GetOrCreateSchemaServerResponse(long requestId, string errorMessage, ServerError errorCode, byte[] schemaVersion)
         {

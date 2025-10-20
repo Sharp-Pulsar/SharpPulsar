@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public readonly record struct ReconnectLater
+    public record ReconnectLater
     {
         public Exception Exception { get; }
         public ReconnectLater(Exception exception)
@@ -14,7 +14,7 @@ namespace SharpPulsar.Messages.Requests
         }
     }
     //HandleCommandWatchTopicUpdate 
-    public readonly record struct HandleWatchTopicUpdate
+    public record HandleWatchTopicUpdate
     {
         public CommandWatchTopicUpdate Update { get; }
         public HandleWatchTopicUpdate(CommandWatchTopicUpdate update)
@@ -22,7 +22,7 @@ namespace SharpPulsar.Messages.Requests
             Update = update;
         }
     }
-    public readonly record struct TopicsRemoved
+    public record TopicsRemoved
     {
         public ImmutableList<string> RemovedTopics { get; }
         public TopicsRemoved(ICollection<string> removedTopics) 
@@ -30,7 +30,7 @@ namespace SharpPulsar.Messages.Requests
             RemovedTopics = removedTopics.ToImmutableList();
         }
     }
-    public readonly record struct AppendTopicsRemovedOp
+    public record AppendTopicsRemovedOp
     {
         public ImmutableList<string> DeletedTopics { get; }
         public AppendTopicsRemovedOp(ICollection<string> deletedTopics)
@@ -38,7 +38,7 @@ namespace SharpPulsar.Messages.Requests
             DeletedTopics = deletedTopics.ToImmutableList();
         }
     }
-    public readonly record struct AppendTopicsAddedOp
+    public record AppendTopicsAddedOp
     {
         public ImmutableList<string> NewTopics { get; }
         public AppendTopicsAddedOp(ICollection<string> newTopics)
@@ -46,7 +46,7 @@ namespace SharpPulsar.Messages.Requests
             NewTopics = newTopics.ToImmutableList();
         }
     }
-    public readonly record struct TopicsAdded
+    public record TopicsAdded
     {
         public ImmutableList<string> AddedTopics { get; }
         public TopicsAdded(ICollection<string> addedTopics)
@@ -54,15 +54,15 @@ namespace SharpPulsar.Messages.Requests
             AddedTopics = addedTopics.ToImmutableList();  
         }
     }
-    public readonly record struct ResetBackoff
+    public record ResetBackoff
     {
         public static ResetBackoff Instance = new ResetBackoff();
     }
-    public readonly record struct LastConnectionClosedTimestamp
+    public record LastConnectionClosedTimestamp
     {
         public static LastConnectionClosedTimestamp Instance = new LastConnectionClosedTimestamp();
     }
-    public readonly record struct LastConnectionClosedTimestampResponse
+    public record LastConnectionClosedTimestampResponse
     {
         public long TimeStamp { get; }
         public LastConnectionClosedTimestampResponse(long timeStamp)
@@ -71,11 +71,11 @@ namespace SharpPulsar.Messages.Requests
         }
     }
 
-    public readonly record struct GetCnx
+    public record GetCnx
     {
         public static GetCnx Instance = new GetCnx();
     }
-    public readonly record struct SetCnx
+    public record SetCnx
     {
         public IActorRef ClientCnx { get; }
         public SetCnx(IActorRef clientCnx)
@@ -83,11 +83,11 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = clientCnx;
         }
     }
-    public readonly record struct GetEpoch
+    public record GetEpoch
     {
         public static GetEpoch Instance = new GetEpoch();
     }
-    public readonly record struct SwitchClientCnx
+    public record SwitchClientCnx
     {
         public IActorRef ClientCnx { get; }
         public SwitchClientCnx(IActorRef clientCnx)
@@ -96,7 +96,7 @@ namespace SharpPulsar.Messages.Requests
         }
     }
 
-    public readonly record struct GetEpochResponse
+    public record GetEpochResponse
     {
         public long Epoch { get; }
         public GetEpochResponse(long epoch)
@@ -104,7 +104,7 @@ namespace SharpPulsar.Messages.Requests
             Epoch = epoch;
         }
     }
-    public readonly record struct GrabCnx
+    public record GrabCnx
     {
         public static GrabCnx Instance = new GrabCnx();    
         public string Message { get; }
@@ -113,7 +113,7 @@ namespace SharpPulsar.Messages.Requests
             Message = message;
         }
     }
-    public readonly record struct Grab
+    public record Grab
     {
         public static Grab Instance = new Grab();
     }

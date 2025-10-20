@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public readonly record struct ReconsumeLaterWithProperties<T>
+    public record ReconsumeLaterWithProperties<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
@@ -25,7 +25,7 @@ namespace SharpPulsar.Messages.Consumer
             AckType = ackType;
         }
     }
-    public readonly record struct ReconsumeLaterMessages<T>
+    public record ReconsumeLaterMessages<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
@@ -49,7 +49,7 @@ namespace SharpPulsar.Messages.Consumer
             Properties = customProperties.ToImmutableDictionary();
         }
     }
-    public readonly record struct ReconsumeLaterMessage<T>
+    public record ReconsumeLaterMessage<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)

@@ -3,7 +3,7 @@ using System.Net;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public readonly record struct GetConnection
+    public record GetConnection
     {
         public string Topic { get; }
         public DnsEndPoint LogicalEndPoint { get; }
@@ -17,7 +17,7 @@ namespace SharpPulsar.Messages.Requests
             => (Topic, LogicalEndPoint, PhusicalEndPoint)
             = (topic, null, null);
     }
-    public readonly record struct GetConnectionResponse
+    public record GetConnectionResponse
     {
         public IActorRef ClientCnx { get; }
         public GetConnectionResponse(IActorRef cnx)
@@ -25,7 +25,7 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = cnx;
         }
     }
-    public readonly record struct ReleaseConnection
+    public record ReleaseConnection
     {
         public IActorRef ClientCnx { get; }
         public ReleaseConnection(IActorRef cnx)
@@ -33,7 +33,7 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = cnx;
         }
     }
-    public readonly record struct CleanupConnection
+    public record CleanupConnection
     {
         public DnsEndPoint Address { get; }
         public int ConnectionKey { get; }
@@ -43,7 +43,7 @@ namespace SharpPulsar.Messages.Requests
             ConnectionKey = connectionKey;
         }
     }
-    public readonly record struct GetPoolSizeResponse
+    public record GetPoolSizeResponse
     {
         public int PoolSize { get; }
         public GetPoolSizeResponse(int pool)
@@ -51,7 +51,7 @@ namespace SharpPulsar.Messages.Requests
             PoolSize = pool;
         }
     }
-    public readonly record struct GetPoolSize
+    public record GetPoolSize
     {
         public static GetPoolSize Instance = new GetPoolSize();
     }

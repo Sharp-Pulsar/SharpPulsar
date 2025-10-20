@@ -5,10 +5,10 @@ using Akka.Actor;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public readonly record struct AcknowledgeCumulativeMessage<T>(IMessage<T> Message) : ICumulative;
-    public readonly record struct AcknowledgeCumulativeMessageId(IMessageId MessageId) : ICumulative;
-    public readonly record struct AcknowledgeCumulativeTxn(IMessageId MessageId, IActorRef Txn) : ICumulative;
-    public readonly record struct ReconsumeLaterCumulative<T> : ICumulative
+    public record AcknowledgeCumulativeMessage<T>(IMessage<T> Message) : ICumulative;
+    public record AcknowledgeCumulativeMessageId(IMessageId MessageId) : ICumulative;
+    public record AcknowledgeCumulativeTxn(IMessageId MessageId, IActorRef Txn) : ICumulative;
+    public record ReconsumeLaterCumulative<T> : ICumulative
     {
         /// <summary>
         /// Fulfils ReconsumeLaterCumulative<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)

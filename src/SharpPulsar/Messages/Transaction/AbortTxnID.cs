@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Transaction
 {
-    public readonly record struct AbortTxnID
+    public record AbortTxnID
     {
         public TxnID TxnID { get; }
 
@@ -9,11 +9,11 @@
             TxnID = txnID;
         }
     }
-    public readonly record struct Abort
+    public record Abort
     {
         public static Abort Instance = new Abort();
     }
-    public readonly record struct RegisterAckedTopic
+    public record RegisterAckedTopic
     {
         public string Topic { get; }
         public string Subscription { get; }
@@ -23,7 +23,7 @@
             Subscription = subscription;
         }
     }
-    public readonly record struct CommitTxnID
+    public record CommitTxnID
     {
         public TxnID TxnID { get; }
         public CommitTxnID(TxnID txnID)
@@ -31,12 +31,12 @@
             TxnID = txnID;
         }
     }
-    public readonly record struct Commit
+    public record Commit
     {
         public static Commit Instance = new Commit();
     }
 
-    public readonly record struct TransState
+    public record TransState
     {
         public static TransactionState Instance = new TransactionState();
     }

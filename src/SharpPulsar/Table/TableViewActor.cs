@@ -428,8 +428,8 @@ namespace SharpPulsar.Table
                 //((IInternalActorRef)Self).Stop();
             } 
         }
-        internal readonly record struct RecReadTailMessages(Reader<T> Reader);
-        internal readonly record struct RecReadAllExistingMessages
+        internal record RecReadTailMessages(Reader<T> Reader);
+        internal record RecReadAllExistingMessages
             (Reader<T> Reader, long StartTime, AtomicLong MessagesRead, IDictionary<string, ITopicMessageId> MaxMessageIds);
     }
 

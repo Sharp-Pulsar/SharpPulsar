@@ -274,28 +274,28 @@ namespace SharpPulsar.Internal.Consumer
             });
         }
     }
-    public readonly record struct AppendRecheckOp
+    public record AppendRecheckOp
     {
         public static AppendRecheckOp Instance = new AppendRecheckOp();
     }
-    public readonly record struct RecheckTopicsChange
+    public record RecheckTopicsChange
     {
         public static RecheckTopicsChange Instance { get; } = new RecheckTopicsChange();
     }
-    public readonly record struct CancelAllAndWaitForTheRunningTask
+    public record CancelAllAndWaitForTheRunningTask
     {
         public static CancelAllAndWaitForTheRunningTask Instance = new CancelAllAndWaitForTheRunningTask();
     }
-    public readonly record struct RecheckTopicsChangeAfterReconnect
+    public record RecheckTopicsChangeAfterReconnect
     {
         public static RecheckTopicsChangeAfterReconnect Instance { get; } = new RecheckTopicsChangeAfterReconnect();
     }
 
-    internal readonly record struct LastRecheckTaskStartingTimestamp
+    internal record LastRecheckTaskStartingTimestamp
     {
         public static LastRecheckTaskStartingTimestamp Instance { get; } = new LastRecheckTaskStartingTimestamp();
     }
-    internal readonly record struct TriggerNext
+    internal record TriggerNext
     {
         public static TriggerNext Instance { get; } = new TriggerNext();
     }

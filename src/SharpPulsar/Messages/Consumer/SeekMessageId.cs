@@ -1,4 +1,4 @@
 ﻿namespace SharpPulsar.Messages.Consumer
 {
-    public readonly record struct SeekMessageId(IMessageId MessageId);
+    public record SeekMessageId(IMessageId MessageId);
 }

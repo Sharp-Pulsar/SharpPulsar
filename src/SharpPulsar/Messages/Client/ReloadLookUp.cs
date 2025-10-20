@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Client
 {
-    public readonly record struct ReloadLookUp
+    public record ReloadLookUp
     {
         public static ReloadLookUp Instance = new ReloadLookUp();
     }

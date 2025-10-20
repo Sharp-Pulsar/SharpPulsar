@@ -310,11 +310,11 @@ namespace SharpPulsar.Tracker
         }
     }
 
-    public readonly record struct RunJob
+    public record RunJob
     {
         public static RunJob Instance = new RunJob();
     }
-    public readonly record struct UnAckedChunckedMessageIdSequenceMapCmd
+    public record UnAckedChunckedMessageIdSequenceMapCmd
     {
         public UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand command, List<IMessageId> messageId)
         {
@@ -326,7 +326,7 @@ namespace SharpPulsar.Tracker
         public ImmutableList<IMessageId> MessageId { get; }
     }
 
-    public readonly record struct UnAckedChunckedMessageIdSequenceMapCmdResponse
+    public record UnAckedChunckedMessageIdSequenceMapCmdResponse
     {
         public UnAckedChunckedMessageIdSequenceMapCmdResponse(MessageIdAdv[] messageIds)
         {
@@ -336,7 +336,7 @@ namespace SharpPulsar.Tracker
         public MessageIdAdv[] MessageIds { get; }
     }
 
-    public readonly record struct AckTimeoutSend
+    public record AckTimeoutSend
     {
         public AckTimeoutSend(ISet<IMessageId> messageIds)
         {

@@ -2,15 +2,15 @@
 
 namespace SharpPulsar.Messages
 {
-    public readonly record struct GetTcClient
+    public record GetTcClient
     {
         public static GetTcClient Instance = new GetTcClient();
     }
-    public readonly record struct TcClientOk
+    public record TcClientOk
     {
         public static TcClientOk Instance = new TcClientOk();
     }
-    public readonly record struct TcClient
+    public record TcClient
     {
         public IActorRef TCClient { get; }
         public TcClient(IActorRef tcClient)
@@ -18,5 +18,5 @@ namespace SharpPulsar.Messages
             TCClient = tcClient;
         }
     }
-    public readonly record struct SetTcClient(IActorRef TCClient);
+    public record SetTcClient(IActorRef TCClient);
 }

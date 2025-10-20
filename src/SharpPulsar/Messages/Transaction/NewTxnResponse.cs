@@ -3,7 +3,7 @@ using SharpPulsar.Shared.Exceptions;
 
 namespace SharpPulsar.Messages.Transaction
 {
-    public readonly record struct NewTxnResponse
+    public record NewTxnResponse
     {
         public CommandNewTxnResponse Response { get; }
         public TransactionCoordinatorClientException Error { get; }
@@ -13,7 +13,7 @@ namespace SharpPulsar.Messages.Transaction
             Error = error;
         }
     }
-    public readonly record struct NewTxn
+    public record NewTxn
     {
         public long TxnRequestTimeoutMs { get; }
         public NewTxn(long txnRequestTimeoutMs)
@@ -21,14 +21,14 @@ namespace SharpPulsar.Messages.Transaction
             TxnRequestTimeoutMs = txnRequestTimeoutMs;
         }
     }
-    public readonly record struct EndTxnResponse
+    public record EndTxnResponse
     {
         public CommandEndTxnResponse Response { get; }
         public TransactionCoordinatorClientException Error{get;}
         public EndTxnResponse(CommandEndTxnResponse response) => (Response, Error) = (response, null);
         public EndTxnResponse(TransactionCoordinatorClientException error) => (Response, Error) = (null, error);
     }
-    public readonly record struct AddPublishPartitionToTxnResponse
+    public record AddPublishPartitionToTxnResponse
     {
         public CommandAddPartitionToTxnResponse Response { get; }
         public AddPublishPartitionToTxnResponse(CommandAddPartitionToTxnResponse response)
@@ -36,7 +36,7 @@ namespace SharpPulsar.Messages.Transaction
             Response = response;
         }
     }
-    public readonly record struct AddSubscriptionToTxnResponse
+    public record AddSubscriptionToTxnResponse
     {
         public CommandAddSubscriptionToTxnResponse Response { get; }
         public AddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse response)

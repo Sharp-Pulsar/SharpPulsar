@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Tracker.Messages
 {
-    public readonly record struct IsDuplicate
+    public record IsDuplicate
     {
         public IsDuplicate(IMessageId messageId)
         {

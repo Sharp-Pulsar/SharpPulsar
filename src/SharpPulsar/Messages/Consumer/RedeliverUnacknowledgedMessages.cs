@@ -1,11 +1,11 @@
 ﻿namespace SharpPulsar.Messages.Consumer
 {
-    public readonly record struct RedeliverUnacknowledgedMessages
+    public record RedeliverUnacknowledgedMessages
     {
         public static RedeliverUnacknowledgedMessages Instance = new RedeliverUnacknowledgedMessages();
     }
     
-    public readonly record struct AskResponse
+    public record AskResponse
     {
         public bool Failed { get;  }
         public object Data { get; }

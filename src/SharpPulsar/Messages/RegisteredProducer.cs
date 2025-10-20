@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct RegisteredProducer
+    public record RegisteredProducer
     {
         public RegisteredProducer(long producerId, string producerName, string topic, bool isNew = true)
         {

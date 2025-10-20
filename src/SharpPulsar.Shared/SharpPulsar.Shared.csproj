@@ -5,9 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
+    <ItemGroup>
+        <PackageReference Include="App.Metrics.Concurrency" />
+    </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SharpPulsar.TimeUnit\SharpPulsar.TimeUnit.csproj" />
   </ItemGroup>
 
 </Project>
+

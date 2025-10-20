@@ -1,11 +1,10 @@
 ﻿using System.Threading.Tasks;
 using Akka.Actor;
+using Pulsar.Proto;
 using SharpPulsar.API;
-using SharpPulsar.Common.Protocol.Proto;
-
 namespace SharpPulsar.Messages.Transaction
 {
-    public readonly record struct RegisterTransactionMetaStoreHandler
+    public record RegisterTransactionMetaStoreHandler
     {
         public long TransactionCoordinatorId { get; }
         public IActorRef Coordinator { get; }
@@ -15,7 +14,7 @@ namespace SharpPulsar.Messages.Transaction
             Coordinator = coord;
         }
     }
-    public readonly record struct RemoveTopicListWatcher
+    public record RemoveTopicListWatcher
     {
         public long WatcherId { get; }
         public RemoveTopicListWatcher(long watcherid)
@@ -23,7 +22,7 @@ namespace SharpPulsar.Messages.Transaction
             WatcherId = watcherid;
         }
     }
-    public readonly record struct RegisterTopicListWatcher
+    public record RegisterTopicListWatcher
     {
         public long WatcherId { get; }
         public IActorRef Watcher { get; }
@@ -33,7 +32,7 @@ namespace SharpPulsar.Messages.Transaction
             Watcher = watcher;
         }
     }
-    public readonly record struct RegisterProducedTopic
+    public record RegisterProducedTopic
     {
         public string Topic { get; }
         public RegisterProducedTopic(string topic)
@@ -41,7 +40,7 @@ namespace SharpPulsar.Messages.Transaction
             Topic = topic;
         }
     }
-    public readonly record struct RegisterProducedTopicResponse
+    public record RegisterProducedTopicResponse
     {
         public ServerError? Error { get; }
         public RegisterProducedTopicResponse(ServerError? error)
@@ -49,7 +48,7 @@ namespace SharpPulsar.Messages.Transaction
             Error = error;
         }
     }
-    public readonly record struct RegisterCumulativeAckConsumer
+    public record RegisterCumulativeAckConsumer
     {
         public IActorRef Consumer { get; }
         public RegisterCumulativeAckConsumer(IActorRef consumer)
@@ -57,15 +56,15 @@ namespace SharpPulsar.Messages.Transaction
             Consumer = consumer;
         }
     }
-    public readonly record struct NextSequenceId
+    public record NextSequenceId
     {
         public static NextSequenceId Instance = new NextSequenceId();
     }
-    public readonly record struct GetTxnIdBits
+    public record GetTxnIdBits
     {
         public static GetTxnIdBits Instance = new GetTxnIdBits();
     }
-    public readonly record struct GetTxnIdBitsResponse
+    public record GetTxnIdBitsResponse
     {
         public long MostBits { get; }
         public long LeastBits { get; }
@@ -75,7 +74,7 @@ namespace SharpPulsar.Messages.Transaction
             LeastBits = leastBits;
         }
     }
-    public readonly record struct StartTransactionCoordinatorClient
+    public record StartTransactionCoordinatorClient
     {
         public IActorRef Client { get; }
         public StartTransactionCoordinatorClient(IActorRef client)
@@ -83,7 +82,7 @@ namespace SharpPulsar.Messages.Transaction
             Client = client;
         }
     }
-    public readonly record struct RegisterSendOp
+    public record RegisterSendOp
     {
         public IMessageId MessageId { get; }
         public RegisterSendOp(IMessageId messageId)
@@ -92,7 +91,7 @@ namespace SharpPulsar.Messages.Transaction
 
         }
     }
-    public readonly record struct RegisterAckOp
+    public record RegisterAckOp
     {
         public TaskCompletionSource<Task> Task { get; }
         public RegisterAckOp(TaskCompletionSource<Task> task)

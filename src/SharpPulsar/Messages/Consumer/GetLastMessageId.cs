@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public readonly record struct GetLastMessageId
+    public record GetLastMessageId
     {
         /// <summary>
         /// When ConsumerActor receives this message
@@ -12,7 +12,7 @@ namespace SharpPulsar.Messages.Consumer
         /// 
         public static GetLastMessageId Instance = new GetLastMessageId();
     }
-    public readonly record struct GetLastMessageIds
+    public record GetLastMessageIds
     {
         /// <summary>
         /// When ConsumerActor receives this message
@@ -22,7 +22,7 @@ namespace SharpPulsar.Messages.Consumer
         /// 
         public static GetLastMessageIds Instance = new GetLastMessageIds();
     }
-    public readonly record struct NullMessageId : IMessageId
+    public record NullMessageId : IMessageId
     {
         public Exception Exception { get; }
         public NullMessageId(Exception exception)

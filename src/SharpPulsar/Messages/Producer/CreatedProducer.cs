@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Messages.Producer
 {
-    public readonly record struct CreatedProducer
+    public record CreatedProducer
     {
         public CreatedProducer(IActorRef producer, string topic, string name, bool isgroup = false)
         {

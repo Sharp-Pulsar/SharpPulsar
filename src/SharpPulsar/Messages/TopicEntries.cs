@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct TopicEntries
+    public record TopicEntries
     {
         public TopicEntries(long? entries)
         {

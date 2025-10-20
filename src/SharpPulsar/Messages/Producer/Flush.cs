@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Producer
 {
-    public readonly record struct Flush
+    public record Flush
     {
         public static Flush Instance = new Flush();
     }

@@ -7,7 +7,7 @@ using static SharpPulsar.Common.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public readonly record struct GetBroker
+    public record GetBroker
     {
         public TopicName TopicName { get; }
         public GetBroker(TopicName topicName)
@@ -15,7 +15,7 @@ namespace SharpPulsar.Messages.Requests
             TopicName = topicName;
         }
     }
-    public readonly record struct GetSchema
+    public record GetSchema
     {
         public TopicName TopicName { get; }
         public byte[] Version { get; }
@@ -25,7 +25,7 @@ namespace SharpPulsar.Messages.Requests
             Version = version;
         }
     }
-    public readonly record struct GetTopicsUnderNamespace
+    public record GetTopicsUnderNamespace
     {
         public NamespaceName Namespace { get; }
         public Mode Mode { get; }
@@ -39,7 +39,7 @@ namespace SharpPulsar.Messages.Requests
             TopicsHash = topicsHash;    
         }
     }
-    public readonly record struct GetTopicsOfNamespaceRetry
+    public record GetTopicsOfNamespaceRetry
     {
         public IActorRef ReplyTo { get; }
         public NamespaceName Namespace { get; }
@@ -55,7 +55,7 @@ namespace SharpPulsar.Messages.Requests
             Backoff = backoff;
         }
     }
-    public readonly record struct GetTopicsUnderNamespaceResponse
+    public record GetTopicsUnderNamespaceResponse
     {
         public ImmutableList<string> Topics { get; }
         public string TopicsHash { get; }
@@ -69,7 +69,7 @@ namespace SharpPulsar.Messages.Requests
             Filtered = filtered;    
         }
     }
-    public readonly record struct GetSchemaInfoResponse
+    public record GetSchemaInfoResponse
     {
         public ISchemaInfo SchemaInfo { get; }
         public GetSchemaInfoResponse(ISchemaInfo schemaInfo)
@@ -77,7 +77,7 @@ namespace SharpPulsar.Messages.Requests
             SchemaInfo = schemaInfo;
         }
     }
-    public readonly record struct GetBrokerResponse
+    public record GetBrokerResponse
     {
         public DnsEndPoint LogicalAddress { get; } 
         public DnsEndPoint PhysicalAddress { get; }

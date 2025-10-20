@@ -3,7 +3,7 @@ using Akka.Actor;
 
 namespace SharpPulsar.Messages
 {
-    public readonly record struct RecoverChecksumError
+    public record RecoverChecksumError
     {
         public long SequenceId { get; }
         public IActorRef ClientCnx { get; }
@@ -13,7 +13,7 @@ namespace SharpPulsar.Messages
             ClientCnx = clientCnx;
         }
     }
-    public readonly record struct Terminated
+    public record Terminated
     {
         public IActorRef ClientCnx { get; }
         public Terminated(IActorRef clientCnx)
@@ -21,7 +21,7 @@ namespace SharpPulsar.Messages
             ClientCnx = clientCnx;
         }
     }
-    public readonly record struct RecoverNotAllowedError
+    public record RecoverNotAllowedError
     {
         public long SequenceId { get; }
         public string ErrorMsg { get; }

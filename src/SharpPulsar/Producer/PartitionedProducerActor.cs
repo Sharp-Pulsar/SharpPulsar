@@ -506,7 +506,7 @@ namespace SharpPulsar.Internal.Producer
             return 0;
         }
 
-        public readonly record struct ExtendTopics
+        public record ExtendTopics
         {
             public static ExtendTopics Instance = new ExtendTopics();
         }

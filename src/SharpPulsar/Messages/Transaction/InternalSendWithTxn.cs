@@ -5,7 +5,7 @@ using SharpPulsar.API;
 
 namespace SharpPulsar.Messages.Transaction
 {
-    public readonly record struct InternalSendWithTxn<T>
+    public record InternalSendWithTxn<T>
     {
         public IMessage<T> Message { get; }
         public IActorRef Txn { get; }
@@ -17,7 +17,7 @@ namespace SharpPulsar.Messages.Transaction
             Callback = callback;
         }
     }
-    public readonly record struct InternalSend<T>
+    public record InternalSend<T>
     {
         public IMessage<T> Message { get; }
         public TaskCompletionSource<IMessageId> Callback { get; }

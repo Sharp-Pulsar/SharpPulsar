@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages.Requests
 {
-    public readonly record struct GetLastSequenceId
+    public record GetLastSequenceId
     {
         public static GetLastSequenceId Instance = new GetLastSequenceId();
     }

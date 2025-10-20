@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Tracker.Messages
 {
-    public readonly record struct Add<T>
+    public record Add<T>
     {
         public Add(IMessage<T> message)
         {
@@ -8,7 +8,7 @@
         }
         public IMessage<T> Message { get; }
     }
-    public readonly record struct Add
+    public record Add
     {
         public Add(IMessageId messageId) => (MessageId, RedeliveryCount) = (messageId, 0);
         public Add(IMessageId messageId, int redeliveryCount) => (MessageId, RedeliveryCount) = (messageId, redeliveryCount);

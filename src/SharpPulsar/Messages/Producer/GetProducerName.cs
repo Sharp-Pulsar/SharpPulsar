@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Producer
 {
-    public readonly record struct GetProducerName
+    public record GetProducerName
     {
         public static GetProducerName Instance = new GetProducerName();
     }

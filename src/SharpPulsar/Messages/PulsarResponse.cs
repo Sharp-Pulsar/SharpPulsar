@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct PulsarResponse
+    public record PulsarResponse
     {
         public object Message { get; }
 

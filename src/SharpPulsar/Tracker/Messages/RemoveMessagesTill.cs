@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Tracker.Messages
 {
-    public readonly record struct RemoveMessagesTill
+    public record RemoveMessagesTill
     {
         public RemoveMessagesTill(IMessageId messageId)
         {

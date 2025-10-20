@@ -2,7 +2,7 @@
 using System;
 namespace SharpPulsar.Messages.Consumer
 {
-    public readonly record struct ReceiveWithTimeout
+    public record ReceiveWithTimeout
     {
         /// <summary>
         /// Every time ConsumerActor receives this message

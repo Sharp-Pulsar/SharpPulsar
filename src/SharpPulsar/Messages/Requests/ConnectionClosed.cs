@@ -5,7 +5,7 @@ using SharpPulsar.Shared.Exceptions;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public readonly record struct ConnectionClosed
+    public record ConnectionClosed
     {
         public IActorRef ClientCnx { get; }
         public ConnectionClosed(IActorRef clientCnx)
@@ -13,11 +13,11 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = clientCnx;
         }
     }
-    public readonly record struct ClearIncomingMessagesAndGetMessageNumber
+    public record ClearIncomingMessagesAndGetMessageNumber
     {
         public static ClearIncomingMessagesAndGetMessageNumber Instance = new ClearIncomingMessagesAndGetMessageNumber();
     }
-    public readonly record struct IncomingMessagesCleared
+    public record IncomingMessagesCleared
     {
         public int Cleared { get; }
         public IncomingMessagesCleared(int cleared)
@@ -25,7 +25,7 @@ namespace SharpPulsar.Messages.Requests
             Cleared = cleared;
         }
     }
-    public readonly record struct IncreaseAvailablePermits
+    public record IncreaseAvailablePermits
     {
         public int Available { get; }
         public IncreaseAvailablePermits(int available)
@@ -33,7 +33,7 @@ namespace SharpPulsar.Messages.Requests
             Available = available;
         }
     }
-    public readonly record struct IncreaseAvailablePermits<T>
+    public record IncreaseAvailablePermits<T>
     {
         public IMessage<T> Message { get; }
         public IncreaseAvailablePermits(IMessage<T> message)
@@ -41,12 +41,12 @@ namespace SharpPulsar.Messages.Requests
            Message = message;
         }
     }
-    public readonly record struct ConnectionAlreadySet(IActorRef ClientCnx);
-    public readonly record struct Connect
+    public record ConnectionAlreadySet(IActorRef ClientCnx);
+    public record Connect
     {
         public static Connect Instance = new Connect();
     }
-    public readonly record struct ConnectionOpened
+    public record ConnectionOpened
     {
         public IActorRef ClientCnx { get; }
         public long MaxMessageSize { get; }
@@ -58,7 +58,7 @@ namespace SharpPulsar.Messages.Requests
             ProtocolVersion = protocolVersion;
         }
     }
-    public readonly record struct ConnectionFailed
+    public record ConnectionFailed
     {
         public PulsarClientException Exception { get; }
         public ConnectionFailed(PulsarClientException exception)

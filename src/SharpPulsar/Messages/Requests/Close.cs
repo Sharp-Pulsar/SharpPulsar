@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages.Requests
 {
-    public readonly record struct Close
+    public record Close
     {
         public static Close Instance = new Close();
     }

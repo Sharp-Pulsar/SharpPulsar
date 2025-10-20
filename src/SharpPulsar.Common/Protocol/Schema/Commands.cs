@@ -1164,7 +1164,7 @@ namespace SharpPulsar.Protocol.Schema
         }
 
         
-        public static BaseCommand NewEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, TxnAction txnAction)
+        public static AbstractByteBuffer NewEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, TxnAction txnAction)
         {
             var cmd = LocalCmd(BaseCommand.Types.Type.EndTxn);
             cmd.EndTxn.RequestId =  (ulong)requestId;

@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 
 namespace SharpPulsar.Tracker.Messages
 {
-    public readonly record struct AddChunkedMessageIdsAndRemoveFromSequnceMap
+    public record AddChunkedMessageIdsAndRemoveFromSequnceMap
     {
         public AddChunkedMessageIdsAndRemoveFromSequnceMap(List<IMessageId> messageId)
         {
@@ -12,7 +12,7 @@ namespace SharpPulsar.Tracker.Messages
 
         public ImmutableList<IMessageId> MessageIds { get; } 
     }
-    public readonly record struct AddChunkedMessageIdsAndRemoveFromSequnceMapResponse
+    public record AddChunkedMessageIdsAndRemoveFromSequnceMapResponse
     {
         public AddChunkedMessageIdsAndRemoveFromSequnceMapResponse(IImmutableSet<IMessageId> messageIds)
         {

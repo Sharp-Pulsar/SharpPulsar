@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages
 {
-    public readonly record struct Partitions
+    public record Partitions
     {
         public Partitions(int partition, long requestId, string topic = "")
         {

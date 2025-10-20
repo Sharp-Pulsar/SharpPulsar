@@ -5,7 +5,7 @@ using SharpPulsar.Common.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Requests
 {
-    public readonly record struct CommandSuccessResponse
+    public record CommandSuccessResponse
     {
         public CommandSuccess Success { get; }
         public CommandSuccessResponse(CommandSuccess success)
@@ -13,7 +13,7 @@ namespace SharpPulsar.Messages.Requests
             Success = success;
         }
     }
-    public readonly record struct CommandWatchTopicListSuccessResponse
+    public record CommandWatchTopicListSuccessResponse
     {
         public long WatcherId { get; }
         public string TopicsHash { get; }
@@ -25,7 +25,7 @@ namespace SharpPulsar.Messages.Requests
             Topics = success.Topics.ToImmutableList();
         }
     }
-    public readonly record struct CommandWatchTopicUpdateResponse
+    public record CommandWatchTopicUpdateResponse
     {
         public long WatcherId { get; }
         public string TopicsHash { get; }
@@ -41,11 +41,11 @@ namespace SharpPulsar.Messages.Requests
     }
 
 
-    public readonly record struct MaxMessageSize
+    public record MaxMessageSize
     {
         public static MaxMessageSize Instance = new MaxMessageSize();
     }
-    public readonly record struct MaxMessageSizeResponse
+    public record MaxMessageSizeResponse
     {
         public int MessageSize { get; }
         public MaxMessageSizeResponse(int messageSize)
@@ -53,7 +53,7 @@ namespace SharpPulsar.Messages.Requests
             MessageSize = messageSize;
         }
     }
-    public readonly record struct RegisterProducer
+    public record RegisterProducer
     {
         public long ProducerId { get; }
         public IActorRef Producer { get; }
@@ -63,7 +63,7 @@ namespace SharpPulsar.Messages.Requests
             ProducerId = producerId;
         }
     }
-    public readonly record struct RemoveProducer
+    public record RemoveProducer
     {
         public long ProducerId { get; }
         public RemoveProducer(long producerId)
@@ -71,11 +71,11 @@ namespace SharpPulsar.Messages.Requests
             ProducerId = producerId;
         }
     }
-    public readonly record struct RemoteEndpointProtocolVersion
+    public record RemoteEndpointProtocolVersion
     {
         public static RemoteEndpointProtocolVersion Instance = new RemoteEndpointProtocolVersion();
     }
-    public readonly record struct RemoteEndpointProtocolVersionResponse
+    public record RemoteEndpointProtocolVersionResponse
     {
         public int Version { get; }
         public RemoteEndpointProtocolVersionResponse(int version)
@@ -83,7 +83,7 @@ namespace SharpPulsar.Messages.Requests
             Version = version;
         }
     }
-    public readonly record struct SendRequestWithId
+    public record SendRequestWithId
     {
         public ReadOnlySequence<byte> Message { get; }
         public long RequestId { get; }
@@ -95,7 +95,7 @@ namespace SharpPulsar.Messages.Requests
             NeedsResponse = needsResponse;
         }
     }
-    public readonly record struct RegisterConsumer
+    public record RegisterConsumer
     {
         public long ConsumerId { get; }
         public IActorRef Consumer { get; }
@@ -105,7 +105,7 @@ namespace SharpPulsar.Messages.Requests
             Consumer = consumer;
         }
     }
-    public readonly record struct CleanupProducer
+    public record CleanupProducer
     {
         public IActorRef Producer { get; }
         public CleanupProducer(IActorRef producer)
@@ -113,7 +113,7 @@ namespace SharpPulsar.Messages.Requests
             Producer = producer;
         }
     }
-    public readonly record struct CleanupConsumer
+    public record CleanupConsumer
     {
         public IActorRef Consumer { get; }
         public CleanupConsumer(IActorRef consumer)
@@ -121,7 +121,7 @@ namespace SharpPulsar.Messages.Requests
             Consumer = consumer;
         }
     }
-    public readonly record struct RemoveConsumer
+    public record RemoveConsumer
     {
         public long ConsumerId { get; }
         public RemoveConsumer(long consumerId)
@@ -129,7 +129,7 @@ namespace SharpPulsar.Messages.Requests
             ConsumerId = consumerId;
         }
     }
-    public readonly record struct RemoveTopicConsumer
+    public record RemoveTopicConsumer
     {
         public string Topic { get; }
         public RemoveTopicConsumer(string topic)

@@ -1,13 +1,12 @@
-﻿using SharpPulsar.Shared.Buf;
-
+﻿using DotNetty.Buffers;
 namespace SharpPulsar.Messages
 {
-    public readonly record struct Payload
+    public record Payload
     {
-        public ByteBuf Bytes { get; }
+        public AbstractByteBuffer Bytes { get; }
         public long RequestId { get; }
         public string Command { get; }
-        public Payload(ByteBuf bytes, long requestId, string command)
+        public Payload(AbstractByteBuffer bytes, long requestId, string command)
         {
             Bytes = bytes;
             RequestId = requestId;

@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct AckReceived
+    public record AckReceived
     {
         public long SequenceId { get; }
         public long HighestSequenceId { get; }

@@ -3,7 +3,7 @@ using System;
 
 namespace SharpPulsar.Messages.Reader
 {
-    public readonly record struct ReadNextTimeout
+    public record ReadNextTimeout
     {
         public long Timeout { get; } 
         public ReadNextTimeout(TimeSpan timeout)

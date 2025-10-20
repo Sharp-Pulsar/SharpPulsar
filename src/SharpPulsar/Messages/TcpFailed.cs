@@ -1,6 +1,6 @@
 ﻿namespace SharpPulsar.Messages
 {
-    public readonly record struct TcpFailed
+    public record TcpFailed
     {
         public string Name { get; }
 
