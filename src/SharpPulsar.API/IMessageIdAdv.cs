@@ -27,7 +27,7 @@ namespace SharpPulsar.API
         /// Get the partition index.
         /// </summary>
         /// <returns> -1 if the message is from a non-partitioned topic, otherwise the non-negative partition index </returns>
-        int PartitionIndex
+        virtual int PartitionIndex
         {
             get
             {
@@ -39,7 +39,7 @@ namespace SharpPulsar.API
         /// Get the batch index.
         /// </summary>
         /// <returns> -1 if the message is not in a batch </returns>
-        int BatchIndex
+        virtual int BatchIndex
         {
             get
             {
@@ -51,7 +51,7 @@ namespace SharpPulsar.API
         /// Get the batch size.
         /// </summary>
         /// <returns> 0 if the message is not in a batch </returns>
-        int BatchSize
+        virtual int BatchSize
         {
             get
             {
@@ -69,7 +69,7 @@ namespace SharpPulsar.API
         /// lock protection.
         /// </summary>
         /// <returns> null if the message is a non-batched message </returns>
-        BitArray AckSet
+        virtual BitArray AckSet
         {
             get
             {
@@ -85,7 +85,7 @@ namespace SharpPulsar.API
         /// itself represents the position of the last chunk.
         /// </summary>
         /// <returns> null if the message is not a chunked message </returns>
-        IMessageIdAdv FirstChunkMessageId
+        virtual IMessageIdAdv FirstChunkMessageId
         {
             get
             {
@@ -96,7 +96,7 @@ namespace SharpPulsar.API
         /// <summary>
         /// The default implementation of <seealso cref="Comparable.compareTo(object)"/>.
         /// </summary>
-        int CmpareTo(IMessageId o)
+        int CompareTo(IMessageId o)
         {
             if (o is not IMessageIdAdv)
             {

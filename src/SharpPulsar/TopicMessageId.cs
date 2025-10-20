@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using SharpPulsar.API;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -1,5 +1,9 @@
 ﻿
 using System;
+using DotNetty.Buffers;
+using Google.Protobuf;
+using SharpPulsar.API;
+using SharpPulsar.Shared.Buf;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -22,16 +26,16 @@ namespace SharpPulsar
 {
 
     [Serializable]
-    public class ChunkMessageId : MessageIdAdv, IMessageId
+    public class ChunkMessageId : MessageId
     {
-        private MessageIdAdv _firstChunkMsgId;
+        private MessageId _firstChunkMsgId;
 
-        public ChunkMessageId(MessageIdAdv firstChunkMsgId, MessageIdAdv lastChunkMsgId) : base(lastChunkMsgId.LedgerId, lastChunkMsgId.EntryId, lastChunkMsgId.PartitionIndex)
+        public ChunkMessageId(MessageId firstChunkMsgId, MessageId lastChunkMsgId) : base(lastChunkMsgId.LedgerId, lastChunkMsgId.EntryId, lastChunkMsgId.PartitionIndex)
         {
             _firstChunkMsgId = firstChunkMsgId;
         }
 
-        public virtual MessageIdAdv FirstChunkMessageId
+        public virtual IMessageIdAdv FirstChunkMessageId
         {
             get
             {
@@ -39,7 +43,7 @@ namespace SharpPulsar
             }
         }
 
-        public virtual MessageIdAdv LastChunkMessageId
+        public virtual IMessageIdAdv LastChunkMessageId
         {
             get
             {
@@ -56,13 +60,17 @@ namespace SharpPulsar
         {
 
             // write last chunk message id
-            var msgId = new MessageIdData { ledgerId = 0, entryId = 0, Partition = 0 };
+            var msgId = base.WriteMessageIdData(null, -1, 0);
 
             // write first chunk message id
             msgId.FirstChunkMessageId = msgId;
-            _firstChunkMsgId = new MessageIdAdv(-1, -1, 0);
+            _firstChunkMsgId.WriteMessageIdData(msgId.FirstChunkMessageId, -1, 0);
 
-            return FirstChunkMessageId.ToByteArray();
+            int size = msgId.CalculateSize();
+            var serialized = Unpooled.Buffer(size, size);
+            msgId.WriteTo(new CodedOutputStream(serialized.Array));
+
+            return serialized.Array;
         }
 
         public override bool Equals(object O)

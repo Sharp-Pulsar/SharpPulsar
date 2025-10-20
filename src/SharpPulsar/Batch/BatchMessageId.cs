@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections;
+using DotNetty.Common.Utilities;
+using Org.BouncyCastle.Bcpg;
+using SharpPulsar.API;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,72 +24,32 @@
 /// </summary>
 namespace SharpPulsar.Batch
 {
-    public class BatchMessageId : MessageIdAdv
+    public class BatchMessageId : MessageId
 	{
-        private const int NoBatch = -1;
         public int BatchIndex { get; }
         private readonly int _batchSize;
 
-        public BatchMessageAcker Acker { get; }
+        private readonly BitArray _ackSet;
 
 		// Private constructor used only for json deserialization
 		private BatchMessageId() : this(-1, -1, -1, -1)
 		{
 		}
 
-		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex) : this(ledgerId, entryId, partitionIndex, batchIndex, 0, BatchMessageAckerDisabled.Instance)
+		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex) : this(ledgerId, entryId, partitionIndex, batchIndex, 0, null)
 		{
 		}
 
-		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex, int batchSize, BatchMessageAcker acker) : base(ledgerId, entryId, partitionIndex)
+		public BatchMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex, int batchSize, BitArray ackSet) : base(ledgerId, entryId, partitionIndex)
 		{
 			BatchIndex = batchIndex;
 			_batchSize = batchSize;
-			Acker = acker;
+			_ackSet = ackSet;
 		}
 
-		public BatchMessageId(IMessageIdAdv other) : base(other.LedgerId, other.EntryId, other.PartitionIndex)
+		public BatchMessageId(IMessageIdAdv other) : this(other.LedgerId, other.EntryId, other.PartitionIndex, other.BatchIndex, other.BatchSize, other.AckSet)
 		{
-			if (other is BatchMessageId otherId)
-			{
-                BatchIndex = otherId.BatchIndex;
-				_batchSize = otherId.BatchSize;
-				Acker = otherId.Acker;
-			}
-			else
-			{
-				BatchIndex = NoBatch;
-				_batchSize = 0;
-				Acker = BatchMessageAckerDisabled.Instance;
-			}
 		}
-
-		public virtual int CompareTo(object o)
-        {
-            if (o is BatchMessageId other)
-			{
-                return Compare(other);
-            }
-
-            if (o is MessageIdAdv id)
-            {
-                int res = base.CompareTo(id);
-                if (res == 0 && BatchIndex > NoBatch)
-                {
-                    return 1;
-                }
-
-                return res;
-            }
-            else if (o is TopicMessageId)
-            {
-                return CompareTo(((TopicMessageId) o).MessageId);
-            }
-            else
-            {
-                throw new ArgumentException("expected BatchMessageId object. Got instance of " + o.GetType().FullName);
-            }
-        }
 
 		public override int GetHashCode()
 		{
@@ -94,17 +58,8 @@ namespace SharpPulsar.Batch
 
 		public override bool Equals(object obj)
 		{
-			if (obj is BatchMessageId other1)
-			{
-                return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex && BatchSize == other1.BatchSize;
-			}
-
-            if (obj is MessageIdAdv other)
-            {
-                return LedgerId == other.LedgerId && EntryId == other.EntryId && PartitionIndex == other.PartitionIndex && BatchIndex == NoBatch;
-            }
-            return false;
-		}
+            return MessageIdAdvUtils.Equals(this, obj);
+        }
 
 		public override string ToString()
 		{
@@ -117,50 +72,38 @@ namespace SharpPulsar.Batch
 			return ToByteArray(BatchIndex, BatchSize);
 		}
 
+        
 		public virtual bool AckIndividual()
 		{
-			return Acker.AckIndividual(BatchIndex);
-		}
+            return MessageIdAdvUtils.Acknowledge(this, true);
+        }
 
 		public virtual bool AckCumulative()
 		{
-			return Acker.AckCumulative(BatchIndex);
-		}
-		public virtual bool AckCumulative(int batchsize)
+            return MessageIdAdvUtils.Acknowledge(this, true);
+        }
+		
+		public virtual int OutstandingAcksInSameBatch => 0;
+
+        public virtual int BatchSize => BatchSize;
+
+        public virtual MessageId PrevBatchMessageId()
 		{
-			return Acker.AckCumulative(batchsize);
-		}
-
-		public virtual int OutstandingAcksInSameBatch => Acker.OutstandingAcks;
-
-        public virtual int BatchSize => Acker.BatchSize;
-
-        public virtual MessageIdAdv PrevBatchMessageId()
-		{
-			return new MessageIdAdv(LedgerId, EntryId - 1, PartitionIndex);
-		}
-
-        private int Compare(BatchMessageId m)
-        {
-            var ledgercompare = LedgerId.CompareTo(m.LedgerId);
-            if (ledgercompare != 0)
-                return ledgercompare;
-
-            var entryCompare = EntryId.CompareTo(m.EntryId);
-            if (entryCompare != 0)
-                return entryCompare;
-
-			var batchCompare = BatchIndex.CompareTo(m.BatchIndex);
-			if (batchCompare != 0)
-				return batchCompare;
-
-			var partitionCompare = PartitionIndex.CompareTo(m.PartitionIndex);
-            if (partitionCompare != 0)
-                return partitionCompare;
-
-            return 0;
+            return (MessageId)MessageIdAdvUtils.PrevMessageId(this);
         }
 
-	}
+        public BitArray GetAckSet()
+        {
+            return _ackSet;
+        }
+
+        public static BitArray NewAckSet(int batchSize)
+        {
+            var ackSet = new BitArray(batchSize);
+            ackSet.Set(batchSize, true);
+            return ackSet;
+        }
+
+    }
 
 }

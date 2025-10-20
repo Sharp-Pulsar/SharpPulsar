@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using SharpPulsar.API;
 
 
 namespace SharpPulsar
@@ -73,12 +74,12 @@ namespace SharpPulsar
                 return (IMessageIdAdv)messageId;
             }
             IMessageIdAdv msgId = (IMessageIdAdv)messageId;
-            return new MessageIdAdv(msgId.LedgerId, msgId.EntryId, msgId.PartitionIndex);
+            return new MessageId(msgId.LedgerId, msgId.EntryId, msgId.PartitionIndex);
         }
 
-        internal static IMessageIdAdv prevMessageId(IMessageIdAdv msgId)
+        internal static IMessageIdAdv PrevMessageId(IMessageIdAdv msgId)
         {
-            return new MessageIdAdv(msgId.LedgerId, msgId.EntryId - 1, msgId.PartitionIndex);
+            return new MessageId(msgId.LedgerId, msgId.EntryId - 1, msgId.PartitionIndex);
         }
     }
 
