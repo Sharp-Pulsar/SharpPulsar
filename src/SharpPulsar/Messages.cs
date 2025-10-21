@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using SharpPulsar.API;
 using SharpPulsar.Common.Precondition;
 
 /// <summary>

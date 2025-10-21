@@ -2,18 +2,26 @@
 using Akka.Dispatch;
 using Akka.Util;
 using Akka.Util.Internal;
+using SharpPulsar.API;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Shared;
+using SharpPulsar.Shared.Exceptions;
 using SharpPulsar.Tracker;
+using SharpPulsar.Tracker.Messages;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using static Pulsar.Proto.CommandAck.Types;
+using static Pulsar.Proto.CommandSubscribe.Types;
+using static SharpPulsar.Shared.Exceptions.PulsarClientException;
 using IScheduler = Akka.Actor.IScheduler;
 
 /// <summary>
@@ -39,6 +47,7 @@ namespace SharpPulsar.Internal.Consumer
     internal abstract class ConsumerActorBase<T> : ReceiveActor
     {
         protected internal const int InitialReceiverQueueSize = 1;
+        protected internal const double MEMORY_THRESHOLD_FOR_RECEIVER_QUEUE_SIZE_EXPANSION = 0.75;
         internal abstract long LastDisconnectedTimestamp();
         internal abstract void NegativeAcknowledge(IMessageId messageId);
         internal abstract void Resume();
@@ -56,7 +65,7 @@ namespace SharpPulsar.Internal.Consumer
             PARTITIONED,
             NonPartitioned
         }
-
+        private const string RECONSUME_LATER_ERROR_MSG = "reconsumeLater method not supported because retryEnabled is set to false. " + "You can enable it via ConsumerBuilder.";
         internal bool HasParentConsumer = false;
         protected readonly ILoggingAdapter _log;
         private readonly string _subscription;
@@ -83,13 +92,12 @@ namespace SharpPulsar.Internal.Consumer
         protected internal readonly IScheduler Scheduler;
         protected internal readonly IActorRef UnAckedMessageTracker;
         protected internal readonly IActorRef Client;
-        public ConsumerActorBase(IActorRef client, IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
+        public ConsumerActorBase(IActorRef client, IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture, ConsumerInterceptors<T> interceptors)
         {
             Client = client;
             _self = Self;
             SubscribeFuture = subscribeFuture;
-            if (conf.Interceptors != null && conf.Interceptors.Count > 0)
-                Interceptors = new ConsumerInterceptors<T>(Context.GetLogger(), conf.Interceptors);
+            Interceptors = interceptors;
             StateActor = stateActor;
             _topic = topic;
             _consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
@@ -138,7 +146,7 @@ namespace SharpPulsar.Internal.Consumer
             {
                 BatchReceivePolicy = BatchReceivePolicy.DefaultPolicy;
             }
-            if (conf.AckTimeout != TimeSpan.Zero)
+            if (conf.AckTimeoutMillis != 0)
             {
                 if (conf.AckTimeoutRedeliveryBackoff != null)
                 {
@@ -434,11 +442,36 @@ namespace SharpPulsar.Internal.Consumer
         {
             get
             {
-                return Conf.SubscriptionType;
+                // For retry topic, we always use Shared subscription
+                // Because we will produce delayed messages to retry topic.
+                var deadLetterPolicy = Conf.DeadLetterPolicy;
+                if (deadLetterPolicy != null && _topic.Equals(deadLetterPolicy.RetryLetterTopic))
+                {
+                    return SubType.Shared;
+                }
 
+                var type = Conf.SubscriptionType;
+                switch (type)
+                {
+                    case SubscriptionType.Exclusive:
+                        return SubType.Exclusive;
+
+                    case SubscriptionType.Shared:
+                        return SubType.Shared;
+
+                    case SubscriptionType.Failover:
+                        return SubType.Failover;
+
+                    case SubscriptionType.Key_Shared:
+                        return SubType.KeyShared;
+                }
+
+                // Should not happen since we cover all cases above
+                return SubType.Shared; 
             }
-        }
 
+
+        }
         internal abstract int AvailablePermits();
 
         internal abstract int NumMessagesInQueue();
@@ -535,15 +568,7 @@ namespace SharpPulsar.Internal.Consumer
                         if (msg != null)
                         {
                             var finalMsg = msg;
-                            if (SubType.KeyShared == Conf.SubscriptionType)
-                            {
-                                PeekMessageKey(msg);
-                                CallMessageListener(finalMsg);
-                            }
-                            else
-                            {
-                                CallMessageListener(finalMsg);
-                            }
+                            CallMessageListener(finalMsg);
                         }
                         else
                         {
@@ -609,6 +634,8 @@ namespace SharpPulsar.Internal.Consumer
                 // Increase the permits here since we will not increase permits while receive messages from consumer
                 // after enabled message listener.
                 receivedConsumer.Tell(new IncreaseAvailablePermits<T>(msg is TopicMessage<T> ? ((TopicMessage<T>)msg).Message : msg));
+                UnAckedMessageTracker.Tell(new Add(msg.MessageId, msg.RedeliveryCount));
+                BeforeConsume(msg);
                 Listener.Received(Self, msg);
             }
             catch (Exception ex)
@@ -717,9 +744,12 @@ namespace SharpPulsar.Internal.Consumer
                         break;
                     }
                 }
-                MessageProcessed(msg);
-                var interceptMsg = BeforeConsume(msg);
-                messages.Add(interceptMsg);
+                if (msg != null)
+                {
+                    MessageProcessed(msg);
+                    var interceptMsg = BeforeConsume(msg);
+                    messages.Add(interceptMsg);
+                }
             }
 
             CompletePendingBatchReceive(batchReceiveFuture, messages);

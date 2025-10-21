@@ -6,6 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.API;
+using SharpPulsar.Shared.Exceptions;
+using Pulsar.Proto;
+using DotNetty.Buffers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -213,6 +217,30 @@ namespace SharpPulsar.Internal.Consumer
                 throw new NotImplementedException("Receiver queue size can't be changed in ZeroQueueConsumerImpl");
             }
         }
+        protected internal override void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, AbstractByteBuffer byteBuf, MessageId messageId, ISchema<T> schema, int redeliveryCount, IList<long> ackSet, long consumerEpoch)
+        {
+            if (this.IsBatch(messageMetadata))
+            {
+                RejectBatchMessageByClosingConsumer(messageId);
+            }
+            else
+            {
+                base.ProcessPayloadByProcessor(brokerEntryMetadata, messageMetadata, byteBuf, messageId, schema, redeliveryCount, ackSet, consumerEpoch);
+            }
+        }
+
+        private void RejectBatchMessageByClosingConsumer(MessageId messageId)
+        {
+            log.warn("Closing consumer [{}]-[{}] due to unsupported received batch-message: {} with zero receiver queue size", subscription, consumerName, messageId);
+            // close connection
+            closeAsync().handle((ok, e) =>
+            {
+                // notify callback with failure result
+                NotifyPendingReceivedCallback(null, new PulsarClientException.InvalidMessageException(format("Unsupported Batch message with 0 size receiver queue for [%s]-[%s] ", subscription, consumerName)));
+                return null;
+            });
+        }
+
     }
 
 }

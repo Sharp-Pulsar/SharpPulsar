@@ -87,8 +87,8 @@ namespace SharpPulsar.API
 		/// </summary>
 
 		// CHECKSTYLE.ON: ConstantName
-		IMessageId Earliest => DefaultImplementation.GetDefaultImplementation.NewMessageId(-1, -1, -1);
-		IMessageId Latest => DefaultImplementation.GetDefaultImplementation.NewMessageId(long.MaxValue, long.MaxValue, -1);
+		static IMessageId Earliest => DefaultImplementation.GetDefaultImplementation.NewMessageId(-1, -1, -1);
+		static IMessageId Latest => DefaultImplementation.GetDefaultImplementation.NewMessageId(long.MaxValue, long.MaxValue, -1);
 	}
 
 }

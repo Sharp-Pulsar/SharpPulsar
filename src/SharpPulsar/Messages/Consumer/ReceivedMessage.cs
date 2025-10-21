@@ -1,4 +1,6 @@
-﻿namespace SharpPulsar.Messages.Consumer
+﻿using SharpPulsar.API;
+
+namespace SharpPulsar.Messages.Consumer
 {
     public record struct ReceivedMessage<T>(IMessage<T> Message);
 }
