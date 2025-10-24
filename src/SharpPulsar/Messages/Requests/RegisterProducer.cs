@@ -1,7 +1,7 @@
-﻿using System.Buffers;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using Akka.Actor;
-using SharpPulsar.Common.Protocol.Proto;
+using DotNetty.Buffers;
+using Pulsar.Proto;
 
 namespace SharpPulsar.Messages.Requests
 {
@@ -22,7 +22,7 @@ namespace SharpPulsar.Messages.Requests
         {
             WatcherId = (long)success.WatcherId;
             TopicsHash = success.TopicsHash;
-            Topics = success.Topics.ToImmutableList();
+            Topics = success.Topic.ToImmutableList();
         }
     }
     public record CommandWatchTopicUpdateResponse
@@ -85,10 +85,10 @@ namespace SharpPulsar.Messages.Requests
     }
     public record SendRequestWithId
     {
-        public ReadOnlySequence<byte> Message { get; }
+        public AbstractByteBuffer Message { get; }
         public long RequestId { get; }
         public bool NeedsResponse { get; }
-        public SendRequestWithId(ReadOnlySequence<byte> message,  long requestid, bool needsResponse = false)
+        public SendRequestWithId(AbstractByteBuffer message,  long requestid, bool needsResponse = false)
         {
             Message = message;
             RequestId = requestid;

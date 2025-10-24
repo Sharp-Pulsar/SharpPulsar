@@ -5,13 +5,12 @@ using System.Text.RegularExpressions;
 using SharpPulsar.Common.Precondition;
 using System;
 using SharpPulsar.API;
-using static SharpPulsar.Common.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Shared;
-using SharpPulsar.Common.Protocol.Proto;
 using System.Text.Json.Serialization;
 using SharpPulsar.Crypto;
 using SharpPulsar.Extension;
 using SharpPulsar.TimeUnit;
+using Pulsar.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -41,7 +40,7 @@ namespace SharpPulsar.Configuration
             AutoUpdatePartitionsIntervalSeconds = TimeUnit.TimeUnit.SECONDS.ToSeconds(interval.Seconds);
 		}
         public long AutoUpdatePartitionsIntervalSeconds { get; set; } = TimeUnit.TimeUnit.SECONDS.ToSeconds(60);
-		public MessageCrypto MessageCrypto { get; set; }
+		public IMessageCrypto<MessageMetadata, MessageMetadata> MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
 
         /// <summary>
@@ -82,6 +81,9 @@ namespace SharpPulsar.Configuration
         public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }
         public bool UseTls { get; set; } = false;
+
+        // max pending chunked message to avoid sending incomplete message into the queue and memory
+        public int MaxPendingChunkedMessage { get; set; } = 10;
 
         /// <summary>
         /// Size of a consumer's receiver queue.
@@ -272,7 +274,7 @@ namespace SharpPulsar.Configuration
         /// When specifying the dead letter policy while not specifying `ackTimeoutMillis`, you can set the
         /// ack timeout to 30000 millisecond.
         /// </summary>
-		public IDeadLetterPolicy DeadLetterPolicy { get; set; }
+		public DeadLetterPolicy DeadLetterPolicy { get; set; }
 
         /// <summary>
         /// Initial position at which to set cursor when subscribing to a topic at first time.

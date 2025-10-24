@@ -381,7 +381,7 @@ namespace SharpPulsar.Builder
             return this;
         }
 
-        public virtual IConsumerBuilder<T> DeadLetterPolicy(IDeadLetterPolicy deadLetterPolicy)
+        public virtual IConsumerBuilder<T> DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
         {
             if (deadLetterPolicy != null)
             {

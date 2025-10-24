@@ -1,4 +1,6 @@
-﻿namespace SharpPulsar.Tracker.Messages
+﻿using SharpPulsar.API;
+
+namespace SharpPulsar.Tracker.Messages
 {
     public record RemoveMessagesTill
     {

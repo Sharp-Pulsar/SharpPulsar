@@ -14,6 +14,10 @@ using SharpPulsar.Messages.Consumer;
 using System.Linq;
 using System.Buffers;
 using SharpPulsar.Messages.Client;
+using SharpPulsar.API;
+using static Pulsar.Proto.CommandAck.Types;
+using SharpPulsar.Protocol.Schema;
+using DotNetty.Buffers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -637,7 +641,7 @@ namespace SharpPulsar.Tracker
                 var response = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                 long requestId = response.Id;
 
-                ReadOnlySequence<byte> cmd;
+                AbstractByteBuffer cmd;
                 if (entriesToAck == null)
                 {
                     cmd = Commands.NewAck(consumerId, ledgerId, entryId, ackSet, ackType, null, properties, requestId);
@@ -650,7 +654,7 @@ namespace SharpPulsar.Tracker
             }
             else
             {
-                ReadOnlySequence<byte> cmd;
+                AbstractByteBuffer cmd;
                 if (entriesToAck == null)
                 {
                     cmd = Commands.NewAck(consumerId, ledgerId, entryId, ackSet!.ToList(), ackType, null!, properties!, -1);

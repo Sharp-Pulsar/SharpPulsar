@@ -1,4 +1,4 @@
-﻿
+﻿//using Lombok.NET;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -23,7 +23,9 @@ namespace SharpPulsar.API
     /// Configuration for the "dead letter queue" feature in consumer.
     /// </summary>
     /// <seealso cref= DeadLetterPolicy </seealso>
-    public interface IDeadLetterPolicy
+    /// 
+    //[Builder]
+    public partial class DeadLetterPolicy
     {
 
         /// <summary>

@@ -6,6 +6,7 @@ using Akka.Actor;
 using App.Metrics.Concurrency;
 using SharpPulsar.Configuration;
 using System.Collections.Generic;
+using SharpPulsar.API;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -54,7 +55,13 @@ namespace SharpPulsar.Stats.Consumer
 		public virtual double RateMsgsReceived { get; set; }
 		public virtual double RateBytesReceived { get; set; }
 
-		private static readonly NumberFormatInfo ThroughputFormat = new NumberFormatInfo();
+
+
+        private IProducerStats _deadLetterProducerStats;
+
+        private IProducerStats _retryLetterProducerStats;
+
+        private static readonly NumberFormatInfo ThroughputFormat = new NumberFormatInfo();
 
 		public double OldTime => _oldTime;
 		public ConsumerStatsRecorder()
@@ -227,6 +234,26 @@ namespace SharpPulsar.Stats.Consumer
 				_numBytesReceived.Add(message.Data.Length);
 			}
 		}
+
+        public void SetDeadLetterProducerStats(IProducerStats producerStats)
+        {
+            _deadLetterProducerStats = producerStats;
+        }
+
+        public void SetRetryLetterProducerStats(IProducerStats producerStats)
+        {
+            _retryLetterProducerStats = producerStats;
+        }
+
+        public IProducerStats GetDeadLetterProducerStats()
+        {
+            return _deadLetterProducerStats;
+        }
+
+        public IProducerStats GetRetryLetterProducerStats()
+        {
+            return _retryLetterProducerStats;
+        }
 
         public virtual long NumMsgsReceived => _numMsgsReceived.GetValue();
 

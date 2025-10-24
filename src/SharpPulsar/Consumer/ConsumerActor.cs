@@ -32,13 +32,16 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using static SharpPulsar.Internal.Consumer.ChunkedMessageCtx;
-using DeadLetterPolicy = SharpPulsar.Common.Compression.DeadLetterPolicy;
-using SubscriptionInitialPosition = SharpPulsar.Common.SubscriptionInitialPosition;
-using SharpPulsar.Common.Protocol.Proto;
+using static SharpPulsar.Internal.Consumer.ChunkedMessageCtx; 
 using SharpPulsar.Protocol.Schema;
-using static SharpPulsar.Common.Protocol.Proto.CommandAck;
 using SharpPulsar.API;
+using Pulsar.Proto;
+using SharpPulsar.Shared.Exceptions;
+using static SharpPulsar.Shared.Exceptions.PulsarClientException;
+using static Pulsar.Proto.CommandAck.Types;
+using DotNetty.Buffers;
+using System.Collections;
+using Akka.Event;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -108,7 +111,7 @@ namespace SharpPulsar.Internal.Consumer
 
         private volatile bool _hasReachedEndOfTopic;
 
-        private readonly IMessageCrypto _msgCrypto;
+        private readonly IMessageCrypto<MessageMetadata, MessageMetadata> _msgCrypto;
 
         private readonly ImmutableDictionary<string, string> _metadata;
 
@@ -123,7 +126,7 @@ namespace SharpPulsar.Internal.Consumer
         private readonly IActorRef _connectionHandler;
         private readonly IActorRef _generator;
 
-        private readonly Dictionary<long, (List<IMessageId> messageid, TransactionImpl.TxnID txnid)> _ackRequests;
+        private readonly Dictionary<long, (List<IMessageId> messageid, TxnID txnid)> _ackRequests;
 
         private readonly TopicName _topicName;
         private readonly string _topicNameWithoutPartition;
@@ -137,7 +140,7 @@ namespace SharpPulsar.Internal.Consumer
         private int _maxMessageSize;
         private int _protocolVersion;
 
-        private Producer<T> _retryLetterProducer;
+        private IProducer<T> _retryLetterProducer;
         private IActorRef _replyTo;
 
         private long _subscribeDeadline = 0; // gets set on first successful connection
@@ -162,18 +165,18 @@ namespace SharpPulsar.Internal.Consumer
         private readonly Dictionary<string, long> _properties = new Dictionary<string, long>();
 
 
-        public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture) : this
-            (consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfigurationData, subscribeFuture)
+        public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture) : this
+            (consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, 0, schema, createTopicIfDoesNotExist, interceptors, clientConfigurationData, subscribeFuture)
         {
         }
 
-        public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(client, stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, schema, subscribeFuture)
+        public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(client, stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, schema, subscribeFuture, interceptors)
         {
             Self.Path.WithUid(consumerId);
             Paused = conf.StartPaused;
             _context = Context;
             _clientConfigurationData = clientConfiguration;
-            _ackRequests = new Dictionary<long, (List<IMessageId> messageid, TransactionImpl.TxnID txnid)>();
+            _ackRequests = new Dictionary<long, (List<IMessageId> messageid, TxnID txnid)>();
             _generator = idGenerator;
             _topicName = TopicName.Get(topic);
             _cnxPool = cnxPool;
@@ -195,6 +198,17 @@ namespace SharpPulsar.Internal.Consumer
             {
                 var firstChunkMessageId = ((IMessageIdAdv)startMessageId).FirstChunkMessageId;
                 _startMessageId = firstChunkMessageId == null ? (IMessageIdAdv)startMessageId : firstChunkMessageId;
+                if (conf.ResetIncludeHead && firstChunkMessageId != null)
+                {
+                    // The chunk message id's ledger id and entry id are the last chunk's ledger id and entry id, when
+                    // startMessageIdInclusive() is enabled, we need to start from the first chunk's message id
+                    _startMessageId = firstChunkMessageId;
+                }
+                else
+                {
+                    _startMessageId = (IMessageIdAdv)startMessageId;
+                }
+
             }
             _initialStartMessageId = _startMessageId;
             _startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
@@ -208,14 +222,14 @@ namespace SharpPulsar.Internal.Consumer
             _subscriptionInitialPosition = conf.SubscriptionInitialPosition;
             _resetIncludeHead = conf.ResetIncludeHead;
             _createTopicIfDoesNotExist = createTopicIfDoesNotExist;
-            _maxPendingChuckedMessage = conf.MaxPendingChuckedMessage;
+            _maxPendingChuckedMessage = conf.MaxPendingChunkedMessage;
             _pendingChunckedMessageUuidQueue = new Queue<string>();
-            ExpireTimeOfIncompleteChunkedMessage = conf.ExpireTimeOfIncompleteChunkedMessage;
+            ExpireTimeOfIncompleteChunkedMessage = TimeSpan.FromMilliseconds(conf.ExpireTimeOfIncompleteChunkedMessageMillis);
             _autoAckOldestChunkedMessageOnQueueFull = conf.AutoAckOldestChunkedMessageOnQueueFull;
 
-            if (clientConfiguration.StatsIntervalSeconds.TotalMilliseconds > 0)
+            if (clientConfiguration.StatsIntervalSeconds > 0)
             {
-                _stats = new ConsumerStatsRecorder<T>(Context.System, conf, _topicName.ToString(), ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds);
+                _stats = new ConsumerStatsRecorder<T>(Context.System, conf, _topicName.ToString(), ConsumerName, Subscription, TimeSpan.FromSeconds(clientConfiguration.StatsIntervalSeconds));
             }
             else
             {
@@ -251,7 +265,7 @@ namespace SharpPulsar.Internal.Consumer
                 else
                 {
                     // default to use MessageCryptoBc;
-                    IMessageCrypto msgCryptoBc;
+                    IMessageCrypto<MessageMetadata, MessageMetadata> msgCryptoBc;
                     try
                     {
                         msgCryptoBc = new MessageCrypto($"[{topic}] [{Subscription}]", false, _log);
@@ -367,18 +381,45 @@ namespace SharpPulsar.Internal.Consumer
                 }
 
             });
+            /*
+             InstrumentProvider ip = client.instrumentProvider();
+        Attributes attrs = Attributes.builder().put("pulsar.subscription", subscription).build();
+        consumersOpenedCounter = ip.newCounter("pulsar.client.consumer.opened", Unit.Sessions,
+                "The number of consumer sessions opened", topic, attrs);
+        consumersClosedCounter = ip.newCounter("pulsar.client.consumer.closed", Unit.Sessions,
+                "The number of consumer sessions closed", topic, attrs);
+        messagesReceivedCounter = ip.newCounter("pulsar.client.consumer.message.received.count", Unit.Messages,
+                "The number of messages explicitly received by the consumer application", topic, attrs);
+        bytesReceivedCounter = ip.newCounter("pulsar.client.consumer.message.received.size", Unit.Bytes,
+                "The number of bytes explicitly received by the consumer application", topic, attrs);
+        messagesPrefetchedGauge = ip.newUpDownCounter("pulsar.client.consumer.receive_queue.count", Unit.Messages,
+                "The number of messages currently sitting in the consumer receive queue", topic, attrs);
+        bytesPrefetchedGauge = ip.newUpDownCounter("pulsar.client.consumer.receive_queue.size", Unit.Bytes,
+                "The total size in bytes of messages currently sitting in the consumer receive queue", topic, attrs);
+
+        consumerAcksCounter = ip.newCounter("pulsar.client.consumer.message.ack", Unit.Messages,
+                "The number of acknowledged messages", topic, attrs);
+        consumerNacksCounter = ip.newCounter("pulsar.client.consumer.message.nack", Unit.Messages,
+                "The number of negatively acknowledged messages", topic, attrs);
+        consumerDlqMessagesCounter = ip.newCounter("pulsar.client.consumer.message.dlq", Unit.Messages,
+                "The number of messages sent to DLQ", topic, attrs);
+        grabCnx();
+
+        consumersOpenedCounter.increment();
+             
+             */
             Ready();
             GrabCnx();
         }
-        public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
+        public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, schema, createTopicIfDoesNotExist, clientConfigurationData, subscribeFuture));
+            return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, schema, createTopicIfDoesNotExist, interceptors, clientConfigurationData, subscribeFuture));
 
         }
 
-        public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
+        public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, bool parentConsumerHasListener, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
+            return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, parentConsumerHasListener, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, interceptors, clientConfiguration, subscribeFuture));
         }
         protected internal override void CompleteOpBatchReceive(OpBatchReceive op)
         {
@@ -1147,9 +1188,125 @@ namespace SharpPulsar.Internal.Consumer
                 return _stats;
             }
         }
+        protected internal override IMessage<T> InternalReceive()
+        {
+            IMessage<T> message;
+            try
+            {
+                if (IncomingMessages.Count == 0)
+                {
+                    ExpectMoreIncomingMessages();
+                }
+                IncomingMessages.TryReceive(out message);
+                MessageProcessed(message);
+                return BeforeConsume(message);
+            }
+            catch (Exception e)
+            {
+                Stats.IncrementNumReceiveFailed();
+                throw PulsarClientException.Unwrap(e);
+            }
+        }
+        protected internal override TaskCompletionSource<IMessage<T>> InternalReceiveAsync()
+        {
+            CompletableFutureCancellationHandler cancellationHandler = new CompletableFutureCancellationHandler();
+            CompletableFuture<Message<T>> result = cancellationHandler.createFuture();
+            internalPinnedExecutor.execute(() =>
+            {
+                Message<T> message = incomingMessages.poll();
+                if (message == null)
+                {
+                    expectMoreIncomingMessages();
+                    pendingReceives.add(result);
+                    cancellationHandler.setCancelAction(() => pendingReceives.remove(result));
+                }
+                else
+                {
+                    messageProcessed(message);
+                    result.complete(beforeConsume(message));
+                }
+            });
+
+            return result;
+        }
+        protected internal override IMessage<T> InternalReceive(TimeSpan timeSpan)
+        {
+            IMessage<T> message;
+            try
+            {
+                if (IncomingMessages.Count == 0)
+                {
+                    ExpectMoreIncomingMessages();
+                }
+                message = IncomingMessages.poll(timeout, unit);
+                if (message == null)
+                {
+                    return null;
+                }
+                MessageProcessed(message);
+                message = Listener == null ? BeforeConsume(message) : message;
+                return message;
+            }
+            catch (Exception  e)
+            {
+                State state = GetState();
+                if (state != State.Closing && state != State.Closed)
+                {
+                    Stats.IncrementNumReceiveFailed();
+                    throw PulsarClientException.Unwrap(e);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+        protected internal override IMessages<T> InternalBatchReceive()
+        {
+            try
+            {
+                return InternalBatchReceiveAsync().Task.GetAwaiter().GetResult();
+            }
+            catch (Exception e)
+            {
+                State state = getState();
+                if (state != State.Closing && state != State.Closed)
+                {
+                    stats.incrementNumBatchReceiveFailed();
+                    throw PulsarClientException.unwrap(e);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+        protected internal override TaskCompletionSource<IMessages<T>> InternalBatchReceiveAsync()
+        {
+            CompletableFutureCancellationHandler cancellationHandler = new CompletableFutureCancellationHandler();
+            CompletableFuture<Messages<T>> result = cancellationHandler.createFuture();
+            internalPinnedExecutor.execute(() =>
+            {
+                if (hasEnoughMessagesForBatchReceive())
+                {
+                    notifyPendingBatchReceivedCallBack(result);
+                }
+                else
+                {
+                    expectMoreIncomingMessages();
+                    OpBatchReceive<T> opBatchReceive = OpBatchReceive.of(result);
+                    pendingBatchReceives.add(opBatchReceive);
+                    triggerBatchReceiveTimeoutTask();
+                    cancellationHandler.setCancelAction(() => pendingBatchReceives.remove(opBatchReceive));
+                }
+            });
+            return result;
+        }
+
         protected internal override void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
-            Condition.CheckArgument(messageId is MessageIdAdv);
+            consumerAcksCounter.increment();
+            //Condition.CheckArgument(messageId is MessageIdAdv);
             var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             if (state != State.Ready && state != State.Connecting)
             {
@@ -1177,10 +1334,11 @@ namespace SharpPulsar.Internal.Consumer
         }
         protected internal override void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
-            foreach (var messageId in messageIdList)
+            consumerAcksCounter.increment();
+            /*foreach (var messageId in messageIdList)
             {
                 Condition.CheckArgument(messageId is MessageIdAdv);
-            }
+            }*/
             var state = HandlerstateActor.Ask<State>(GetState.Instance).GetAwaiter().GetResult();
             if (state != State.Ready && state != State.Connecting)
             {
@@ -1200,7 +1358,7 @@ namespace SharpPulsar.Internal.Consumer
             {
                 var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
                 var bits = txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).GetAwaiter().GetResult();
-                DoTransactionAcknowledgeForResponse(messageIdList, ackType, null, properties, new TransactionImpl.TxnID(bits.MostBits, bits.LeastBits), requestId.Id);
+                DoTransactionAcknowledgeForResponse(messageIdList, ackType, null, properties, new TxnID(bits.MostBits, bits.LeastBits), requestId.Id);
                 return;
             }
             else
@@ -1209,6 +1367,25 @@ namespace SharpPulsar.Internal.Consumer
                 return;
             };
         }
+        private static void CopyMessageKeysIfNeeded<T1, T2>(IMessage<T1> message, TypedMessageBuilder<T2> typedMessageBuilderNew)
+        {
+            if (message.HasKey())
+            {
+                if (message.HasBase64EncodedKey())
+                {
+                    typedMessageBuilderNew.KeyBytes(message.KeyBytes);
+                }
+                else
+                {
+                    typedMessageBuilderNew.Key(message.Key);
+                }
+            }
+            if (message.HasOrderingKey())
+            {
+                typedMessageBuilderNew.OrderingKey(message.OrderingKey);
+            }
+        }
+        // qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
         protected internal override TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, string> properties, TimeSpan delayTime)
         {
             var result = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1247,7 +1424,7 @@ namespace SharpPulsar.Internal.Consumer
                 if (_retryLetterProducer == null)
                 {
                     var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System);
-                    var builder = new ProducerConfigBuilder<T>()
+                    var builder = new ProducerBuilder<T>()
                     .Topic(_deadLetterPolicy.RetryLetterTopic)
                     .EnableBatching(false)
                     .EnableChunking(true);
@@ -1368,6 +1545,85 @@ namespace SharpPulsar.Internal.Consumer
             }
             return result;
         }
+        private ValueTask<IProducer<byte[]>> InitRetryLetterProducerIfNeeded()
+        {
+            var p = _retryLetterProducer;
+            if (p == null || p.isCompletedExceptionally())
+            {
+                createProducerLock.writeLock().@lock();
+                try
+                {
+                    p = retryLetterProducer;
+                    if (p == null || p.isCompletedExceptionally())
+                    {
+                        p = createProducerWithBackOff(() =>
+                        {
+                            ProducerBuilder<sbyte[]> builder = client.newProducer(Schema.AUTO_PRODUCE_BYTES(schema)).topic(this.deadLetterPolicy.getRetryLetterTopic()).enableBatching(false).enableChunking(true).blockIfQueueFull(false);
+                            customizeDeadLetterProducerBuilder(deadLetterPolicy.getRetryLetterProducerBuilderCustomizer(), deadLetterPolicy.getRetryLetterTopic(), builder);
+                            CompletableFuture<Producer<sbyte[]>> newProducer = builder.createAsync();
+                            newProducer.whenComplete((producer, ex) =>
+                            {
+                                if (ex != null)
+                                {
+                                    log.error("[{}] [{}] [{}] Failed to create retry letter producer for topic {}", topicName, subscription, consumerName, deadLetterPolicy.getRetryLetterTopic(), ex);
+                                    retryLetterProducerFailureCount++;
+                                }
+                                else
+                                {
+                                    retryLetterProducerFailureCount = 0;
+                                    stats.setRetryLetterProducerStats(producer.getStats());
+                                }
+                            });
+                            return newProducer;
+                        }, retryLetterProducerFailureCount, () => "retry letter producer (topic: " + deadLetterPolicy.getRetryLetterTopic() + ")");
+                        retryLetterProducer = p;
+                    }
+                }
+                finally
+                {
+                    createProducerLock.writeLock().unlock();
+                }
+            }
+            return p;
+        }
+
+        private SortedDictionary<string, string> GetPropertiesMap<T1>(IMessage<T1> message, string originMessageIdStr, string originTopicNameStr)
+        {
+            SortedDictionary<string, string> propertiesMap = new SortedDictionary<string, string>();
+            if (message.Properties != null)
+            {
+                propertiesMap.PutAll(message.Properties);
+            }
+            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyRealTopic)) propertiesMap.Add(RetryMessageUtil.SystemPropertyRealTopic, originTopicNameStr);
+            //Compatible with the old version, will be deleted in the future
+            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyOriginMessageId)) propertiesMap.Add(RetryMessageUtil.SystemPropertyOriginMessageId, originMessageIdStr);
+            if (!propertiesMap.ContainsKey(RetryMessageUtil.PropertyOriginMessageId)) propertiesMap.Add(RetryMessageUtil.PropertyOriginMessageId, originMessageIdStr);
+            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyRealSubscription)) propertiesMap.Add(RetryMessageUtil.SystemPropertyRealSubscription, subscription);
+            return propertiesMap;
+        }
+
+        private string GetOriginTopicNameStr<T1>(IMessage<T1> message)
+        {
+            var messageId = message.MessageId;
+            if (messageId is TopicMessageId)
+            {
+                string topic = ((TopicMessageId)messageId).OwnerTopic;
+                int index = topic.LastIndexOf(TopicName.PartitionedTopicSuffix);
+                if (index < 0)
+                {
+                    return topic;
+                }
+                else
+                {
+                    return topic.Substring(0, index);
+                }
+            }
+            else
+            {
+                return message.GetTopicName();
+            }
+        }
+
         private Message<T> GetMessage(IMessage<T> message)
         {
             if (message is TopicMessage<T> m)
@@ -3315,38 +3571,60 @@ namespace SharpPulsar.Internal.Consumer
                 _log.Debug($"updateAutoScaleReceiverQueueHint {prev} -> {ScaleReceiverQueueHint}");
             }
         }
-        private void DoTransactionAcknowledgeForResponse(IMessageId messageId, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TransactionImpl.TxnID txnID, long requestId)
+        private void DoTransactionAcknowledgeForResponse(IMessageId messageId, AckType ackType, ValidationError validationError, IDictionary<string, long> properties, TxnID txnID, long requestId)
         {
-            long ledgerId;
-            long entryId;
-            ReadOnlySequence<byte> cmd;
-            if (messageId is BatchMessageId batchMessageId)
+            var messageIdAdv = (IMessageIdAdv)messageId;
+            var ledgerId = messageIdAdv.LedgerId;
+            var entryId = messageIdAdv.EntryId;
+
+            IList<AbstractByteBuffer> cmdList;
+            if (MessageIdAdvUtils.IsBatch(messageIdAdv))
             {
-                var bitSet = new BitSet(batchMessageId.BatchSize);
-                ledgerId = batchMessageId.LedgerId;
-                entryId = batchMessageId.EntryId;
+                var bitArray = new BitArray(messageIdAdv.BatchSize);
                 if (ackType == AckType.Cumulative)
                 {
-                    batchMessageId.AckCumulative();
-                    bitSet.Set(0, batchMessageId.BatchSize);
-                    bitSet.Clear(0, batchMessageId.BatchIndex + 1);
+                    MessageIdAdvUtils.Acknowledge(messageIdAdv, false);
+                    bitArray.Set(messageIdAdv.BatchIndex + 1, false);
                 }
                 else
                 {
-                    bitSet.Set(0, batchMessageId.BatchSize);
-                    bitSet.Clear(batchMessageId.BatchIndex);
+                    bitArray.Set(messageIdAdv.BatchIndex, false);
                 }
-                cmd = Commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray().ToList(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
+                cmdList = new List<AbstractByteBuffer> { Commands.NewAck(_consumerId, ledgerId, entryId, bitArray.ToLongArray().ToList(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, messageIdAdv.BatchSize) };
             }
             else
             {
-                var singleMessage = (MessageIdAdv)messageId;
-                ledgerId = singleMessage.LedgerId;
-                entryId = singleMessage.EntryId;
-                cmd = Commands.NewAck(_consumerId, ledgerId, entryId, new List<long> { }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
+                var chunkMsgIds =  this.unAckedChunkedMessageIdSequenceMap.remove(messageIdAdv);
+                // cumulative ack chunk by the last messageId
+                if (chunkMsgIds == null || ackType == AckType.Cumulative)
+                {
+                    cmdList = new List<AbstractByteBuffer> { Commands.NewAck(_consumerId, ledgerId, entryId, null, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId) };
+                }
+                else
+                {
+                    if (Commands.PeerSupportsMultiMessageAcknowledgment(_protocolVersion))
+                    {
+                        IList<Tuple<long, long, ConcurrentBitSetRecyclable>> entriesToAck = new List<Tuple<long, long, ConcurrentBitSetRecyclable>>(chunkMsgIds.Length);
+                        foreach (MessageId cMsgId in chunkMsgIds)
+                        {
+                            if (cMsgId != null && chunkMsgIds.Length > 1)
+                            {
+                                entriesToAck.Add(Tuple.Create(cMsgId.LedgerId, cMsgId.EntryId, null));
+                            }
+                        }
+                        cmdList = new List<AbstractByteBuffer> { NewMultiTransactionMessageAck(_consumerId, txnID, entriesToAck, requestId) };
+                    }
+                    else
+                    {
+                        cmdList = new List<AbstractByteBuffer>();
+                        foreach (MessageId cMsgId in chunkMsgIds)
+                        {
+                            cmdList.Add(Commands.NewAck(_consumerId, cMsgId.LedgerId, cMsgId.EntryId, null, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId));
+                        }
+                    }
+                }
             }
 
-            _ackRequests.Add(requestId, (new List<IMessageId> { messageId }, txnID));
             if (ackType == AckType.Cumulative)
             {
                 _unAckedMessageTracker.Tell(new RemoveMessagesTill(messageId));
@@ -3355,8 +3633,22 @@ namespace SharpPulsar.Internal.Consumer
             {
                 _unAckedMessageTracker.Tell(new Remove(messageId));
             }
-            var payload = new Payload(cmd, requestId, "NewAckForReceipt");
-            _clientCnx.Tell(payload);
+            ClientCnx cnx = cnx();
+            if (cnx == null)
+            {
+                return FutureUtil.failedFuture(new PulsarClientException.ConnectException("Failed to ack message [" + messageId + "] " + "for transaction [" + txnID + "] due to consumer connect fail, consumer state: " + getState()));
+            }
+            else
+            {
+                foreach(var cmd in cmdList)
+                {
+                    var payload = new Payload(cmd, requestId, "NewAckForReceipt");
+                    _clientCnx.Tell(payload);
+                }
+                
+            }
+
+            
         }
         private void DoTransactionAcknowledgeForResponse(IList<IMessageId> messageIds, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TransactionImpl.TxnID txnID, long requestId)
         {

@@ -24,7 +24,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using Org.BouncyCastle.Security;
-
+using Pulsar.Proto;
+using SharpPulsar.API;
 using SharpPulsar.Cache;
 using SharpPulsar.Shared;
 using SharpPulsar.Utility;
@@ -33,8 +34,8 @@ namespace SharpPulsar.Crypto
 {
     //https://pulsar.apache.org/docs/en/security-encryption/
     //https://github.com/eaba/Bouncy-Castle-AES-GCM-Encryption/blob/master/EncryptionService.cs
-    public class MessageCrypto:IMessageCrypto
-	{
+    public class MessageCrypto:IMessageCrypto<MessageMetadata, MessageMetadata>
+    {
 
 		private readonly Aes _keyGenerator;
 		private const int TagLen = 32 * 8;
@@ -360,6 +361,20 @@ namespace SharpPulsar.Crypto
 
 		}
 
+        public int GetMaxOutputSize(int inputLen)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Encrypt(ISet<string> encKeys, ICryptoKeyReader keyReader, Func<MessageMetadata> messageMetadata, Span<byte> payload, Span<byte> outBuffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Decrypt(Func<MessageMetadata> messageMetadataSupplier, Span<byte> payload, Span<byte> outBuffer, ICryptoKeyReader keyReader)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 
