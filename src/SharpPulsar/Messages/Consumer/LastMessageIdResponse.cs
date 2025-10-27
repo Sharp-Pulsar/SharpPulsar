@@ -1,5 +1,8 @@
 ﻿
 using System.Collections.Generic;
+using System.Linq;
+using Pulsar.Proto;
+using SharpPulsar.API;
 
 namespace SharpPulsar.Messages.Consumer
 {
@@ -14,7 +17,7 @@ namespace SharpPulsar.Messages.Consumer
             BatchSize = batchSize;
             AckSets = ackSets;
             if (deletePosition != null)
-                MarkDeletePosition = new MarkDeletePosition((long)deletePosition.ledgerId, (long)deletePosition.entryId, deletePosition.Partition, deletePosition.BatchIndex, deletePosition.BatchSize, deletePosition.AckSets);
+                MarkDeletePosition = new MarkDeletePosition((long)deletePosition.LedgerId, (long)deletePosition.EntryId, deletePosition.Partition, deletePosition.BatchIndex, deletePosition.BatchSize, deletePosition.AckSet.ToList());
         }
 
         public long LedgerId { get; }
@@ -27,8 +30,8 @@ namespace SharpPulsar.Messages.Consumer
 
     }
 
-    public record struct GetLastMessageIdResponse(IMessageId LastMessageId, MessageIdAdv MarkDeletePosition);
+    public record GetLastMessageIdResponse(IMessageId LastMessageId, IMessageIdAdv MarkDeletePosition);
    
-    public record struct MarkDeletePosition(long LedgerId, long EntryId, int Partition, int BatchIndex, int BatchSize, List<long> AckSets);
+    public record MarkDeletePosition(long LedgerId, long EntryId, int Partition, int BatchIndex, int BatchSize, List<long> AckSets);
     
 }

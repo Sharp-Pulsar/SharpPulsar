@@ -1,4 +1,5 @@
 ﻿
+using System;
 using Akka.Actor;
 using SharpPulsar.API;
 using SharpPulsar.Shared.Exceptions;
@@ -8,9 +9,13 @@ namespace SharpPulsar.Messages.Requests
     public record ConnectionClosed
     {
         public IActorRef ClientCnx { get; }
-        public ConnectionClosed(IActorRef clientCnx)
+        public long InitialConnectionDelayMs { get; }  
+        public Uri HostUrl { get; } 
+        public ConnectionClosed(IActorRef clientCnx, long initialConnectionDelayMs, Uri hostUrl)
         {
             ClientCnx = clientCnx;
+            InitialConnectionDelayMs = initialConnectionDelayMs;    
+            HostUrl = hostUrl;  
         }
     }
     public record ClearIncomingMessagesAndGetMessageNumber

@@ -18,9 +18,10 @@ using System.Buffers;
 using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Client.Internal.Help;
-using SharpPulsar.Common.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Protocol.Schema;
+using Pulsar.Proto;
+using DotNetty.Buffers;
 
 namespace SharpPulsar.Client.Internal
 {
@@ -221,7 +222,7 @@ namespace SharpPulsar.Client.Internal
                         {
                             var consumed = buffer.GetPosition(totalSize);
                             var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
-                            if (command.type == BaseCommand.Types.Type.Message)
+                            if (command.Type == BaseCommand.Types.Type.Message)
                             {
                                 BrokerEntryMetadata brokerEntryMetadata = null;
                                 var brokerEntryMetadataPosition = stream.Position;
@@ -247,7 +248,7 @@ namespace SharpPulsar.Client.Internal
                                 stream.Seek(metadataOffset, SeekOrigin.Begin);
                                 var calculatedCheckSum = (uint)CRC32C.Get(0u, stream, metadataLength + payloadLength);
                                 var hasValidCheckSum = messageCheckSum == calculatedCheckSum;
-                                _client.Tell(new Reader(command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
+                                _client.Tell(new Reader(command, metadata, brokerEntryMetadata, new AbstractByteBuffer(payload), hasValidCheckSum, hasMagicNumber));
                                 //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                             }
                             else
@@ -454,12 +455,12 @@ namespace SharpPulsar.Client.Internal
         }
         internal record SendMessage
         {
-            public readonly ReadOnlySequence<byte> Message;
-            internal SendMessage(ReadOnlySequence<byte> message)
+            public readonly AbstractByteBuffer Message;
+            internal SendMessage(AbstractByteBuffer message)
             {
                 Message = message;
             }
         }
-        internal record Reader(BaseCommand Command, MessageMetadata Metadata, BrokerEntryMetadata BrokerEntryMetadata, ReadOnlySequence<byte> Payload, bool HasValidcheckSum, bool HasMagicNumber);
+        internal record Reader(BaseCommand Command, MessageMetadata Metadata, BrokerEntryMetadata BrokerEntryMetadata, AbstractByteBuffer Payload, bool HasValidcheckSum, bool HasMagicNumber);
     }
 }

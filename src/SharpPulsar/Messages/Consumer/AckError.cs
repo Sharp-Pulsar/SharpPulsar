@@ -1,5 +1,7 @@
-﻿namespace SharpPulsar.Messages.Consumer
+﻿using SharpPulsar.Shared.Exceptions;
+
+namespace SharpPulsar.Messages.Consumer
 {
-    public record struct AckError(long RequestId, PulsarClientException Exception);
+    public record AckError(long RequestId, PulsarClientException Exception);
     
 }

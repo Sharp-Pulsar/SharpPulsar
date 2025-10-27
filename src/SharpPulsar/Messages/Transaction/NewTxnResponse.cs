@@ -1,4 +1,4 @@
-﻿using SharpPulsar.Common.Protocol.Proto;
+﻿using Pulsar.Proto;
 using SharpPulsar.Shared.Exceptions;
 
 namespace SharpPulsar.Messages.Transaction

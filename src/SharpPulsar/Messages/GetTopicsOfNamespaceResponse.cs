@@ -1,4 +1,6 @@
-﻿namespace SharpPulsar.Messages
+﻿using Pulsar.Proto;
+
+namespace SharpPulsar.Messages
 {
     public record GetTopicsOfNamespaceResponse
     {

@@ -1,4 +1,4 @@
-﻿using SharpPulsar.Common.Protocol.Proto;
+﻿using Pulsar.Proto;
 
 namespace SharpPulsar.Model
 {
@@ -16,10 +16,10 @@ namespace SharpPulsar.Model
 
 		public LookupDataResult(CommandLookupTopicResponse result)
 		{
-			BrokerUrl = result.brokerServiceUrl;
-			BrokerUrlTls = result.brokerServiceUrlTls;
+			BrokerUrl = result.BrokerServiceUrl;
+			BrokerUrlTls = result.BrokerServiceUrlTls;
 			Authoritative = result.Authoritative;
-			Redirect = result.Response == CommandLookupTopicResponse.LookupType.Redirect;
+			Redirect = result.Response == CommandLookupTopicResponse.Types.LookupType.Redirect;
 			ProxyThroughServiceUrl = result.ProxyThroughServiceUrl;
 			Partitions = -1;
 			Error = result.Error;

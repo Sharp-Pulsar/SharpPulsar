@@ -1,4 +1,6 @@
-﻿namespace SharpPulsar.Messages.Consumer
+﻿using SharpPulsar.Shared.Exceptions;
+
+namespace SharpPulsar.Messages.Consumer
 {
     public record RedeliverUnacknowledgedMessages
     {
