@@ -1171,7 +1171,7 @@ namespace SharpPulsar.Protocol.Schema
             cmd.EndTxn.TxnidLeastBits = (ulong)txnIdLeastBits;
             cmd.EndTxn.TxnidMostBits = (ulong)txnIdMostBits;
             cmd.EndTxn.TxnAction = txnAction;
-            return cmd;
+            return SerializeWithSize(cmd);
         }
 
         
