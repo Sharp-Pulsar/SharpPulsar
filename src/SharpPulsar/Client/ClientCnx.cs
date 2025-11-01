@@ -26,10 +26,13 @@ using DotNetty.Buffers;
 using Pulsar.Proto;
 using System.Linq;
 using static Pulsar.Proto.CommandTopicMigrated.Types;
+using DotNetty.Handlers.Tls;
+using DotNetty.Transport.Channels;
+using SharpPulsar.DotNetty;
 
 namespace SharpPulsar.Client
 {
-    internal sealed class ClientCnx : ReceiveActor, IWithTimers
+    internal sealed class ClientCnx : PulsarHandler
     {
         private readonly IActorRef _socketClient;
         private readonly IAuthentication _authentication;
@@ -151,6 +154,7 @@ namespace SharpPulsar.Client
             }
             _socketClient.Tell(Start.Instance);
         }
+
         public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker = "")
         {
             return Props.Create(() => new ClientCnx(conf, endPoint, connectionFuture, targetBroker));

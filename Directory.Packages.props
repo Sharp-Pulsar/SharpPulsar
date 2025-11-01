@@ -4,12 +4,14 @@
   </PropertyGroup>
   <!-- App dependencies -->
   <ItemGroup>
-    <PackageVersion Include="Akka" Version="1.5.54" />
-    <PackageVersion Include="Akka.Hosting" Version="1.5.53" />
+    <PackageVersion Include="Akka" Version="1.5.55" />
+    <PackageVersion Include="Akka.Hosting" Version="1.5.55.1" />
     <PackageVersion Include="Akka.Logger.Serilog" Version="$(AkkaLoggerSerilogVersion)" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
     <PackageVersion Include="DotNetty.Buffers" Version="0.7.6" />
     <PackageVersion Include="DotNetty.Codecs" Version="0.7.6" />
+    <PackageVersion Include="DotNetty.Handlers" Version="0.7.6" />
+    <PackageVersion Include="DotNetty.Transport" Version="0.7.6" />
     <PackageVersion Include="Google.Protobuf.Tools" Version="3.33.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.10" />
@@ -28,7 +30,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
     <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
     <PackageVersion Include="Microsoft.Rest.ClientRuntime" Version="$(MicrosoftRestClientRuntimeVersion)" />
-    <PackageVersion Include="Nager.PublicSuffix" Version="3.6.0" />
+    <PackageVersion Include="Nager.PublicSuffix" Version="3.7.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="Nito.AsyncEx" Version="$(NitoAsyncExVersion)" />
     <PackageVersion Include="NodaTime" Version="3.2.2" />
