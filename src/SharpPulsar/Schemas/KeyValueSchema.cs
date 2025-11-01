@@ -2,9 +2,7 @@
 using SharpPulsar.API.Internal;
 using SharpPulsar.API.Schema;
 using SharpPulsar.Common.Precondition;
-using SharpPulsar.Common.Protocol.Proto;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Messages.Requests;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
 using SharpPulsar.Shared.Buf;

@@ -15,6 +15,7 @@ using SharpPulsar.Common.Schema;
 using System.Text.Json;
 using AuthData = SharpPulsar.Shared.AuthData;
 using SharpPulsar.Common.Protocol.Schema;
+using SharpPulsar.Shared.Buf;
 
 
 /// <summary>
@@ -112,7 +113,7 @@ namespace SharpPulsar.Protocol.Schema
 
             if (!string.ReferenceEquals(authData, null))
             {
-                connect.AuthData = Bytes(authData.GetBytes());
+                connect.AuthData = ByteString.CopyFrom(authData.GetBytes());
             }
 
             if (!string.ReferenceEquals(originalPrincipal, null))
@@ -166,7 +167,7 @@ namespace SharpPulsar.Protocol.Schema
 
             if (authData != null)
             {
-                connect.AuthData = Bytes(authData.Bytes);
+                connect.AuthData = ByteString.CopyFrom(authData.Bytes);
             }
 
             if (!string.ReferenceEquals(originalPrincipal, null))
@@ -224,7 +225,18 @@ namespace SharpPulsar.Protocol.Schema
             connected.FeatureFlags.SupportsReplDedupByLidAndEid = (true);
             return cmd;
         }
-
+        public static AbstractByteBuffer NewAuthResponse(string authMethod,
+                                          AuthData clientData,
+                                          int clientProtocolVersion,
+                                          string clientVersion)
+        {
+            BaseCommand cmd = LocalCmd(BaseCommand.Types.Type.AuthResponse);
+            cmd.AuthResponse.ClientVersion = clientVersion != null ? clientVersion : "Pulsar Client";
+            cmd.AuthResponse.ProtocolVersion = clientProtocolVersion;
+            cmd.AuthResponse.Response.AuthData_ = ByteString.CopyFrom(clientData.Bytes);
+            cmd.AuthResponse.Response.AuthMethodName = (authMethod);
+            return SerializeWithSize(cmd);
+        }
         public static AbstractByteBuffer NewConnected(int clientProtocolVersion, int maxMessageSize, bool supportsTopicWatchers)
         {
             return SerializeWithSize(NewConnectedCommand(clientProtocolVersion, maxMessageSize, supportsTopicWatchers));
@@ -241,7 +253,7 @@ namespace SharpPulsar.Protocol.Schema
             var versionToAdvertise = Math.Min(currentProtocolVersion, clientProtocolVersion);
 
             challenge.ProtocolVersion = (versionToAdvertise);
-            challenge.Challenge.AuthData_ = Bytes(brokerData != null ? brokerData.Bytes : new byte[0]);
+            challenge.Challenge.AuthData_ = ByteString.CopyFrom(brokerData != null ? brokerData.Bytes : new byte[0]);
             challenge.Challenge.AuthMethodName = (authMethod);
             return SerializeWithSize(cmd);
         }
@@ -275,7 +287,7 @@ namespace SharpPulsar.Protocol.Schema
             cmd.ProducerSuccess.RequestId = (ulong)(requestId);
             cmd.ProducerSuccess.ProducerName = (producerName);
             cmd.ProducerSuccess.LastSequenceId = (lastSequenceId);
-            cmd.ProducerSuccess.SchemaVersion = Bytes(schemaVersion.Bytes());
+            cmd.ProducerSuccess.SchemaVersion = ByteString.CopyFrom(schemaVersion.Bytes());
             cmd.ProducerSuccess.ProducerReady = (isProducerReady);
             var ps = cmd.ProducerSuccess;
             if(topicEpoch != null)
@@ -780,7 +792,7 @@ namespace SharpPulsar.Protocol.Schema
         private static void ConvertSchema(ISchemaInfo schemaInfo, Pulsar.Proto.Schema schema)
         {
             schema.Name = (schemaInfo.Name);
-            schema.SchemaData = Bytes(schemaInfo.Schema);
+            schema.SchemaData = ByteString.CopyFrom(schemaInfo.Schema);
             schema.Type = (GetSchemaType(schemaInfo.Type));
 
             schemaInfo.Properties.SetOfKeyValuePairs().ForEach(entry =>
@@ -1109,17 +1121,11 @@ namespace SharpPulsar.Protocol.Schema
             var schema = cmd.GetSchema;
             if (version != null)
             {
-              schema.SchemaVersion = Bytes(version.Bytes());
+              schema.SchemaVersion = ByteString.CopyFrom(version.Bytes());
             }
             return SerializeWithSize(cmd);
         }
-
-        private static ByteString Bytes(byte[] bytes)
-        {
-            using (var str = new MemoryStream(bytes))
-                return ByteString.FromStream(str);
-        }
-		
+        		
         public static AbstractByteBuffer NewGetOrCreateSchema(long requestId, string topic, SchemaInfo schemaInfo)
         {
             var cmd = LocalCmd(BaseCommand.Types.Type.GetOrCreateSchema);

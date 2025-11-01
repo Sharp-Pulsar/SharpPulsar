@@ -26,8 +26,6 @@ using DotNetty.Buffers;
 using Pulsar.Proto;
 using System.Linq;
 using static Pulsar.Proto.CommandTopicMigrated.Types;
-using System.Security.Policy;
-using SharpPulsar.Shared;
 
 namespace SharpPulsar.Client
 {
@@ -289,10 +287,10 @@ namespace SharpPulsar.Client
 
 
             // Notify all attached producers/consumers so they have a chance to reconnect
-            _producers.ForEach(p => p.Value.Tell(new ConnectionClosed(_self)));
-            _consumers.ForEach(c => c.Value.Tell(new ConnectionClosed(_self)));
-            _transactionMetaStoreHandlers.ForEach(t => t.Value.Tell(new ConnectionClosed(_self)));
-            _topicListWatchers.ForEach(watcher => watcher.Value.Tell(new ConnectionClosed(_self)));
+            _producers.ForEach(p => p.Value.Tell(new ConnectionClosed(_self, 0, null)));
+            _consumers.ForEach(c => c.Value.Tell(new ConnectionClosed(_self, 0, null)));
+            _transactionMetaStoreHandlers.ForEach(t => t.Value.Tell(new ConnectionClosed(_self, 0, null)));
+            _topicListWatchers.ForEach(watcher => watcher.Value.Tell(new ConnectionClosed(_self, 0, null)));
             
             _waitingLookupRequests.Clear();
 
