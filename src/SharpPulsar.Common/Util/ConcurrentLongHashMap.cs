@@ -23,7 +23,7 @@ using SharpPulsar.Common.Precondition;
  */
 namespace SharpPulsar.Common.Util
 {
-    using static System.Collections.Specialized.BitVector32;
+    //using static System.Collections.Specialized.BitVector32;
 
     /// <summary>
     /// Map from long to an Object.
@@ -67,7 +67,7 @@ namespace SharpPulsar.Common.Util
 
         private const bool DefaultAutoShrink = false;
 
-        public static Builder<V> newBuilder<V>()
+        public static Builder<V> NewBuilder<V>()
         {
             return new Builder<V>();
         }
@@ -300,7 +300,7 @@ namespace SharpPulsar.Common.Util
         public virtual IList<long> Keys()
         {
             IList<long> keys = new List<long>((int)Size());
-            ForEach((key, value) => keys.Add(key));
+            ForEach((key, value => keys.Add(key));
             return keys;
         }
 
@@ -321,10 +321,10 @@ namespace SharpPulsar.Common.Util
         }
 
         // A section is a portion of the hash map that is covered by a single
-        private sealed class Section<V> 
+        private sealed class Section<S> 
         {
             internal volatile long[] keys;
-            internal volatile V[] values;
+            internal volatile S[] values;
 
             internal volatile int capacity;
             internal readonly int initCapacity;
@@ -344,7 +344,7 @@ namespace SharpPulsar.Common.Util
                 this.capacity = AlignToPowerOfTwo(capacity);
                 initCapacity = this.capacity;
                 keys = new long[this.capacity];
-                values = (V[])new object[this.capacity];
+                values = (S[])new object[this.capacity];
                 size = 0;
                 usedBuckets = 0;
                 this.autoShrink = autoShrink;
@@ -356,7 +356,7 @@ namespace SharpPulsar.Common.Util
                 resizeThresholdBelow = (int)(this.capacity * mapIdleFactor);
             }
 
-            internal V Get(long key, int keyHash)
+            internal S Get(long key, int keyHash)
             {
                 long stamp = TryOptimisticRead();
                 var acquiredLock = false;

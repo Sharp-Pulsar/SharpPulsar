@@ -1,8 +1,9 @@
 ﻿using System.Buffers;
 using DotNetty.Buffers;
 using Pulsar.Proto;
+using SharpPulsar.Client;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public record MessageReceived(MessageMetadata Metadata, BrokerEntryMetadata BrokerEntryMetadata, AbstractByteBuffer Payload, MessageIdData MessageId, int RedeliveryCount, bool HasValidCheckSum, bool HasMagicNumber, long ConsumerEpoch, bool HasConsumerEpoch);
+    public record MessageReceived(CommandMessage Message, AbstractByteBuffer Payload, ClientCnx ClientCnx);
 }
