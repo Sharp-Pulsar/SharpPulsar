@@ -266,7 +266,7 @@ namespace SharpPulsar.Client
                 }
             }
 
-            ctx.CloseAsync().GetAwaiter();
+            ctx.CloseAsync();
         }
         public static bool IsKnownException(Exception t)
         {

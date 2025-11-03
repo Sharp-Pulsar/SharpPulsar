@@ -18,18 +18,11 @@
  * under the License.
  */
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using DotNetty.Transport.Channels;
 using Pulsar.Proto;
-using SharpPulsar.DotNetty;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.TimeUnit;
 namespace SharpPulsar.DotNetty
 {
 
@@ -84,14 +77,14 @@ namespace SharpPulsar.DotNetty
             }
             if (keepAliveIntervalSeconds > 0)
             {
-                this.keepAliveTask = ctx.executor().scheduleAtFixedRate(catchingAndLoggingThrowables(this.handleKeepAliveTimeout), keepAliveIntervalSeconds, keepAliveIntervalSeconds, TimeUnit.TimeUnit.SECONDS);
+                this.keepAliveTask = ctx.Executor.Schedule(scheduleAtFixedRate(catchingAndLoggingThrowables(this.handleKeepAliveTimeout), keepAliveIntervalSeconds, keepAliveIntervalSeconds, TimeUnit.TimeUnit.SECONDS);
             }
         }
 
         
         public override void ChannelInactive(IChannelHandlerContext ctx)
         {
-            cancelKeepAliveTask();
+            CancelKeepAliveTask();
         }
 
         protected internal override void HandlePing(CommandPing ping)
@@ -101,7 +94,7 @@ namespace SharpPulsar.DotNetty
             {
                 log.debug("[{}] Replying back to ping message", this.ToString());
             }
-            ctx.WriteAndFlush(Commands.NewPong()).addListener(future =>
+            ctx.WriteAndFlushAsync(Commands.NewPong()).addListener(future =>
             {
                 if (!future.isSuccess())
                 {
@@ -154,7 +147,7 @@ namespace SharpPulsar.DotNetty
             }
         }
 
-        protected internal virtual ChannelFuture sendPing()
+        protected internal virtual ChannelFuture SendPing()
         {
             return ctx.WriteAndFlush(Commands.NewPing()).addListener(future =>
             {

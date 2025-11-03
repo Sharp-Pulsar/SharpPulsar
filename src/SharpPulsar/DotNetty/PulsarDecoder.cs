@@ -48,7 +48,7 @@ namespace SharpPulsar.DotNetty
 
         // From the proxy protocol. If present, it means the client is connected via a reverse proxy.
         // The broker can get the real client address and proxy address from the proxy message.
-        protected internal HAProxyMessage proxyMessage;
+        //protected internal HAProxyMessage proxyMessage;
 
         private readonly BaseCommand cmd = new BaseCommand();
 
@@ -78,7 +78,7 @@ namespace SharpPulsar.DotNetty
                 switch (cmd.Type)
                 {
                     case BaseCommand.Types.Type.PartitionedMetadata:
-                        Condition.CheckArgument(cmd.PartitionMetadata..HasPartitionMetadata);
+                        Condition.CheckArgument(cmd.PartitionMetadata != null);
                         try
                         {
                             InterceptCommand(cmd);
@@ -163,7 +163,7 @@ namespace SharpPulsar.DotNetty
                         }
                         catch (Exception e)
                         {
-                            WriteAndFlush(ctx, Commands.NewError(cmd.Producer.RequestId, GetServerError(e.InnerException.Message), e.Message));
+                            WriteAndFlush(ctx, Commands.NewError((long)cmd.Producer.RequestId, GetServerError(e.InnerException.HResult), e.Message));
                         }
                         break;
 
@@ -193,36 +193,36 @@ namespace SharpPulsar.DotNetty
                         HandleSendReceipt(cmd.SendReceipt);
                         break;
 
-                    case SUBSCRIBE:
-                        checkArgument(cmd.hasSubscribe());
+                    case BaseCommand.Types.Type.Subscribe:
+                        Condition.CheckArgument(cmd.Subscribe != null);
                         try
                         {
-                            interceptCommand(cmd);
-                            handleSubscribe(cmd.getSubscribe());
+                            InterceptCommand(cmd);
+                            HandleSubscribe(cmd.Subscribe);
                         }
-                        catch (InterceptException e)
+                        catch (Exception e)
                         {
-                            writeAndFlush(ctx, Commands.newError(cmd.getSubscribe().getRequestId(), getServerError(e.getErrorCode()), e.Message));
+                            WriteAndFlush(ctx, Commands.NewError((long)cmd.Subscribe.RequestId, GetServerError(e.HResult), e.Message));
                         }
                         break;
 
-                    case SUCCESS:
+                    case BaseCommand.Types.Type.Success:
                         checkArgument(cmd.hasSuccess());
                         handleSuccess(cmd.getSuccess());
                         break;
 
-                    case PRODUCER_SUCCESS:
+                    case BaseCommand.Types.Type.ProducerSuccess:
                         checkArgument(cmd.hasProducerSuccess());
                         handleProducerSuccess(cmd.getProducerSuccess());
                         break;
 
-                    case UNSUBSCRIBE:
+                    case BaseCommand.Types.Type.Unsubscribe:
                         checkArgument(cmd.hasUnsubscribe());
                         safeInterceptCommand(cmd);
                         handleUnsubscribe(cmd.getUnsubscribe());
                         break;
 
-                    case SEEK:
+                    case BaseCommand.Types.Type.Seek:
                         checkArgument(cmd.hasSeek());
                         try
                         {
@@ -235,57 +235,57 @@ namespace SharpPulsar.DotNetty
                         }
                         break;
 
-                    case PING:
+                    case BaseCommand.Types.Type.Ping:
                         checkArgument(cmd.hasPing());
                         handlePing(cmd.getPing());
                         break;
 
-                    case PONG:
+                    case BaseCommand.Types.Type.Pong:
                         checkArgument(cmd.hasPong());
                         handlePong(cmd.getPong());
                         break;
 
-                    case REDELIVER_UNACKNOWLEDGED_MESSAGES:
+                    case BaseCommand.Types.Type.RedeliverUnacknowledgedMessages:
                         checkArgument(cmd.hasRedeliverUnacknowledgedMessages());
                         safeInterceptCommand(cmd);
                         handleRedeliverUnacknowledged(cmd.getRedeliverUnacknowledgedMessages());
                         break;
 
-                    case CONSUMER_STATS:
+                    case BaseCommand.Types.Type.ConsumerStats:
                         checkArgument(cmd.hasConsumerStats());
                         handleConsumerStats(cmd.getConsumerStats());
                         break;
 
-                    case CONSUMER_STATS_RESPONSE:
+                    case BaseCommand.Types.Type.ConsumerStatsResponse:
                         checkArgument(cmd.hasConsumerStatsResponse());
                         handleConsumerStatsResponse(cmd.getConsumerStatsResponse());
                         break;
 
-                    case REACHED_END_OF_TOPIC:
+                    case BaseCommand.Types.Type.ReachedEndOfTopic:
                         checkArgument(cmd.hasReachedEndOfTopic());
                         handleReachedEndOfTopic(cmd.getReachedEndOfTopic());
                         break;
 
-                    case TOPIC_MIGRATED:
+                    case BaseCommand.Types.Type.TopicMigrated:
                         checkArgument(cmd.hasTopicMigrated());
                         handleTopicMigrated(cmd.getTopicMigrated());
                         break;
 
-                    case GET_LAST_MESSAGE_ID:
+                    case BaseCommand.Types.Type.GetLastMessageId:
                         checkArgument(cmd.hasGetLastMessageId());
                         handleGetLastMessageId(cmd.getGetLastMessageId());
                         break;
 
-                    case GET_LAST_MESSAGE_ID_RESPONSE:
+                    case BaseCommand.Types.Type.GetLastMessageIdResponse:
                         checkArgument(cmd.hasGetLastMessageIdResponse());
                         handleGetLastMessageIdSuccess(cmd.getGetLastMessageIdResponse());
                         break;
 
-                    case ACTIVE_CONSUMER_CHANGE:
+                    case BaseCommand.Types.Type.ActiveConsumerChange:
                         handleActiveConsumerChange(cmd.getActiveConsumerChange());
                         break;
 
-                    case GET_TOPICS_OF_NAMESPACE:
+                    case BaseCommand.Types.Type.GetTopicsOfNamespace:
                         checkArgument(cmd.hasGetTopicsOfNamespace());
                         try
                         {
@@ -298,12 +298,12 @@ namespace SharpPulsar.DotNetty
                         }
                         break;
 
-                    case GET_TOPICS_OF_NAMESPACE_RESPONSE:
+                    case BaseCommand.Types.Type.GetTopicsOfNamespaceResponse:
                         checkArgument(cmd.hasGetTopicsOfNamespaceResponse());
                         handleGetTopicsOfNamespaceSuccess(cmd.getGetTopicsOfNamespaceResponse());
                         break;
 
-                    case GET_SCHEMA:
+                    case BaseCommand.Types.Type.GetSchema:
                         checkArgument(cmd.hasGetSchema());
                         try
                         {
@@ -316,12 +316,12 @@ namespace SharpPulsar.DotNetty
                         }
                         break;
 
-                    case GET_SCHEMA_RESPONSE:
+                    case BaseCommand.Types.Type.GetSchemaResponse:
                         checkArgument(cmd.hasGetSchemaResponse());
                         handleGetSchemaResponse(cmd.getGetSchemaResponse());
                         break;
 
-                    case GET_OR_CREATE_SCHEMA:
+                    case BaseCommand.Types.Type.GetOrCreateSchema:
                         checkArgument(cmd.hasGetOrCreateSchema());
                         try
                         {
@@ -334,109 +334,109 @@ namespace SharpPulsar.DotNetty
                         }
                         break;
 
-                    case GET_OR_CREATE_SCHEMA_RESPONSE:
+                    case BaseCommand.Types.Type.GetOrCreateSchemaResponse:
                         checkArgument(cmd.hasGetOrCreateSchemaResponse());
                         handleGetOrCreateSchemaResponse(cmd.getGetOrCreateSchemaResponse());
                         break;
 
-                    case AUTH_CHALLENGE:
+                    case BaseCommand.Types.Type.AuthChallenge:
                         checkArgument(cmd.hasAuthChallenge());
                         handleAuthChallenge(cmd.getAuthChallenge());
                         break;
 
-                    case AUTH_RESPONSE:
+                    case BaseCommand.Types.Type.AuthResponse:
                         checkArgument(cmd.hasAuthResponse());
                         handleAuthResponse(cmd.getAuthResponse());
                         break;
 
-                    case TC_CLIENT_CONNECT_REQUEST:
+                    case BaseCommand.Types.Type.TcClientConnectRequest:
                         checkArgument(cmd.hasTcClientConnectRequest());
                         handleTcClientConnectRequest(cmd.getTcClientConnectRequest());
                         break;
 
-                    case TC_CLIENT_CONNECT_RESPONSE:
+                    case BaseCommand.Types.Type.TcClientConnectResponse:
                         checkArgument(cmd.hasTcClientConnectResponse());
                         handleTcClientConnectResponse(cmd.getTcClientConnectResponse());
                         break;
 
-                    case NEW_TXN:
+                    case BaseCommand.Types.Type.NewTxn:
                         checkArgument(cmd.hasNewTxn());
                         handleNewTxn(cmd.getNewTxn());
                         break;
 
-                    case NEW_TXN_RESPONSE:
+                    case BaseCommand.Types.Type.NewTxnResponse:
                         checkArgument(cmd.hasNewTxnResponse());
                         handleNewTxnResponse(cmd.getNewTxnResponse());
                         break;
 
-                    case ADD_PARTITION_TO_TXN:
+                    case BaseCommand.Types.Type.AddPartitionToTxn:
                         checkArgument(cmd.hasAddPartitionToTxn());
                         handleAddPartitionToTxn(cmd.getAddPartitionToTxn());
                         break;
 
-                    case ADD_PARTITION_TO_TXN_RESPONSE:
+                    case BaseCommand.Types.Type.AddPartitionToTxnResponse:
                         checkArgument(cmd.hasAddPartitionToTxnResponse());
                         handleAddPartitionToTxnResponse(cmd.getAddPartitionToTxnResponse());
                         break;
 
-                    case ADD_SUBSCRIPTION_TO_TXN:
+                    case BaseCommand.Types.Type.AddSubscriptionToTxn:
                         checkArgument(cmd.hasAddSubscriptionToTxn());
                         handleAddSubscriptionToTxn(cmd.getAddSubscriptionToTxn());
                         break;
 
-                    case ADD_SUBSCRIPTION_TO_TXN_RESPONSE:
+                    case BaseCommand.Types.Type.AddSubscriptionToTxnResponse:
                         checkArgument(cmd.hasAddSubscriptionToTxnResponse());
                         handleAddSubscriptionToTxnResponse(cmd.getAddSubscriptionToTxnResponse());
                         break;
 
-                    case END_TXN:
+                    case BaseCommand.Types.Type.EndTxn:
                         checkArgument(cmd.hasEndTxn());
                         handleEndTxn(cmd.getEndTxn());
                         break;
 
-                    case END_TXN_RESPONSE:
-                        checkArgument(cmd.hasEndTxnResponse());
-                        handleEndTxnResponse(cmd.getEndTxnResponse());
+                    case BaseCommand.Types.Type.EndTxnResponse:
+                        Condition.CheckArgument(cmd.EndTxnResponse != null);
+                        HandleEndTxnResponse(cmd.EndTxnResponse);
                         break;
 
-                    case END_TXN_ON_PARTITION:
-                        checkArgument(cmd.hasEndTxnOnPartition());
-                        handleEndTxnOnPartition(cmd.getEndTxnOnPartition());
+                    case BaseCommand.Types.Type.EndTxnOnPartition:
+                        Condition.CheckArgument(cmd.EndTxnOnPartition != null);
+                        HandleEndTxnOnPartition(cmd.EndTxnOnPartition);
                         break;
 
-                    case END_TXN_ON_PARTITION_RESPONSE:
-                        checkArgument(cmd.hasEndTxnOnPartitionResponse());
-                        handleEndTxnOnPartitionResponse(cmd.getEndTxnOnPartitionResponse());
+                    case BaseCommand.Types.Type.EndTxnOnPartitionResponse:
+                        Condition.CheckArgument(cmd.EndTxnOnPartitionResponse != null);
+                        HandleEndTxnOnPartitionResponse(cmd.EndTxnOnPartitionResponse);
                         break;
 
-                    case END_TXN_ON_SUBSCRIPTION:
-                        checkArgument(cmd.hasEndTxnOnSubscription());
-                        handleEndTxnOnSubscription(cmd.getEndTxnOnSubscription());
+                    case BaseCommand.Types.Type.EndTxnOnSubscription:
+                        Condition.CheckArgument(cmd.EndTxnOnSubscription != null);
+                        HandleEndTxnOnSubscription(cmd.EndTxnOnSubscription);
                         break;
 
-                    case END_TXN_ON_SUBSCRIPTION_RESPONSE:
-                        checkArgument(cmd.hasEndTxnOnSubscriptionResponse());
-                        handleEndTxnOnSubscriptionResponse(cmd.getEndTxnOnSubscriptionResponse());
+                    case BaseCommand.Types.Type.EndTxnOnSubscriptionResponse:
+                        Condition.CheckArgument(cmd.EndTxnOnSubscriptionResponse != null);
+                        HandleEndTxnOnSubscriptionResponse(cmd.EndTxnOnSubscriptionResponse);
                         break;
 
-                    case WATCH_TOPIC_LIST:
-                        checkArgument(cmd.hasWatchTopicList());
-                        handleCommandWatchTopicList(cmd.getWatchTopicList());
+                    case BaseCommand.Types.Type.WatchTopicList:
+                        Condition.CheckArgument(cmd.WatchTopicList != null);
+                        HandleCommandWatchTopicList(cmd.WatchTopicList);
                         break;
 
-                    case WATCH_TOPIC_LIST_SUCCESS:
-                        checkArgument(cmd.hasWatchTopicListSuccess());
-                        handleCommandWatchTopicListSuccess(cmd.getWatchTopicListSuccess());
+                    case BaseCommand.Types.Type.WatchTopicListSuccess:
+                        Condition.CheckArgument(cmd.WatchTopicListSuccess != null);
+                        HandleCommandWatchTopicListSuccess(cmd.WatchTopicListSuccess);
                         break;
 
-                    case WATCH_TOPIC_UPDATE:
-                        checkArgument(cmd.hasWatchTopicUpdate());
-                        handleCommandWatchTopicUpdate(cmd.getWatchTopicUpdate());
+                    case BaseCommand.Types.Type.WatchTopicUpdate:
+                        Condition.CheckArgument(cmd.WatchTopicUpdate != null);
+                        HandleCommandWatchTopicUpdate(cmd.WatchTopicUpdate);
                         break;
 
-                    case WATCH_TOPIC_LIST_CLOSE:
-                        checkArgument(cmd.hasWatchTopicListClose());
-                        handleCommandWatchTopicListClose(cmd.getWatchTopicListClose());
+                    case BaseCommand.Types.Type.WatchTopicListClose:
+                        Condition.CheckArgument(cmd.WatchTopicListClose != null);
+                        HandleCommandWatchTopicListClose(cmd.WatchTopicListClose);
                         break;
 
                     default:
@@ -765,7 +765,7 @@ namespace SharpPulsar.DotNetty
 
         private static readonly Logger log = LoggerFactory.getLogger(typeof(PulsarDecoder));
 
-        private void WriteAndFlush(ChannelOutboundInvoker ctx, AbstractByteBuffer cmd)
+        private void WriteAndFlush(IChannelHandlerContext ctx, AbstractByteBuffer cmd)
         {
             NettyChannelUtil.writeAndFlushWithVoidPromise(ctx, cmd);
         }
