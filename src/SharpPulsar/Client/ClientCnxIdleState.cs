@@ -18,6 +18,7 @@
  */
 using System.Threading;
 using DotNetty.Common.Utilities;
+using static SharpPulsar.Client.ClientCnx;
 
 namespace SharpPulsar.Client
 {
@@ -25,7 +26,7 @@ namespace SharpPulsar.Client
     public class ClientCnxIdleState
     {
 
-        private readonly ClientCnx clientCnx;
+        private readonly ClientHandler clientCnx;
 
         /// <summary>
         /// Stat. * </summary>
@@ -39,7 +40,7 @@ namespace SharpPulsar.Client
         /// The time when marks the connection is idle. * </summary>
         private long IdleMarkTime;
 
-        public ClientCnxIdleState(ClientCnx clientCnx)
+        public ClientCnxIdleState(ClientHandler clientCnx)
         {
             this.clientCnx = clientCnx;
             this.createTime = DateTimeHelper.CurrentUnixTimeMillis();

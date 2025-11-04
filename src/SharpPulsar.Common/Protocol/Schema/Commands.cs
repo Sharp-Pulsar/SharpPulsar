@@ -1,8 +1,6 @@
 ﻿
-using SharpPulsar.Shared;
 using System.Text;
 using SharpPulsar.Common;
-using SharpPulsar.API.Schema;
 using Google.Protobuf;
 //using SharpPulsar.Shared.Buf;
 using Akka.Util.Internal;
@@ -15,7 +13,8 @@ using SharpPulsar.Common.Schema;
 using System.Text.Json;
 using AuthData = SharpPulsar.Shared.AuthData;
 using SharpPulsar.Common.Protocol.Schema;
-using SharpPulsar.Shared.Buf;
+using SharpPulsar.Shared;
+using SharpPulsar.API.Schema;
 
 
 /// <summary>
